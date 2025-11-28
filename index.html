@@ -454,6 +454,7 @@
                 <span>Delivery Fee</span>
                 <span>Calculated by Agent</span>
             </div>
+            
             <div class="summary-row summary-total">
                 <span>Total</span>
                 <span id="grand-total">0</span>
@@ -513,7 +514,27 @@
         </div>
 
         <button class="checkout-btn" onclick="finalizeOrder()">Confirm Order</button>
-        <button style="background:none; border:none; width:100%; padding:10px; margin-top:10px; cursor:pointer; color:#777;" onclick="closeCheckoutModal()">Cancel</button>
+        <button style="background:none; border:none; width:100%; padding:10px; margin-top:10px; cursor:pointer; color:#777;"
+        onclick="closeCheckoutModal()">Cancel</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="customization-modal" style="display: none;">
+    <div class="modal-card">
+        <div class="modal-header-row">
+             <h3 id="modal-item-title" style="margin:0; color:var(--primary);">Item Name</h3>
+             <button onclick="closeCustomizationModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--secondary);">&times;</button>
+        </div>
+        
+        <p id="modal-item-base-price" style="color:var(--grey-text); font-size:0.9rem; margin-bottom:15px; border-bottom: 1px solid #eee; padding-bottom: 10px;"></p>
+        
+        <div id="modal-options-wrapper" class="modal-scroll-area">
+            </div>
+
+        <div class="modal-footer-action">
+            <div style="font-weight:700; font-size:1.1rem; color:var(--secondary);">Total: <span id="modal-live-total" style="color:var(--primary);">0</span></div>
+            <button class="checkout-btn" onclick="addToCartFromModal()" style="width: auto; padding: 10px 25px;">Add to Cart</button>
+        </div>
     </div>
 </div>
 
