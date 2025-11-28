@@ -5,13 +5,12 @@ window.addEventListener('load', () => {
         preloader.classList.add('preloader-hidden');
     }, 2000); // 2 seconds delay
 });
-
 /* --- DATA --- */
 const whatsappNumber = "917907660093";
 const MIN_ORDER_VAL = 200; 
  
 // Website Icons
-const vegIcon = decodeURIComponent('%F0%9F%9F%A2'); 
+const vegIcon = decodeURIComponent('%F0%9F%9F%A2');
 const nonVegIcon = decodeURIComponent('%F0%9F%94%B4');
 const rupeeSign = decodeURIComponent('%E2%82%B9');
 
@@ -219,7 +218,6 @@ const menuData = [
     { name: "Hash Brown", price: 20, category: "ADD-ON", type: "veg" },
     { name: "Hummus", price: 50, category: "ADD-ON", type: "veg" }
 ];
-
 let cart = {};
 let activeCoupon = null; // Track applied coupon
 
@@ -228,7 +226,8 @@ let currentCategory = 'All';
 let currentSearch = '';
 let currentSort = 'default';
 let currentType = 'all'; // veg, non-veg
-let currentIngredient = 'all'; // Chicken, Beef, Fish, Paneer
+let currentIngredient = 'all';
+// Chicken, Beef, Fish, Paneer
 let isUnder200 = false;
 
 /* --- FILTER FUNCTIONS --- */
@@ -289,10 +288,8 @@ function copyCode(code) {
 function toggleOffersPage() {
     const offersView = document.getElementById('offers-view');
     const mainDash = document.getElementById('main-dashboard');
-    
     if (offersView.classList.contains('active')) {
         offersView.classList.remove('active');
-        // Allow body scrolling again if needed
     } else {
         offersView.classList.add('active');
         // Reset scroll to top
@@ -300,11 +297,11 @@ function toggleOffersPage() {
     }
 }
 
-/* --- MAIN RENDER FUNCTION --- */
+/* --- MAIN RENDER FUNCTION (REFACTORED FOR MODAL) --- */
 function renderMenu() {
     const root = document.getElementById('menu-root');
     root.innerHTML = '';
-
+    
     let filteredItems = menuData.filter(item => {
         if (currentCategory !== 'All' && item.category !== currentCategory) return false;
         if (currentSearch && !item.name.toLowerCase().includes(currentSearch.toLowerCase())) return false;
@@ -342,33 +339,6 @@ function renderMenu() {
         
         const emojiStr = item.type === 'veg' ? vegIcon : nonVegIcon;
         
-        let optionsHtml = '';
-        let hasOptions = false;
-        const cheeseCats = ["Bun-Tastic Burgers", "Italian Indulgence", "Freshly Folded", "Toasty Treats"];
-        if (cheeseCats.includes(item.category)) {
-            hasOptions = true;
-            optionsHtml += `<label class="option-label"><input type="checkbox" data-name="Extra Cheese" data-price="15"> Extra Cheese (+${rupeeSign}15)</label>`;
-        }
-        if (item.category === "Italian Indulgence") {
-            hasOptions = true;
-            optionsHtml += `<label class="option-label"><input type="checkbox" data-name="Garlic Bread" data-price="40"> Add Garlic Bread (+${rupeeSign}40)</label>`;
-        }
-        if (item.category === "Butcher's Best") {
-            hasOptions = true;
-            optionsHtml += `<label class="option-label"><input type="checkbox" data-name="Extra Hashbrown" data-price="40"> Extra Hashbrown (+${rupeeSign}40)</label>`;
-            optionsHtml += `<label class="option-label"><input type="checkbox" data-name="Tossed Rice" data-price="40"> Tossed Rice (+${rupeeSign}40)</label>`;
-            optionsHtml += `<label class="option-label"><input type="checkbox" data-name="Sorted / Boiled Vegges" data-price="40"> Sorted / Boiled Vegges (+${rupeeSign}40)</label>`;
-        }
-        if (item.category === "Whipped Wonders") {
-            hasOptions = true;
-            optionsHtml += `<label class="option-label"><input type="checkbox" data-name="Extra Ice Cream (Thick Shake)" data-price="30"> Extra Ice Cream (+${rupeeSign}30)</label>`;
-        }
-        if (item.category !== "ADD-ON") {
-            hasOptions = true;
-            optionsHtml += `<input type="text" class="note-input" placeholder="Special Note (e.g. Spicy)">`;
-        }
-        if (hasOptions) optionsHtml = `<div class="options-area">${optionsHtml}</div>`;
-
         card.innerHTML = `
             <div class="card-top">
                 <div class="food-title">
@@ -376,11 +346,10 @@ function renderMenu() {
                     ${item.name}
                 </div>
                 <div class="food-meta">${item.category}</div>
-                ${optionsHtml}
             </div>
             <div class="price-row">
                 <div class="price">${rupeeSign}${item.price}</div>
-                <button class="add-btn-mini" onclick="addItemFromCard(${originalIndex})">
+                <button class="add-btn-mini" onclick="openOptionModal(${originalIndex})">
                     ADD <i class="fas fa-plus"></i>
                 </button>
             </div>
@@ -389,33 +358,120 @@ function renderMenu() {
     });
 }
 
-/* --- CART FUNCTIONS --- */
+/* --- NEW CUSTOMIZATION LOGIC --- */
+let tempSelectedItemIndex = null;
 
-function addItemFromCard(index) {
+function openOptionModal(index) {
     const item = menuData[index];
-    const card = document.getElementById(`card-${index}`);
+    tempSelectedItemIndex = index;
     
-    const checkboxes = card.querySelectorAll('input[type="checkbox"]:checked');
+    // 1. Define Options Logic based on Category
+    let availableOptions = [];
+    
+    const cheeseCats = ["Bun-Tastic Burgers", "Italian Indulgence", "Freshly Folded", "Toasty Treats"];
+    
+    if (cheeseCats.includes(item.category)) {
+        availableOptions.push({ name: "Extra Cheese", price: 15 });
+    }
+    
+    if (item.category === "Italian Indulgence") {
+        availableOptions.push({ name: "Garlic Bread", price: 40 });
+    }
+    
+    if (item.category === "Butcher's Best") {
+        availableOptions.push({ name: "Extra Hashbrown", price: 40 });
+        availableOptions.push({ name: "Tossed Rice", price: 40 });
+        availableOptions.push({ name: "Sorted / Boiled Vegges", price: 40 });
+    }
+    
+    if (item.category === "Whipped Wonders") {
+        availableOptions.push({ name: "Extra Ice Cream (Thick Shake)", price: 30 });
+    }
+
+    // 2. If no options and not an add-on, force modal only for Special Note, unless it is ADD-ON
+    if (availableOptions.length === 0 && item.category === "ADD-ON") {
+        addToCart(item.name, item.price, item.type, item.category);
+        return;
+    }
+
+    // 3. Render Modal
+    document.getElementById('modal-item-title').innerText = item.name;
+    document.getElementById('modal-item-base-price').innerText = `Base Price: ${rupeeSign}${item.price}`;
+    
+    const container = document.getElementById('modal-options-wrapper');
+    container.innerHTML = '';
+
+    // Render Checkboxes
+    availableOptions.forEach((opt, i) => {
+        container.innerHTML += `
+            <div class="custom-option-row">
+                <label class="custom-option-label">
+                    <input type="checkbox" class="modal-opt-checkbox" 
+                           data-name="${opt.name}" 
+                           data-price="${opt.price}" 
+                           onchange="updateModalTotal()"> 
+                    ${opt.name}
+                </label>
+                <span class="custom-option-price">+${rupeeSign}${opt.price}</span>
+            </div>
+        `;
+    });
+
+    // Render Note Input
+    container.innerHTML += `
+        <div style="margin-top:15px;">
+            <label style="font-size:0.8rem; color:var(--grey-text);">Special Note:</label>
+            <input type="text" id="modal-note-input" class="note-input" placeholder="e.g. Spicy, No Mayo">
+        </div>
+    `;
+
+    document.getElementById('customization-modal').style.display = 'flex';
+    updateModalTotal(); // Set initial price
+}
+
+function updateModalTotal() {
+    if (tempSelectedItemIndex === null) return;
+    const item = menuData[tempSelectedItemIndex];
+    let currentTotal = item.price;
+
+    const checkboxes = document.querySelectorAll('.modal-opt-checkbox:checked');
+    checkboxes.forEach(cb => {
+        currentTotal += parseInt(cb.dataset.price);
+    });
+
+    document.getElementById('modal-live-total').innerText = `${rupeeSign}${currentTotal}`;
+}
+
+function addToCartFromModal() {
+    if (tempSelectedItemIndex === null) return;
+    const item = menuData[tempSelectedItemIndex];
+    
+    const checkboxes = document.querySelectorAll('.modal-opt-checkbox:checked');
     let finalPrice = item.price;
     let modifiers = [];
-    
+
     checkboxes.forEach(cb => {
         finalPrice += parseInt(cb.dataset.price);
         modifiers.push(cb.dataset.name);
     });
 
-    const noteInput = card.querySelector('.note-input');
+    const noteInput = document.getElementById('modal-note-input');
     const noteText = noteInput ? noteInput.value.trim() : '';
-
+    
     let displayName = item.name;
     if(modifiers.length > 0) displayName += ` [${modifiers.join(', ')}]`;
     if(noteText) displayName += ` (Note: ${noteText})`;
 
     addToCart(displayName, finalPrice, item.type, item.category);
-    
-    checkboxes.forEach(cb => cb.checked = false);
-    if(noteInput) noteInput.value = '';
+    closeCustomizationModal();
 }
+
+function closeCustomizationModal() {
+    document.getElementById('customization-modal').style.display = 'none';
+    tempSelectedItemIndex = null;
+}
+
+/* --- CART FUNCTIONS --- */
 
 function addToCart(name, price, type, category) {
     if (cart[name]) {
@@ -442,7 +498,8 @@ function updateQty(name, change) {
 /* --- COMBO REQUIREMENTS FOR OLD CODES --- */
 function checkComboRequirements(codeToCheck) {
     if (codeToCheck === 'CLOUD15') {
-        let burgerQty = 0; let friesQty = 0; let drinkQty = 0;
+        let burgerQty = 0;
+        let friesQty = 0; let drinkQty = 0;
         for (let key in cart) {
             const item = cart[key];
             if (item.category === 'Bun-Tastic Burgers') burgerQty += item.qty;
@@ -452,7 +509,8 @@ function checkComboRequirements(codeToCheck) {
         return burgerQty === 1 && friesQty === 1 && drinkQty === 1;
     }
     if (codeToCheck === 'STEAK13') {
-        let steakQty = 0; let whippedQty = 0;
+        let steakQty = 0;
+        let whippedQty = 0;
         for (let key in cart) {
             const item = cart[key];
             if (item.category === "Butcher's Best") steakQty += item.qty;
@@ -461,7 +519,8 @@ function checkComboRequirements(codeToCheck) {
         return steakQty === 1 && whippedQty === 1;
     }
     if (codeToCheck === 'QUICK20') {
-        let wrapQty = 0; let sideQty = 0;
+        let wrapQty = 0;
+        let sideQty = 0;
         for (let key in cart) {
             const item = cart[key];
             if (item.category === "Freshly Folded") wrapQty += item.qty;
@@ -470,7 +529,8 @@ function checkComboRequirements(codeToCheck) {
         return wrapQty === 1 && sideQty === 1;
     }
     if (codeToCheck === 'FEAST14') {
-        let burgerQty = 0; let mainCourseQty = 0; let loadedFriesQty = 0; let drinkQty = 0;
+        let burgerQty = 0;
+        let mainCourseQty = 0; let loadedFriesQty = 0; let drinkQty = 0;
         for (let key in cart) {
             const item = cart[key];
             if (item.category === "Bun-Tastic Burgers") burgerQty += item.qty;
@@ -505,7 +565,8 @@ function applyCoupon() {
     const msgBox = document.getElementById('coupon-msg');
     const code = codeInput.value.trim().toUpperCase();
     
-    const todayIndex = new Date().getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed...
+    const todayIndex = new Date().getDay();
+    // 0=Sun, 1=Mon, 2=Tue, 3=Wed...
 
     // 1. MONDAY: MONBURGER
     if (code === 'MONBURGER') {
@@ -570,7 +631,8 @@ function applyCoupon() {
             msgBox.className = "coupon-msg error";
             activeCoupon = null; renderCart(); return;
         }
-        let sandQty = 0; let chillQty = 0;
+        let sandQty = 0;
+        let chillQty = 0;
         for(let key in cart) {
             if(cart[key].category === 'Toasty Treats') sandQty += cart[key].qty;
             if(cart[key].category === 'Icy Sips') chillQty += cart[key].qty;
@@ -623,7 +685,8 @@ function applyCoupon() {
             msgBox.className = "coupon-msg error";
             activeCoupon = null; renderCart(); return;
         }
-        let pastaQty = 0; let sliderQty = 0; let shakeQty = 0;
+        let pastaQty = 0;
+        let sliderQty = 0; let shakeQty = 0;
         for(let key in cart) {
             // Strict check for Pasta
             if(cart[key].category === 'Italian Indulgence' && isSundayPasta(key)) {
@@ -654,23 +717,35 @@ function applyCoupon() {
 
     // --- OLD CODES ---
     if (code === 'CLOUD15') {
-        if (checkComboRequirements('CLOUD15')) { activeCoupon = 'CLOUD15'; msgBox.innerText = "Coupon Applied! 15% Off"; msgBox.className = "coupon-msg success"; } 
-        else { msgBox.innerText = "Strictly: 1 Burger, 1 Fries & 1 Drink"; msgBox.className = "coupon-msg error"; activeCoupon = null; }
+        if (checkComboRequirements('CLOUD15')) { activeCoupon = 'CLOUD15';
+            msgBox.innerText = "Coupon Applied! 15% Off"; msgBox.className = "coupon-msg success";
+        } 
+        else { msgBox.innerText = "Strictly: 1 Burger, 1 Fries & 1 Drink";
+            msgBox.className = "coupon-msg error"; activeCoupon = null; }
         renderCart(); return;
     }
     if (code === 'STEAK13') {
-        if (checkComboRequirements('STEAK13')) { activeCoupon = 'STEAK13'; msgBox.innerText = "Steak & Sip Applied! 13% Off"; msgBox.className = "coupon-msg success"; } 
-        else { msgBox.innerText = "Strictly: 1 Butcher's Best & 1 Shake"; msgBox.className = "coupon-msg error"; activeCoupon = null; }
+        if (checkComboRequirements('STEAK13')) { activeCoupon = 'STEAK13';
+            msgBox.innerText = "Steak & Sip Applied! 13% Off"; msgBox.className = "coupon-msg success";
+        } 
+        else { msgBox.innerText = "Strictly: 1 Butcher's Best & 1 Shake";
+            msgBox.className = "coupon-msg error"; activeCoupon = null; }
         renderCart(); return;
     }
     if (code === 'QUICK20') {
-        if (checkComboRequirements('QUICK20')) { activeCoupon = 'QUICK20'; msgBox.innerText = "Quick Bite Applied! 20% Off"; msgBox.className = "coupon-msg success"; } 
-        else { msgBox.innerText = "Strictly: 1 Wrap & 1 Side"; msgBox.className = "coupon-msg error"; activeCoupon = null; }
+        if (checkComboRequirements('QUICK20')) { activeCoupon = 'QUICK20';
+            msgBox.innerText = "Quick Bite Applied! 20% Off"; msgBox.className = "coupon-msg success";
+        } 
+        else { msgBox.innerText = "Strictly: 1 Wrap & 1 Side";
+            msgBox.className = "coupon-msg error"; activeCoupon = null; }
         renderCart(); return;
     }
     if (code === 'FEAST14') {
-        if (checkComboRequirements('FEAST14')) { activeCoupon = 'FEAST14'; msgBox.innerText = "Cloud Feast Applied! 14% Off"; msgBox.className = "coupon-msg success"; } 
-        else { msgBox.innerText = "Requirements missing for Feast"; msgBox.className = "coupon-msg error"; activeCoupon = null; }
+        if (checkComboRequirements('FEAST14')) { activeCoupon = 'FEAST14';
+            msgBox.innerText = "Cloud Feast Applied! 14% Off"; msgBox.className = "coupon-msg success";
+        } 
+        else { msgBox.innerText = "Requirements missing for Feast";
+            msgBox.className = "coupon-msg error"; activeCoupon = null; }
         renderCart(); return;
     }
 
@@ -684,7 +759,6 @@ function applyCoupon() {
 function renderCart() {
     const list = document.getElementById('cart-items-list');
     list.innerHTML = '';
-    
     let subTotal = 0;
     let packingTotal = 0;
     let totalCount = 0;
@@ -708,7 +782,6 @@ function renderCart() {
             chargePerItem = 10;
         }
         packingTotal += (chargePerItem * item.qty);
-
         if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) {
             packingTotal += (7 * item.qty);
         }
@@ -729,11 +802,9 @@ function renderCart() {
     }
 
     if(!hasItems) list.innerHTML = `<div style="text-align: center; color: #ccc; margin-top: 50px;">Cart is empty</div>`;
-
     // --- DYNAMIC DISCOUNT CALCULATION ---
     let discountVal = 0;
     let discountText = "";
-
     // MONDAY LOGIC
     if(activeCoupon === 'MONBURGER') {
         let foundChicken = false;
@@ -745,7 +816,6 @@ function renderCart() {
         // Iterate through cart to find eligible items
         for(let key in cart) {
             let item = cart[key];
-            
             // 1. Find Strictly 1 Chicken Burger (First one encountered)
             if(!foundChicken && item.category === 'Bun-Tastic Burgers' && key.toLowerCase().includes('chicken')) {
                 foundChicken = true;
@@ -796,7 +866,8 @@ function renderCart() {
             let item = cart[key];
             if(item.category === "Butcher's Best" && steakDiscounted < 1) {
                 if(item.price > 300) {
-                    discountVal += (item.price - 300); // Discount 1 unit only
+                    discountVal += (item.price - 300);
+                    // Discount 1 unit only
                     steakDiscounted++;
                 }
             }
@@ -811,7 +882,8 @@ function renderCart() {
             let item = cart[key];
             if(item.category === "Whipped Wonders" && key !== "Vanilla Milkshake" && shakeDiscounted < 1) {
                 if(item.price > 120) {
-                    discountVal += (item.price - 120); // Discount 1 unit only
+                    discountVal += (item.price - 120);
+                    // Discount 1 unit only
                     shakeDiscounted++;
                 }
             }
@@ -821,7 +893,7 @@ function renderCart() {
 
     // THURSDAY LOGIC (Sandwich + Chiller 189)
     if(activeCoupon === 'THUSAND') {
-            discountVal = 61; 
+            discountVal = 61;
             discountText = "Thursday Club";
     }
 
@@ -849,7 +921,8 @@ function renderCart() {
                 let item = cart[key];
                 if(item.category === "Freshly Folded" && rollDiscounted < 1) {
                     if(item.price > 129) {
-                        discountVal += (item.price - 129); // Discount 1 unit only
+                        discountVal += (item.price - 129);
+                        // Discount 1 unit only
                         rollDiscounted++;
                     }
                 }
@@ -863,7 +936,6 @@ function renderCart() {
         let foundSlider = false;
         let foundShake = false;
         let comboItemsTotal = 0;
-
         for(let key in cart) {
             let item = cart[key];
             // Take price of 1 Pasta
@@ -894,10 +966,14 @@ function renderCart() {
     }
 
     // OLD PERCENTAGE CODES
-    if(activeCoupon === 'CLOUD15') { discountVal = Math.round(subTotal * 0.15); discountText = "Coupon (15% OFF)"; }
-    if(activeCoupon === 'STEAK13') { discountVal = Math.round(subTotal * 0.13); discountText = "Steak & Sip (13% OFF)"; }
-    if(activeCoupon === 'QUICK20') { discountVal = Math.round(subTotal * 0.20); discountText = "Quick Bite (20% OFF)"; }
-    if(activeCoupon === 'FEAST14') { discountVal = Math.round(subTotal * 0.14); discountText = "Cloud Feast (14% OFF)"; }
+    if(activeCoupon === 'CLOUD15') { discountVal = Math.round(subTotal * 0.15);
+        discountText = "Coupon (15% OFF)"; }
+    if(activeCoupon === 'STEAK13') { discountVal = Math.round(subTotal * 0.13);
+        discountText = "Steak & Sip (13% OFF)"; }
+    if(activeCoupon === 'QUICK20') { discountVal = Math.round(subTotal * 0.20);
+        discountText = "Quick Bite (20% OFF)"; }
+    if(activeCoupon === 'FEAST14') { discountVal = Math.round(subTotal * 0.14);
+        discountText = "Cloud Feast (14% OFF)"; }
 
     const discountRow = document.getElementById('discount-row');
     if (discountVal > 0) {
@@ -935,13 +1011,15 @@ function toggleOrderFields() {
     const type = document.querySelector('input[name="orderType"]:checked').value;
     const addrGroup = document.getElementById('address-group');
     const timeLabel = document.getElementById('time-label');
-    if(type === 'Pickup') { addrGroup.style.display = 'none'; timeLabel.innerText = "Preferred Pickup Time"; } 
-    else { addrGroup.style.display = 'block'; timeLabel.innerText = "Preferred Delivery Time"; }
+    if(type === 'Pickup') { addrGroup.style.display = 'none'; timeLabel.innerText = "Preferred Pickup Time";
+    } 
+    else { addrGroup.style.display = 'block'; timeLabel.innerText = "Preferred Delivery Time";
+    }
 }
 
 function checkStoreStatus(orderType) {
     const now = new Date();
-    const hour = now.getHours(); 
+    const hour = now.getHours();
     if (orderType === 'Delivery') {
         if (hour >= 14 || hour < 3) return { isOpen: true };
         return { isOpen: false, msg: "Delivery is only available from 2:00 PM to 3:00 AM." };
@@ -964,26 +1042,29 @@ function finalizeOrder() {
     const address = document.getElementById('c-address').value.trim();
     const time = document.getElementById('c-time').value;
     const instruction = document.getElementById('c-instruction').value.trim();
-
-    if(!name || !phone || !email || !time) { alert("Please fill in Name, Phone, Email and Time."); return; }
-    if(type === 'Delivery' && !address) { alert("Please fill in the Delivery Address."); return; }
-    if (!/^[0-9]{10,12}$/.test(phone)) { alert("Strict Policy: Phone number must be 10-12 digits."); return; }
-    if (!email.includes('@')) { alert("Strict Policy: Invalid Email."); return; }
+    if(!name || !phone || !email || !time) { alert("Please fill in Name, Phone, Email and Time."); return;
+    }
+    if(type === 'Delivery' && !address) { alert("Please fill in the Delivery Address."); return;
+    }
+    if (!/^[0-9]{10,12}$/.test(phone)) { alert("Strict Policy: Phone number must be 10-12 digits."); return;
+    }
+    if (!email.includes('@')) { alert("Strict Policy: Invalid Email."); return;
+    }
 
     const orderId = Math.floor(100000 + Math.random() * 900000);
     const now = new Date();
     const timeString = now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
 
-    let msg = `*New Order @ Café Cloud Club*\n`; 
+    let msg = `*New Order @ Café Cloud Club*\n`;
     msg += `*Type:* ${type.toUpperCase()}\n*Time:* ${timeString}\n*Order ID:* ${orderId}\n---------------------------\n`;
     msg += `*Name:* ${name}\n*Phone:* ${phone}\n*Email:* ${email}\n*Time:* ${time}\n`;
     if(type === 'Delivery') msg += `*Address:* ${address}\n`;
     if(instruction) msg += `*Note:* ${instruction}\n`;
     
     msg += `---------------------------\n*ITEMS:*\n`;
-    let subTotal = 0; let packingTotal = 0;
+    let subTotal = 0;
+    let packingTotal = 0;
     const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
-
     for(let key in cart) {
         let item = cart[key];
         let lineTotal = item.price * item.qty;
@@ -993,7 +1074,6 @@ function finalizeOrder() {
         else if (fiveRsCats.includes(item.category)) chargePerItem = 5;
         packingTotal += (chargePerItem * item.qty);
         if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
-        
         // --- NEW: Added Diet Tag Logic Here ---
         let dietTag = item.type === 'veg' ? '[VEG]' : '[NON-VEG]';
         msg += `• ${dietTag} ${key} x ${item.qty} = Rs. ${lineTotal}\n`;
@@ -1001,8 +1081,10 @@ function finalizeOrder() {
     
     let discountVal = 0; let couponName = "";
     // Re-calculate discount for WhatsApp message
-    if(activeCoupon === 'WEDSTEAK') { couponName = "WEDSTEAK"; discountVal = parseInt(document.getElementById('discount-total').innerText.replace(/[^\d]/g, '')); }
-    else if(activeCoupon === 'WEDSHAKE') { couponName = "WEDSHAKE"; discountVal = parseInt(document.getElementById('discount-total').innerText.replace(/[^\d]/g, '')); }
+    if(activeCoupon === 'WEDSTEAK') { couponName = "WEDSTEAK"; discountVal = parseInt(document.getElementById('discount-total').innerText.replace(/[^\d]/g, ''));
+    }
+    else if(activeCoupon === 'WEDSHAKE') { couponName = "WEDSHAKE"; discountVal = parseInt(document.getElementById('discount-total').innerText.replace(/[^\d]/g, ''));
+    }
     else if(activeCoupon) { 
             couponName = activeCoupon;
             discountVal = parseInt(document.getElementById('discount-total').innerText.replace(/[^\d]/g, ''));
@@ -1015,7 +1097,6 @@ function finalizeOrder() {
     
     // --- NEW: Updated Delivery Fee Text Here ---
     if(type === 'Delivery') msg += `\n_Delivery fee calculated by Delivery Agent._`;
-
     const encodedMsg = encodeURIComponent(msg);
     const finalUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
 
