@@ -381,8 +381,12 @@ function openOptionModal(index) {
         availableOptions.push({ name: "Extra Hashbrown", price: 40 });
         availableOptions.push({ name: "Tossed Rice", price: 40 });
         availableOptions.push({ name: "Sorted / Boiled Vegges", price: 40 });
-        // --- NEW OPTION ADDED HERE ---
         availableOptions.push({ name: "Sunny Sideup (Non-Veg)", price: 25 });
+        
+        // --- NEW: Hummus logic (Excludes Fish) ---
+        if (!item.name.toLowerCase().includes('fish')) {
+            availableOptions.push({ name: "Hummus (Veg)", price: 40 });
+        }
     }
     
     if (item.category === "Whipped Wonders") {
