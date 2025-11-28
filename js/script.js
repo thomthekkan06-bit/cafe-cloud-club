@@ -390,14 +390,20 @@ function openOptionModal(index) {
             "Double Decker Beef Burger"
         ];
         
-        // RENAMED HERE:
         if (friedEggEligible.includes(item.name)) {
             availableOptions.push({ name: "Add Fried Egg (Non-Veg)", price: 20 });
         }
     }
     
+    // --- Italian Indulgence Logic ---
     if (item.category === "Italian Indulgence") {
+        // Standard option for all pastas
         availableOptions.push({ name: "Garlic Bread", price: 40 });
+
+        // NEW: Extra Chicken only for Chicken items
+        if (item.name.toLowerCase().includes('chicken')) {
+            availableOptions.push({ name: "Extra Chicken (Non-Veg)", price: 60 });
+        }
     }
     
     if (item.category === "Butcher's Best") {
@@ -412,7 +418,7 @@ function openOptionModal(index) {
         }
     }
 
-    // Rice Harmony Logic
+    // --- Rice Harmony Logic ---
     if (item.category === "Rice Harmony") {
         // Option 1: Extra Chicken (Only for Chicken items)
         if (item.name.toLowerCase().includes('chicken')) {
