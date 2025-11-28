@@ -373,9 +373,9 @@ function openOptionModal(index) {
         availableOptions.push({ name: "Extra Cheese", price: 15 });
     }
 
-    // --- NEW: Bun-Tastic Burgers Specific Logic ---
+    // --- Bun-Tastic Burgers Specific Logic ---
     if (item.category === "Bun-Tastic Burgers") {
-        const extraFriedEligible = [
+        const friedEggEligible = [
             "Chicken Slider Burger - Pesto",
             "Chicken Slider Burger - Tandoori",
             "Cloud Special Chicken Burger",
@@ -390,8 +390,9 @@ function openOptionModal(index) {
             "Double Decker Beef Burger"
         ];
         
-        if (extraFriedEligible.includes(item.name)) {
-            availableOptions.push({ name: "Extra Fried (Non-Veg)", price: 20 });
+        // RENAMED HERE:
+        if (friedEggEligible.includes(item.name)) {
+            availableOptions.push({ name: "Add Fried Egg (Non-Veg)", price: 20 });
         }
     }
     
@@ -468,7 +469,6 @@ function openOptionModal(index) {
     document.getElementById('customization-modal').style.display = 'flex';
     updateModalTotal(); // Set initial price
 }
-
 function updateModalTotal() {
     if (tempSelectedItemIndex === null) return;
     const item = menuData[tempSelectedItemIndex];
