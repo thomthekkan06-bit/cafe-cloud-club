@@ -215,7 +215,7 @@ const menuData = [
 
     { name: "Garlic Bread (4)", price: 50, category: "ADD-ON", type: "veg" },
     { name: "Garlic Sauce", price: 20, category: "ADD-ON", type: "veg" },
-    { name: "Hash Brown", price: 20, category: "ADD-ON", type: "veg" },
+    { name: "Hash Brown", price: 40, category: "ADD-ON", type: "veg" },
     { name: "Hummus", price: 50, category: "ADD-ON", type: "veg" }
 ];
 let cart = {};
