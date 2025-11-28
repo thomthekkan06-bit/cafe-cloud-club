@@ -378,9 +378,11 @@ function openOptionModal(index) {
     }
     
     if (item.category === "Butcher's Best") {
-        availableOptions.push({ name: "Extra Hash Brown", price: 40 });
+        availableOptions.push({ name: "Extra Hashbrown", price: 40 });
         availableOptions.push({ name: "Tossed Rice", price: 40 });
         availableOptions.push({ name: "Sorted / Boiled Vegges", price: 40 });
+        // --- NEW OPTION ADDED HERE ---
+        availableOptions.push({ name: "Sunny Sideup (Non-Veg)", price: 25 });
     }
     
     if (item.category === "Whipped Wonders") {
@@ -388,8 +390,8 @@ function openOptionModal(index) {
     }
 
     // 2. If no options and not an add-on, force modal only for Special Note, unless it is ADD-ON
-    // Special check for Add-ons: they are base items so their base price IS their price.
     if (availableOptions.length === 0 && item.category === "ADD-ON") {
+        // Pass basePrice as both final and base since no options exist
         addToCart(item.name, item.price, item.price, item.type, item.category);
         return;
     }
