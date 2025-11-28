@@ -378,7 +378,7 @@ function openOptionModal(index) {
     }
     
     if (item.category === "Butcher's Best") {
-        availableOptions.push({ name: "Extra Hashbrown", price: 40 });
+        availableOptions.push({ name: "Extra Hash Brown", price: 40 });
         availableOptions.push({ name: "Tossed Rice", price: 40 });
         availableOptions.push({ name: "Sorted / Boiled Vegges", price: 40 });
     }
