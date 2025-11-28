@@ -372,6 +372,28 @@ function openOptionModal(index) {
     if (cheeseCats.includes(item.category)) {
         availableOptions.push({ name: "Extra Cheese", price: 15 });
     }
+
+    // --- NEW: Bun-Tastic Burgers Specific Logic ---
+    if (item.category === "Bun-Tastic Burgers") {
+        const extraFriedEligible = [
+            "Chicken Slider Burger - Pesto",
+            "Chicken Slider Burger - Tandoori",
+            "Cloud Special Chicken Burger",
+            "Egg Burger",
+            "Pesto Chicken Burger",
+            "Tandoori Burger Chicken",
+            "Tandoori Special Chicken Burger",
+            "Tropical Beef Burger",
+            "Tropical Pesto Chicken Burger",
+            "Tropical Tandoori Chicken Burger",
+            "Classic Beef Burger",
+            "Double Decker Beef Burger"
+        ];
+        
+        if (extraFriedEligible.includes(item.name)) {
+            availableOptions.push({ name: "Extra Fried (Non-Veg)", price: 20 });
+        }
+    }
     
     if (item.category === "Italian Indulgence") {
         availableOptions.push({ name: "Garlic Bread", price: 40 });
@@ -389,11 +411,15 @@ function openOptionModal(index) {
         }
     }
 
-    // --- NEW: Rice Harmony Logic ---
+    // Rice Harmony Logic
     if (item.category === "Rice Harmony") {
-        // Only applicable for Chicken items
+        // Option 1: Extra Chicken (Only for Chicken items)
         if (item.name.toLowerCase().includes('chicken')) {
             availableOptions.push({ name: "Extra Chicken (Non-Veg)", price: 40 });
+        }
+        // Option 2: Extra Panner (Only for Veg items)
+        if (item.type === 'veg') {
+            availableOptions.push({ name: "Extra Panner (Veg)", price: 30 });
         }
     }
     
