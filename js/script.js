@@ -400,9 +400,14 @@ function openOptionModal(index) {
         // Standard option for all pastas
         availableOptions.push({ name: "Garlic Bread", price: 40 });
 
-        // NEW: Extra Chicken only for Chicken items
+        // Extra Chicken (Chicken items only)
         if (item.name.toLowerCase().includes('chicken')) {
             availableOptions.push({ name: "Extra Chicken (Non-Veg)", price: 60 });
+        }
+        
+        // NEW: Extra Shrimp (Shrimp items only)
+        if (item.name.toLowerCase().includes('shrimp')) {
+            availableOptions.push({ name: "Extra Shrimp (Non-Veg)", price: 90 });
         }
     }
     
