@@ -1,11 +1,12 @@
-/* --- PRELOADER STYLES (Video Replication) --- */
+/* --- PRELOADER STYLES (Video Replication + Dark Mode Support) --- */
 #preloader {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: #F9FAFC; /* Matches var(--bg) */
+    /* CHANGED: Uses variable so it switches to dark automatically */
+    background-color: var(--bg); 
     z-index: 10000;
     display: flex;
     flex-direction: column;
@@ -28,7 +29,7 @@
 .loader-main-circle {
     width: 80px;
     height: 80px;
-    background-color: #FF4500; /* Your Brand Color */
+    background-color: var(--primary); /* Uses your Orange */
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -42,7 +43,7 @@
 /* The Icons inside */
 .loader-icon {
     font-size: 35px;
-    color: white;
+    color: white; /* Icons stay white inside the orange circle */
     position: absolute;
     opacity: 0;
     transform: scale(0.5);
@@ -58,12 +59,11 @@
     position: absolute;
     width: 25px;
     height: 25px;
-    background-color: #FF4500; /* Your Brand Color */
+    background-color: var(--primary); /* Uses your Orange */
     border-radius: 50%;
     z-index: 1;
     top: 0;
     left: 0;
-    /* This makes it orbit/move around */
     animation: satelliteOrbit 2s infinite ease-in-out; 
 }
 
@@ -71,35 +71,33 @@
     font-family: 'Poppins', sans-serif;
     font-size: 1.4rem;
     font-weight: 700;
-    color: #2d3436;
+    /* CHANGED: Uses variable so it turns white in dark mode */
+    color: var(--secondary); 
     letter-spacing: 1px;
 }
 
 .loader-subtext {
     font-size: 0.8rem;
-    color: #888;
+    /* CHANGED: Uses variable for consistency */
+    color: var(--grey-text);
     margin-top: 5px;
     font-weight: 500;
 }
 
 /* --- ANIMATION KEYFRAMES --- */
 
-/* 1. Main Circle Pulse */
 @keyframes mainPulse {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(0.95); }
 }
 
-/* 2. Satellite Movement (Simulates the video's dot jumping positions) */
 @keyframes satelliteOrbit {
-    0% { top: 10px; left: 80px; transform: scale(1); }   /* Top Right */
-    33% { top: 80px; left: 80px; transform: scale(0.8); } /* Bottom Right */
-    66% { top: 80px; left: 10px; transform: scale(1.1); } /* Bottom Left */
-    100% { top: 10px; left: 80px; transform: scale(1); }  /* Back to Start */
+    0% { top: 10px; left: 80px; transform: scale(1); }
+    33% { top: 80px; left: 80px; transform: scale(0.8); }
+    66% { top: 80px; left: 10px; transform: scale(1.1); }
+    100% { top: 10px; left: 80px; transform: scale(1); }
 }
 
-/* 3. Icon Cycling Logic */
-/* Icon 1: Visible 0% to 30% */
 @keyframes cycleIcon1 {
     0% { opacity: 0; transform: scale(0.5); }
     5% { opacity: 1; transform: scale(1); }
@@ -108,7 +106,6 @@
     100% { opacity: 0; }
 }
 
-/* Icon 2: Visible 33% to 63% */
 @keyframes cycleIcon2 {
     0% { opacity: 0; }
     33% { opacity: 0; transform: scale(0.5); }
@@ -118,7 +115,6 @@
     100% { opacity: 0; }
 }
 
-/* Icon 3: Visible 66% to 96% */
 @keyframes cycleIcon3 {
     0% { opacity: 0; }
     66% { opacity: 0; transform: scale(0.5); }
@@ -132,6 +128,8 @@
     visibility: hidden;
     pointer-events: none;
 }
+
+/* --- ORIGINAL CSS BELOW THIS LINE --- */
 
 /* --- RESET & VARIABLES --- */
 :root {
