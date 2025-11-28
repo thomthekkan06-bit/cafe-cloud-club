@@ -383,9 +383,17 @@ function openOptionModal(index) {
         availableOptions.push({ name: "Sorted / Boiled Vegges", price: 40 });
         availableOptions.push({ name: "Sunny Sideup (Non-Veg)", price: 25 });
         
-        // --- NEW: Hummus logic (Excludes Fish) ---
+        // Hummus logic (Excludes Fish)
         if (!item.name.toLowerCase().includes('fish')) {
             availableOptions.push({ name: "Hummus (Veg)", price: 40 });
+        }
+    }
+
+    // --- NEW: Rice Harmony Logic ---
+    if (item.category === "Rice Harmony") {
+        // Only applicable for Chicken items
+        if (item.name.toLowerCase().includes('chicken')) {
+            availableOptions.push({ name: "Extra Chicken (Non-Veg)", price: 40 });
         }
     }
     
