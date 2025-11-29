@@ -25,7 +25,7 @@
     </div>
     
     <div class="loader-text">Café Cloud Club</div>
-    <div class="loader-subtext">Curating flavors...</div>
+    <div class="loader-subtext" id="dynamic-food-quote">Curating flavors...</div>
 </div>
 
 <div id="offers-view" class="offers-view">
@@ -147,6 +147,7 @@
                     1 Penne Pasta + 1 Slider + 1 Shake = ₹399
                 </div>
             </div>
+            
             <div class="offer-divider"></div>
             <div class="offer-lower" style="background: #2d3436;">
                 <button class="offer-code-display" onclick="copyCode('SUNFEAST')" style="color:#FFD700; border-color:#FFD700;">
@@ -211,7 +212,8 @@
                 <div class="offer-day-badge" style="background:#888;">Any Day</div>
                 <div class="offer-title">Family Feast 14%</div>
                 <div class="offer-desc">
-                    Huge Order? Buy 2 Burgers, 2 Mains, 1 Loaded Fries & 4 Drinks.<br>
+                    Huge Order?<br>
+                    Buy 2 Burgers, 2 Mains, 1 Loaded Fries & 4 Drinks.<br>
                     Get flat 14% discount on the total.
                 </div>
             </div>
@@ -515,8 +517,7 @@
         </div>
 
         <button class="checkout-btn" onclick="finalizeOrder()">Confirm Order</button>
-        <button style="background:none; border:none; width:100%; padding:10px; margin-top:10px; cursor:pointer; color:#777;"
-        onclick="closeCheckoutModal()">Cancel</button>
+        <button style="background:none; border:none; width:100%; padding:10px; margin-top:10px; cursor:pointer; color:#777;" onclick="closeCheckoutModal()">Cancel</button>
     </div>
 </div>
 
