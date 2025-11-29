@@ -741,6 +741,29 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
     transform: translateY(-2px);
 }
 
+/* --- Funny Retry Button --- */
+.funny-retry-btn {
+    background: transparent;
+    border: 2px dashed #666; /* Dashed border for playful look */
+    color: var(--grey-text);
+    padding: 12px 20px;
+    border-radius: 50px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+    width: 100%;
+    font-family: inherit;
+}
+
+.funny-retry-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: scale(1.02) rotate(-1deg); /* Slight tilt on hover */
+    background: rgba(255, 69, 0, 0.05);
+}
+
 /* --- ANIMATION KEYFRAMES --- */
 @keyframes circlePop {
     0% { transform: scale(0); opacity: 0; }
@@ -870,9 +893,14 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
     .store-timings-box, .store-address-box, .mobile-info-card { background: #2d3436; }
     .store-address-box a, .mobile-info-row a { background: #1e1e1e; color: var(--secondary); }
     .modal-card { background: #1e1e1e; color: var(--secondary); }
+    
     /* Dark Mode Success Screen Override */
     .success-screen { background: #121212; }
     .success-icon-container { background: #27ae60; box-shadow: 0 10px 30px rgba(39, 174, 96, 0.1); }
+    
+    /* Dark Mode Funny Button Override */
+    .funny-retry-btn { border-color: #444; color: #888; }
+    .funny-retry-btn:hover { border-color: var(--primary); color: var(--primary); }
 
     .coupon-btn:disabled { background-color: #444; color: #888; }
     
