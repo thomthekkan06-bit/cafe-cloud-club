@@ -1,1028 +1,1329 @@
-/* --- PRELOADER STYLES (Video Replication + Dark Mode Support) --- */
-#preloader {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    /* Uses variable so it switches to dark automatically */
-    background-color: var(--bg);
-    z-index: 10000;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    transition: opacity 0.5s ease, visibility 0.5s ease;
-}
-
-.morph-loader-container {
-    position: relative;
-    width: 120px;
-    height: 120px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 20px;
-}
-
-/* The Main Center Circle */
-.loader-main-circle {
-    width: 80px;
-    height: 80px;
-    background-color: var(--primary);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    box-shadow: 0 10px 25px rgba(255, 69, 0, 0.3);
-    z-index: 2;
-    animation: mainPulse 2s infinite ease-in-out;
-}
-
-/* The Icons inside */
-.loader-icon {
-    font-size: 35px;
-    color: white;
-    position: absolute;
-    opacity: 0;
-    transform: scale(0.5);
-}
-
-/* Animation sequence for icons (2s loop) */
-.icon-1 { animation: cycleIcon1 2s infinite; } /* Burger */
-.icon-2 { animation: cycleIcon2 2s infinite; } /* Drink */
-.icon-3 { animation: cycleIcon3 2s infinite; } /* Pasta */
-
-/* The Satellite Dot */
-.loader-satellite {
-    position: absolute;
-    width: 25px;
-    height: 25px;
-    background-color: var(--primary);
-    border-radius: 50%;
-    z-index: 1;
-    top: 0;
-    left: 0;
-    animation: satelliteOrbit 2s infinite ease-in-out;
-}
-
-.loader-text {
-    font-family: 'Poppins', sans-serif;
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--secondary); 
-    letter-spacing: 1px;
-}
-
-/* --- AMENDED: UPDATED SUBTEXT STYLES FOR QUOTES --- */
-.loader-subtext {
-    font-size: 0.9rem;
-    color: var(--grey-text);
-    margin-top: 10px;
-    font-weight: 500;
-    text-align: center;      /* Center align for long quotes */
-    max-width: 90%;
-    padding: 0 15px;
-    line-height: 1.4;        /* Better spacing for multi-line text */
-}
-
-/* --- ANIMATION KEYFRAMES --- */
-
-@keyframes mainPulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(0.95); }
-}
-
-@keyframes satelliteOrbit {
-    0% { top: 10px; left: 80px; transform: scale(1); }
-    33% { top: 80px; left: 80px; transform: scale(0.8); }
-    66% { top: 80px; left: 10px; transform: scale(1.1); }
-    100% { top: 10px; left: 80px; transform: scale(1); }
-}
-
-@keyframes cycleIcon1 {
-    0% { opacity: 0; transform: scale(0.5); }
-    5% { opacity: 1; transform: scale(1); }
-    30% { opacity: 1; transform: scale(1); }
-    35% { opacity: 0; transform: scale(1.2); }
-    100% { opacity: 0; }
-}
-
-@keyframes cycleIcon2 {
-    0% { opacity: 0; }
-    33% { opacity: 0; transform: scale(0.5); }
-    38% { opacity: 1; transform: scale(1); }
-    63% { opacity: 1; transform: scale(1); }
-    68% { opacity: 0; transform: scale(1.2); }
-    100% { opacity: 0; }
-}
-
-@keyframes cycleIcon3 {
-    0% { opacity: 0; }
-    66% { opacity: 0; transform: scale(0.5); }
-    71% { opacity: 1; transform: scale(1); }
-    96% { opacity: 1; transform: scale(1); }
-    100% { opacity: 0; transform: scale(1.2); }
-}
-
-.preloader-hidden {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-}
-
-/* --- ORIGINAL CSS BELOW THIS LINE --- */
-
-/* --- RESET & VARIABLES --- */
-:root {
-    --primary: #FF4500;
-    --secondary: #2d3436;
-    --bg: #F9FAFC;
-    --white: #ffffff;
-    --dark-text: #2d3436;
-    --grey-text: #8395a7;
-    --radius: 12px;
-    --shadow: 0 4px 12px rgba(0,0,0,0.05);
-    --veg-color: #27ae60;
-    --non-veg-color: #c0392b;
-    --disabled: #bdc3c7;
-    --discount-color: #e67e22;
-}
-
-* { box-sizing: border-box; outline: none; }
-
-body {
-    font-family: 'Poppins', sans-serif;
-    margin: 0;
-    background-color: var(--bg);
-    color: var(--secondary);
-    height: 100vh;
-    display: flex;
-    overflow: hidden; 
-    transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-/* --- LAYOUT GRID --- */
-.dashboard {
-    display: grid;
-    grid-template-columns: 220px 1fr 320px; 
-    width: 100%;
-    height: 100%;
-    transition: opacity 0.3s ease;
-}
-
-/* --- 1. LEFT SIDEBAR (CATEGORIES) --- */
-.left-sidebar {
-    background: var(--white);
-    border-right: 1px solid #eee;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    transition: background-color 0.3s ease, border-color 0.3s ease;
-}
-
-.left-sidebar .brand-title {
-    font-size: 1.4rem;
-    margin-bottom: 2px; 
-    color: var(--primary);
-    font-weight: 700;
-    line-height: 1.2;
-}
-
-.brand-subtitle {
-    font-size: 0.85rem;
-    color: var(--secondary);
-    font-weight: 500;
-    margin-bottom: 2px;
-}
-
-.brand-est {
-    font-size: 0.7rem;
-    color: #b2bec3;
-    font-style: italic;
-    margin-bottom: 15px; 
-    letter-spacing: 0.5px;
-}
-
-.store-timings-box, .store-address-box {
-    background: #f8f9fa;
-    border: 1px solid #eee;
-    border-radius: 8px;
-    padding: 10px;
-    margin-bottom: 10px;
-    font-size: 0.75rem;
-    color: var(--grey-text);
-}
-
-.store-timings-box h4, .store-address-box h4 {
-    margin: 0 0 5px 0;
-    color: var(--primary);
-    font-size: 0.8rem;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.timing-row {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 3px;
-}
-
-.store-address-box { margin-bottom: 20px; }
-.store-address-box p { margin: 0 0 5px 0; line-height: 1.4; }
-.store-address-box a { color: var(--secondary); text-decoration: none; font-weight: 600; }
-
-/* --- FILTERS --- */
-.filter-list { display: flex; flex-direction: column; gap: 10px; }
-.filter-item { font-weight: 500; color: var(--grey-text); cursor: pointer;
-    padding: 12px 15px; border-radius: 8px; font-size: 0.9rem; transition: all 0.2s ease; display: flex; align-items: center; justify-content: space-between;
-}
-.filter-item:hover { background: #fff0eb; color: var(--primary); }
-.filter-item.active { color: var(--primary); background: #fff0eb; font-weight: 700; border-right: 3px solid var(--primary); }
-
-/* Special Button for Offers Page */
-.offers-link-btn {
-    background: linear-gradient(135deg, #2d3436 0%, #000000 100%);
-    color: #FFD700 !important;
-    border: 1px solid #FFD700;
-    margin-bottom: 10px;
-    font-weight: 700;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
-.offers-link-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.2);
-}
-
-.dev-credit { font-size: 0.7rem; color: #b2bec3; text-align: center; margin-top: 20px; padding-top: 10px; }
-.dev-credit span { display: block; margin-bottom: 2px; }
-.dev-credit a { color: var(--primary); font-weight: 700; text-decoration: none; font-size: 0.75rem; }
-.sidebar-credit { display: block; border-top: 1px solid #eee; }
-.mobile-bottom-credit { display: none; width: 100%; border-top: 1px dashed #eee; margin-bottom: 30px; }
-
-/* --- 2. MAIN CONTENT (CENTER) --- */
-/* AMENDED: Main content acts as positioning context for the background animation */
-.main-content { 
-    padding: 20px 30px;
-    overflow-y: auto; 
-    display: flex; 
-    flex-direction: column; 
-    background: var(--bg);
-    transition: background-color 0.3s ease; 
-    position: relative; /* CRITICAL for animation */
-    z-index: 1;
-    overflow-x: hidden;
-}
-
-/* AMENDED: Push actual content ABOVE the background animation */
-.header-bar, 
-.news-ticker-area, 
-.promo-section, 
-.advanced-filters, 
-.menu-grid, 
-.mobile-info-card {
-    position: relative;
-    z-index: 5;
-}
-
-.mobile-info-card { display: none; background: var(--white); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #eee;
-    text-align: center; box-shadow: var(--shadow); }
-.mobile-brand-title { color: var(--primary); font-size: 1.3rem; font-weight: 700; margin: 0 0 10px 0; }
-.mobile-info-row { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.85rem; color: var(--secondary); margin-bottom: 5px; line-height: 1.4; }
-.mobile-info-row.small-text { font-size: 0.75rem; color: var(--grey-text); margin-top: 8px; border-top: 1px dashed #eee; padding-top: 8px; }
-.mobile-info-row a { color: var(--secondary); text-decoration: none; font-weight: 600; }
-
-.header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 20px; flex-shrink: 0; }
-.search-box { background: var(--white);
-    padding: 10px 15px; border-radius: 10px; flex: 1; display: flex; align-items: center; gap: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.03);
-    border: 1px solid #eee; transition: background-color 0.3s ease, border-color 0.3s ease;
-}
-.search-box input { border: none; width: 100%; font-family: inherit; font-size: 0.9rem; background: transparent; color: inherit; }
-
-/* --- NEWS TICKER STYLES (REPLACES DAILY SPECIAL) --- */
-.news-ticker-area {
-    width: 100%;
-    background: linear-gradient(90deg, #1e1e1e 0%, #2d2d2d 100%);
-    color: #FFD700;
-    overflow: hidden;
-    white-space: nowrap;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    border-radius: 8px;
-    margin-bottom: 20px;
-    border-left: 4px solid var(--primary);
-    position: relative;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
-}
-
-.ticker-label {
-    background: var(--primary);
-    color: white;
-    padding: 0 15px;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    font-weight: 700;
-    font-size: 0.8rem;
-    z-index: 2;
-    box-shadow: 2px 0 10px rgba(0,0,0,0.2);
-    text-transform: uppercase;
-}
-
-.ticker-content {
-    display: inline-block;
-    padding-left: 100%;
-    animation: marquee 25s linear infinite;
-    font-weight: 500;
-    font-size: 0.9rem;
-}
-
-/* Pause on hover */
-.news-ticker-area:hover .ticker-content {
-    animation-play-state: paused;
-}
-
-@keyframes marquee {
-    0% { transform: translate(0, 0); }
-    100% { transform: translate(-100%, 0); }
-}
-
-/* --- PROMO BANNERS --- */
-.promo-section { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 20px; scroll-behavior: smooth;
-    scrollbar-width: none; flex-shrink: 0; min-height: 190px; width: 100%; z-index: 10; position: relative; }
-.promo-section::-webkit-scrollbar { display: none; }
-.promo-card { min-width: 280px;
-    height: 150px; border-radius: 15px; padding: 20px; color: white; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s ease; flex-shrink: 0; }
-.promo-card:hover { transform: translateY(-3px); }
-.promo-card h3 { margin: 0 0 5px 0; font-size: 1.4rem; font-weight: 700; }
-.promo-card p { margin: 0 0 15px 0; font-size: 0.85rem; opacity: 0.9; line-height: 1.4; }
-.code-badge { background: rgba(255,255,255,0.2); padding: 5px 12px; border-radius: 6px; font-weight: 600; font-size: 0.9rem;
-    width: fit-content; border: 1px dashed rgba(255,255,255,0.6); }
-.promo-icon { position: absolute; right: -10px; bottom: -10px; font-size: 100px; opacity: 0.2; transform: rotate(-15deg); }
-
-.bg-gradient-1 { background: linear-gradient(135deg, #FF4500, #ff9f43); }
-.bg-gradient-2 { background: linear-gradient(135deg, #8e44ad, #3498db); }
-.bg-gradient-3 { background: linear-gradient(135deg, #11998e, #38ef7d); }
-.bg-gradient-4 { background: linear-gradient(135deg, #eb3349, #f45c43); }
-
-/* --- NEW OFFERS PAGE STYLING (REDESIGNED) --- */
-.offers-view {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 9999; /* Highest z-index */
-    background: #ffffff; 
-    background-color: rgba(255, 255, 255, 0.98); /* Light bg by default */
-    backdrop-filter: blur(8px);
-    overflow-y: auto;
-    padding: 20px;
-    animation: fadeIn 0.3s ease;
-    transition: background-color 0.3s ease;
-}
-.offers-view.active { display: block; }
-
-.offers-page-header {
-    max-width: 900px;
-    margin: 0 auto 30px auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: rgba(0,0,0,0.05); /* Light mode header bg */
-    padding: 15px 25px;
-    border-radius: 50px;
-    border: 1px solid rgba(0,0,0,0.1);
-}
-
-.offers-page-header h2 { font-size: 1.5rem; letter-spacing: 1px; }
-
-.offers-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 25px;
-    max-width: 900px;
-    margin: 0 auto;
-    padding-bottom: 50px;
-}
-
-/* Ticket Style Card - Light Mode Default */
-.offer-full-card {
-    background: #ffffff;
-    color: var(--secondary);
-    border-radius: 16px;
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    border: 1px solid #ddd;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-    animation: slideUp 0.5s ease backwards;
-}
-
-.offer-full-card:hover {
-    transform: translateY(-5px);
-    border-color: var(--primary);
-    box-shadow: 0 15px 40px rgba(255, 69, 0, 0.15);
-}
-
-.offer-upper { padding: 25px; position: relative; }
-
-/* Decorative circle for ticket look */
-.offer-upper::after {
-    content: '';
-    position: absolute;
-    bottom: -10px;
-    left: -10px;
-    width: 20px;
-    height: 20px;
-    background: #ffffff; /* Match light bg */
-    border-radius: 50%;
-    border: 1px solid #ddd; /* border fix for cutout */
-    z-index: 2;
-}
-.offer-upper::before {
-    content: '';
-    position: absolute;
-    bottom: -10px;
-    right: -10px;
-    width: 20px;
-    height: 20px;
-    background: #ffffff; /* Match light bg */
-    border-radius: 50%;
-    border: 1px solid #ddd;
-    z-index: 2;
-}
-
-.offer-day-badge {
-    display: inline-block;
-    background: var(--primary);
-    color: white;
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    padding: 4px 10px;
-    border-radius: 4px;
-    margin-bottom: 10px;
-    letter-spacing: 1px;
-}
-
-.offer-title { font-size: 1.3rem; font-weight: 700; color: var(--secondary); margin-bottom: 8px; }
-.offer-desc { font-size: 0.9rem; color: var(--grey-text); line-height: 1.6; }
-
-.offer-divider {
-    height: 0;
-    border-top: 2px dashed #ddd;
-    margin: 0 10px;
-}
-
-.offer-lower {
-    padding: 15px 25px;
-    background: rgba(0,0,0,0.03);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.offer-code-display {
-    background: transparent;
-    color: var(--primary);
-    font-family: monospace;
-    font-size: 1.1rem;
-    font-weight: 700;
-    border: 1px dashed var(--primary);
-    padding: 8px 15px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-    width: 100%;
-}
-
-.offer-code-display:hover {
-    background: var(--primary);
-    color: white;
-    box-shadow: 0 0 15px rgba(255, 69, 0, 0.4);
-}
-.offer-code-display:active { transform: scale(0.95); }
-
-.tnc-section {
-    max-width: 900px;
-    margin: 40px auto;
-    background: #fff;
-    padding: 30px;
-    border-radius: 15px;
-    border: 1px solid #ddd;
-    color: var(--secondary);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-}
-.tnc-section h3 { color: var(--primary); margin-top: 0; }
-.tnc-list { padding-left: 20px; font-size: 0.85rem; line-height: 1.7; }
-.tnc-list li { margin-bottom: 5px; }
-
-.offers-view .back-btn { color: var(--secondary); border: 1px solid rgba(0,0,0,0.1); padding: 8px 15px; border-radius: 30px; }
-.offers-view .back-btn:hover { background: rgba(0,0,0,0.05); }
-
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-/* --- FILTERS --- */
-.advanced-filters { display: flex; flex-wrap: wrap;
-    gap: 10px; margin-bottom: 20px; align-items: center; flex-shrink: 0; }
-.adv-select { padding: 8px 12px; border-radius: 20px; border: 1px solid #ddd;
-    background: var(--white); color: var(--secondary); font-size: 0.85rem; cursor: pointer; font-family: inherit; min-width: 100px; }
-.toggle-chip { padding: 8px 15px; border-radius: 20px;
-    border: 1px solid #ddd; background: var(--white); color: var(--secondary); font-size: 0.85rem; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
-.toggle-chip.active { background: var(--secondary); color: var(--white); border-color: var(--secondary); }
-.mobile-cart-btn { display: none; background: var(--primary); color: white; border: none;
-    padding: 12px 20px; border-radius: 50px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 15px rgba(255, 69, 0, 0.4); z-index: 100; }
-
-/* --- MENU ITEMS --- */
-.menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 15px; padding-bottom: 40px; flex-grow: 1; }
-.food-card { background: var(--white); border-radius: var(--radius); padding: 15px; box-shadow: var(--shadow); transition: transform 0.2s, background-color 0.3s ease; display: flex; flex-direction: column;
-    justify-content: space-between; border-left: 4px solid #ccc; min-height: 100px; }
-.food-card.veg { border-left-color: var(--veg-color); }
-.food-card.non-veg { border-left-color: var(--non-veg-color); }
-.food-card:hover { transform: translateY(-3px); }
-.card-top { margin-bottom: 10px; }
-.food-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 3px; color: var(--secondary); line-height: 1.3; display: flex; align-items: center; }
-.type-emoji { margin-right: 6px; font-size: 0.85rem; }
-.food-meta { font-size: 0.7rem; color: var(--grey-text); font-weight: 500; text-transform: uppercase; padding-left: 2px; margin-bottom: 10px; }
-
-.options-area { margin: 10px 0; padding-top: 10px; border-top: 1px dashed #eee; }
-.option-label { display: block; font-size: 0.8rem; color: var(--grey-text); margin-bottom: 4px; cursor: pointer; }
-.option-label input { margin-right: 5px; accent-color: var(--primary); }
-.note-input { width: 100%; padding: 8px; border: 1px solid #eee; background: #f9f9f9; border-radius: 6px; font-size: 0.8rem; margin-top: 5px; font-family: inherit; }
-.price-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
-.price { font-weight: 700; font-size: 1.1rem; color: var(--secondary); }
-.add-btn-mini { background: #f1f2f6; color: var(--secondary); padding: 6px 15px; border-radius: 20px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 600; transition: 0.2s; gap: 5px; }
-.add-btn-mini:hover { background: var(--primary); color: white; }
-
-/* --- 3. RIGHT SIDEBAR (CART) --- */
-.order-sidebar { background: var(--white); padding: 25px; display: flex; flex-direction: column;
-    border-left: 1px solid #eee; height: 100vh; transition: background-color 0.3s ease, border-color 0.3s ease; }
-.cart-header-mobile { display: none; align-items: center;
-    margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
-.back-btn { background: transparent; border: none; font-size: 1.2rem; color: var(--primary); cursor: pointer;
-    display: flex; align-items: center; gap: 10px; font-weight: 600; }
-.section-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; color: var(--secondary); }
-.cart-items-container { flex: 1; overflow-y: auto; margin-bottom: 15px; padding-right: 5px; }
-.cart-item { display: flex; justify-content: space-between; margin-bottom: 12px; align-items: flex-start;
-    padding-bottom: 12px; border-bottom: 1px solid #f5f5f5; }
-.cart-details { flex: 1; padding-right: 5px; }
-.cart-name { font-size: 0.85rem; font-weight: 600; margin-bottom: 2px;
-    display: block; color: var(--secondary); line-height: 1.3; }
-.cart-price { font-size: 0.8rem; color: var(--grey-text); }
-.qty-wrapper { display: flex; align-items: center; gap: 8px;
-    background: #F4F6F8; padding: 2px 6px; border-radius: 6px; transition: background-color 0.3s ease; height: 28px; }
-.qty-btn { border: none; background: transparent;
-    cursor: pointer; font-weight: bold; color: var(--secondary); font-size: 0.9rem; padding: 0 4px;}
-
-.coupon-section { margin-bottom: 15px; display: flex; gap: 8px; }
-.coupon-input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; font-size: 0.85rem; text-transform: uppercase; }
-.coupon-btn { border: none; padding: 0 15px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; transition: all 0.3s ease; }
-.coupon-btn:not(:disabled) { background-color: var(--primary); color: white; cursor: pointer; box-shadow: 0 2px 8px rgba(255, 69, 0, 0.3); }
-.coupon-btn:not(:disabled):hover { background-color: #e03e00; }
-.coupon-btn:disabled { background-color: #e0e0e0; color: #888; cursor: not-allowed; box-shadow: none; }
-.coupon-msg { font-size: 0.8rem; margin-bottom: 10px; min-height: 1.2em; }
-.coupon-msg.error { color: #e74c3c; }
-.coupon-msg.success { color: #27ae60; }
-
-.cart-summary { border-top: 1px solid #eee; padding-top: 15px; }
-.summary-row { display: flex;
-    justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; color: var(--grey-text); }
-.summary-row.discount-row { color: var(--discount-color); font-weight: 600; }
-.summary-total { color: var(--secondary); font-weight: 700;
-    font-size: 1.2rem; margin-top: 10px; margin-bottom: 20px; color: var(--primary); }
-.checkout-btn { background: var(--primary); color: white; width: 100%; padding: 14px; border: none;
-    border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 10px rgba(255, 69, 0, 0.2); transition: 0.3s; }
-.checkout-btn:disabled { background: var(--disabled); cursor: not-allowed; box-shadow: none; }
-
-/* --- MODAL --- */
-.modal-overlay { position: fixed; top: 0; left: 0;
-    width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 2000; backdrop-filter: blur(4px); }
-.modal-card { background: white;
-    padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;
-    transition: background-color 0.3s ease; }
-.modal-card h3 { color: var(--secondary); }
-.input-group { margin-bottom: 15px; }
-.input-group label { display: block; font-size: 0.8rem;
-    color: var(--grey-text); margin-bottom: 5px; }
-.input-field { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; background: white;
-    color: var(--secondary); }
-select.input-field { appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-    background-repeat: no-repeat; background-position: right 1rem center; background-size: 1em; }
-
-.radio-group { display: flex; gap: 15px; margin-bottom: 20px; padding-bottom: 15px;
-    border-bottom: 1px solid #eee; }
-.radio-label { display: flex; align-items: center; cursor: pointer; font-weight: 500; font-size: 0.9rem; color: var(--secondary); }
-.radio-label input { margin-right: 8px; accent-color: var(--primary); width: 16px; height: 16px; }
-
-/* --- SUCCESS SCREEN (ANIMATED) --- */
-.success-screen {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: var(--white);
-    z-index: 3000;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 40px;
-}
-
-/* 1. The Green Circle (Pops in) */
-.success-icon-container {
-    width: 80px;
-    height: 80px;
-    background: #27ae60;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 20px;
-    position: relative;
-    box-shadow: 0 10px 20px rgba(39, 174, 96, 0.3);
-    /* Animation: Pop In */
-    transform: scale(0);
-    animation: circlePop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-/* 2. The White Checkmark (Draws itself) */
-.checkmark-draw {
-    display: inline-block;
-    width: 22px;
-    /* Final width */
-    height: 42px;
-    border-bottom: 6px solid white;
-    border-right: 6px solid white;
-    transform: rotate(45deg);
-    margin-top: -8px; /* Visual center correction */
-    
-    /* Animation: Start hidden/small, then expand */
-    opacity: 0;
-    animation: checkStroke 0.4s ease-in-out 0.5s forwards; /* 0.5s delay waits for circle */
-}
-
-.success-title {
-    font-size: 1.8rem;
-    color: var(--secondary);
-    font-weight: 700;
-    margin-bottom: 10px;
-    animation: fadeInUp 0.5s ease 0.2s backwards;
-}
-
-.success-subtitle {
-    font-size: 1rem;
-    color: var(--grey-text);
-    margin-bottom: 40px;
-    max-width: 400px;
-    animation: fadeInUp 0.5s ease 0.4s backwards;
-}
-
-.action-buttons-container {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    width: 100%;
-    max-width: 320px;
-    animation: fadeInUp 0.5s ease 0.6s backwards;
-}
-
-.whatsapp-final-btn {
-    background: #25D366;
-    color: white;
-    padding: 16px 30px;
-    border-radius: 50px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
-    transition: transform 0.2s;
-    text-decoration: none;
-    width: 100%;
-}
-
-.call-final-btn {
-    background: var(--primary);
-    color: white;
-    padding: 16px 30px;
-    border-radius: 50px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    box-shadow: 0 4px 15px rgba(255, 69, 0, 0.3);
-    transition: transform 0.2s;
-    text-decoration: none;
-    width: 100%;
-}
-
-.whatsapp-final-btn:hover, .call-final-btn:hover {
-    transform: translateY(-2px);
-}
-
-/* --- Funny Retry Button --- */
-.funny-retry-btn {
-    background: transparent;
-    border: 2px dashed #666; /* Dashed border for playful look */
-    color: var(--grey-text);
-    padding: 12px 20px;
-    border-radius: 50px;
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: 10px;
-    transition: all 0.3s ease;
-    font-size: 0.95rem;
-    width: 100%;
-    font-family: inherit;
-}
-
-.funny-retry-btn:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-    transform: scale(1.02) rotate(-1deg);
-    background: rgba(255, 69, 0, 0.05);
-}
-
-/* --- ANIMATION KEYFRAMES --- */
-@keyframes circlePop {
-    0% { transform: scale(0); opacity: 0; }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-@keyframes checkStroke {
-    0% { width: 0; height: 0; opacity: 0; }
-    30% { width: 22px; height: 0; opacity: 1; }
-    100% { width: 22px; height: 42px; opacity: 1; }
-}
-
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes bounceIn { 
-    0% { transform: scale(0); opacity: 0; } 
-    50% { transform: scale(1.2); } 
-    100% { transform: scale(1); opacity: 1; } 
-}
-
-/* --- CUSTOMIZATION MODAL SPECIFIC STYLES --- */
-.modal-header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
-    margin-bottom: 10px;
-}
-.modal-scroll-area {
-    max-height: 40vh;
-    overflow-y: auto;
-    margin-bottom: 20px;
-    padding-right: 5px;
-}
-.custom-option-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px dashed #eee;
-}
-.custom-option-label {
-    font-size: 0.95rem;
-    color: var(--secondary);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    width: 100%;
-}
-.custom-option-price {
-    font-weight: 600;
-    color: var(--grey-text);
-    font-size: 0.85rem;
-    white-space: nowrap;
-}
-.modal-footer-action {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 20px;
-    border-top: 1px solid #eee;
-    padding-top: 15px;
-    margin-top: 10px;
-}
-
-/* --- UPSELL NUDGE STYLES (NEW) --- */
-.upsell-msg {
-    background: #fff3cd;
-    color: #856404;
-    padding: 10px;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    margin-bottom: 15px;
-    border: 1px solid #ffeeba;
-    text-align: center;
-    cursor: pointer;
-    animation: gentlePulse 2s infinite;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-}
-
-.upsell-msg:hover {
-    background: #ffe8a1;
-}
-
-@keyframes gentlePulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.02); }
-    100% { transform: scale(1); }
-}
-
-/* Responsive Breakpoints */
-@media (max-width: 1000px) {
-    .dashboard { grid-template-columns: 1fr; grid-template-rows: auto 1fr; display: flex;
-        flex-direction: column; }
-    .left-sidebar { grid-row: 1; width: 100%; border-right: none; border-bottom: 1px solid #eee;
-        padding: 10px 20px; flex-direction: row; overflow-x: auto; align-items: center; gap: 10px; height: auto; flex-shrink: 0; }
-    .left-sidebar .brand-title, .brand-subtitle, .brand-est, .store-timings-box, .store-address-box { display: none; }
-    .sidebar-credit { display: none !important; }
-    .mobile-bottom-credit { display: block !important; }
-    .mobile-info-card { display: block; }
-    .filter-list { flex-direction: row; width: 100%; }
-    .filter-item { white-space: nowrap; padding: 8px 12px; background: #f1f2f6; border-radius: 20px; border: 1px solid #ddd; }
-    .filter-item.active { border-right: 1px solid var(--primary); border-color: var(--primary); }
-    .main-content { flex: 1; padding: 20px; }
-    .order-sidebar { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        z-index: 2000; background: var(--bg); padding: 20px; overflow-y: auto; }
-    .order-sidebar.active { display: flex; }
-    .cart-header-mobile { display: flex; }
-    .mobile-cart-btn { display: block; position: fixed; bottom: 20px;
-        right: 20px; z-index: 1500; transition: transform 0.2s ease; }
-    .offers-link-btn { white-space: nowrap; padding: 8px 12px; border-radius: 20px; margin: 0; }
-}
-
-/* --- DARK MODE --- */
-@media (prefers-color-scheme: dark) {
-    :root { 
-        --bg: #121212;
-        --white: #1e1e1e;
-        --secondary: #ecf0f1; 
-        --dark-text: #ecf0f1; 
-        --grey-text: #a4b0be; 
-        --shadow: 0 4px 12px rgba(0,0,0,0.5); 
-        --disabled: #555;
+/* --- PRELOADER SCRIPT WITH HOURLY QUOTES --- */
+window.addEventListener('load', () => {
+    // 1. Define the 24-hour cycle quotes
+    const foodQuotes = {
+        0: "Midnight munchies? A Burger fixes everything.",
+        1: "Insomnia tastes better with a thick Milkshake.",
+        2: "Last chance. Burgers before we sleep.",
+        3: "Kitchen closing. See you at 2 PM.",
+        4: "Kitchen closed. Dreaming of Burgers.",
+        5: "Shhh. The Steaks are resting. We open at 2 PM.",
+        6: "Too early for Mojitos. Back in a few hours.",
+        7: "Fresh veggies are coming in for your Wraps.",
+        8: "Coffee now. Milkshakes later (at 2 PM).",
+        9: "Our chefs are waking up so you can eat Pasta tonight.",
+        10: "Sourcing ingredients for the perfect Rice Bowl.",
+        11: "Simmering the Soup stock. We open at 2 PM.",
+        12: "Start getting hungry. Sandwiches drop in 2 hours.",
+        13: "1 hour to go. Get your Chiller order ready.",
+        14: "Doors open. Grills hot. Order the Steak.",
+        15: "Beat the afternoon heat. Order a Mojito.",
+        16: "Lunch late? A Rice Bowl fixes everything.",
+        17: "Golden hour requires a golden Burger.",
+        18: "Work is done. Chill out with a Chiller.",
+        19: "Dinner is served. Make it a Steak night.",
+        20: "Prime time. Wraps are rolling out fast.",
+        21: "Comfort food hour: Soup for the soul.",
+        22: "Late dinner? Steak is the answer.",
+        23: "The night is young. The Milkshakes are cold."
+    };
+
+    // 2. Get current hour (0-23)
+    const currentHour = new Date().getHours();
+
+    // 3. Inject text
+    const quoteElement = document.getElementById('dynamic-food-quote');
+    if(quoteElement) {
+        quoteElement.innerText = foodQuotes[currentHour];
     }
-    
-    .left-sidebar, .order-sidebar, .cart-item, .radio-group, .cart-summary, .options-area, .coupon-input, .cart-header-mobile, .store-timings-box, .store-address-box, .mobile-info-card, .tnc-section { border-color: #333 !important; }
-    
-    .search-box, .input-field, .filter-item, .note-input, .adv-select, .toggle-chip, .mobile-info-row.small-text { border-color: #444 !important; }
-    
-    .search-box, .input-field, .qty-wrapper, .note-input, .adv-select, .toggle-chip, .coupon-input { background-color: #2d3436 !important;
-        color: var(--secondary) !important; }
-    
-    .toggle-chip.active { background: var(--secondary) !important; color: var(--white) !important; }
-    .add-btn-mini { background: #2d3436; color: #fff; }
-    .filter-item { background-color: #1e1e1e; }
-    .filter-item:hover { background: #333; color: var(--primary); }
-    .filter-item.active { background: #2d3436; }
-    .store-timings-box, .store-address-box, .mobile-info-card { background: #2d3436; }
-    .store-address-box a, .mobile-info-row a { background: #1e1e1e; color: var(--secondary); }
-    .modal-card { background: #1e1e1e; color: var(--secondary); }
-    
-    /* Dark Mode Success Screen Override */
-    .success-screen { background: #121212; }
-    .success-icon-container { background: #27ae60; box-shadow: 0 10px 30px rgba(39, 174, 96, 0.1); }
-    
-    /* Dark Mode Funny Button Override */
-    .funny-retry-btn { border-color: #444; color: #888; }
-    .funny-retry-btn:hover { border-color: var(--primary); color: var(--primary); }
 
-    .coupon-btn:disabled { background-color: #444; color: #888; }
-    
-    select.input-field { background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ecf0f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); }
-    
-    ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-track { background: #121212; }
-    ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
-    .dev-credit { border-color: #333; color: #777; }
-    
-    /* --- OFFERS PAGE DARK MODE OVERRIDES --- */
-    .offers-view { background-color: rgba(18, 18, 18, 0.98) !important; background: #121212; }
-    .offers-page-header { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
-    .offer-full-card { background: #1e1e1e; color: #ecf0f1; border-color: #333; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-    .offer-title { color: #fff; }
-    .offer-upper::after, .offer-upper::before { background: #121212; border: none; } /* Dark cutouts */
-    .offer-divider { border-color: #333; }
-    .offer-lower { background: rgba(0,0,0,0.2); }
-    .tnc-section { background: #1e1e1e; border-color: #333; color: #b2bec3; }
-    .offers-view .back-btn { color: white; border-color: rgba(255,255,255,0.2); }
-    .offers-view .back-btn:hover { background: rgba(255,255,255,0.1); }
-    
-    /* --- CUSTOMIZATION MODAL DARK MODE --- */
-    .modal-header-row, .modal-item-base-price, .modal-footer-action { border-color: #333 !important; }
-    .custom-option-row { border-color: #333; }
-    .custom-option-label { color: var(--secondary); }
+    // 4. Hide Preloader after delay
+    const preloader = document.getElementById('preloader');
+    setTimeout(() => {
+        preloader.classList.add('preloader-hidden');
+    }, 2500); 
+});
 
-    /* Dark mode for background animation */
-    .floating-shape { opacity: 0.04; }
+/* --- DATA --- */
+const whatsappNumber = "917907660093";
+const MIN_ORDER_VAL = 200; 
+ 
+// Website Icons
+const vegIcon = decodeURIComponent('%F0%9F%9F%A2');
+const nonVegIcon = decodeURIComponent('%F0%9F%94%B4');
+const rupeeSign = decodeURIComponent('%E2%82%B9');
 
-    /* Dark Mode Upsell Override */
-    .upsell-msg {
-        background: #332b00;
-        color: #ffd700;
-        border-color: #665c00;
-    }
-    .upsell-msg:hover {
-        background: #4d4100;
+/* NOTE: Fixed "Panner" to "Paneer" for better search/filtering */
+const menuData = [
+    { name: "Cheesy Beef Melt", price: 180, category: "Bun-Tastic Burgers", type: "non-veg" },
+    { name: "Cheesy Chicken Melt", price: 200, category: "Bun-Tastic Burgers", type: "non-veg" },
+    { name: "Chicken Slider Burger - Pesto", price: 90, category: "Bun-Tastic Burgers", type: "non-veg" },
+    { name: "Chicken Slider Burger - Tandoori", price: 90, category: "Bun-Tastic Burgers", type: "non-veg" },
+    { name: "Chicken Zinger Burger", price: 190, category: "Bun-Tastic Burgers", type: "non-veg" },
+    { name: "Classic Beef Burger", price: 160, category: "Bun-Tastic Burgers", type: "non-veg" },
+    { name: "Cloud Special Chicken Burger", price: 190, category: "Bun-Tastic Burgers", type: "non-veg" },
+    { name: "Double Decker Beef Burger", price: 220, category: "Bun-Tastic Burgers", type: "non-veg" },
+    { name: "Egg Burger", price: 100, category: "Bun-Tastic Burgers", type: "non-veg" },
+    { name: "Honey Bbq Chicken Burger", price: 190, category: "Bun-Tastic Burgers", type: "non-veg" },
+    { name: "Pesto Chicken Burger", price: 190, category: "Bun-Tastic Burgers", type: "non-veg" },
+    { name: "Tandoori Burger Chicken", price: 170, category: "Bun-Tastic Burgers", type: "non-veg" },
+    { name: "Tandoori Special Chicken Burger", price: 180, category: "Bun-Tastic Burgers", type: "non-veg" },
+    { name: "Tropical Beef Burger", price: 190, category: "Bun-Tastic Burgers", type: "non-veg" },
+    { name: "Tropical Pesto Chicken Burger", price: 220, category: "Bun-Tastic Burgers", type: "non-veg" },
+    { name: "Tropical Tandoori Chicken Burger", price: 200, category: "Bun-Tastic Burgers", type: "non-veg" },
+    { name: "Veg Burger (Paneer)", price: 170, category: "Bun-Tastic Burgers", type: "veg" },
+    { name: "Veg Slider Burger", price: 90, category: "Bun-Tastic Burgers", type: "veg" },
+
+    { name: "Bbq Chicken Steak", price: 310, category: "Butcher's Best", type: "non-veg" },
+    { name: "Beef Peppercorn Steak", price: 340, category: "Butcher's Best", type: "non-veg" },
+    { name: "Beef Velvet Sauce Steak", price: 340, category: "Butcher's Best", type: "non-veg" },
+    { name: "Fish Steak - BASA", price: 350, category: "Butcher's Best", type: "non-veg" },
+    { name: "Fish Steak - KING", price: 350, category: "Butcher's Best", type: "non-veg" },
+    { name: "Mediterranean BBQ Chicken Steak", price: 350, category: "Butcher's Best", type: "non-veg" },
+    { name: "Paneer Tandoori Steak", price: 340, category: "Butcher's Best", type: "veg" },
+    { name: "Paneer Velvet Sauce", price: 340, category: "Butcher's Best", type: "veg" },
+    { name: "Peri Peri Chicken Steak", price: 350, category: "Butcher's Best", type: "non-veg" },
+    { name: "Pesto Chicken Steak", price: 310, category: "Butcher's Best", type: "non-veg" },
+    { name: "Tandoori Chicken Steak", price: 350, category: "Butcher's Best", type: "non-veg" },
+    { name: "Velvet Sauce Chicken Steak", price: 350, category: "Butcher's Best", type: "non-veg" },
+
+    { name: "Beef Wrap", price: 170, category: "Freshly Folded", type: "non-veg" },
+    { name: "Chicken Chipotle Wrap", price: 160, category: "Freshly Folded", type: "non-veg" },
+    { name: "Chicken Pesto Wrap", price: 160, category: "Freshly Folded", type: "non-veg" },
+    { name: "Chicken Tandoori Wrap", price: 160, category: "Freshly Folded", type: "non-veg" },
+    { name: "Veg Wrap", price: 140, category: "Freshly Folded", type: "veg" },
+
+    { name: "Arabiata Chicken Pasta - Penne", price: 210, category: "Italian Indulgence", type: "non-veg" },
+    { name: "Arabiata Chicken Pasta - Spaghetti", price: 240, category: "Italian Indulgence", type: "non-veg" },
+    { name: "Black Garlic Chicken Penne Pasta", price: 280, category: "Italian Indulgence", type: "non-veg" },
+    { name: "Classic Alfredo Chicken Pasta - Penne", price: 210, category: "Italian Indulgence", type: "non-veg" },
+    { name: "Classic Alfredo Chicken Pasta - Spaghetti", price: 240, category: "Italian Indulgence", type: "non-veg" },
+    { name: "Cloud Special Chicken Pasta - Penne", price: 230, category: "Italian Indulgence", type: "non-veg" },
+    { name: "Cloud Special Chicken Pasta - Spaghetti", price: 260, category: "Italian Indulgence", type: "non-veg" },
+    { name: "Creamy Spaghetti - NonVeg", price: 300, category: "Italian Indulgence", type: "non-veg" },
+    { name: "Creamy Spaghetti - Veg", price: 300, category: "Italian Indulgence", type: "veg" },
+    { name: "Pesto Pasta Chicken - Penne", price: 230, category: "Italian Indulgence", type: "non-veg" },
+    { name: "Pesto Pasta Chicken - Spaghetti", price: 260, category: "Italian Indulgence", type: "non-veg" },
+    { name: "Shrimp Pasta - Penne", price: 290, category: "Italian Indulgence", type: "non-veg" },
+    { name: "Shrimp Pasta - Spaghetti", price: 320, category: "Italian Indulgence", type: "non-veg" },
+    { name: "Special Pesto Pasta Chicken - Penne", price: 230, category: "Italian Indulgence", type: "non-veg" },
+    { name: "Special Pesto Pasta Chicken - Spaghetti", price: 260, category: "Italian Indulgence", type: "non-veg" },
+    { name: "Veg Pasta - Arabiata - Penne", price: 200, category: "Italian Indulgence", type: "veg" },
+    { name: "Veg Pasta - Classic Alfredo - Penne", price: 200, category: "Italian Indulgence", type: "veg" },
+    { name: "Veg Pasta - Cloud Special - Penne", price: 200, category: "Italian Indulgence", type: "veg" },
+    { name: "Veg Pasta - Pesto - Penne", price: 200, category: "Italian Indulgence", type: "veg" },
+    { name: "Veg Pasta - Special Pesto - Penne", price: 240, category: "Italian Indulgence", type: "veg" },
+    { name: "Veg Pasta - Classic Alfredo - Spaghetti", price: 230, category: "Italian Indulgence", type: "veg" },
+    { name: "Veg Pasta - Cloud Special - Spaghetti", price: 230, category: "Italian Indulgence", type: "veg" },
+    { name: "Veg Pasta - Pesto - Spaghetti", price: 230, category: "Italian Indulgence", type: "veg" },
+    { name: "Veg Pasta - Special Pesto - Spaghetti", price: 270, category: "Italian Indulgence", type: "veg" },
+    { name: "Veg Pasta - Arabiata - Spaghetti", price: 230, category: "Italian Indulgence", type: "veg" },
+
+    { name: "Chicken Fried Rice", price: 150, category: "Rice Harmony", type: "non-veg" },
+    { name: "Cloud Club Power Bowl - Chicken", price: 200, category: "Rice Harmony", type: "non-veg" },
+    { name: "Cloud Club Power Bowl - Veg", price: 170, category: "Rice Harmony", type: "veg" },
+    { name: "Peri Peri Rice Bowl - Non-Veg", price: 150, category: "Rice Harmony", type: "non-veg" },
+    { name: "Peri Peri Rice Bowl - Veg", price: 140, category: "Rice Harmony", type: "veg" },
+    { name: "Plain Rice Bowl", price: 120, category: "Rice Harmony", type: "veg" },
+    { name: "Tandoori Rice Bowl - Non-Veg", price: 160, category: "Rice Harmony", type: "non-veg" },
+    { name: "Tandoori Rice Bowl - Veg", price: 150, category: "Rice Harmony", type: "veg" },
+
+    { name: "Chicken Pesto Salad", price: 190, category: "Salad Symphony", type: "non-veg" },
+    { name: "Classic Chicken Caesar Salad", price: 170, category: "Salad Symphony", type: "non-veg" },
+    { name: "Cloud Special Chicken Salad", price: 170, category: "Salad Symphony", type: "non-veg" },
+    { name: "Egg White Salad", price: 160, category: "Salad Symphony", type: "non-veg" },
+    { name: "Grilled Beef Salad", price: 190, category: "Salad Symphony", type: "non-veg" },
+    { name: "Paneer Pesto Salad", price: 170, category: "Salad Symphony", type: "veg" },
+    { name: "Pesto Veg Salad", price: 160, category: "Salad Symphony", type: "veg" },
+    { name: "Shrimp Classic Caesar Salad", price: 250, category: "Salad Symphony", type: "non-veg" },
+    { name: "Sprout Fusion Salad", price: 160, category: "Salad Symphony", type: "non-veg" },
+    { name: "Tuna Salad", price: 180, category: "Salad Symphony", type: "non-veg" },
+    { name: "Veg Caesar Salad (Paneer)", price: 170, category: "Salad Symphony", type: "veg" },
+    { name: "Veg Roasted Salad", price: 140, category: "Salad Symphony", type: "veg" },
+    { name: "Veg Waldorf Salad", price: 170, category: "Salad Symphony", type: "veg" },
+
+    { name: "Chicken Ham Club Sandwich", price: 170, category: "Toasty Treats", type: "non-veg" },
+    { name: "Egg White Sandwich", price: 150, category: "Toasty Treats", type: "non-veg" },
+    { name: "Grilled Chicken & Cheese Sandwich", price: 160, category: "Toasty Treats", type: "non-veg" },
+    { name: "Regular Chicken Sandwich", price: 150, category: "Toasty Treats", type: "non-veg" },
+    { name: "Tuna Club Sandwich", price: 170, category: "Toasty Treats", type: "non-veg" },
+    { name: "Veg Club Sandwich", price: 150, category: "Toasty Treats", type: "veg" },
+    
+    { name: "Tomato Cream Soup", price: 130, category: "Warm Whispers", type: "veg" },
+    { name: "Creamy Chicken Soup", price: 140, category: "Warm Whispers", type: "non-veg" },
+
+    { name: "BBQ Chicken Popcorn", price: 180, category: "Nibbles & Bits", type: "non-veg" },
+    { name: "Beef Loaded Fries", price: 220, category: "Nibbles & Bits", type: "non-veg" },
+    { name: "Beef Omelette", price: 120, category: "Nibbles & Bits", type: "non-veg" },
+    { name: "Cheese Egg Omelette", price: 130, category: "Nibbles & Bits", type: "non-veg" },
+    { name: "Chicken Egg Omelette", price: 130, category: "Nibbles & Bits", type: "non-veg" },
+    { name: "Chicken Loaded Fries", price: 210, category: "Nibbles & Bits", type: "non-veg" },
+    { name: "Chicken Lollipop", price: 160, category: "Nibbles & Bits", type: "non-veg" },
+    { name: "Chicken Nachos", price: 180, category: "Nibbles & Bits", type: "non-veg" },
+    { name: "Chicken Nuggets", price: 90, category: "Nibbles & Bits", type: "non-veg" },
+    { name: "Chicken Popcorn - Peri Peri", price: 210, category: "Nibbles & Bits", type: "non-veg" },
+    { name: "Chicken Popcorn - Plain", price: 190, category: "Nibbles & Bits", type: "non-veg" },
+    { name: "Chicken Sausage - BBQ", price: 170, category: "Nibbles & Bits", type: "non-veg" },
+    { name: "Chicken Sausage - Plain", price: 170, category: "Nibbles & Bits", type: "non-veg" },
+    { name: "Chicken Sausage - Tandoori", price: 170, category: "Nibbles & Bits", type: "non-veg" },
+    { name: "Chicken Strips 5 Pcs - Peri Peri", price: 180, category: "Nibbles & Bits", type: "non-veg" },
+    { name: "Chicken Strips 5 Pcs - Plain", price: 170, category: "Nibbles & Bits", type: "non-veg" },
+    { name: "Cordon Bleu Chicken", price: 180, category: "Nibbles & Bits", type: "non-veg" },
+    { name: "Fish Fingers - Peri Peri", price: 200, category: "Nibbles & Bits", type: "non-veg" },
+    { name: "Fish Fingers", price: 180, category: "Nibbles & Bits", type: "non-veg" },
+    { name: "French Fries - Herbal", price: 130, category: "Nibbles & Bits", type: "veg" },
+    { name: "French Fries - Peri Peri", price: 120, category: "Nibbles & Bits", type: "veg" },
+    { name: "French Fries - Salted", price: 100, category: "Nibbles & Bits", type: "veg" },
+    { name: "Momo (Chicken)", price: 140, category: "Nibbles & Bits", type: "non-veg" },
+    { name: "Mushroom Omelette", price: 120, category: "Nibbles & Bits", type: "non-veg" },
+    { name: "Potato Wedges - Peri Peri", price: 140, category: "Nibbles & Bits", type: "veg" },
+    { name: "Potato Wedges - Plain", price: 130, category: "Nibbles & Bits", type: "veg" },
+    { name: "Scotch Egg", price: 160, category: "Nibbles & Bits", type: "non-veg" },
+    { name: "Veg - Loaded Fries", price: 150, category: "Nibbles & Bits", type: "veg" },
+    { name: "Wings + Fries", price: 200, category: "Nibbles & Bits", type: "non-veg" },
+
+    { name: "Black Current Chillers", price: 90, category: "Icy Sips", type: "veg" },
+    { name: "Green Apple Chillers", price: 90, category: "Icy Sips", type: "veg" },
+    { name: "Guava Chillers", price: 90, category: "Icy Sips", type: "veg" },
+    { name: "Lychee Chillers", price: 90, category: "Icy Sips", type: "veg" },
+    { name: "Mango Chillers", price: 90, category: "Icy Sips", type: "veg" },
+    { name: "Peach Chillers", price: 90, category: "Icy Sips", type: "veg" },
+    { name: "Watermelon Chillers", price: 90, category: "Icy Sips", type: "veg" },
+
+    { name: "Citrus Blue Glacier Mojito", price: 125, category: "Mojito Magic", type: "veg" },
+    { name: "Deep Blue Mojito", price: 125, category: "Mojito Magic", type: "veg" },
+    { name: "Frizzante Lemone Masala", price: 70, category: "Mojito Magic", type: "veg" },
+    { name: "Green Apple Mojito", price: 125, category: "Mojito Magic", type: "veg" },
+    { name: "Grenadine Mojito", price: 125, category: "Mojito Magic", type: "veg" },
+    { name: "Lavender Mojito", price: 125, category: "Mojito Magic", type: "veg" },
+    { name: "Lemon Mojito", price: 125, category: "Mojito Magic", type: "veg" },
+    { name: "Lychee Mojito", price: 125, category: "Mojito Magic", type: "veg" },
+    { name: "Mango Mojito", price: 120, category: "Mojito Magic", type: "veg" },
+    { name: "Passion Fruit Mojito", price: 125, category: "Mojito Magic", type: "veg" },
+    { name: "Peach Mojito", price: 125, category: "Mojito Magic", type: "veg" },
+    { name: "Watermelon Mojito", price: 125, category: "Mojito Magic", type: "veg" },
+
+    { name: "Apple Juice", price: 120, category: "Nature's Nectar", type: "veg" },
+    { name: "Carrot & Lemon Juice", price: 80, category: "Nature's Nectar", type: "veg" },
+    { name: "Carrot Juice", price: 80, category: "Nature's Nectar", type: "veg" },
+    { name: "Celery, Apple & Ginger Juice", price: 110, category: "Nature's Nectar", type: "veg" },
+    { name: "Cucumber & Carrot Juice", price: 90, category: "Nature's Nectar", type: "veg" },
+    { name: "Cucumber, Lemon & Mint Juice", price: 70, category: "Nature's Nectar", type: "veg" },
+    { name: "Fresh Lime", price: 40, category: "Nature's Nectar", type: "veg" },
+    { name: "Lemon & Celery Juice", price: 50, category: "Nature's Nectar", type: "veg" },
+    { name: "Mango Juice", price: 80, category: "Nature's Nectar", type: "veg" },
+    { name: "Mosambi Juice", price: 90, category: "Nature's Nectar", type: "veg" },
+    { name: "Muskmelon Juice", price: 80, category: "Nature's Nectar", type: "veg" },
+    { name: "Orange Juice", price: 90, category: "Nature's Nectar", type: "veg" },
+    { name: "Papaya Juice", price: 70, category: "Nature's Nectar", type: "veg" },
+    { name: "Pineapple & Carrot Juice", price: 90, category: "Nature's Nectar", type: "veg" },
+    { name: "Pineapple Juice", price: 90, category: "Nature's Nectar", type: "veg" },
+    { name: "Pomegranate Juice", price: 100, category: "Nature's Nectar", type: "veg" },
+    { name: "Watermelon Juice", price: 80, category: "Nature's Nectar", type: "veg" },
+    { name: "Zesty Pineapple Breeze", price: 90, category: "Nature's Nectar", type: "veg" },
+
+    { name: "Arabian Milkshake", price: 135, category: "Whipped Wonders", type: "veg" },
+    { name: "Avocado Mango Milkshake", price: 150, category: "Whipped Wonders", type: "veg" },
+    { name: "Avocado Banana Almonds", price: 150, category: "Whipped Wonders", type: "veg" },
+    { name: "Avocado Milkshake", price: 140, category: "Whipped Wonders", type: "veg" },
+    { name: "Black Current Milkshake", price: 125, category: "Whipped Wonders", type: "veg" },
+    { name: "Black Grape Milkshake", price: 125, category: "Whipped Wonders", type: "veg" },
+    { name: "Blue Berry Milkshake", price: 140, category: "Whipped Wonders", type: "veg" },
+    { name: "Blue Milkshake", price: 140, category: "Whipped Wonders", type: "veg" },
+    { name: "Butter Peanut", price: 130, category: "Whipped Wonders", type: "veg" },
+    { name: "Caramel Milkshake", price: 125, category: "Whipped Wonders", type: "veg" },
+    { name: "Chikku Shake", price: 130, category: "Whipped Wonders", type: "veg" },
+    { name: "ChocoButter Peanut Shake", price: 140, category: "Whipped Wonders", type: "veg" },
+    { name: "Chocolate Milkshake", price: 125, category: "Whipped Wonders", type: "veg" },
+    { name: "Dry Fruit Milkshake", price: 135, category: "Whipped Wonders", type: "veg" },
+    { name: "Lotus Biscoff Milkshake", price: 140, category: "Whipped Wonders", type: "veg" },
+    { name: "Lychee Milkshake", price: 125, category: "Whipped Wonders", type: "veg" },
+    { name: "Mango Milkshake", price: 125, category: "Whipped Wonders", type: "veg" },
+    { name: "Mango Mint Milkshake", price: 135, category: "Whipped Wonders", type: "veg" },
+    { name: "Milo Shake", price: 150, category: "Whipped Wonders", type: "veg" },
+    { name: "Oreo Milkshake", price: 125, category: "Whipped Wonders", type: "veg" },
+    { name: "Roasted Dry Fruit Shake", price: 160, category: "Whipped Wonders", type: "veg" },
+    { name: "Strawberry & Mango Shake", price: 135, category: "Whipped Wonders", type: "veg" },
+    { name: "Strawberry Milkshake", price: 125, category: "Whipped Wonders", type: "veg" },
+    { name: "Tender Coconut Milkshake", price: 135, category: "Whipped Wonders", type: "veg" },
+    { name: "Vanilla Milkshake", price: 115, category: "Whipped Wonders", type: "veg" },
+
+    { name: "Lemon Ice Tea", price: 125, category: "Frosted Leaf", type: "veg" },
+    { name: "Lychee Ice Tea", price: 125, category: "Frosted Leaf", type: "veg" },
+    { name: "Passion Fruit Ice Tea", price: 125, category: "Frosted Leaf", type: "veg" },
+    { name: "Peach Ice Tea", price: 125, category: "Frosted Leaf", type: "veg" },
+
+    { name: "Garlic Bread (4)", price: 50, category: "ADD-ON", type: "veg" },
+    { name: "Garlic Sauce", price: 20, category: "ADD-ON", type: "veg" },
+    { name: "Hash Brown", price: 40, category: "ADD-ON", type: "veg" },
+    { name: "Hummus", price: 50, category: "ADD-ON", type: "veg" }
+];
+
+let cart = {};
+let activeCoupon = null; // Track applied coupon
+
+/* --- LOCAL STORAGE HELPERS --- */
+function saveCart() {
+    localStorage.setItem('ccc_cart_v1', JSON.stringify(cart));
+}
+
+function loadCart() {
+    const savedCart = localStorage.getItem('ccc_cart_v1');
+    if (savedCart) {
+        cart = JSON.parse(savedCart);
+        renderCart(); // Update the UI immediately
+        
+        // Update the mobile floating button visual
+        const totalCount = Object.values(cart).reduce((acc, item) => acc + item.qty, 0);
+        document.getElementById('mobile-count').innerText = `(${totalCount})`;
     }
 }
 
+/* --- FILTER STATES --- */
+let currentCategory = 'All';
+let currentSearch = '';
+let currentSort = 'default';
+let currentType = 'all'; // veg, non-veg
+let currentIngredient = 'all';
+let isUnder200 = false;
 
-/* --- AMENDED: BACKGROUND ANIMATION STYLES --- */
-
-/* The Animation Container */
-.menu-bg-animation {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 0; /* Sit behind everything */
-    pointer-events: none; /* CRITICAL: Ensures clicks pass through to the buttons */
-    overflow: hidden;
+/* --- FILTER FUNCTIONS --- */
+function setCategoryFilter(cat, btn) {
+    document.querySelectorAll('.filter-item').forEach(b => b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+    currentCategory = cat;
+    renderMenu();
+    if(window.innerWidth <= 1000) {
+        document.querySelector('.main-content').scrollTop = 0;
+    }
 }
 
-/* The Shapes */
-.floating-shape {
-    position: absolute;
-    border-radius: 50%;
-    opacity: 0.06; /* KEEP THIS LOW. If you go higher, you ruin readability. */
-    filter: blur(60px); /* Softens the edges */
-    animation: floatAround 20s infinite linear;
+function updateSearch() {
+    currentSearch = document.getElementById('search-input').value;
+    renderMenu();
 }
 
-/* Shape 1: Orange Blob (Brand Color) */
-.shape-1 {
-    width: 300px;
-    height: 300px;
-    background: var(--primary);
-    top: -50px;
-    left: -50px;
-    animation-duration: 25s;
+function setSort(val) {
+    currentSort = val;
+    renderMenu();
 }
 
-/* Shape 2: Grey/Dark Blob */
-.shape-2 {
-    width: 400px;
-    height: 400px;
-    background: var(--secondary);
-    bottom: 10%;
-    right: -100px;
-    animation-duration: 35s;
-    animation-direction: reverse;
+function setType(val) {
+    currentType = val;
+    renderMenu();
 }
 
-/* Shape 3: Secondary Accent */
-.shape-3 {
-    width: 200px;
-    height: 200px;
-    background: #FFD700; /* Gold */
-    top: 40%;
-    left: 40%;
-    animation-duration: 30s;
-    opacity: 0.04;
+function setIngredient(val) {
+    currentIngredient = val;
+    renderMenu();
 }
 
-/* The Animation Keyframes */
-@keyframes floatAround {
-    0% { transform: translate(0, 0) rotate(0deg); }
-    33% { transform: translate(30px, 50px) rotate(120deg); }
-    66% { transform: translate(-20px, 20px) rotate(240deg); }
-    100% { transform: translate(0, 0) rotate(360deg); }
+function toggleUnder200(btn) {
+    isUnder200 = !isUnder200;
+    if(isUnder200) btn.classList.add('active');
+    else btn.classList.remove('active');
+    renderMenu();
 }
-[cite_start]```[cite: 376-608]
+
+/* --- FUNCTION TO COPY PROMO CODES --- */
+function copyCode(code) {
+    const couponInput = document.getElementById('coupon-input');
+    const couponBtn = document.getElementById('coupon-apply-btn');
+    couponInput.value = code;
+    couponBtn.disabled = false;
+    
+    // Hide offers page if open
+    document.getElementById('offers-view').classList.remove('active');
+    document.getElementById('main-dashboard').style.display = 'grid';
+
+    if(window.innerWidth <= 1000) { toggleCartPage(); }
+    couponInput.scrollIntoView({behavior: "smooth"});
+    couponInput.style.borderColor = "var(--primary)";
+    setTimeout(() => couponInput.style.borderColor = "#ddd", 500);
+}
+
+function toggleOffersPage() {
+    const offersView = document.getElementById('offers-view');
+    const mainDash = document.getElementById('main-dashboard');
+    if (offersView.classList.contains('active')) {
+        offersView.classList.remove('active');
+    } else {
+        offersView.classList.add('active');
+        // Reset scroll to top
+        offersView.scrollTop = 0;
+    }
+}
+
+/* --- MAIN RENDER FUNCTION --- */
+function renderMenu() {
+    const root = document.getElementById('menu-root');
+    root.innerHTML = '';
+    let filteredItems = menuData.filter(item => {
+        if (currentCategory !== 'All' && item.category !== currentCategory) return false;
+        if (currentSearch && !item.name.toLowerCase().includes(currentSearch.toLowerCase())) return false;
+        if (currentType === 'veg' && item.type !== 'veg') return false;
+        if (currentType === 'non-veg' && item.type !== 'non-veg') return false;
+        if (isUnder200 && item.price >= 200) return false;
+        if (currentIngredient !== 'all') {
+            const nameLower = item.name.toLowerCase();
+            const ingLower = currentIngredient.toLowerCase();
+            if(ingLower === 'paneer') {
+                if(!nameLower.includes('paneer')) return false;
+            } else {
+                if(!nameLower.includes(ingLower)) return false;
+            }
+        }
+        return true;
+    });
+
+    if (currentSort === 'low-high') {
+        filteredItems.sort((a, b) => a.price - b.price);
+    } else if (currentSort === 'high-low') {
+        filteredItems.sort((a, b) => b.price - a.price);
+    }
+
+    if (filteredItems.length === 0) {
+        root.innerHTML = '<div style="grid-column: 1/-1; text-align:center; color:#999; padding: 20px;">No items found matching your filters.</div>';
+        return;
+    }
+
+    filteredItems.forEach((item, index) => {
+        const originalIndex = menuData.indexOf(item);
+        const card = document.createElement('div');
+        card.className = `food-card ${item.type}`;
+        card.id = `card-${originalIndex}`;
+        
+        const emojiStr = item.type === 'veg' ? vegIcon : nonVegIcon;
+        
+        card.innerHTML = `
+            <div class="card-top">
+                <div class="food-title">
+                    <span class="type-emoji">${emojiStr}</span>
+                    ${item.name}
+                </div>
+                <div class="food-meta">${item.category}</div>
+           </div>
+            <div class="price-row">
+                <div class="price">${rupeeSign}${item.price}</div>
+                <button class="add-btn-mini" onclick="openOptionModal(${originalIndex})">
+                    ADD <i class="fas fa-plus"></i>
+                </button>
+         </div>
+        `;
+        root.appendChild(card);
+    });
+}
+
+/* --- CUSTOMIZATION LOGIC --- */
+let tempSelectedItemIndex = null;
+
+function openOptionModal(index) {
+    const item = menuData[index];
+    tempSelectedItemIndex = index;
+    
+    // 1. Define Options Logic based on Category
+    let availableOptions = [];
+    const cheeseCats = ["Bun-Tastic Burgers", "Italian Indulgence", "Freshly Folded", "Toasty Treats"];
+    if (cheeseCats.includes(item.category)) {
+        availableOptions.push({ name: "Extra Cheese", price: 15 });
+    }
+
+    // --- Bun-Tastic Burgers Specific Logic ---
+    if (item.category === "Bun-Tastic Burgers") {
+        const friedEggEligible = [
+            "Chicken Slider Burger - Pesto",
+            "Chicken Slider Burger - Tandoori",
+            "Cloud Special Chicken Burger",
+            "Egg Burger",
+            "Pesto Chicken Burger",
+            "Tandoori Burger Chicken",
+            "Tandoori Special Chicken Burger",
+            "Tropical Beef Burger",
+            "Tropical Pesto Chicken Burger",
+            "Tropical Tandoori Chicken Burger",
+            "Classic Beef Burger",
+            "Double Decker Beef Burger"
+        ];
+        if (friedEggEligible.includes(item.name)) {
+            availableOptions.push({ name: "Add Fried Egg (Non-Veg)", price: 20 });
+        }
+    }
+    
+    // --- Italian Indulgence Logic ---
+    if (item.category === "Italian Indulgence") {
+        // Standard option for all pastas
+        availableOptions.push({ name: "Garlic Bread", price: 40 });
+        // Extra Chicken (Chicken items only)
+        if (item.name.toLowerCase().includes('chicken')) {
+            availableOptions.push({ name: "Extra Chicken (Non-Veg)", price: 60 });
+        }
+        
+        // NEW: Extra Shrimp (Shrimp items only)
+        if (item.name.toLowerCase().includes('shrimp')) {
+            availableOptions.push({ name: "Extra Shrimp (Non-Veg)", price: 90 });
+        }
+    }
+    
+    if (item.category === "Butcher's Best") {
+        availableOptions.push({ name: "Extra Hashbrown", price: 40 });
+        availableOptions.push({ name: "Tossed Rice", price: 40 });
+        availableOptions.push({ name: "Sorted / Boiled Vegges", price: 40 });
+        availableOptions.push({ name: "Sunny Sideup (Non-Veg)", price: 25 });
+        
+        // Hummus logic (Excludes Fish)
+        if (!item.name.toLowerCase().includes('fish')) {
+            availableOptions.push({ name: "Hummus (Veg)", price: 40 });
+        }
+    }
+
+    // --- Rice Harmony Logic ---
+    if (item.category === "Rice Harmony") {
+        // Option 1: Extra Chicken (Only for Chicken items)
+        if (item.name.toLowerCase().includes('chicken')) {
+            availableOptions.push({ name: "Extra Chicken (Non-Veg)", price: 40 });
+        }
+        // Option 2: Extra Paneer (Only for Veg items)
+        if (item.type === 'veg') {
+            availableOptions.push({ name: "Extra Paneer (Veg)", price: 30 });
+        }
+    }
+    
+    if (item.category === "Whipped Wonders") {
+        availableOptions.push({ name: "Extra Ice Cream (Thick Shake)", price: 30 });
+    }
+
+    // 2. If no options and not an add-on, force modal only for Special Note, unless it is ADD-ON
+    if (availableOptions.length === 0 && item.category === "ADD-ON") {
+        // Pass basePrice as both final and base since no options exist
+        addToCart(item.name, item.price, item.price, item.type, item.category);
+        return;
+    }
+
+    // 3. Render Modal
+    document.getElementById('modal-item-title').innerText = item.name;
+    document.getElementById('modal-item-base-price').innerText = `Base Price: ${rupeeSign}${item.price}`;
+    const container = document.getElementById('modal-options-wrapper');
+    container.innerHTML = '';
+
+    // Render Checkboxes
+    availableOptions.forEach((opt, i) => {
+        container.innerHTML += `
+            <div class="custom-option-row">
+                <label class="custom-option-label">
+                    <input type="checkbox" class="modal-opt-checkbox" 
+                           data-name="${opt.name}" 
+                           data-price="${opt.price}" 
+                           onchange="updateModalTotal()"> 
+                    ${opt.name}
+                </label>
+               <span class="custom-option-price">+${rupeeSign}${opt.price}</span>
+            </div>
+        `;
+    });
+    // Render Note Input
+    container.innerHTML += `
+        <div style="margin-top:15px;">
+            <label style="font-size:0.8rem; color:var(--grey-text);">Special Note:</label>
+            <input type="text" id="modal-note-input" class="note-input" placeholder="e.g. Spicy, No Mayo">
+        </div>
+    `;
+    document.getElementById('customization-modal').style.display = 'flex';
+    updateModalTotal(); // Set initial price
+}
+function updateModalTotal() {
+    if (tempSelectedItemIndex === null) return;
+    const item = menuData[tempSelectedItemIndex];
+    let currentTotal = item.price;
+
+    const checkboxes = document.querySelectorAll('.modal-opt-checkbox:checked');
+    checkboxes.forEach(cb => {
+        currentTotal += parseInt(cb.dataset.price);
+    });
+
+    document.getElementById('modal-live-total').innerText = `${rupeeSign}${currentTotal}`;
+}
+
+function addToCartFromModal() {
+    if (tempSelectedItemIndex === null) return;
+    const item = menuData[tempSelectedItemIndex];
+    
+    const checkboxes = document.querySelectorAll('.modal-opt-checkbox:checked');
+    let finalPrice = item.price;
+    let modifiers = [];
+
+    checkboxes.forEach(cb => {
+        finalPrice += parseInt(cb.dataset.price);
+        modifiers.push(cb.dataset.name);
+    });
+    const noteInput = document.getElementById('modal-note-input');
+    const noteText = noteInput ? noteInput.value.trim() : '';
+    
+    let displayName = item.name;
+    if(modifiers.length > 0) displayName += ` [${modifiers.join(', ')}]`;
+    if(noteText) displayName += ` (Note: ${noteText})`;
+    // IMPORTANT: Pass both finalPrice AND item.price (basePrice)
+    addToCart(displayName, finalPrice, item.price, item.type, item.category);
+    closeCustomizationModal();
+}
+
+function closeCustomizationModal() {
+    document.getElementById('customization-modal').style.display = 'none';
+    tempSelectedItemIndex = null;
+}
+
+/* --- CART FUNCTIONS (UPDATED WITH LOCAL STORAGE) --- */
+
+function addToCart(name, finalPrice, basePrice, type, category) {
+    if (cart[name]) {
+        cart[name].qty++;
+    } else {
+        cart[name] = { 
+            price: finalPrice, 
+            basePrice: basePrice, // Store Base Price for offers
+            qty: 1, 
+            type: type, 
+            category: category 
+        };
+    }
+    saveCart(); // Save changes
+    renderCart();
+    const btn = document.querySelector('.mobile-cart-btn');
+    btn.style.transform = "scale(1.2)";
+    setTimeout(() => btn.style.transform = "scale(1)", 200);
+}
+
+function updateQty(name, change) {
+    if (cart[name]) {
+        cart[name].qty += change;
+        if (cart[name].qty <= 0) {
+            delete cart[name];
+        }
+        saveCart(); // Save changes
+        renderCart();
+    }
+}
+
+/* --- COMBO REQUIREMENTS --- */
+function checkComboRequirements(codeToCheck) {
+    if (codeToCheck === 'CLOUD15') {
+        let burgerQty = 0;
+        let friesQty = 0; let drinkQty = 0;
+        for (let key in cart) {
+            const item = cart[key];
+            if (item.category === 'Bun-Tastic Burgers') burgerQty += item.qty;
+            if (key.includes('French Fries')) friesQty += item.qty;
+            if (item.category === 'Icy Sips') drinkQty += item.qty;
+        }
+        return burgerQty === 1 && friesQty === 1 && drinkQty === 1;
+    }
+    if (codeToCheck === 'STEAK13') {
+        let steakQty = 0;
+        let whippedQty = 0;
+        for (let key in cart) {
+            const item = cart[key];
+            if (item.category === "Butcher's Best") steakQty += item.qty;
+            if (item.category === "Whipped Wonders") whippedQty += item.qty;
+        }
+        return steakQty === 1 && whippedQty === 1;
+    }
+    if (codeToCheck === 'QUICK20') {
+        let wrapQty = 0;
+        let sideQty = 0;
+        for (let key in cart) {
+            const item = cart[key];
+            if (item.category === "Freshly Folded") wrapQty += item.qty;
+            if (key.includes("French Fries") || key === "Chicken Nuggets") sideQty += item.qty;
+        }
+        return wrapQty === 1 && sideQty === 1;
+    }
+    if (codeToCheck === 'FEAST14') {
+        let burgerQty = 0;
+        let mainCourseQty = 0; let loadedFriesQty = 0; let drinkQty = 0;
+        for (let key in cart) {
+            const item = cart[key];
+            if (item.category === "Bun-Tastic Burgers") burgerQty += item.qty;
+            if (item.category === "Italian Indulgence" || item.category === "Rice Harmony") mainCourseQty += item.qty;
+            if (key.includes("Loaded Fries")) loadedFriesQty += item.qty;
+            if (item.category === "Nature's Nectar") drinkQty += item.qty;
+        }
+        return burgerQty === 2 && mainCourseQty === 2 && loadedFriesQty === 1 && drinkQty === 4;
+    }
+    return false;
+}
+
+function isSundayPasta(name) {
+    const n = name.toLowerCase();
+    if (!n.includes('penne')) return false;
+    if (!n.includes('chicken') && !n.includes('veg')) return false;
+    if (n.includes('black garlic')) return false;
+    if (n.includes('pesto') || n.includes('alfredo') || n.includes('arabiata') || n.includes('cloud special')) {
+        return true;
+    }
+    return false;
+}
+
+/* --- UPDATED APPLY COUPON FUNCTION --- */
+function applyCoupon() {
+    const codeInput = document.getElementById('coupon-input');
+    const msgBox = document.getElementById('coupon-msg');
+    const code = codeInput.value.trim().toUpperCase();
+    
+    const todayIndex = new Date().getDay();
+    // 0=Sun, 1=Mon, 2=Tue, 3=Wed...
+
+    // 1. MONDAY: MONBURGER
+    if (code === 'MONBURGER') {
+        if(todayIndex !== 1) { 
+            msgBox.innerText = "This code is only valid on Mondays!";
+            msgBox.className = "coupon-msg error";
+            activeCoupon = null; renderCart(); return;
+        }
+        activeCoupon = 'MONBURGER';
+        msgBox.innerText = "Meat-Up Monday Applied!";
+        msgBox.className = "coupon-msg success";
+        renderCart();
+        return;
+    }
+
+    // 2. TUESDAY: TUEPASTA
+    if (code === 'TUEPASTA') {
+        if(todayIndex !== 2) { 
+            msgBox.innerText = "This code is only valid on Tuesdays!";
+            msgBox.className = "coupon-msg error";
+            activeCoupon = null; renderCart(); return;
+        }
+        activeCoupon = 'TUEPASTA';
+        msgBox.innerText = "Twisted Tuesday Applied!";
+        msgBox.className = "coupon-msg success";
+        renderCart();
+        return;
+    }
+
+    // 3. WEDNESDAY: WEDSTEAK (STEAK ONLY)
+    if (code === 'WEDSTEAK') {
+        if(todayIndex !== 3) { 
+            msgBox.innerText = "This code is only valid on Wednesdays!";
+            msgBox.className = "coupon-msg error";
+            activeCoupon = null; renderCart(); return;
+        }
+        activeCoupon = 'WEDSTEAK';
+        msgBox.innerText = "Wicked Wednesday (Steak) Applied!";
+        msgBox.className = "coupon-msg success";
+        renderCart();
+        return;
+    }
+
+    // 3b. WEDNESDAY: WEDSHAKE (SHAKE ONLY)
+    if (code === 'WEDSHAKE') {
+        if(todayIndex !== 3) { 
+            msgBox.innerText = "This code is only valid on Wednesdays!";
+            msgBox.className = "coupon-msg error";
+            activeCoupon = null; renderCart(); return;
+        }
+        activeCoupon = 'WEDSHAKE';
+        msgBox.innerText = "Wicked Wednesday (Shake) Applied!";
+        msgBox.className = "coupon-msg success";
+        renderCart();
+        return;
+    }
+
+    // 4. THURSDAY: THUSAND
+    if (code === 'THUSAND') {
+        if(todayIndex !== 4) { 
+            msgBox.innerText = "This code is only valid on Thursdays!";
+            msgBox.className = "coupon-msg error";
+            activeCoupon = null; renderCart(); return;
+        }
+        let sandQty = 0;
+        let chillQty = 0;
+        for(let key in cart) {
+            if(cart[key].category === 'Toasty Treats') sandQty += cart[key].qty;
+            if(cart[key].category === 'Icy Sips') chillQty += cart[key].qty;
+        }
+        if(sandQty >= 1 && chillQty >= 1) {
+            activeCoupon = 'THUSAND';
+            msgBox.innerText = "Thursday Club Applied!";
+            msgBox.className = "coupon-msg success";
+        } else {
+            msgBox.innerText = "Add 1 Sandwich & 1 Chiller to apply!";
+            msgBox.className = "coupon-msg error";
+            activeCoupon = null;
+        }
+        renderCart();
+        return;
+    }
+
+    // 5. FRIDAY: FRIFRIES
+    if (code === 'FRIFRIES') {
+        if(todayIndex !== 5) { 
+            msgBox.innerText = "This code is only valid on Fridays!";
+            msgBox.className = "coupon-msg error";
+            activeCoupon = null; renderCart(); return;
+        }
+        activeCoupon = 'FRIFRIES';
+        msgBox.innerText = "Fri-Yay Fry-Day Applied!";
+        msgBox.className = "coupon-msg success";
+        renderCart();
+        return;
+    }
+
+    // 6. SATURDAY: SATROLL
+    if (code === 'SATROLL') {
+        if(todayIndex !== 6) { 
+            msgBox.innerText = "This code is only valid on Saturdays!";
+            msgBox.className = "coupon-msg error";
+            activeCoupon = null; renderCart(); return;
+        }
+        activeCoupon = 'SATROLL';
+        msgBox.innerText = "Rock n' Roll Saturday Applied!";
+        msgBox.className = "coupon-msg success";
+        renderCart();
+        return;
+    }
+
+    // 0. SUNDAY: SUNFEAST
+    if (code === 'SUNFEAST') {
+        if(todayIndex !== 0) { 
+            msgBox.innerText = "This code is only valid on Sundays!";
+            msgBox.className = "coupon-msg error";
+            activeCoupon = null; renderCart(); return;
+        }
+        let pastaQty = 0;
+        let sliderQty = 0; let shakeQty = 0;
+        for(let key in cart) {
+            // Strict check for Pasta
+            if(cart[key].category === 'Italian Indulgence' && isSundayPasta(key)) {
+                pastaQty += cart[key].qty;
+            }
+            // Slider Check
+            if(cart[key].category === 'Bun-Tastic Burgers' && key.includes("Slider")) {
+                sliderQty += cart[key].qty;
+            }
+            // Shake Check
+            if(cart[key].category === 'Whipped Wonders') {
+                shakeQty += cart[key].qty;
+            }
+        }
+
+        if(pastaQty >= 1 && sliderQty >= 1 && shakeQty >= 1) {
+            activeCoupon = 'SUNFEAST';
+            msgBox.innerText = "Sunday Feast Applied!";
+            msgBox.className = "coupon-msg success";
+        } else {
+            msgBox.innerText = "Need 1 Valid Penne + 1 Slider + 1 Shake";
+            msgBox.className = "coupon-msg error";
+            activeCoupon = null;
+        }
+        renderCart();
+        return;
+    }
+
+    // --- OLD CODES ---
+    if (code === 'CLOUD15') {
+        if (checkComboRequirements('CLOUD15')) { activeCoupon = 'CLOUD15';
+            msgBox.innerText = "Coupon Applied! 15% Off"; msgBox.className = "coupon-msg success";
+        } 
+        else { msgBox.innerText = "Strictly: 1 Burger, 1 Fries & 1 Drink";
+            msgBox.className = "coupon-msg error"; activeCoupon = null; }
+        renderCart(); return;
+    }
+    if (code === 'STEAK13') {
+        if (checkComboRequirements('STEAK13')) { activeCoupon = 'STEAK13';
+            msgBox.innerText = "Steak & Sip Applied! 13% Off"; msgBox.className = "coupon-msg success";
+        } 
+        else { msgBox.innerText = "Strictly: 1 Butcher's Best & 1 Shake";
+            msgBox.className = "coupon-msg error"; activeCoupon = null; }
+        renderCart(); return;
+    }
+    if (code === 'QUICK20') {
+        if (checkComboRequirements('QUICK20')) { activeCoupon = 'QUICK20';
+            msgBox.innerText = "Quick Bite Applied! 20% Off"; msgBox.className = "coupon-msg success";
+        } 
+        else { msgBox.innerText = "Strictly: 1 Wrap & 1 Side";
+            msgBox.className = "coupon-msg error"; activeCoupon = null; }
+        renderCart(); return;
+    }
+    if (code === 'FEAST14') {
+        if (checkComboRequirements('FEAST14')) { activeCoupon = 'FEAST14';
+            msgBox.innerText = "Cloud Feast Applied! 14% Off"; msgBox.className = "coupon-msg success";
+        } 
+        else { msgBox.innerText = "Requirements missing for Feast";
+            msgBox.className = "coupon-msg error"; activeCoupon = null; }
+        renderCart(); return;
+    }
+
+    msgBox.innerText = "Invalid or Expired Code";
+    msgBox.className = "coupon-msg error";
+    activeCoupon = null;
+    renderCart();
+}
+
+/* --- UPDATED RENDER CART --- */
+function renderCart() {
+    const list = document.getElementById('cart-items-list');
+    list.innerHTML = '';
+    let subTotal = 0;
+    let packingTotal = 0;
+    let totalCount = 0;
+    let hasItems = false;
+    const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
+
+    // 1. Calculate Standard Totals
+    for (let key in cart) {
+        hasItems = true;
+        const item = cart[key];
+        const itemTotal = item.price * item.qty;
+        // price is finalPrice
+        subTotal += itemTotal;
+        totalCount += item.qty;
+        let chargePerItem = 0;
+        if (item.category === 'ADD-ON') {
+            if (key.startsWith("Hummus")) chargePerItem = 7;
+            else chargePerItem = 5;
+        } else if (fiveRsCats.includes(item.category)) {
+            chargePerItem = 5;
+        } else {
+            chargePerItem = 10;
+        }
+        packingTotal += (chargePerItem * item.qty);
+        if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) {
+            packingTotal += (7 * item.qty);
+        }
+
+        list.innerHTML += `
+            <div class="cart-item">
+                <div class="cart-details">
+                    <span class="cart-name">${key}</span>
+                    <span class="cart-price">${rupeeSign}${item.price}</span>
+                </div>
+              <div class="qty-wrapper">
+                    <button class="qty-btn" onclick="updateQty('${key}', -1)">−</button>
+                    <span>${item.qty}</span>
+                    <button class="qty-btn" onclick="updateQty('${key}', 1)">+</button>
+                </div>
+         </div>
+        `;
+    }
+
+    if(!hasItems) list.innerHTML = `<div style="text-align: center; color: #ccc; margin-top: 50px;">Cart is empty</div>`;
+    // --- DYNAMIC DISCOUNT CALCULATION (STRICT BASE PRICE) ---
+    let discountVal = 0;
+    let discountText = "";
+    // MONDAY LOGIC: (Chicken Base + Fries Base) - 222
+    if(activeCoupon === 'MONBURGER') {
+        let foundChicken = false;
+        let chickenBasePrice = 0;
+        let foundFries = false; 
+        let friesBasePrice = 0;
+        let foundBeef = false;
+        for(let key in cart) {
+            let item = cart[key];
+            // 1. Find Strictly 1 Chicken Burger
+            if(!foundChicken && item.category === 'Bun-Tastic Burgers' && key.toLowerCase().includes('chicken')) {
+                foundChicken = true;
+                chickenBasePrice = item.basePrice;
+            }
+            // 2. Find Strictly 1 Fries (Salted or Peri Peri)
+            if(!foundFries && (key === "French Fries - Salted" || key === "French Fries - Peri Peri")) {
+                foundFries = true;
+                friesBasePrice = item.basePrice;
+            }
+            // 3. Find Strictly 1 Beef Burger (20 OFF Base)
+            if(!foundBeef && item.category === 'Bun-Tastic Burgers' && key.toLowerCase().includes('beef')) {
+                foundBeef = true;
+                discountVal += 20; 
+            }
+        }
+
+        if(foundChicken && foundFries) {
+            let comboBaseTotal = chickenBasePrice + friesBasePrice;
+            if(comboBaseTotal > 222) {
+                discountVal += (comboBaseTotal - 222);
+            }
+        }
+        discountText = "Monday Special Applied";
+    }
+
+    // TUESDAY LOGIC: Pasta @ 179 (Base Price)
+    if(activeCoupon === 'TUEPASTA') {
+        for(let key in cart) {
+            let item = cart[key];
+            if(item.category === 'Italian Indulgence') {
+                    if(item.basePrice > 179) discountVal += (item.basePrice - 179) * item.qty;
+            }
+        }
+        discountText = "Tuesday Pasta Treat";
+    }
+
+    // WEDNESDAY LOGIC - STEAK ONLY (Max 1 @ 300 Base)
+    if(activeCoupon === 'WEDSTEAK') {
+        let steakDiscounted = 0;
+        for(let key in cart) {
+            let item = cart[key];
+            if(item.category === "Butcher's Best" && steakDiscounted < 1) {
+                if(item.basePrice > 300) {
+                    discountVal += (item.basePrice - 300);
+                    steakDiscounted++;
+                }
+            }
+        }
+        discountText = "Wed Special (Max 1 Steak)";
+    }
+
+    // WEDNESDAY LOGIC - SHAKE ONLY (Max 1 @ 120 Base)
+    if(activeCoupon === 'WEDSHAKE') {
+        let shakeDiscounted = 0;
+        for(let key in cart) {
+            let item = cart[key];
+            if(item.category === "Whipped Wonders" && key !== "Vanilla Milkshake" && shakeDiscounted < 1) {
+                if(item.basePrice > 120) {
+                    discountVal += (item.basePrice - 120);
+                    shakeDiscounted++;
+                }
+            }
+        }
+        discountText = "Wed Special (Max 1 Shake)";
+    }
+
+    // THURSDAY LOGIC: Sandwich + Chiller = 189 (Base Total)
+    if(activeCoupon === 'THUSAND') {
+        let sandBase = 0;
+        let chillBase = 0;
+        let sandFound = false;
+        let chillFound = false;
+        for(let key in cart) {
+            let item = cart[key];
+            if(!sandFound && item.category === 'Toasty Treats') {
+                sandBase = item.basePrice;
+                sandFound = true;
+            }
+            if(!chillFound && item.category === 'Icy Sips') {
+                chillBase = item.basePrice;
+                chillFound = true;
+            }
+        }
+        
+        if(sandFound && chillFound) {
+            let baseTotal = sandBase + chillBase;
+            if(baseTotal > 189) discountVal = baseTotal - 189;
+        }
+        discountText = "Thursday Club";
+    }
+
+    // FRIDAY LOGIC (Fries Base Price)
+    if(activeCoupon === 'FRIFRIES') {
+        let friesCount = 0;
+        for (let key in cart) {
+            if (friesCount < 1) {
+                let item = cart[key];
+                if (key === "Veg - Loaded Fries") {
+                    discountVal += (item.basePrice - 119);
+                    friesCount++;
+                } else if (key === "Chicken Loaded Fries" || key === "Beef Loaded Fries") {
+                    discountVal += (item.basePrice - 179);
+                    friesCount++;
+                }
+            }
+        }
+        discountText = "Fri-Yay Fries (Max 1)";
+    }
+    
+    // SATURDAY LOGIC (Rolls Base Price)
+    if(activeCoupon === 'SATROLL') {
+            let rollDiscounted = 0;
+            for(let key in cart) {
+                let item = cart[key];
+                if(item.category === "Freshly Folded" && rollDiscounted < 1) {
+                    if(item.basePrice > 129) {
+                        discountVal += (item.basePrice - 129);
+                        rollDiscounted++;
+                    }
+                }
+            }
+            discountText = "Sat Special (Max 1 Roll)";
+    }
+    
+    // SUNDAY LOGIC: Combo Base Price - 399
+    if(activeCoupon === 'SUNFEAST') {
+        let foundPasta = false;
+        let foundSlider = false;
+        let foundShake = false;
+        let comboBaseTotal = 0;
+        for(let key in cart) {
+            let item = cart[key];
+            // Take price of 1 Pasta
+            if(!foundPasta && item.category === 'Italian Indulgence' && isSundayPasta(key)) {
+                comboBaseTotal += item.basePrice;
+                foundPasta = true;
+            }
+            // Take price of 1 Slider
+            else if(!foundSlider && item.category === 'Bun-Tastic Burgers' && key.includes("Slider")) {
+                comboBaseTotal += item.basePrice;
+                foundSlider = true;
+            }
+            // Take price of 1 Shake
+            else if(!foundShake && item.category === 'Whipped Wonders') {
+                comboBaseTotal += item.basePrice;
+                foundShake = true;
+            }
+        }
+        
+        if (foundPasta && foundSlider && foundShake) {
+            if (comboBaseTotal > 399) {
+                discountVal = comboBaseTotal - 399;
+            } else {
+                discountVal = 0;
+            }
+            discountText = "Sunday Feast (Combo @ 399)";
+        }
+    }
+
+    // PERCENTAGE CODES: Apply to Base Price Total of Cart
+    // Note: Previously this applied to final subTotal.
+    if(activeCoupon === 'CLOUD15' || activeCoupon === 'STEAK13' || activeCoupon === 'QUICK20' || activeCoupon === 'FEAST14') {
+        let cartBaseTotal = 0;
+        // Logic check: Strict combo requirements are checked in applyCoupon.
+        // If requirements met, we discount the eligible items or the whole cart?
+        // "Get flat 15% discount on the total" -> Usually implies bill total.
+        // BUT strict request says "offers apply on base price only".
+        // So we calculate Total Base Price of the cart and discount that.
+        for(let key in cart) {
+            cartBaseTotal += (cart[key].basePrice * cart[key].qty);
+        }
+
+        if(activeCoupon === 'CLOUD15') { discountVal = Math.round(cartBaseTotal * 0.15);
+            discountText = "Coupon (15% OFF)"; }
+        if(activeCoupon === 'STEAK13') { discountVal = Math.round(cartBaseTotal * 0.13);
+            discountText = "Steak & Sip (13% OFF)"; }
+        if(activeCoupon === 'QUICK20') { discountVal = Math.round(cartBaseTotal * 0.20);
+            discountText = "Quick Bite (20% OFF)"; }
+        if(activeCoupon === 'FEAST14') { discountVal = Math.round(cartBaseTotal * 0.14);
+            discountText = "Cloud Feast (14% OFF)"; }
+    }
+
+    const discountRow = document.getElementById('discount-row');
+    if (discountVal > 0) {
+        discountRow.style.display = 'flex';
+        discountRow.querySelector('span:first-child').innerText = discountText;
+        document.getElementById('discount-total').innerText = `- ${rupeeSign}${discountVal}`;
+    } else {
+        discountRow.style.display = 'none';
+    }
+
+    // --- NEW: INJECT UPSELL MESSAGE ---
+    const upsellBox = document.getElementById('upsell-msg');
+    const opportunity = getUpsellMessage(cart);
+
+    // Only show if we found an opportunity AND no coupon is currently active
+    if (opportunity && !activeCoupon) {
+        upsellBox.innerText = opportunity;
+        upsellBox.style.display = 'block';
+    } else {
+        upsellBox.style.display = 'none';
+    }
+    // ----------------------------------
+
+    let grandTotal = (subTotal - discountVal) + packingTotal;
+
+    document.getElementById('sub-total').innerText = rupeeSign + subTotal;
+    document.getElementById('packing-total').innerText = rupeeSign + packingTotal;
+    document.getElementById('grand-total').innerText = rupeeSign + grandTotal;
+    document.getElementById('mobile-count').innerText = `(${totalCount})`;
+
+    const checkoutBtn = document.getElementById('main-checkout-btn');
+    if(!hasItems) {
+        checkoutBtn.innerText = "Cart Empty";
+        checkoutBtn.disabled = true;
+    } else if (grandTotal < MIN_ORDER_VAL) {
+        checkoutBtn.innerText = `Min Order ${rupeeSign}${MIN_ORDER_VAL}`;
+        checkoutBtn.disabled = true;
+    } else {
+        checkoutBtn.innerText = "Confirm Order";
+        checkoutBtn.disabled = false;
+    }
+}
+
+function toggleCartPage() { document.getElementById('cart-sidebar').classList.toggle('active'); }
+function openCheckoutModal() { document.getElementById('checkout-modal').style.display = 'flex'; toggleOrderFields(); }
+function closeCheckoutModal() { document.getElementById('checkout-modal').style.display = 'none';
+}
+function toggleOrderFields() {
+    const type = document.querySelector('input[name="orderType"]:checked').value;
+    const addrGroup = document.getElementById('address-group');
+    const timeLabel = document.getElementById('time-label');
+    if(type === 'Pickup') { addrGroup.style.display = 'none'; timeLabel.innerText = "Preferred Pickup Time";
+    } 
+    else { addrGroup.style.display = 'block'; timeLabel.innerText = "Preferred Delivery Time";
+    }
+}
+
+function checkStoreStatus(orderType) {
+    const now = new Date();
+    const hour = now.getHours();
+    if (orderType === 'Delivery') {
+        if (hour >= 14 || hour < 3) return { isOpen: true };
+        return { isOpen: false, msg: "Delivery is only available from 2:00 PM to 3:00 AM." };
+    }
+    if (orderType === 'Pickup') {
+        if (hour >= 15 || hour < 3) return { isOpen: true };
+        return { isOpen: false, msg: "Pickup/Dine-In is only available from 3:00 PM to 3:00 AM." };
+    }
+    return { isOpen: true };
+}
+
+function finalizeOrder() {
+    const type = document.querySelector('input[name="orderType"]:checked').value;
+    const status = checkStoreStatus(type);
+    if (!status.isOpen) { alert("Store Closed!\n" + status.msg); return; }
+
+    const name = document.getElementById('c-name').value.trim();
+    const phone = document.getElementById('c-phone').value.trim();
+    const email = document.getElementById('c-email').value.trim();
+    const address = document.getElementById('c-address').value.trim();
+    const time = document.getElementById('c-time').value;
+    const instruction = document.getElementById('c-instruction').value.trim();
+    if(!name || !phone || !email || !time) { alert("Please fill in Name, Phone, Email and Time."); return;
+    }
+    if(type === 'Delivery' && !address) { alert("Please fill in the Delivery Address."); return;
+    }
+    if (!/^[0-9]{10,12}$/.test(phone)) { alert("Strict Policy: Phone number must be 10-12 digits."); return;
+    }
+    if (!email.includes('@')) { alert("Strict Policy: Invalid Email."); return;
+    }
+
+    const orderId = Math.floor(100000 + Math.random() * 900000);
+    const now = new Date();
+    const timeString = now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+
+    let msg = `*New Order @ Café Cloud Club*\n`;
+    msg += `*Type:* ${type.toUpperCase()}\n*Time:* ${timeString}\n*Order ID:* ${orderId}\n---------------------------\n`;
+    msg += `*Name:* ${name}\n*Phone:* ${phone}\n*Email:* ${email}\n*Time:* ${time}\n`;
+    if(type === 'Delivery') msg += `*Address:* ${address}\n`;
+    if(instruction) msg += `*Note:* ${instruction}\n`;
+    
+    msg += `---------------------------\n*ITEMS:*\n`;
+    let subTotal = 0;
+    let packingTotal = 0;
+    const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
+    for(let key in cart) {
+        let item = cart[key];
+        let lineTotal = item.price * item.qty;
+        subTotal += lineTotal;
+        let chargePerItem = 10;
+        if (item.category === 'ADD-ON') chargePerItem = key.startsWith("Hummus") ? 7 : 5;
+        else if (fiveRsCats.includes(item.category)) chargePerItem = 5;
+        packingTotal += (chargePerItem * item.qty);
+        if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
+        // --- NEW: Added Diet Tag Logic Here ---
+        let dietTag = item.type === 'veg' ? '[VEG]' : '[NON-VEG]';
+        msg += `• ${dietTag} ${key} x ${item.qty} = Rs. ${lineTotal}\n`;
+    }
+    
+    let discountVal = 0; let couponName = "";
+    // Re-calculate discount for WhatsApp message
+    if(activeCoupon) { 
+            couponName = activeCoupon;
+            discountVal = parseInt(document.getElementById('discount-total').innerText.replace(/[^\d]/g, ''));
+    }
+
+    let grandTotal = (subTotal - discountVal) + packingTotal;
+    msg += `---------------------------\nSub Total: Rs. ${subTotal}\n`;
+    if (discountVal > 0) msg += `*Coupon (${couponName}): -Rs. ${discountVal}*\n`;
+    msg += `Packing: Rs. ${packingTotal}\n*TOTAL: Rs. ${grandTotal}*\n`;
+    
+    // --- NEW: Updated Delivery Fee Text Here ---
+    if(type === 'Delivery') msg += `\n_Delivery fee calculated by Delivery Agent._`;
+    const encodedMsg = encodeURIComponent(msg);
+    const finalUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
+
+    // --- NEW: WIPE CART AFTER ORDER ---
+    cart = {}; // Clear memory
+    localStorage.removeItem('ccc_cart_v1'); // Clear storage
+    renderCart(); // Clear UI visually
+    // ----------------------------------
+
+    document.getElementById('main-dashboard').style.display = 'none';
+    document.getElementById('checkout-modal').style.display = 'none';
+    document.getElementById('success-view').style.display = 'flex';
+    document.getElementById('customer-name-display').innerText = name;
+    document.getElementById('send-wa-btn').onclick = function() { window.open(finalUrl, '_blank'); };
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadCart(); // Load saved cart first
+    renderMenu();
+    const cInput = document.getElementById('coupon-input');
+    const cBtn = document.getElementById('coupon-apply-btn');
+    cInput.addEventListener('input', function() { cBtn.disabled = this.value.trim().length === 0; });
+    
+    // --- NEW TICKER LOGIC ---
+    const dayIndex = new Date().getDay();
+    const dailyOfferTexts = [
+        "SUNDAY SPECIAL: Fam-Jam Feast! 1 Pasta + 1 Slider + 1 Shake = ₹399. Use Code: SUNFEAST", // 0
+        "MEAT-UP MONDAY: Burger + Fries = ₹222. Strictly 1 Beef Burger gets ₹20 OFF. Use Code: MONBURGER", // 1
+        "TWISTED TUESDAY: All Pastas Flat at ₹179. Use Code: TUEPASTA", // 2
+        "WICKED WEDNESDAY: Steak @ ₹300 (Code: WEDSTEAK) OR Premium Shake @ ₹120 (Code: WEDSHAKE)", // 3
+        "THURSDAY CLUB: Any Sandwich + Any Chiller = ₹189. Use Code: THUSAND", // 4
+        "FRI-YAY FRY-DAY: Veg Loaded Fries ₹119 | Chicken Loaded Fries ₹179. Use Code: FRIFRIES", // 5
+        "ROCK N' ROLL SATURDAY: Any Roll (Tandoori, Pesto, Chipotle) for ₹129. Use Code: SATROLL" // 6
+    ];
+    
+    const tickerElement = document.getElementById('daily-ticker-text');
+    if(tickerElement) {
+        tickerElement.innerText = dailyOfferTexts[dayIndex];
+    }
+});
+
+/* --- RETURN TO MENU FUNCTION --- */
+function returnToMenu() {
+    // Hide success screen
+    document.getElementById('success-view').style.display = 'none';
+    
+    // Show dashboard
+    // Resetting to empty string allows the CSS rules (flex/grid) to take over again
+    document.getElementById('main-dashboard').style.display = ''; 
+}
+
+/* --- NEW UPSELL LOGIC ENGINE --- */
+function getUpsellMessage(cart) {
+    let hasBurger = false;
+    let hasFries = false;
+    let hasDrink = false;
+    let hasSteak = false;
+    let hasShake = false;
+    let hasWrap = false;
+    let hasSide = false;
+
+    // Scan Cart
+    for (let key in cart) {
+        const item = cart[key];
+        const cat = item.category;
+        
+        if (cat === "Bun-Tastic Burgers") hasBurger = true;
+        if (key.includes("French Fries") || key.includes("Loaded Fries")) hasFries = true;
+        if (cat === "Icy Sips" || cat === "Nature's Nectar" || cat === "Mojito Magic") hasDrink = true;
+        if (cat === "Butcher's Best") hasSteak = true;
+        if (cat === "Whipped Wonders") hasShake = true;
+        if (cat === "Freshly Folded") hasWrap = true;
+        if (key.includes("French Fries") || cat === "Nibbles & Bits") hasSide = true;
+    }
+
+    // Logic 1: STEAK13 (High Margin)
+    if (hasSteak && !hasShake) return "🥩 Steak detected! Add a Shake to save 13% (Code: STEAK13)";
+    
+    // Logic 2: CLOUD15 (Combo)
+    if (hasBurger && hasFries && !hasDrink) return "🍔 Almost a Combo! Add a Drink to save 15% (Code: CLOUD15)";
+    if (hasBurger && hasDrink && !hasFries) return "🍔 Almost a Combo! Add Fries to save 15% (Code: CLOUD15)";
+    
+    // Logic 3: QUICK20 (Light Eater)
+    if (hasWrap && !hasSide) return "🌯 hungry? Add a Side Dish to save 20% (Code: QUICK20)";
+
+    return null; // No upsell found
+}
+
+function toggleUpsellScroll() {
+    // Simple helper to scroll to menu if they click the upsell message
+    const menu = document.querySelector('.main-content');
+    if(menu) menu.scrollTop = 0;
+    if(window.innerWidth <= 1000) toggleCartPage();
+}
