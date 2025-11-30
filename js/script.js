@@ -41,7 +41,7 @@ window.addEventListener('load', () => {
     const preloader = document.getElementById('preloader');
     setTimeout(() => {
         preloader.classList.add('preloader-hidden');
-    }, 2500); 
+    }, 2500); // 2.5 seconds delay so they can read the text
 });
 
 /* --- DATA --- */
@@ -53,7 +53,6 @@ const vegIcon = decodeURIComponent('%F0%9F%9F%A2');
 const nonVegIcon = decodeURIComponent('%F0%9F%94%B4');
 const rupeeSign = decodeURIComponent('%E2%82%B9');
 
-/* NOTE: I have fixed "Panner" spelling errors to "Paneer" below so search works properly */
 const menuData = [
     { name: "Cheesy Beef Melt", price: 180, category: "Bun-Tastic Burgers", type: "non-veg" },
     { name: "Cheesy Chicken Melt", price: 200, category: "Bun-Tastic Burgers", type: "non-veg" },
@@ -71,7 +70,7 @@ const menuData = [
     { name: "Tropical Beef Burger", price: 190, category: "Bun-Tastic Burgers", type: "non-veg" },
     { name: "Tropical Pesto Chicken Burger", price: 220, category: "Bun-Tastic Burgers", type: "non-veg" },
     { name: "Tropical Tandoori Chicken Burger", price: 200, category: "Bun-Tastic Burgers", type: "non-veg" },
-    { name: "Veg Burger (Paneer)", price: 170, category: "Bun-Tastic Burgers", type: "veg" },
+    { name: "Veg Burger (Panner)", price: 170, category: "Bun-Tastic Burgers", type: "veg" },
     { name: "Veg Slider Burger", price: 90, category: "Bun-Tastic Burgers", type: "veg" },
 
     { name: "Bbq Chicken Steak", price: 310, category: "Butcher's Best", type: "non-veg" },
@@ -80,8 +79,8 @@ const menuData = [
     { name: "Fish Steak - BASA", price: 350, category: "Butcher's Best", type: "non-veg" },
     { name: "Fish Steak - KING", price: 350, category: "Butcher's Best", type: "non-veg" },
     { name: "Mediterranean BBQ Chicken Steak", price: 350, category: "Butcher's Best", type: "non-veg" },
-    { name: "Paneer Tandoori Steak", price: 340, category: "Butcher's Best", type: "veg" },
-    { name: "Paneer Velvet Sauce", price: 340, category: "Butcher's Best", type: "veg" },
+    { name: "Panner Tandoori Steak", price: 340, category: "Butcher's Best", type: "veg" },
+    { name: "Panner Velvet Sauce", price: 340, category: "Butcher's Best", type: "veg" },
     { name: "Peri Peri Chicken Steak", price: 350, category: "Butcher's Best", type: "non-veg" },
     { name: "Pesto Chicken Steak", price: 310, category: "Butcher's Best", type: "non-veg" },
     { name: "Tandoori Chicken Steak", price: 350, category: "Butcher's Best", type: "non-veg" },
@@ -258,26 +257,8 @@ const menuData = [
     { name: "Hash Brown", price: 40, category: "ADD-ON", type: "veg" },
     { name: "Hummus", price: 50, category: "ADD-ON", type: "veg" }
 ];
-
 let cart = {};
 let activeCoupon = null; // Track applied coupon
-
-/* --- NEW LOCAL STORAGE HELPERS --- */
-function saveCart() {
-    localStorage.setItem('ccc_cart_v1', JSON.stringify(cart));
-}
-
-function loadCart() {
-    const savedCart = localStorage.getItem('ccc_cart_v1');
-    if (savedCart) {
-        cart = JSON.parse(savedCart);
-        renderCart(); // Update the UI immediately
-        
-        // Update the mobile floating button visual
-        const totalCount = Object.values(cart).reduce((acc, item) => acc + item.qty, 0);
-        document.getElementById('mobile-count').innerText = `(${totalCount})`;
-    }
-}
 
 /* --- FILTER STATES --- */
 let currentCategory = 'All';
@@ -365,17 +346,17 @@ function renderMenu() {
         if (currentType === 'non-veg' && item.type !== 'non-veg') return false;
         if (isUnder200 && item.price >= 200) return false;
         if (currentIngredient !== 'all') {
-            const nameLower = item.name.toLowerCase();
+    
+        const nameLower = item.name.toLowerCase();
             const ingLower = currentIngredient.toLowerCase();
-            if(ingLower === 'paneer') {
-                if(!nameLower.includes('paneer')) return false;
+            if(ingLower === 'panner' || ingLower === 'paneer') {
+                if(!nameLower.includes('panner') && !nameLower.includes('paneer')) return false;
             } else {
                 if(!nameLower.includes(ingLower)) return false;
             }
         }
         return true;
     });
-
     if (currentSort === 'low-high') {
         filteredItems.sort((a, b) => a.price - b.price);
     } else if (currentSort === 'high-low') {
@@ -396,25 +377,28 @@ function renderMenu() {
         const emojiStr = item.type === 'veg' ? vegIcon : nonVegIcon;
         
         card.innerHTML = `
-            <div class="card-top">
+      
+        <div class="card-top">
                 <div class="food-title">
                     <span class="type-emoji">${emojiStr}</span>
                     ${item.name}
                 </div>
                 <div class="food-meta">${item.category}</div>
+  
            </div>
             <div class="price-row">
                 <div class="price">${rupeeSign}${item.price}</div>
                 <button class="add-btn-mini" onclick="openOptionModal(${originalIndex})">
                     ADD <i class="fas fa-plus"></i>
                 </button>
+   
          </div>
         `;
         root.appendChild(card);
     });
 }
 
-/* --- CUSTOMIZATION LOGIC --- */
+/* --- NEW CUSTOMIZATION LOGIC --- */
 let tempSelectedItemIndex = null;
 
 function openOptionModal(index) {
@@ -482,9 +466,9 @@ function openOptionModal(index) {
         if (item.name.toLowerCase().includes('chicken')) {
             availableOptions.push({ name: "Extra Chicken (Non-Veg)", price: 40 });
         }
-        // Option 2: Extra Paneer (Only for Veg items)
+        // Option 2: Extra Panner (Only for Veg items)
         if (item.type === 'veg') {
-            availableOptions.push({ name: "Extra Paneer (Veg)", price: 30 });
+            availableOptions.push({ name: "Extra Panner (Veg)", price: 30 });
         }
     }
     
@@ -516,6 +500,7 @@ function openOptionModal(index) {
                            onchange="updateModalTotal()"> 
                     ${opt.name}
                 </label>
+ 
                <span class="custom-option-price">+${rupeeSign}${opt.price}</span>
             </div>
         `;
@@ -571,9 +556,9 @@ function closeCustomizationModal() {
     tempSelectedItemIndex = null;
 }
 
-/* --- CART FUNCTIONS (UPDATED WITH LOCAL STORAGE) --- */
+/* --- CART FUNCTIONS --- */
 
-// UPDATED: Now accepts basePrice & saves to storage
+// UPDATED: Now accepts basePrice
 function addToCart(name, finalPrice, basePrice, type, category) {
     if (cart[name]) {
         cart[name].qty++;
@@ -586,7 +571,6 @@ function addToCart(name, finalPrice, basePrice, type, category) {
             category: category 
         };
     }
-    saveCart(); // Save changes
     renderCart();
     const btn = document.querySelector('.mobile-cart-btn');
     btn.style.transform = "scale(1.2)";
@@ -599,7 +583,6 @@ function updateQty(name, change) {
         if (cart[name].qty <= 0) {
             delete cart[name];
         }
-        saveCart(); // Save changes
         renderCart();
     }
 }
@@ -897,11 +880,13 @@ function renderCart() {
                     <span class="cart-name">${key}</span>
                     <span class="cart-price">${rupeeSign}${item.price}</span>
                 </div>
+  
               <div class="qty-wrapper">
                     <button class="qty-btn" onclick="updateQty('${key}', -1)">−</button>
                     <span>${item.qty}</span>
                     <button class="qty-btn" onclick="updateQty('${key}', 1)">+</button>
                 </div>
+   
          </div>
         `;
     }
@@ -1203,7 +1188,8 @@ function finalizeOrder() {
         packingTotal += (chargePerItem * item.qty);
         if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
         // --- NEW: Added Diet Tag Logic Here ---
-        let dietTag = item.type === 'veg' ? '[VEG]' : '[NON-VEG]';
+        let dietTag = item.type === 'veg' ?
+        '[VEG]' : '[NON-VEG]';
         msg += `• ${dietTag} ${key} x ${item.qty} = Rs. ${lineTotal}\n`;
     }
     
@@ -1217,18 +1203,13 @@ function finalizeOrder() {
     let grandTotal = (subTotal - discountVal) + packingTotal;
     msg += `---------------------------\nSub Total: Rs. ${subTotal}\n`;
     if (discountVal > 0) msg += `*Coupon (${couponName}): -Rs. ${discountVal}*\n`;
-    msg += `Packing: Rs. ${packingTotal}\n*TOTAL: Rs. ${grandTotal}*\n`;
+    msg += `Packing: Rs.
+    ${packingTotal}\n*TOTAL: Rs. ${grandTotal}*\n`;
     
     // --- NEW: Updated Delivery Fee Text Here ---
     if(type === 'Delivery') msg += `\n_Delivery fee calculated by Delivery Agent._`;
     const encodedMsg = encodeURIComponent(msg);
     const finalUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
-
-    // --- NEW: WIPE CART AFTER ORDER ---
-    cart = {}; // Clear memory
-    localStorage.removeItem('ccc_cart_v1'); // Clear storage
-    renderCart(); // Clear UI visually
-    // ----------------------------------
 
     document.getElementById('main-dashboard').style.display = 'none';
     document.getElementById('checkout-modal').style.display = 'none';
@@ -1238,7 +1219,6 @@ function finalizeOrder() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadCart(); // Load saved cart first
     renderMenu();
     const cInput = document.getElementById('coupon-input');
     const cBtn = document.getElementById('coupon-apply-btn');
@@ -1248,7 +1228,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const dayIndex = new Date().getDay();
     const dailyOfferTexts = [
         "SUNDAY SPECIAL: Fam-Jam Feast! 1 Pasta + 1 Slider + 1 Shake = ₹399. Use Code: SUNFEAST", // 0
-        "MEAT-UP MONDAY: Burger + Fries = ₹222. Strictly 1 Beef Burger gets ₹20 OFF. Use Code: MONBURGER", // 1
+      
+  "MEAT-UP MONDAY: Burger + Fries = ₹222. Strictly 1 Beef Burger gets ₹20 OFF. Use Code: MONBURGER", // 1
         "TWISTED TUESDAY: All Pastas Flat at ₹179. Use Code: TUEPASTA", // 2
         "WICKED WEDNESDAY: Steak @ ₹300 (Code: WEDSTEAK) OR Premium Shake @ ₹120 (Code: WEDSHAKE)", // 3
         "THURSDAY CLUB: Any Sandwich + Any Chiller = ₹189. Use Code: THUSAND", // 4
