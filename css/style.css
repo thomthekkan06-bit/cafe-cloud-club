@@ -1071,3 +1071,23 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
     66% { transform: translate(-20px, 20px) rotate(240deg); }
     100% { transform: translate(0, 0) rotate(360deg); }
 }
+/* --- FLYING ANIMATION --- */
+.flying-food {
+    position: fixed;
+    z-index: 10000; /* Above everything, even modals */
+    font-size: 2rem;
+    pointer-events: none; /* Let clicks pass through */
+    transition: all 0.8s cubic-bezier(0.19, 1, 0.22, 1); /* Smooth "ease-out" flight */
+    opacity: 1;
+}
+
+/* A slight shake when it lands on the cart */
+@keyframes shakeCart {
+    0%, 100% { transform: scale(1); }
+    25% { transform: scale(1.2) rotate(-5deg); }
+    75% { transform: scale(1.2) rotate(5deg); }
+}
+
+.cart-shake {
+    animation: shakeCart 0.4s ease;
+}
