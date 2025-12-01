@@ -294,6 +294,16 @@
                 <i class="fas fa-gift"></i> All Offers & T&C
             </div>
 
+            <div class="reorder-btn-area">
+                <button class="reorder-btn" onclick="repeatLastOrder()">
+                    <i class="fas fa-history"></i> Repeat Last Order
+                </button>
+            </div>
+
+            <div class="filter-item" onclick="setCategoryFilter('Favorites', this)">
+                <i class="fas fa-heart" style="margin-right:8px; color:#e74c3c;"></i> My Favorites
+            </div>
+
             <div class="filter-item active" onclick="setCategoryFilter('All', this)">All Items</div>
             <div class="filter-item" onclick="setCategoryFilter('Bun-Tastic Burgers', this)">Bun-Tastic Burgers</div>
             <div class="filter-item" onclick="setCategoryFilter('Butcher\'s Best', this)">Butcher's Best</div>
@@ -343,7 +353,7 @@
                 <i class="fas fa-search" style="color: #ccc;"></i>
                 <input type="text" id="search-input" placeholder="Search..." onkeyup="updateSearch()">
             </div>
-            </div>
+        </div>
 
         <div class="news-ticker-area" onclick="toggleOffersPage()" style="cursor: pointer;">
             <div class="ticker-label">TODAY'S SPECIAL</div>
@@ -435,7 +445,7 @@
         <br>
         
         <div class="cart-items-container" id="cart-items-list">
-        </div>
+            </div>
         
         <div class="coupon-section">
             <input type="text" id="coupon-input" class="coupon-input" placeholder="COUPON CODE">
