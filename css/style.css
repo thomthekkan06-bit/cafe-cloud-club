@@ -544,8 +544,7 @@ body {
 .offers-view .back-btn:hover { background: rgba(0,0,0,0.05); }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideUp { from { transform: translateY(20px);
-    opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
 /* --- FILTERS --- */
 .advanced-filters { display: flex; flex-wrap: wrap;
@@ -810,29 +809,120 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
     100% { transform: scale(1); opacity: 1; } 
 }
 
-/* Responsive Breakpoints */
+/* Responsive Breakpoints - AMENDED FOR MOBILE BUTTON FIX */
 @media (max-width: 1000px) {
-    .dashboard { grid-template-columns: 1fr; grid-template-rows: auto 1fr; display: flex;
-    flex-direction: column; }
-    .left-sidebar { grid-row: 1; width: 100%; border-right: none; border-bottom: 1px solid #eee;
-    padding: 10px 20px; flex-direction: row; overflow-x: auto; align-items: center; gap: 10px; height: auto; flex-shrink: 0;
+    /* 1. Reset Layout for Mobile */
+    .dashboard { 
+        grid-template-columns: 1fr; 
+        grid-template-rows: auto 1fr; 
+        display: flex;
+        flex-direction: column; 
     }
-    .left-sidebar .brand-title, .brand-subtitle, .brand-est, .store-timings-box, .store-address-box { display: none; }
-    .sidebar-credit { display: none !important; }
+
+    /* 2. Transform Sidebar into Top Menu Scroll */
+    .left-sidebar { 
+        grid-row: 1; 
+        width: 100%; 
+        border-right: none; 
+        border-bottom: 1px solid #eee;
+        padding: 10px 15px; /* Tighter padding */
+        display: flex; /* Force flex */
+        flex-direction: row; 
+        overflow-x: auto; /* Enable scroll */
+        align-items: center; 
+        gap: 0; /* Reset gap, handle in filter-list */
+        height: auto; 
+        flex-shrink: 0;
+        background: var(--white);
+    }
+
+    /* 3. Hide Desktop Elements */
+    .left-sidebar .brand-title, 
+    .brand-subtitle, 
+    .brand-est, 
+    .store-timings-box, 
+    .store-address-box,
+    .sidebar-credit { 
+        display: none !important; 
+    }
+
+    /* 4. Show Mobile Elements */
     .mobile-bottom-credit { display: block !important; }
     .mobile-info-card { display: block; }
-    .filter-list { flex-direction: row; width: 100%; }
-    .filter-item { white-space: nowrap; padding: 8px 12px; background: #f1f2f6; border-radius: 20px; border: 1px solid #ddd; }
-    .filter-item.active { border-right: 1px solid var(--primary); border-color: var(--primary); }
-    .main-content { flex: 1; padding: 20px; }
-    .order-sidebar { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    z-index: 2000; background: var(--bg); padding: 20px; overflow-y: auto; }
+
+    /* 5. FIX: Compact Buttons & Horizontal Scroll */
+    .filter-list { 
+        display: flex;
+        flex-direction: row; 
+        width: 100%;
+        gap: 8px; /* Consistent spacing */
+        overflow-x: auto;
+        padding-bottom: 0;
+        align-items: center;
+        scrollbar-width: none; /* Hide scrollbar Firefox */
+    }
+    .filter-list::-webkit-scrollbar { display: none; } /* Hide scrollbar Chrome */
+
+    /* Universal Button Fix for Menu Bar */
+    .filter-item, 
+    .offers-link-btn,
+    .reorder-btn {
+        white-space: nowrap !important;
+        padding: 6px 14px !important;
+        border-radius: 50px !important;
+        font-size: 0.75rem !important;
+        height: 36px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: auto !important; /* Forces button to shrink to text size */
+        margin: 0 !important;
+        flex-shrink: 0 !important; /* Prevents squishing */
+    }
+    
+    /* Specific tweaks for Reorder Button Area */
+    .reorder-btn-area {
+        margin: 0 !important;
+        width: auto !important;
+        display: block !important;
+    }
+
+    .filter-item.active { 
+        border: 1px solid var(--primary); 
+        background: #fff0eb;
+    }
+
+    /* 6. Layout Adjustments */
+    .main-content { 
+        flex: 1;
+        padding: 15px; /* Reduced padding for mobile */
+    }
+
+    /* 7. Mobile Cart Sidebar Overlay */
+    .order-sidebar { 
+        display: none; 
+        position: fixed; 
+        top: 0; 
+        left: 0; 
+        width: 100%; 
+        height: 100%;
+        z-index: 2000; 
+        background: var(--bg); 
+        padding: 20px; 
+        overflow-y: auto; 
+    }
     .order-sidebar.active { display: flex; }
+    
     .cart-header-mobile { display: flex; }
-    .mobile-cart-btn { display: block; position: fixed; bottom: 20px;
-    right: 20px; z-index: 1500; transition: transform 0.2s ease; }
-    .offers-link-btn { white-space: nowrap; padding: 8px 12px;
-    border-radius: 20px; margin: 0; }
+    
+    .mobile-cart-btn { 
+        display: block; 
+        position: fixed; 
+        bottom: 20px;
+        right: 20px; 
+        z-index: 1500; 
+        transition: transform 0.2s ease; 
+    }
 }
 
 /* --- CUSTOMIZATION MODAL SPECIFIC STYLES --- */
@@ -898,7 +988,8 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
 }
 
 .fav-btn.active {
-    color: #e74c3c; /* Red when active */
+    color: #e74c3c;
+    /* Red when active */
     animation: heartPop 0.3s ease;
 }
 
@@ -1074,10 +1165,13 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
 /* --- FLYING ANIMATION --- */
 .flying-food {
     position: fixed;
-    z-index: 10000; /* Above everything, even modals */
+    z-index: 10000;
+    /* Above everything, even modals */
     font-size: 2rem;
-    pointer-events: none; /* Let clicks pass through */
-    transition: all 0.8s cubic-bezier(0.19, 1, 0.22, 1); /* Smooth "ease-out" flight */
+    pointer-events: none;
+    /* Let clicks pass through */
+    transition: all 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+    /* Smooth "ease-out" flight */
     opacity: 1;
 }
 
