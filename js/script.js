@@ -1,6 +1,6 @@
 /* --- PRELOADER SCRIPT WITH HOURLY QUOTES --- */
 window.addEventListener('load', () => {
-    [cite_start]// 1. Define the 24-hour cycle quotes [cite: 243]
+    // 1. Define the 24-hour cycle quotes
     const foodQuotes = {
         0: "Midnight munchies? A Burger fixes everything.",
         1: "Insomnia tastes better with a thick Milkshake.",
@@ -39,13 +39,15 @@ window.addEventListener('load', () => {
 
     // 4. Hide Preloader after delay
     const preloader = document.getElementById('preloader');
-    setTimeout(() => {
-        preloader.classList.add('preloader-hidden');
-    }, 2500); 
+    if (preloader) {
+        setTimeout(() => {
+            preloader.classList.add('preloader-hidden');
+        }, 2500); 
+    }
 });
 
 /* --- DATA --- */
-[cite_start]const whatsappNumber = "917907660093"; [cite: 254]
+const whatsappNumber = "917907660093";
 const MIN_ORDER_VAL = 200; 
  
 // Website Icons
@@ -258,7 +260,7 @@ const menuData = [
     { name: "Hash Brown", price: 40, category: "ADD-ON", type: "veg" },
     { name: "Hummus", price: 50, category: "ADD-ON", type: "veg" }
 ];
-[cite_start]let cart = {}; [cite: 286]
+let cart = {};
 let activeCoupon = null; // Track applied coupon
 
 /* --- NEW LOCAL STORAGE HELPERS & USER DATA --- */
@@ -321,7 +323,7 @@ function repeatLastOrder() {
 }
 
 /* --- FILTER STATES --- */
-[cite_start]let currentCategory = 'All'; [cite: 301]
+let currentCategory = 'All';
 let currentSearch = '';
 let currentSort = 'default';
 let currentType = 'all'; // veg, non-veg
@@ -477,7 +479,7 @@ let tempSelectedItemIndex = null;
 function openOptionModal(index) {
     const item = menuData[index];
     tempSelectedItemIndex = index;
-    [cite_start]// 1. Define Options Logic based on Category [cite: 330]
+    // 1. Define Options Logic based on Category
     let availableOptions = [];
     const cheeseCats = ["Bun-Tastic Burgers", "Italian Indulgence", "Freshly Folded", "Toasty Treats"];
     if (cheeseCats.includes(item.category)) {
@@ -642,7 +644,7 @@ function addToCart(name, finalPrice, basePrice, type, category) {
             category: category 
         };
     }
-    saveCart(); [cite_start]// Save changes [cite: 363]
+    saveCart(); // Save changes
     renderCart();
     const btn = document.querySelector('.mobile-cart-btn');
     btn.style.transform = "scale(1.2)";
@@ -928,7 +930,7 @@ function renderCart() {
     let hasItems = false;
     const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
 
-    [cite_start]// 1. Calculate Standard Totals [cite: 441]
+    // 1. Calculate Standard Totals
     for (let key in cart) {
         hasItems = true;
         const item = cart[key];
