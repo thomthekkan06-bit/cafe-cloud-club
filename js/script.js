@@ -53,7 +53,7 @@ const vegIcon = decodeURIComponent('%F0%9F%9F%A2');
 const nonVegIcon = decodeURIComponent('%F0%9F%94%B4');
 const rupeeSign = decodeURIComponent('%E2%82%B9');
 
-/* NOTE: I have fixed "Panner" spelling errors to "Paneer" below so search works properly */
+/* NOTE: Fixed "Panner" spelling errors to "Paneer" so search works properly */
 const menuData = [
     { name: "Cheesy Beef Melt", price: 180, category: "Bun-Tastic Burgers", type: "non-veg" },
     { name: "Cheesy Chicken Melt", price: 200, category: "Bun-Tastic Burgers", type: "non-veg" },
@@ -258,11 +258,13 @@ const menuData = [
     { name: "Hash Brown", price: 40, category: "ADD-ON", type: "veg" },
     { name: "Hummus", price: 50, category: "ADD-ON", type: "veg" }
 ];
-
 let cart = {};
 let activeCoupon = null; // Track applied coupon
 
-/* --- NEW LOCAL STORAGE HELPERS --- */
+/* --- NEW LOCAL STORAGE HELPERS & USER DATA --- */
+let favorites = JSON.parse(localStorage.getItem('ccc_favorites')) || [];
+let lastOrder = JSON.parse(localStorage.getItem('ccc_last_order')) || null;
+
 function saveCart() {
     localStorage.setItem('ccc_cart_v1', JSON.stringify(cart));
 }
@@ -271,11 +273,48 @@ function loadCart() {
     const savedCart = localStorage.getItem('ccc_cart_v1');
     if (savedCart) {
         cart = JSON.parse(savedCart);
-        renderCart(); // Update the UI immediately
-        
+        renderCart();
         // Update the mobile floating button visual
         const totalCount = Object.values(cart).reduce((acc, item) => acc + item.qty, 0);
         document.getElementById('mobile-count').innerText = `(${totalCount})`;
+    }
+}
+
+// --- NEW: Toggle Favorite Logic ---
+function toggleFavorite(itemName) {
+    const index = favorites.indexOf(itemName);
+    if (index === -1) {
+        favorites.push(itemName); // Add
+    } else {
+        favorites.splice(index, 1); // Remove
+    }
+    localStorage.setItem('ccc_favorites', JSON.stringify(favorites));
+    
+    // Re-render to show styling changes or list update
+    if (currentCategory === 'Favorites') {
+        renderMenu();
+    } else {
+        // Just toggle class visually to save performance
+        const uniqueId = itemName.replace(/[^a-zA-Z0-9]/g, '-');
+        const btn = document.getElementById(`fav-btn-${uniqueId}`);
+        if(btn) btn.classList.toggle('active');
+    }
+}
+
+// --- NEW: Repeat Last Order Logic ---
+function repeatLastOrder() {
+    if (!lastOrder || Object.keys(lastOrder).length === 0) {
+        alert("No previous order found on this device!");
+        return;
+    }
+    
+    if(confirm("Clear current cart and load your last order?")) {
+        cart = JSON.parse(JSON.stringify(lastOrder)); // Deep copy
+        saveCart();
+        renderCart();
+        alert("Last order loaded!");
+        // If mobile, switch to cart view
+        if(window.innerWidth <= 1000) toggleCartPage();
     }
 }
 
@@ -354,11 +393,18 @@ function toggleOffersPage() {
     }
 }
 
-/* --- MAIN RENDER FUNCTION --- */
+/* --- UPDATED MAIN RENDER FUNCTION --- */
 function renderMenu() {
     const root = document.getElementById('menu-root');
     root.innerHTML = '';
+    
     let filteredItems = menuData.filter(item => {
+        // --- NEW: Favorites Filter Logic ---
+        if (currentCategory === 'Favorites') {
+            return favorites.includes(item.name);
+        }
+        // -----------------------------------
+
         if (currentCategory !== 'All' && item.category !== currentCategory) return false;
         if (currentSearch && !item.name.toLowerCase().includes(currentSearch.toLowerCase())) return false;
         if (currentType === 'veg' && item.type !== 'veg') return false;
@@ -393,22 +439,35 @@ function renderMenu() {
         card.className = `food-card ${item.type}`;
         card.id = `card-${originalIndex}`;
         
+        // --- NEW: Check if favorite ---
+        const isFav = favorites.includes(item.name);
+        const favClass = isFav ? 'active' : '';
+        const uniqueId = item.name.replace(/[^a-zA-Z0-9]/g, '-'); // Create simple ID
+        // ------------------------------
+        
         const emojiStr = item.type === 'veg' ? vegIcon : nonVegIcon;
         
+        // --- AMENDED HTML GENERATION ---
         card.innerHTML = `
+            <div style="position:relative;"> 
+                <button id="fav-btn-${uniqueId}" class="fav-btn ${favClass}" onclick="event.stopPropagation(); toggleFavorite('${item.name}')">
+                    <i class="fas fa-heart"></i>
+                </button>
+            </div>
+
             <div class="card-top">
                 <div class="food-title">
                     <span class="type-emoji">${emojiStr}</span>
                     ${item.name}
                 </div>
                 <div class="food-meta">${item.category}</div>
-           </div>
+            </div>
             <div class="price-row">
                 <div class="price">${rupeeSign}${item.price}</div>
                 <button class="add-btn-mini" onclick="openOptionModal(${originalIndex})">
                     ADD <i class="fas fa-plus"></i>
                 </button>
-         </div>
+            </div>
         `;
         root.appendChild(card);
     });
@@ -516,7 +575,7 @@ function openOptionModal(index) {
                            onchange="updateModalTotal()"> 
                     ${opt.name}
                 </label>
-               <span class="custom-option-price">+${rupeeSign}${opt.price}</span>
+                <span class="custom-option-price">+${rupeeSign}${opt.price}</span>
             </div>
         `;
     });
@@ -822,34 +881,34 @@ function applyCoupon() {
     // --- OLD CODES ---
     if (code === 'CLOUD15') {
         if (checkComboRequirements('CLOUD15')) { activeCoupon = 'CLOUD15';
-            msgBox.innerText = "Coupon Applied! 15% Off"; msgBox.className = "coupon-msg success";
+        msgBox.innerText = "Coupon Applied! 15% Off"; msgBox.className = "coupon-msg success";
         } 
         else { msgBox.innerText = "Strictly: 1 Burger, 1 Fries & 1 Drink";
-            msgBox.className = "coupon-msg error"; activeCoupon = null; }
+        msgBox.className = "coupon-msg error"; activeCoupon = null; }
         renderCart(); return;
     }
     if (code === 'STEAK13') {
         if (checkComboRequirements('STEAK13')) { activeCoupon = 'STEAK13';
-            msgBox.innerText = "Steak & Sip Applied! 13% Off"; msgBox.className = "coupon-msg success";
+        msgBox.innerText = "Steak & Sip Applied! 13% Off"; msgBox.className = "coupon-msg success";
         } 
         else { msgBox.innerText = "Strictly: 1 Butcher's Best & 1 Shake";
-            msgBox.className = "coupon-msg error"; activeCoupon = null; }
+        msgBox.className = "coupon-msg error"; activeCoupon = null; }
         renderCart(); return;
     }
     if (code === 'QUICK20') {
         if (checkComboRequirements('QUICK20')) { activeCoupon = 'QUICK20';
-            msgBox.innerText = "Quick Bite Applied! 20% Off"; msgBox.className = "coupon-msg success";
+        msgBox.innerText = "Quick Bite Applied! 20% Off"; msgBox.className = "coupon-msg success";
         } 
         else { msgBox.innerText = "Strictly: 1 Wrap & 1 Side";
-            msgBox.className = "coupon-msg error"; activeCoupon = null; }
+        msgBox.className = "coupon-msg error"; activeCoupon = null; }
         renderCart(); return;
     }
     if (code === 'FEAST14') {
         if (checkComboRequirements('FEAST14')) { activeCoupon = 'FEAST14';
-            msgBox.innerText = "Cloud Feast Applied! 14% Off"; msgBox.className = "coupon-msg success";
+        msgBox.innerText = "Cloud Feast Applied! 14% Off"; msgBox.className = "coupon-msg success";
         } 
         else { msgBox.innerText = "Requirements missing for Feast";
-            msgBox.className = "coupon-msg error"; activeCoupon = null; }
+        msgBox.className = "coupon-msg error"; activeCoupon = null; }
         renderCart(); return;
     }
 
@@ -897,12 +956,12 @@ function renderCart() {
                     <span class="cart-name">${key}</span>
                     <span class="cart-price">${rupeeSign}${item.price}</span>
                 </div>
-              <div class="qty-wrapper">
+                <div class="qty-wrapper">
                     <button class="qty-btn" onclick="updateQty('${key}', -1)">−</button>
                     <span>${item.qty}</span>
                     <button class="qty-btn" onclick="updateQty('${key}', 1)">+</button>
                 </div>
-         </div>
+            </div>
         `;
     }
 
@@ -1080,7 +1139,6 @@ function renderCart() {
     }
 
     // PERCENTAGE CODES: Apply to Base Price Total of Cart
-    // Note: Previously this applied to final subTotal.
     if(activeCoupon === 'CLOUD15' || activeCoupon === 'STEAK13' || activeCoupon === 'QUICK20' || activeCoupon === 'FEAST14') {
         let cartBaseTotal = 0;
         // Logic check: Strict combo requirements are checked in applyCoupon.
@@ -1093,13 +1151,13 @@ function renderCart() {
         }
 
         if(activeCoupon === 'CLOUD15') { discountVal = Math.round(cartBaseTotal * 0.15);
-            discountText = "Coupon (15% OFF)"; }
+        discountText = "Coupon (15% OFF)"; }
         if(activeCoupon === 'STEAK13') { discountVal = Math.round(cartBaseTotal * 0.13);
-            discountText = "Steak & Sip (13% OFF)"; }
+        discountText = "Steak & Sip (13% OFF)"; }
         if(activeCoupon === 'QUICK20') { discountVal = Math.round(cartBaseTotal * 0.20);
-            discountText = "Quick Bite (20% OFF)"; }
+        discountText = "Quick Bite (20% OFF)"; }
         if(activeCoupon === 'FEAST14') { discountVal = Math.round(cartBaseTotal * 0.14);
-            discountText = "Cloud Feast (14% OFF)"; }
+        discountText = "Cloud Feast (14% OFF)"; }
     }
 
     const discountRow = document.getElementById('discount-row');
@@ -1133,16 +1191,14 @@ function renderCart() {
 
 function toggleCartPage() { document.getElementById('cart-sidebar').classList.toggle('active'); }
 function openCheckoutModal() { document.getElementById('checkout-modal').style.display = 'flex'; toggleOrderFields(); }
-function closeCheckoutModal() { document.getElementById('checkout-modal').style.display = 'none';
-}
+function closeCheckoutModal() { document.getElementById('checkout-modal').style.display = 'none'; }
+
 function toggleOrderFields() {
     const type = document.querySelector('input[name="orderType"]:checked').value;
     const addrGroup = document.getElementById('address-group');
     const timeLabel = document.getElementById('time-label');
-    if(type === 'Pickup') { addrGroup.style.display = 'none'; timeLabel.innerText = "Preferred Pickup Time";
-    } 
-    else { addrGroup.style.display = 'block'; timeLabel.innerText = "Preferred Delivery Time";
-    }
+    if(type === 'Pickup') { addrGroup.style.display = 'none'; timeLabel.innerText = "Preferred Pickup Time"; } 
+    else { addrGroup.style.display = 'block'; timeLabel.innerText = "Preferred Delivery Time"; }
 }
 
 function checkStoreStatus(orderType) {
@@ -1170,14 +1226,10 @@ function finalizeOrder() {
     const address = document.getElementById('c-address').value.trim();
     const time = document.getElementById('c-time').value;
     const instruction = document.getElementById('c-instruction').value.trim();
-    if(!name || !phone || !email || !time) { alert("Please fill in Name, Phone, Email and Time."); return;
-    }
-    if(type === 'Delivery' && !address) { alert("Please fill in the Delivery Address."); return;
-    }
-    if (!/^[0-9]{10,12}$/.test(phone)) { alert("Strict Policy: Phone number must be 10-12 digits."); return;
-    }
-    if (!email.includes('@')) { alert("Strict Policy: Invalid Email."); return;
-    }
+    if(!name || !phone || !email || !time) { alert("Please fill in Name, Phone, Email and Time."); return; }
+    if(type === 'Delivery' && !address) { alert("Please fill in the Delivery Address."); return; }
+    if (!/^[0-9]{10,12}$/.test(phone)) { alert("Strict Policy: Phone number must be 10-12 digits."); return; }
+    if (!email.includes('@')) { alert("Strict Policy: Invalid Email."); return; }
 
     const orderId = Math.floor(100000 + Math.random() * 900000);
     const now = new Date();
@@ -1219,12 +1271,18 @@ function finalizeOrder() {
     if (discountVal > 0) msg += `*Coupon (${couponName}): -Rs. ${discountVal}*\n`;
     msg += `Packing: Rs. ${packingTotal}\n*TOTAL: Rs. ${grandTotal}*\n`;
     
-    // --- NEW: Updated Delivery Fee Text Here ---
     if(type === 'Delivery') msg += `\n_Delivery fee calculated by Delivery Agent._`;
     const encodedMsg = encodeURIComponent(msg);
     const finalUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
 
-    // --- NEW: WIPE CART AFTER ORDER ---
+    // --- NEW: SAVE LAST ORDER BEFORE WIPING ---
+    if (Object.keys(cart).length > 0) {
+        localStorage.setItem('ccc_last_order', JSON.stringify(cart));
+        lastOrder = cart; // Update local variable
+    }
+    // ------------------------------------------
+
+    // --- WIPE CART AFTER ORDER ---
     cart = {}; // Clear memory
     localStorage.removeItem('ccc_cart_v1'); // Clear storage
     renderCart(); // Clear UI visually
