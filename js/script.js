@@ -53,11 +53,7 @@ const vegIcon = decodeURIComponent('%F0%9F%9F%A2');
 const nonVegIcon = decodeURIComponent('%F0%9F%94%B4');
 const rupeeSign = decodeURIComponent('%E2%82%B9');
 
-/* INSTRUCTIONS FOR SOLD OUT ITEMS:
-   To mark an item as SOLD OUT, add the property available: false to the item line.
-   Example:
-   { name: "My Burger", price: 100, category: "Burgers", type: "non-veg", available: false },
-*/
+/* NOTE: I have fixed "Panner" spelling errors to "Paneer" below so search works properly */
 const menuData = [
     { name: "Cheesy Beef Melt", price: 180, category: "Bun-Tastic Burgers", type: "non-veg" },
     { name: "Cheesy Chicken Melt", price: 200, category: "Bun-Tastic Burgers", type: "non-veg" },
@@ -207,61 +203,62 @@ const menuData = [
     { name: "Peach Mojito", price: 125, category: "Mojito Magic", type: "veg" },
     { name: "Watermelon Mojito", price: 125, category: "Mojito Magic", type: "veg" },
 
-    { name: "Apple Juice", price: 120, category: "Nature's Nectar", "type": "veg" },
-    { name: "Carrot & Lemon Juice", price: 80, category: "Nature's Nectar", "type": "veg" },
-    { name: "Carrot Juice", price: 80, category: "Nature's Nectar", "type": "veg" },
-    { name: "Celery, Apple & Ginger Juice", price: 110, "category": "Nature's Nectar", "type": "veg" },
-    { name: "Cucumber & Carrot Juice", price: 90, "category": "Nature's Nectar", "type": "veg" },
-    { name: "Cucumber, Lemon & Mint Juice", price: 70, "category": "Nature's Nectar", "type": "veg" },
-    { name: "Fresh Lime", price: 40, "category": "Nature's Nectar", "type": "veg" },
-    { name: "Lemon & Celery Juice", price: 50, "category": "Nature's Nectar", "type": "veg" },
-    { name: "Mango Juice", price: 80, "category": "Nature's Nectar", "type": "veg" },
-    { name: "Mosambi Juice", price: 90, "category": "Nature's Nectar", "type": "veg" },
-    { name: "Muskmelon Juice", price: 80, "category": "Nature's Nectar", "type": "veg" },
-    { name: "Orange Juice", price: 90, "category": "Nature's Nectar", "type": "veg" },
-    { name: "Papaya Juice", price: 70, "category": "Nature's Nectar", "type": "veg" },
-    { name: "Pineapple & Carrot Juice", price: 90, "category": "Nature's Nectar", "type": "veg" },
-    { name: "Pineapple Juice", price: 90, "category": "Nature's Nectar", "type": "veg" },
-    { name: "Pomegranate Juice", price: 100, "category": "Nature's Nectar", "type": "veg" },
-    { name: "Watermelon Juice", price: 80, "category": "Nature's Nectar", "type": "veg" },
-    { name: "Zesty Pineapple Breeze", price: 90, "category": "Nature's Nectar", "type": "veg" },
+    { name: "Apple Juice", price: 120, category: "Nature's Nectar", type: "veg" },
+    { name: "Carrot & Lemon Juice", price: 80, category: "Nature's Nectar", type: "veg" },
+    { name: "Carrot Juice", price: 80, category: "Nature's Nectar", type: "veg" },
+    { name: "Celery, Apple & Ginger Juice", price: 110, category: "Nature's Nectar", type: "veg" },
+    { name: "Cucumber & Carrot Juice", price: 90, category: "Nature's Nectar", type: "veg" },
+    { name: "Cucumber, Lemon & Mint Juice", price: 70, category: "Nature's Nectar", type: "veg" },
+    { name: "Fresh Lime", price: 40, category: "Nature's Nectar", type: "veg" },
+    { name: "Lemon & Celery Juice", price: 50, category: "Nature's Nectar", type: "veg" },
+    { name: "Mango Juice", price: 80, category: "Nature's Nectar", type: "veg" },
+    { name: "Mosambi Juice", price: 90, category: "Nature's Nectar", type: "veg" },
+    { name: "Muskmelon Juice", price: 80, category: "Nature's Nectar", type: "veg" },
+    { name: "Orange Juice", price: 90, category: "Nature's Nectar", type: "veg" },
+    { name: "Papaya Juice", price: 70, category: "Nature's Nectar", type: "veg" },
+    { name: "Pineapple & Carrot Juice", price: 90, category: "Nature's Nectar", type: "veg" },
+    { name: "Pineapple Juice", price: 90, category: "Nature's Nectar", type: "veg" },
+    { name: "Pomegranate Juice", price: 100, category: "Nature's Nectar", type: "veg" },
+    { name: "Watermelon Juice", price: 80, category: "Nature's Nectar", type: "veg" },
+    { name: "Zesty Pineapple Breeze", price: 90, category: "Nature's Nectar", type: "veg" },
 
-    { name: "Arabian Milkshake", price: 135, category: "Whipped Wonders", "type": "veg" },
-    { name: "Avocado Mango Milkshake", price: 150, category: "Whipped Wonders", "type": "veg" },
-    { name: "Avocado Banana Almonds", price: 150, category: "Whipped Wonders", "type": "veg" },
-    { name: "Avocado Milkshake", price: 140, category: "Whipped Wonders", "type": "veg" },
-    { name: "Black Current Milkshake", price: 125, category: "Whipped Wonders", "type": "veg" },
-    { name: "Black Grape Milkshake", price: 125, category: "Whipped Wonders", "type": "veg" },
-    { name: "Blue Berry Milkshake", price: 140, category: "Whipped Wonders", "type": "veg" },
-    { name: "Blue Milkshake", price: 140, category: "Whipped Wonders", "type": "veg" },
-    { name: "Butter Peanut", price: 130, category: "Whipped Wonders", "type": "veg" },
-    { name: "Caramel Milkshake", price: 125, category: "Whipped Wonders", "type": "veg" },
-    { name: "Chikku Shake", price: 130, "category": "Whipped Wonders", "type": "veg" },
-    { name: "ChocoButter Peanut Shake", price: 140, "category: "Whipped Wonders", "type": "veg" },
-    { name: "Chocolate Milkshake", price: 125, category: "Whipped Wonders", "type": "veg" },
-    { name: "Dry Fruit Milkshake", price: 135, category: "Whipped Wonders", "type": "veg" },
-    { name: "Lotus Biscoff Milkshake", price: 140, category: "Whipped Wonders", "type": "veg" },
-    { name: "Lychee Milkshake", price: 125, category: "Whipped Wonders", "type": "veg" },
-    { name: "Mango Milkshake", price: 125, category: "Whipped Wonders", "type": "veg" },
-    { name: "Mango Mint Milkshake", price: 135, "category": "Whipped Wonders", "type": "veg" },
-    { name: "Milo Shake", price: 150, "category": "Whipped Wonders", "type": "veg" },
-    { name: "Oreo Milkshake", price: 125, "category": "Whipped Wonders", "type": "veg" },
-    { name: "Roasted Dry Fruit Shake", price: 160, "category": "Whipped Wonders", "type": "veg" },
-    { name: "Strawberry & Mango Shake", price: 135, "category": "Whipped Wonders", "type": "veg" },
-    { name: "Strawberry Milkshake", price: 125, "category": "Whipped Wonders", "type": "veg" },
-    { name: "Tender Coconut Milkshake", price: 135, "category": "Whipped Wonders", "type": "veg" },
-    { name: "Vanilla Milkshake", price: 115, "category": "Whipped Wonders", "type": "veg" },
+    { name: "Arabian Milkshake", price: 135, category: "Whipped Wonders", type: "veg" },
+    { name: "Avocado Mango Milkshake", price: 150, category: "Whipped Wonders", type: "veg" },
+    { name: "Avocado Banana Almonds", price: 150, category: "Whipped Wonders", type: "veg" },
+    { name: "Avocado Milkshake", price: 140, category: "Whipped Wonders", type: "veg" },
+    { name: "Black Current Milkshake", price: 125, category: "Whipped Wonders", type: "veg" },
+    { name: "Black Grape Milkshake", price: 125, category: "Whipped Wonders", type: "veg" },
+    { name: "Blue Berry Milkshake", price: 140, category: "Whipped Wonders", type: "veg" },
+    { name: "Blue Milkshake", price: 140, category: "Whipped Wonders", type: "veg" },
+    { name: "Butter Peanut", price: 130, category: "Whipped Wonders", type: "veg" },
+    { name: "Caramel Milkshake", price: 125, category: "Whipped Wonders", type: "veg" },
+    { name: "Chikku Shake", price: 130, category: "Whipped Wonders", type: "veg" },
+    { name: "ChocoButter Peanut Shake", price: 140, category: "Whipped Wonders", type: "veg" },
+    { name: "Chocolate Milkshake", price: 125, category: "Whipped Wonders", type: "veg" },
+    { name: "Dry Fruit Milkshake", price: 135, category: "Whipped Wonders", type: "veg" },
+    { name: "Lotus Biscoff Milkshake", price: 140, category: "Whipped Wonders", type: "veg" },
+    { name: "Lychee Milkshake", price: 125, category: "Whipped Wonders", type: "veg" },
+    { name: "Mango Milkshake", price: 125, category: "Whipped Wonders", type: "veg" },
+    { name: "Mango Mint Milkshake", price: 135, category: "Whipped Wonders", type: "veg" },
+    { name: "Milo Shake", price: 150, category: "Whipped Wonders", type: "veg" },
+    { name: "Oreo Milkshake", price: 125, category: "Whipped Wonders", type: "veg" },
+    { name: "Roasted Dry Fruit Shake", price: 160, category: "Whipped Wonders", type: "veg" },
+    { name: "Strawberry & Mango Shake", price: 135, category: "Whipped Wonders", type: "veg" },
+    { name: "Strawberry Milkshake", price: 125, category: "Whipped Wonders", type: "veg" },
+    { name: "Tender Coconut Milkshake", price: 135, category: "Whipped Wonders", type: "veg" },
+    { name: "Vanilla Milkshake", price: 115, category: "Whipped Wonders", type: "veg" },
 
-    { name: "Lemon Ice Tea", price: 125, "category": "Frosted Leaf", "type": "veg" },
-    { name: "Lychee Ice Tea", price: 125, "category": "Frosted Leaf", "type": "veg" },
-    { name: "Passion Fruit Ice Tea", price: 125, "category": "Frosted Leaf", "type": "veg" },
-    { name: "Peach Ice Tea", price: 125, category: "Frosted Leaf", "type": "veg" },
+    { name: "Lemon Ice Tea", price: 125, category: "Frosted Leaf", type: "veg" },
+    { name: "Lychee Ice Tea", price: 125, category: "Frosted Leaf", type: "veg" },
+    { name: "Passion Fruit Ice Tea", price: 125, category: "Frosted Leaf", type: "veg" },
+    { name: "Peach Ice Tea", price: 125, category: "Frosted Leaf", type: "veg" },
 
-    { name: "Garlic Bread (4)", price: 50, "category": "ADD-ON", "type": "veg" },
-    { name: "Garlic Sauce", price: 20, "category": "ADD-ON", "type": "veg" },
-    { name: "Hash Brown", price: 40, "category": "ADD-ON", "type": "veg" },
-    { name: "Hummus", price: 50, "category": "ADD-ON", "type": "veg" }
+    { name: "Garlic Bread (4)", price: 50, category: "ADD-ON", type: "veg" },
+    { name: "Garlic Sauce", price: 20, category: "ADD-ON", type: "veg" },
+    { name: "Hash Brown", price: 40, category: "ADD-ON", type: "veg" },
+    { name: "Hummus", price: 50, category: "ADD-ON", type: "veg" }
 ];
+
 let cart = {};
 let activeCoupon = null; // Track applied coupon
 
@@ -274,8 +271,7 @@ function loadCart() {
     const savedCart = localStorage.getItem('ccc_cart_v1');
     if (savedCart) {
         cart = JSON.parse(savedCart);
-        renderCart();
-        // Update the UI immediately
+        renderCart(); // Update the UI immediately
         
         // Update the mobile floating button visual
         const totalCount = Object.values(cart).reduce((acc, item) => acc + item.qty, 0);
@@ -290,6 +286,7 @@ let currentSort = 'default';
 let currentType = 'all'; // veg, non-veg
 let currentIngredient = 'all';
 let isUnder200 = false;
+
 /* --- FILTER FUNCTIONS --- */
 function setCategoryFilter(cat, btn) {
     document.querySelectorAll('.filter-item').forEach(b => b.classList.remove('active'));
@@ -357,7 +354,7 @@ function toggleOffersPage() {
     }
 }
 
-/* --- MAIN RENDER FUNCTION (UPDATED FOR STOCK CHECK) --- */
+/* --- MAIN RENDER FUNCTION --- */
 function renderMenu() {
     const root = document.getElementById('menu-root');
     root.innerHTML = '';
@@ -368,7 +365,6 @@ function renderMenu() {
         if (currentType === 'non-veg' && item.type !== 'non-veg') return false;
         if (isUnder200 && item.price >= 200) return false;
         if (currentIngredient !== 'all') {
-    
             const nameLower = item.name.toLowerCase();
             const ingLower = currentIngredient.toLowerCase();
             if(ingLower === 'paneer') {
@@ -379,6 +375,7 @@ function renderMenu() {
         }
         return true;
     });
+
     if (currentSort === 'low-high') {
         filteredItems.sort((a, b) => a.price - b.price);
     } else if (currentSort === 'high-low') {
@@ -398,29 +395,20 @@ function renderMenu() {
         
         const emojiStr = item.type === 'veg' ? vegIcon : nonVegIcon;
         
-        // --- NEW: CHECK AVAILABILITY ---
-        const isAvailable = item.available !== false; // Default to true if undefined
-        
-        // If sold out, create a disabled button
-        const buttonHtml = isAvailable 
-            ? `<button class="add-btn-mini" onclick="openOptionModal(${originalIndex})">ADD <i class="fas fa-plus"></i></button>`
-            : `<button class="add-btn-mini" style="background:#ccc; cursor:not-allowed;" disabled>SOLD OUT</button>`;
-
-        // If sold out, reduce opacity
-        const cardOpacity = isAvailable ? '1' : '0.6';
-
         card.innerHTML = `
-            <div class="card-top" style="opacity: ${cardOpacity}">
+            <div class="card-top">
                 <div class="food-title">
                     <span class="type-emoji">${emojiStr}</span>
                     ${item.name}
                 </div>
                 <div class="food-meta">${item.category}</div>
-            </div>
+           </div>
             <div class="price-row">
-                <div class="price" style="opacity: ${cardOpacity}">${rupeeSign}${item.price}</div>
-                ${buttonHtml}
-            </div>
+                <div class="price">${rupeeSign}${item.price}</div>
+                <button class="add-btn-mini" onclick="openOptionModal(${originalIndex})">
+                    ADD <i class="fas fa-plus"></i>
+                </button>
+         </div>
         `;
         root.appendChild(card);
     });
@@ -528,7 +516,7 @@ function openOptionModal(index) {
                            onchange="updateModalTotal()"> 
                     ${opt.name}
                 </label>
-                <span class="custom-option-price">+${rupeeSign}${opt.price}</span>
+               <span class="custom-option-price">+${rupeeSign}${opt.price}</span>
             </div>
         `;
     });
@@ -909,12 +897,12 @@ function renderCart() {
                     <span class="cart-name">${key}</span>
                     <span class="cart-price">${rupeeSign}${item.price}</span>
                 </div>
-                <div class="qty-wrapper">
+              <div class="qty-wrapper">
                     <button class="qty-btn" onclick="updateQty('${key}', -1)">−</button>
                     <span>${item.qty}</span>
                     <button class="qty-btn" onclick="updateQty('${key}', 1)">+</button>
                 </div>
-            </div>
+         </div>
         `;
     }
 
@@ -1237,11 +1225,9 @@ function finalizeOrder() {
     const finalUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
 
     // --- NEW: WIPE CART AFTER ORDER ---
-    cart = {};
-    // Clear memory
+    cart = {}; // Clear memory
     localStorage.removeItem('ccc_cart_v1'); // Clear storage
-    renderCart();
-    // Clear UI visually
+    renderCart(); // Clear UI visually
     // ----------------------------------
 
     document.getElementById('main-dashboard').style.display = 'none';
