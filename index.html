@@ -393,31 +393,28 @@
             </div>
         </div>
 
-        <div class="advanced-filters">
-            <select class="adv-select" onchange="setSort(this.value)">
-                <option value="default">Sort By...</option>
-                <option value="low-high">Price: Low to High</option>
-                <option value="high-low">Price: High to Low</option>
-            </select>
+        <div class="advanced-filters sticky-filters">
+    <button class="filter-chip" onclick="cycleSort(this)" id="sort-chip">
+        <i class="fas fa-sort"></i> <span>Sort: Default</span>
+    </button>
 
-            <select class="adv-select" onchange="setType(this.value)">
-                <option value="all">Diet: All</option>
-                <option value="veg">Veg Only</option>
-                <option value="non-veg">Non-Veg Only</option>
-            </select>
+    <button class="filter-chip" onclick="toggleDiet('veg', this)">
+        <i class="fas fa-leaf" style="color:var(--veg-color);"></i> Veg
+    </button>
+    <button class="filter-chip" onclick="toggleDiet('non-veg', this)">
+        <i class="fas fa-drumstick-bite" style="color:var(--non-veg-color);"></i> Non-Veg
+    </button>
 
-            <select class="adv-select" onchange="setIngredient(this.value)">
-                <option value="all">Ingredient: All</option>
-                <option value="Chicken">Chicken</option>
-                <option value="Beef">Beef</option>
-                <option value="Fish">Fish</option>
-                <option value="Panner">Paneer</option>
-            </select>
+    <button class="filter-chip" onclick="toggleUnder200(this)" id="price-chip">
+        <i class="fas fa-wallet"></i> Under ₹200
+    </button>
 
-            <div class="toggle-chip" onclick="toggleUnder200(this)" id="price-chip">
-                <i class="fas fa-tag"></i> Under ₹200
-            </div>
-        </div>
+    <div class="vertical-divider"></div>
+    <button class="filter-chip" onclick="setIngredient('Chicken', this)">Chicken</button>
+    <button class="filter-chip" onclick="setIngredient('Beef', this)">Beef</button>
+    <button class="filter-chip" onclick="setIngredient('Fish', this)">Fish</button>
+    <button class="filter-chip" onclick="setIngredient('Paneer', this)">Paneer</button>
+</div>
 
         <div class="menu-grid" id="menu-root">
             </div>
