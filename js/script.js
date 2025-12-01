@@ -41,6 +41,14 @@ window.addEventListener('load', () => {
     }
 });
 
+/* --- MOUSE TRACKER FOR ANIMATION --- */
+let lastClickX = 0;
+let lastClickY = 0;
+document.addEventListener('click', (e) => {
+    lastClickX = e.clientX;
+    lastClickY = e.clientY;
+});
+
 /* --- DATA --- */
 const whatsappNumber = "917907660093";
 const MIN_ORDER_VAL = 200; 
@@ -586,6 +594,9 @@ function addToCart(name, finalPrice, basePrice, type, category) {
     btn.style.transform = "scale(1.2)";
     setTimeout(() => btn.style.transform = "scale(1)", 200);
     
+    // Trigger Flying Animation
+    triggerFlyAnimation(category);
+    
     checkUpsell(category);
 }
 
@@ -1063,194 +1074,66 @@ function acceptUpsell() {
     closeUpsell();
     // alert(currentUpsellItem.name + " added!"); // Optional: Feedback
 }
-/* --- MISSING CART ENGINE --- */
-function renderCart() {
-    const list = document.getElementById('cart-items-list');
-    list.innerHTML = '';
-    let subTotal = 0;
-    let packingTotal = 0;
-    let totalCount = 0;
-    let hasItems = false;
-    const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
 
-    for (let key in cart) {
-        hasItems = true;
-        const item = cart[key];
-        const itemTotal = item.price * item.qty;
-        subTotal += itemTotal;
-        totalCount += item.qty;
-        let chargePerItem = 0;
-        if (item.category === 'ADD-ON') {
-            if (key.startsWith("Hummus")) chargePerItem = 7;
-            else chargePerItem = 5;
-        } else if (fiveRsCats.includes(item.category)) {
-            chargePerItem = 5;
-        } else {
-            chargePerItem = 10;
-        }
-        packingTotal += (chargePerItem * item.qty);
-        if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) {
-            packingTotal += (7 * item.qty);
-        }
+/* --- FLYING ANIMATION LOGIC --- */
+function triggerFlyAnimation(category) {
+    const emojiMap = {
+        "Bun-Tastic Burgers": "🍔",
+        "Butcher's Best": "🥩",
+        "Italian Indulgence": "🍝",
+        "Freshly Folded": "🌯",
+        "Rice Harmony": "🍚",
+        "Salad Symphony": "🥗",
+        "Toasty Treats": "🥪",
+        "Warm Whispers": "🥣",
+        "Nibbles & Bits": "🍟",
+        "Icy Sips": "🥤",
+        "Mojito Magic": "🍹",
+        "Nature's Nectar": "🧃",
+        "Whipped Wonders": "🥤",
+        "Frosted Leaf": "🥃",
+        "ADD-ON": "🍞"
+    };
 
-        list.innerHTML += `
-            <div class="cart-item">
-                <div class="cart-details">
-                    <span class="cart-name">${key}</span>
-                    <span class="cart-price">${rupeeSign}${item.price}</span>
-                </div>
-                <div class="qty-wrapper">
-                    <button class="qty-btn" onclick="updateQty('${key}', -1)">−</button>
-                    <span>${item.qty}</span>
-                    <button class="qty-btn" onclick="updateQty('${key}', 1)">+</button>
-                </div>
-            </div>
-        `;
-    }
-
-    if(!hasItems) list.innerHTML = `<div style="text-align: center; color: #ccc; margin-top: 50px;">Cart is empty</div>`;
+    const emoji = emojiMap[category] || "😋";
     
-    // --- DISCOUNT CALCULATIONS ---
-    let discountVal = 0;
-    let discountText = "";
-    
-    if(activeCoupon === 'MONBURGER') {
-        let foundChicken = false; let chickenBasePrice = 0;
-        let foundFries = false; let friesBasePrice = 0;
-        let foundBeef = false;
-        for(let key in cart) {
-            let item = cart[key];
-            if(!foundChicken && item.category === 'Bun-Tastic Burgers' && key.toLowerCase().includes('chicken')) { foundChicken = true; chickenBasePrice = item.basePrice; }
-            if(!foundFries && (key === "French Fries - Salted" || key === "French Fries - Peri Peri")) { foundFries = true; friesBasePrice = item.basePrice; }
-            if(!foundBeef && item.category === 'Bun-Tastic Burgers' && key.toLowerCase().includes('beef')) { foundBeef = true; discountVal += 20; }
-        }
-        if(foundChicken && foundFries) {
-            let comboBaseTotal = chickenBasePrice + friesBasePrice;
-            if(comboBaseTotal > 222) discountVal += (comboBaseTotal - 222);
-        }
-        discountText = "Monday Special Applied";
-    }
-
-    if(activeCoupon === 'TUEPASTA') {
-        for(let key in cart) {
-            let item = cart[key];
-            if(item.category === 'Italian Indulgence') {
-                if(item.basePrice > 179) discountVal += (item.basePrice - 179) * item.qty;
-            }
-        }
-        discountText = "Tuesday Pasta Treat";
-    }
-
-    if(activeCoupon === 'WEDSTEAK') {
-        let steakDiscounted = 0;
-        for(let key in cart) {
-            let item = cart[key];
-            if(item.category === "Butcher's Best" && steakDiscounted < 1) {
-                if(item.basePrice > 300) { discountVal += (item.basePrice - 300); steakDiscounted++; }
-            }
-        }
-        discountText = "Wed Special (Max 1 Steak)";
-    }
-
-    if(activeCoupon === 'WEDSHAKE') {
-        let shakeDiscounted = 0;
-        for(let key in cart) {
-            let item = cart[key];
-            if(item.category === "Whipped Wonders" && key !== "Vanilla Milkshake" && shakeDiscounted < 1) {
-                if(item.basePrice > 120) { discountVal += (item.basePrice - 120); shakeDiscounted++; }
-            }
-        }
-        discountText = "Wed Special (Max 1 Shake)";
-    }
-
-    if(activeCoupon === 'THUSAND') {
-        let sandBase = 0; let chillBase = 0;
-        let sandFound = false; let chillFound = false;
-        for(let key in cart) {
-            let item = cart[key];
-            if(!sandFound && item.category === 'Toasty Treats') { sandBase = item.basePrice; sandFound = true; }
-            if(!chillFound && item.category === 'Icy Sips') { chillBase = item.basePrice; chillFound = true; }
-        }
-        if(sandFound && chillFound) {
-            let baseTotal = sandBase + chillBase;
-            if(baseTotal > 189) discountVal = baseTotal - 189;
-        }
-        discountText = "Thursday Club";
-    }
-
-    if(activeCoupon === 'FRIFRIES') {
-        let friesCount = 0;
-        for (let key in cart) {
-            if (friesCount < 1) {
-                let item = cart[key];
-                if (key === "Veg - Loaded Fries") { discountVal += (item.basePrice - 119); friesCount++; } 
-                else if (key === "Chicken Loaded Fries" || key === "Beef Loaded Fries") { discountVal += (item.basePrice - 179); friesCount++; }
-            }
-        }
-        discountText = "Fri-Yay Fries (Max 1)";
-    }
-    
-    if(activeCoupon === 'SATROLL') {
-        let rollDiscounted = 0;
-        for(let key in cart) {
-            let item = cart[key];
-            if(item.category === "Freshly Folded" && rollDiscounted < 1) {
-                if(item.basePrice > 129) { discountVal += (item.basePrice - 129); rollDiscounted++; }
-            }
-        }
-        discountText = "Sat Special (Max 1 Roll)";
-    }
-    
-    if(activeCoupon === 'SUNFEAST') {
-        let foundPasta = false; let foundSlider = false; let foundShake = false;
-        let comboBaseTotal = 0;
-        for(let key in cart) {
-            let item = cart[key];
-            if(!foundPasta && item.category === 'Italian Indulgence' && isSundayPasta(key)) { comboBaseTotal += item.basePrice; foundPasta = true; }
-            else if(!foundSlider && item.category === 'Bun-Tastic Burgers' && key.includes("Slider")) { comboBaseTotal += item.basePrice; foundSlider = true; }
-            else if(!foundShake && item.category === 'Whipped Wonders') { comboBaseTotal += item.basePrice; foundShake = true; }
-        }
-        if (foundPasta && foundSlider && foundShake) {
-            if (comboBaseTotal > 399) discountVal = comboBaseTotal - 399;
-            else discountVal = 0;
-            discountText = "Sunday Feast (Combo @ 399)";
-        }
-    }
-
-    if(activeCoupon === 'CLOUD15' || activeCoupon === 'STEAK13' || activeCoupon === 'QUICK20' || activeCoupon === 'FEAST14') {
-        let cartBaseTotal = 0;
-        for(let key in cart) { cartBaseTotal += (cart[key].basePrice * cart[key].qty); }
-        if(activeCoupon === 'CLOUD15') { discountVal = Math.round(cartBaseTotal * 0.15); discountText = "Coupon (15% OFF)"; }
-        if(activeCoupon === 'STEAK13') { discountVal = Math.round(cartBaseTotal * 0.13); discountText = "Steak & Sip (13% OFF)"; }
-        if(activeCoupon === 'QUICK20') { discountVal = Math.round(cartBaseTotal * 0.20); discountText = "Quick Bite (20% OFF)"; }
-        if(activeCoupon === 'FEAST14') { discountVal = Math.round(cartBaseTotal * 0.14); discountText = "Cloud Feast (14% OFF)"; }
-    }
-
-    const discountRow = document.getElementById('discount-row');
-    if (discountVal > 0) {
-        discountRow.style.display = 'flex';
-        discountRow.querySelector('span:first-child').innerText = discountText;
-        document.getElementById('discount-total').innerText = `- ${rupeeSign}${discountVal}`;
+    // Find target (Mobile: Floating Btn, Desktop: Cart Summary or Sidebar)
+    let cartBtn;
+    if (window.innerWidth <= 1000) {
+        cartBtn = document.querySelector('.mobile-cart-btn');
     } else {
-        discountRow.style.display = 'none';
+        cartBtn = document.querySelector('.order-sidebar');
     }
 
-    let grandTotal = (subTotal - discountVal) + packingTotal;
+    if (!cartBtn) return;
 
-    document.getElementById('sub-total').innerText = rupeeSign + subTotal;
-    document.getElementById('packing-total').innerText = rupeeSign + packingTotal;
-    document.getElementById('grand-total').innerText = rupeeSign + grandTotal;
-    document.getElementById('mobile-count').innerText = `(${totalCount})`;
+    const rect = cartBtn.getBoundingClientRect();
+    // Target is center of the button/sidebar
+    const targetX = rect.left + (rect.width / 2);
+    const targetY = rect.top + (rect.height / 2);
 
-    const checkoutBtn = document.getElementById('main-checkout-btn');
-    if(!hasItems) {
-        checkoutBtn.innerText = "Cart Empty";
-        checkoutBtn.disabled = true;
-    } else if (grandTotal < MIN_ORDER_VAL) {
-        checkoutBtn.innerText = `Min Order ${rupeeSign}${MIN_ORDER_VAL}`;
-        checkoutBtn.disabled = true;
-    } else {
-        checkoutBtn.innerText = "Confirm Order";
-        checkoutBtn.disabled = false;
-    }
+    const flyer = document.createElement('div');
+    flyer.innerText = emoji;
+    flyer.className = 'flying-food';
+    flyer.style.left = `${lastClickX}px`;
+    flyer.style.top = `${lastClickY}px`;
+
+    document.body.appendChild(flyer);
+
+    // Force reflow
+    void flyer.offsetWidth;
+
+    // Fly to target
+    flyer.style.left = `${targetX}px`;
+    flyer.style.top = `${targetY}px`;
+    flyer.style.transform = 'scale(0.1)';
+    flyer.style.opacity = '0';
+
+    // Remove after flight time (0.8s) matches CSS
+    setTimeout(() => {
+        flyer.remove();
+        // Shake the cart button for feedback
+        cartBtn.classList.add('cart-shake');
+        setTimeout(() => cartBtn.classList.remove('cart-shake'), 400);
+    }, 800);
 }
