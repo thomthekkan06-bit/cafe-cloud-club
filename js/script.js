@@ -693,28 +693,30 @@ function applyCoupon() {
         return;
     }
 
-    if (code === 'WEDSTEAK') {
+if (code === 'WEDSTEAK') {
         if(todayIndex !== 3) { 
             msgBox.innerText = "This code is only valid on Wednesdays!";
             msgBox.className = "coupon-msg error";
             activeCoupon = null; renderCart(); return;
         }
-        activeCoupon = 'WEDSTEAK';
-        msgBox.innerText = "Wicked Wednesday (Steak) Applied!";
-        msgBox.className = "coupon-msg success";
-        renderCart();
-        return;
-    }
+        // Logic: Scan cart to ensure they have at least one valid item before applying
+        let hasSteak = false;
+        let hasShake = false;
+        
+        for(let key in cart) {
+            if(cart[key].category === "Butcher's Best") hasSteak = true;
+            if(cart[key].category === "Whipped Wonders" && !key.toLowerCase().includes("vanilla")) hasShake = true;
+        }
 
-    if (code === 'WEDSHAKE') {
-        if(todayIndex !== 3) { 
-            msgBox.innerText = "This code is only valid on Wednesdays!";
+        if(hasSteak || hasShake) {
+            activeCoupon = 'WEDSTEAK';
+            msgBox.innerText = "Wicked Wednesday Applied!";
+            msgBox.className = "coupon-msg success";
+        } else {
+            msgBox.innerText = "Add a Steak OR a Premium Shake to apply.";
             msgBox.className = "coupon-msg error";
-            activeCoupon = null; renderCart(); return;
+            activeCoupon = null;
         }
-        activeCoupon = 'WEDSHAKE';
-        msgBox.innerText = "Wicked Wednesday (Shake) Applied!";
-        msgBox.className = "coupon-msg success";
         renderCart();
         return;
     }
