@@ -96,10 +96,18 @@
 }
 
 @keyframes satelliteOrbit {
-    0% { top: 10px; left: 80px; transform: scale(1); }
-    33% { top: 80px; left: 80px; transform: scale(0.8); }
-    66% { top: 80px; left: 10px; transform: scale(1.1); }
-    100% { top: 10px; left: 80px; transform: scale(1); }
+    0% { 
+        transform: translate(80px, 10px) scale(1); 
+    }
+    33% { 
+        transform: translate(80px, 80px) scale(0.8); 
+    }
+    66% { 
+        transform: translate(10px, 80px) scale(1.1); 
+    }
+    100% { 
+        transform: translate(80px, 10px) scale(1); 
+    }
 }
 
 @keyframes cycleIcon1 {
