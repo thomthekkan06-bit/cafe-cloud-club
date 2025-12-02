@@ -143,7 +143,7 @@
     --bg: #F3F4F6; 
     --white: #ffffff;
     --dark-text: #2d3436;
-    --grey-text: #6B7280; /* Slightly darker grey for readability */
+    --grey-text: #4B5563; /* Darkened to pass accessibility standards */
     --radius: 12px;
     /* CHANGED: Stronger shadow to lift the white cards off the gray bg */
     --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
