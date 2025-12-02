@@ -693,27 +693,55 @@ function applyCoupon() {
         return;
     }
 
-if (code === 'WEDSTEAK') {
+// --- 1. WEDSTEAK (Steaks Only) ---
+    if (code === 'WEDSTEAK') {
         if(todayIndex !== 3) { 
-            msgBox.innerText = "This code is only valid on Wednesdays!";
+            msgBox.innerText = "Wednesday Only!";
             msgBox.className = "coupon-msg error";
             activeCoupon = null; renderCart(); return;
         }
-        // Logic: Scan cart to ensure they have at least one valid item before applying
-        let hasSteak = false;
-        let hasShake = false;
         
+        let hasSteak = false;
+        // Check if ANY steak exists
         for(let key in cart) {
-            if(cart[key].category === "Butcher's Best") hasSteak = true;
-            if(cart[key].category === "Whipped Wonders" && !key.toLowerCase().includes("vanilla")) hasShake = true;
+            if(cart[key].category === "Butcher's Best") { hasSteak = true; break; }
         }
 
-        if(hasSteak || hasShake) {
+        if(hasSteak) {
             activeCoupon = 'WEDSTEAK';
-            msgBox.innerText = "Wicked Wednesday Applied!";
+            msgBox.innerText = "Wicked Wednesday: Steak Offer Applied!";
             msgBox.className = "coupon-msg success";
         } else {
-            msgBox.innerText = "Add a Steak OR a Premium Shake to apply.";
+            msgBox.innerText = "Add a Steak to apply.";
+            msgBox.className = "coupon-msg error";
+            activeCoupon = null;
+        }
+        renderCart();
+        return;
+    }
+
+    // --- 2. WEDSHAKE (Shakes Only, No Vanilla) ---
+    if (code === 'WEDSHAKE') {
+        if(todayIndex !== 3) { 
+            msgBox.innerText = "Wednesday Only!";
+            msgBox.className = "coupon-msg error";
+            activeCoupon = null; renderCart(); return;
+        }
+
+        let hasShake = false;
+        // Check if ANY valid shake exists
+        for(let key in cart) {
+            if(cart[key].category === "Whipped Wonders" && !key.toLowerCase().includes("vanilla")) { 
+                hasShake = true; break; 
+            }
+        }
+
+        if(hasShake) {
+            activeCoupon = 'WEDSHAKE';
+            msgBox.innerText = "Wicked Wednesday: Shake Offer Applied!";
+            msgBox.className = "coupon-msg success";
+        } else {
+            msgBox.innerText = "Add a Premium Shake (No Vanilla).";
             msgBox.className = "coupon-msg error";
             activeCoupon = null;
         }
