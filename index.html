@@ -393,20 +393,20 @@
             </div>
         </div>
 
-        <div class="advanced-filters">
-            <select class="adv-select" onchange="setSort(this.value)">
+<div class="advanced-filters">
+            <select class="adv-select" onchange="setSort(this.value)" aria-label="Sort menu items by price">
                 <option value="default">Sort By...</option>
                 <option value="low-high">Price: Low to High</option>
                 <option value="high-low">Price: High to Low</option>
             </select>
 
-            <select class="adv-select" onchange="setType(this.value)">
+            <select class="adv-select" onchange="setType(this.value)" aria-label="Filter menu by diet type">
                 <option value="all">Diet: All</option>
                 <option value="veg">Veg Only</option>
                 <option value="non-veg">Non-Veg Only</option>
             </select>
 
-            <select class="adv-select" onchange="setIngredient(this.value)">
+            <select class="adv-select" onchange="setIngredient(this.value)" aria-label="Filter menu by main ingredient">
                 <option value="all">Ingredient: All</option>
                 <option value="Chicken">Chicken</option>
                 <option value="Beef">Beef</option>
