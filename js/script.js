@@ -960,6 +960,21 @@ function finalizeOrder() {
     document.getElementById('main-dashboard').style.display = 'none';
     document.getElementById('checkout-modal').style.display = 'none';
     document.getElementById('success-view').style.display = 'flex';
+    // --- GOOGLE ANALYTICS REVENUE TRACKING ---
+    // This tells Google: "Money was made here."
+    if (typeof gtag === 'function') {
+        gtag('event', 'purchase', {
+            transaction_id: orderId,
+            value: grandTotal,
+            currency: "INR",
+            items: Object.keys(cart).map(key => ({
+                item_name: key,
+                quantity: cart[key].qty,
+                price: cart[key].price,
+                item_category: cart[key].category
+            }))
+        });
+    }
     document.getElementById('customer-name-display').innerText = name;
     document.getElementById('send-wa-btn').onclick = function() { window.open(finalUrl, '_blank'); };
 }
