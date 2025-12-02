@@ -260,7 +260,8 @@ body {
     box-shadow: 0 6px 12px rgba(0,0,0,0.2);
 }
 
-.dev-credit { font-size: 0.7rem; color: #b2bec3; text-align: center; margin-top: 20px; padding-top: 10px; }
+.dev-credit { font-size: 0.7rem; color: #596275; text-align: center; margin-top: 20px; padding-top: 10px;
+}
 .dev-credit span { display: block; margin-bottom: 2px; }
 .dev-credit a { color: var(--primary); font-weight: 700; text-decoration: none; font-size: 0.75rem; }
 .sidebar-credit { display: block; border-top: 1px solid #eee; }
