@@ -1313,28 +1313,53 @@ function renderCart() {
         }
     }
 
-    if(activeCoupon === 'WEDSTEAK') {
-        let steakDiscounted = 0;
-        for(let key in cart) {
-            let item = cart[key];
-            if(item.category === "Butcher's Best" && steakDiscounted < 1) {
-                if(item.basePrice > 300) { discountVal += (item.basePrice - 300);
-                steakDiscounted++; }
-            }
-        }
-        discountText = "Wed Special (Max 1 Steak)";
-    }
+if(activeCoupon === 'WEDSTEAK') {
+        let steakItem = null;
+        let shakeItem = null;
+        let steakKey = '';
+        let shakeKey = '';
 
-    if(activeCoupon === 'WEDSHAKE') {
-        let shakeDiscounted = 0;
+        // 1. Identify valid items (First one found only, as per "Any one" rule)
         for(let key in cart) {
             let item = cart[key];
-            if(item.category === "Whipped Wonders" && key !== "Vanilla Milkshake" && shakeDiscounted < 1) {
-                if(item.basePrice > 120) { discountVal += (item.basePrice - 120);
-                shakeDiscounted++; }
+            if(!steakItem && item.category === "Butcher's Best") {
+                steakItem = item;
+                steakKey = key;
+            }
+            if(!shakeItem && item.category === "Whipped Wonders" && !key.toLowerCase().includes("vanilla")) {
+                shakeItem = item;
+                shakeKey = key;
             }
         }
-        discountText = "Wed Special (Max 1 Shake)";
+
+        // 2. Strict Mutual Exclusivity Rule per Image Text
+        if (steakItem && shakeItem) {
+            discountVal = 0;
+            discountText = "Conflict: Steak AND Shake";
+            const msgBox = document.getElementById('coupon-msg');
+            if(msgBox) {
+                msgBox.innerText = "Offer invalid: Remove Steak or Shake. You can only redeem ONE.";
+                msgBox.className = "coupon-msg error";
+            }
+        }
+        // 3. Apply Steak Offer (Flat ₹300)
+        else if (steakItem) {
+            if(steakItem.basePrice > 300) {
+                 discountVal = steakItem.basePrice - 300;
+            }
+            discountText = "Wed: Flat ₹300 Steak";
+            const msgBox = document.getElementById('coupon-msg');
+            if(msgBox) { msgBox.innerText = "Wicked Wednesday: Steak Offer Applied!"; msgBox.className = "coupon-msg success"; }
+        }
+        // 4. Apply Shake Offer (Flat ₹120)
+        else if (shakeItem) {
+            if(shakeItem.basePrice > 120) {
+                discountVal = shakeItem.basePrice - 120;
+            }
+            discountText = "Wed: Flat ₹120 Shake";
+            const msgBox = document.getElementById('coupon-msg');
+            if(msgBox) { msgBox.innerText = "Wicked Wednesday: Shake Offer Applied!"; msgBox.className = "coupon-msg success"; }
+        }
     }
 
     if(activeCoupon === 'THUSAND') {
