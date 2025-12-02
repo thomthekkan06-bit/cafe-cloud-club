@@ -1,5 +1,5 @@
-/* --- PRELOADER SCRIPT --- */
-window.addEventListener('load', () => {
+/* --- PRELOADER SCRIPT (OPTIMIZED) --- */
+document.addEventListener('DOMContentLoaded', () => {
     const foodQuotes = {
         0: "Midnight munchies? A Burger fixes everything.",
         1: "Insomnia tastes better with a thick Milkshake.",
@@ -35,9 +35,8 @@ window.addEventListener('load', () => {
 
     const preloader = document.getElementById('preloader');
     if (preloader) {
-        setTimeout(() => {
-            preloader.classList.add('preloader-hidden');
-        }, 500); 
+        // Removed the 500ms setTimeout. Speed is priority.
+        preloader.classList.add('preloader-hidden');
     }
 });
 
