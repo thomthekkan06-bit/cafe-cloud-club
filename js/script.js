@@ -414,10 +414,10 @@ function renderMenu() {
         
         const emojiStr = item.type === 'veg' ? vegIcon : nonVegIcon;
         
-        card.innerHTML = `
+card.innerHTML = `
             <div style="position:relative;"> 
-                <button id="fav-btn-${uniqueId}" class="fav-btn ${favClass}" onclick="event.stopPropagation(); toggleFavorite('${item.name}')">
-                    <i class="fas fa-heart"></i>
+                <button id="fav-btn-${uniqueId}" class="fav-btn ${favClass}" aria-label="Add ${item.name} to favorites" onclick="event.stopPropagation(); toggleFavorite('${item.name}')">
+                    <i class="fas fa-heart" aria-hidden="true"></i>
                 </button>
             </div>
 
@@ -430,8 +430,8 @@ function renderMenu() {
             </div>
             <div class="price-row">
                 <div class="price">${rupeeSign}${item.price}</div>
-                <button class="add-btn-mini" onclick="openOptionModal(${originalIndex})">
-                    ADD <i class="fas fa-plus"></i>
+                <button class="add-btn-mini" aria-label="Add ${item.name} to cart" onclick="openOptionModal(${originalIndex})">
+                    ADD <i class="fas fa-plus" aria-hidden="true"></i>
                 </button>
             </div>
         `;
