@@ -221,7 +221,7 @@ body {
     color: var(--grey-text);
 }
 
-.store-timings-box h4, .store-address-box h4 {
+.store-timings-box h2, .store-address-box h2 {
     margin: 0 0 5px 0;
     color: var(--primary);
     font-size: 0.8rem;
