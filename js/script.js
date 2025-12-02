@@ -37,7 +37,7 @@ window.addEventListener('load', () => {
     if (preloader) {
         setTimeout(() => {
             preloader.classList.add('preloader-hidden');
-        }, 2500); 
+        }, 500); 
     }
 });
 
