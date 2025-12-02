@@ -502,7 +502,11 @@ body {
 
 .offer-title { font-size: 1.3rem; font-weight: 700;
     color: var(--secondary); margin-bottom: 8px; }
-.offer-desc { font-size: 0.9rem; color: var(--grey-text); line-height: 1.6; }
+.offer-desc { 
+    font-size: 0.9rem; 
+    color: #2d3436; /* Darker grey to pass accessibility test */
+    line-height: 1.6; 
+}
 
 .offer-divider {
     height: 0;
