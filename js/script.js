@@ -1224,13 +1224,23 @@ function renderCart() {
     }
 
     if(activeCoupon === 'TUEPASTA') {
+        let pastaDiscountApplied = false; // The Lock
+
         for(let key in cart) {
             let item = cart[key];
-            if(item.category === 'Italian Indulgence') {
-                if(item.basePrice > 179) discountVal += (item.basePrice - 179) * item.qty;
+            // Check category AND if we haven't given the discount yet
+            if(item.category === 'Italian Indulgence' && !pastaDiscountApplied) {
+                if(item.basePrice > 179) { 
+                    // Calculate discount for ONE item only. 
+                    // DO NOT multiply by item.qty
+                    discountVal += (item.basePrice - 179); 
+                    
+                    // Lock it immediately so the loop continues but ignores other pastas
+                    pastaDiscountApplied = true; 
+                }
             }
         }
-        discountText = "Tuesday Pasta Treat";
+        discountText = "Twisted Tuesday (Max 1)";
     }
 
     if(activeCoupon === 'WEDSTEAK') {
