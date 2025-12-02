@@ -407,7 +407,7 @@ function renderMenu() {
         const isFav = favorites.includes(item.name);
         const favClass = isFav ? 'active' : '';
         const uniqueId = item.name.replace(/[^a-zA-Z0-9]/g, '-');
-        
+         
         const emojiStr = item.type === 'veg' ? vegIcon : nonVegIcon;
         
         card.innerHTML = `
@@ -869,7 +869,8 @@ function applyCoupon() {
 
 function toggleCartPage() { document.getElementById('cart-sidebar').classList.toggle('active'); }
 function openCheckoutModal() { document.getElementById('checkout-modal').style.display = 'flex'; toggleOrderFields(); }
-function closeCheckoutModal() { document.getElementById('checkout-modal').style.display = 'none'; }
+function closeCheckoutModal() { document.getElementById('checkout-modal').style.display = 'none';
+}
 
 function toggleOrderFields() {
     const type = document.querySelector('input[name="orderType"]:checked').value;
@@ -999,7 +1000,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dailyOfferTexts = [
         "SUNDAY SPECIAL: Fam-Jam Feast! 1 Pasta + 1 Slider + 1 Shake = ₹399. Use Code: SUNFEAST", // 0
         "MEAT-UP MONDAY: Burger + Fries = ₹222. Strictly 1 Beef Burger gets ₹20 OFF. Use Code: MONBURGER", // 1
-        "TWISTED TUESDAY: All Pastas Flat at ₹179. Use Code: TUEPASTA", // 2
+        "TWISTED TUESDAY: Any Penne Pasta (Alfredo/Pesto/Arabiata/Cloud) Flat @ ₹179. Veg/Non-Veg. Use Code: TUEPASTA", // 2
         "WICKED WEDNESDAY: Steak @ ₹300 (Code: WEDSTEAK) OR Premium Shake @ ₹120 (Code: WEDSHAKE)", // 3
         "THURSDAY CLUB: Any Sandwich + Any Chiller = ₹189. Use Code: THUSAND", // 4
         "FRI-YAY FRY-DAY: Veg Loaded Fries ₹119 | Chicken Loaded Fries ₹179. Use Code: FRIFRIES", // 5
@@ -1197,7 +1198,7 @@ function renderCart() {
                     <span>${item.qty}</span>
                     <button class="qty-btn" onclick="updateQty('${key}', 1)">+</button>
                 </div>
-            </div>
+             </div>
         `;
     }
 
@@ -1205,7 +1206,7 @@ function renderCart() {
     // --- DISCOUNT CALCULATIONS ---
     let discountVal = 0;
     let discountText = "";
-if(activeCoupon === 'MONBURGER') {
+    if(activeCoupon === 'MONBURGER') {
         let chickenItem = null;
         let friesItem = null;
         let beefItem = null;
@@ -1216,15 +1217,15 @@ if(activeCoupon === 'MONBURGER') {
             let item = cart[key];
             // Find first Chicken Burger
             if(!chickenItem && item.category === 'Bun-Tastic Burgers' && key.toLowerCase().includes('chicken')) { 
-                chickenItem = item; 
+                chickenItem = item;
             }
             // Find first Fries (Salted or Peri Peri only)
             if(!friesItem && (key === "French Fries - Salted" || key === "French Fries - Peri Peri")) { 
-                friesItem = item; 
+                friesItem = item;
             }
             // Find first Beef Burger
             if(!beefItem && item.category === 'Bun-Tastic Burgers' && key.toLowerCase().includes('beef')) { 
-                beefItem = item; 
+                beefItem = item;
             }
         }
 
@@ -1248,13 +1249,15 @@ if(activeCoupon === 'MONBURGER') {
                 discountVal = comboBaseTotal - 222;
             }
             discountText = "Mon: Chicken+Fries @ 222";
-            if(msgBox) { msgBox.innerText = "Meat-Up Monday: Combo Applied!"; msgBox.className = "coupon-msg success"; }
+            if(msgBox) { msgBox.innerText = "Meat-Up Monday: Combo Applied!"; msgBox.className = "coupon-msg success";
+            }
         } 
         // 4. SCENARIO B: Beef = Flat 20 OFF (Base Price Only)
         else if (hasBeef) {
             discountVal = 20;
             discountText = "Mon: ₹20 OFF Beef";
-            if(msgBox) { msgBox.innerText = "Meat-Up Monday: Beef Offer Applied!"; msgBox.className = "coupon-msg success"; }
+            if(msgBox) { msgBox.innerText = "Meat-Up Monday: Beef Offer Applied!"; msgBox.className = "coupon-msg success";
+            }
         }
         // 5. Criteria not met (user deleted items)
         else {
@@ -1268,17 +1271,44 @@ if(activeCoupon === 'MONBURGER') {
     }
 
     if(activeCoupon === 'TUEPASTA') {
-        let pastaDiscountApplied = false; // Flag to ensure only ONE pasta gets discount
+        let pastaDiscountApplied = false;
+        // Strict Filter: Penne Only + Specific Flavors + Max 1
         for(let key in cart) {
             let item = cart[key];
-            if(item.category === 'Italian Indulgence' && !pastaDiscountApplied) {
-                if(item.basePrice > 179) { 
-                    discountVal += (item.basePrice - 179); // Discount for 1 unit only
-                    pastaDiscountApplied = true; // Lock the discount
+            const lowerName = key.toLowerCase();
+
+            // Check Category & Base Type (Penne)
+            if(item.category === 'Italian Indulgence' && lowerName.includes('penne') && !pastaDiscountApplied) {
+
+                // Check Specific Flavors (Alfredo, Pesto, Arabiata, Cloud Special)
+                // This covers: "Arabiata Chicken Pasta - Penne", "Veg Pasta - Arabiata - Penne", etc.
+                const isEligibleFlavor = lowerName.includes('alfredo') || 
+                                         lowerName.includes('pesto') || 
+                                         lowerName.includes('arabiata') || 
+                                         lowerName.includes('cloud special');
+
+                if (isEligibleFlavor) {
+                    // Apply Discount: Base Price -> 179
+                    if(item.basePrice > 179) { 
+                        discountVal += (item.basePrice - 179);
+                        pastaDiscountApplied = true; // Lock it
+                    }
                 }
             }
         }
-        discountText = "Twisted Tuesday (Max 1)";
+
+        if (pastaDiscountApplied) {
+             discountText = "Twisted Tuesday (Flat ₹179)";
+        } else {
+             // User applied code but has no valid items, or items are < 179 (unlikely for pasta)
+             // Or they have Spaghetti/Invalid pasta
+             discountText = "Add Eligible Penne Pasta"; 
+             const msgBox = document.getElementById('coupon-msg');
+             if(msgBox) {
+                 msgBox.innerText = "Add Valid Penne (Alfredo/Pesto/Arabiata/Cloud) to apply.";
+                 msgBox.className = "coupon-msg error";
+             }
+        }
     }
 
     if(activeCoupon === 'WEDSTEAK') {
@@ -1371,7 +1401,6 @@ if(activeCoupon === 'MONBURGER') {
 
     if(activeCoupon === 'CLOUD15' || activeCoupon === 'STEAK13' || activeCoupon === 'QUICK20' || activeCoupon === 'FEAST14') {
         let qualifyingTotal = 0;
-
         for(let key in cart) {
             let item = cart[key];
             let lineTotal = item.basePrice * item.qty; 
@@ -1405,10 +1434,14 @@ if(activeCoupon === 'MONBURGER') {
             }
         }
 
-        if(activeCoupon === 'CLOUD15') { discountVal = Math.round(qualifyingTotal * 0.15); discountText = "Coupon (15% OFF Combo)"; }
-        if(activeCoupon === 'STEAK13') { discountVal = Math.round(qualifyingTotal * 0.13); discountText = "Steak & Sip (13% OFF Combo)"; }
-        if(activeCoupon === 'QUICK20') { discountVal = Math.round(qualifyingTotal * 0.20); discountText = "Quick Bite (20% OFF Combo)"; }
-        if(activeCoupon === 'FEAST14') { discountVal = Math.round(qualifyingTotal * 0.14); discountText = "Cloud Feast (14% OFF Combo)"; }
+        if(activeCoupon === 'CLOUD15') { discountVal = Math.round(qualifyingTotal * 0.15);
+        discountText = "Coupon (15% OFF Combo)"; }
+        if(activeCoupon === 'STEAK13') { discountVal = Math.round(qualifyingTotal * 0.13);
+        discountText = "Steak & Sip (13% OFF Combo)"; }
+        if(activeCoupon === 'QUICK20') { discountVal = Math.round(qualifyingTotal * 0.20);
+        discountText = "Quick Bite (20% OFF Combo)"; }
+        if(activeCoupon === 'FEAST14') { discountVal = Math.round(qualifyingTotal * 0.14);
+        discountText = "Cloud Feast (14% OFF Combo)"; }
     }
 
     const discountRow = document.getElementById('discount-row');
