@@ -1205,24 +1205,66 @@ function renderCart() {
     // --- DISCOUNT CALCULATIONS ---
     let discountVal = 0;
     let discountText = "";
-    if(activeCoupon === 'MONBURGER') {
-        let foundChicken = false; let chickenBasePrice = 0;
-        let foundFries = false; let friesBasePrice = 0;
-        let foundBeef = false;
+if(activeCoupon === 'MONBURGER') {
+        let chickenItem = null;
+        let friesItem = null;
+        let beefItem = null;
+        const msgBox = document.getElementById('coupon-msg');
+
+        // 1. Scan for ingredients
         for(let key in cart) {
             let item = cart[key];
-            if(!foundChicken && item.category === 'Bun-Tastic Burgers' && key.toLowerCase().includes('chicken')) { foundChicken = true; chickenBasePrice = item.basePrice;
+            // Find first Chicken Burger
+            if(!chickenItem && item.category === 'Bun-Tastic Burgers' && key.toLowerCase().includes('chicken')) { 
+                chickenItem = item; 
             }
-            if(!foundFries && (key === "French Fries - Salted" || key === "French Fries - Peri Peri")) { foundFries = true;
-            friesBasePrice = item.basePrice; }
-            if(!foundBeef && item.category === 'Bun-Tastic Burgers' && key.toLowerCase().includes('beef')) { foundBeef = true;
-            discountVal += 20; }
+            // Find first Fries (Salted or Peri Peri only)
+            if(!friesItem && (key === "French Fries - Salted" || key === "French Fries - Peri Peri")) { 
+                friesItem = item; 
+            }
+            // Find first Beef Burger
+            if(!beefItem && item.category === 'Bun-Tastic Burgers' && key.toLowerCase().includes('beef')) { 
+                beefItem = item; 
+            }
         }
-        if(foundChicken && foundFries) {
-            let comboBaseTotal = chickenBasePrice + friesBasePrice;
-            if(comboBaseTotal > 222) discountVal += (comboBaseTotal - 222);
+
+        const hasCombo = (chickenItem && friesItem);
+        const hasBeef = (beefItem !== null);
+
+        // 2. Strict Mutual Exclusivity Check
+        if (hasCombo && hasBeef) {
+            discountVal = 0;
+            discountText = "Conflict: Choose 1 Offer";
+            if(msgBox) {
+                msgBox.innerText = "Error: Cannot combine Chicken Combo and Beef Offer. Remove one.";
+                msgBox.className = "coupon-msg error";
+            }
+        } 
+        // 3. SCENARIO A: Chicken + Fries = 222 (Base Price Only)
+        else if (hasCombo) {
+            let comboBaseTotal = chickenItem.basePrice + friesItem.basePrice;
+            if (comboBaseTotal > 222) {
+                // Determine how much to subtract to bring base total down to 222
+                discountVal = comboBaseTotal - 222;
+            }
+            discountText = "Mon: Chicken+Fries @ 222";
+            if(msgBox) { msgBox.innerText = "Meat-Up Monday: Combo Applied!"; msgBox.className = "coupon-msg success"; }
+        } 
+        // 4. SCENARIO B: Beef = Flat 20 OFF (Base Price Only)
+        else if (hasBeef) {
+            discountVal = 20;
+            discountText = "Mon: ₹20 OFF Beef";
+            if(msgBox) { msgBox.innerText = "Meat-Up Monday: Beef Offer Applied!"; msgBox.className = "coupon-msg success"; }
         }
-        discountText = "Monday Special Applied";
+        // 5. Criteria not met (user deleted items)
+        else {
+            discountVal = 0;
+            discountText = "Requirements not met";
+            if(msgBox) {
+                msgBox.innerText = "Add Chicken+Fries OR Beef Burger to apply.";
+                msgBox.className = "coupon-msg error";
+            }
+        }
     }
 
     if(activeCoupon === 'TUEPASTA') {
