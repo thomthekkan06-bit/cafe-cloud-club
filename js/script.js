@@ -1089,29 +1089,19 @@ function acceptUpsell() {
     // alert(currentUpsellItem.name + " added!"); // Optional: Feedback
 }
 
-/* --- FLYING ANIMATION LOGIC --- */
+/* --- GPU ACCELERATED FLYING ANIMATION (Fixes Lag) --- */
 function triggerFlyAnimation(category) {
     const emojiMap = {
-        "Bun-Tastic Burgers": "🍔",
-        "Butcher's Best": "🥩",
-        "Italian Indulgence": "🍝",
-        "Freshly Folded": "🌯",
-        "Rice Harmony": "🍚",
-        "Salad Symphony": "🥗",
-        "Toasty Treats": "🥪",
-        "Warm Whispers": "🥣",
-        "Nibbles & Bits": "🍟",
-        "Icy Sips": "🥤",
-        "Mojito Magic": "🍹",
-        "Nature's Nectar": "🧃",
-        "Whipped Wonders": "🥤",
-        "Frosted Leaf": "🥃",
-        "ADD-ON": "🍞"
+        "Bun-Tastic Burgers": "🍔", "Butcher's Best": "🥩", "Italian Indulgence": "🍝",
+        "Freshly Folded": "🌯", "Rice Harmony": "🍚", "Salad Symphony": "🥗",
+        "Toasty Treats": "🥪", "Warm Whispers": "🥣", "Nibbles & Bits": "🍟",
+        "Icy Sips": "🥤", "Mojito Magic": "🍹", "Nature's Nectar": "🧃",
+        "Whipped Wonders": "🥤", "Frosted Leaf": "🥃", "ADD-ON": "🍞"
     };
-
+    // If emoji not found, default to Yummy face
     const emoji = emojiMap[category] || "😋";
     
-    // Find target (Mobile: Floating Btn, Desktop: Cart Summary or Sidebar)
+    // 1. Identify Target (Mobile Button or Desktop Sidebar)
     let cartBtn;
     if (window.innerWidth <= 1000) {
         cartBtn = document.querySelector('.mobile-cart-btn');
@@ -1119,95 +1109,45 @@ function triggerFlyAnimation(category) {
         cartBtn = document.querySelector('.order-sidebar');
     }
 
+    // Safety check: if button isn't there, stop.
     if (!cartBtn) return;
 
+    // 2. Calculate Coordinates
     const rect = cartBtn.getBoundingClientRect();
-    // Target is center of the button/sidebar
-    const targetX = rect.left + (rect.width / 2);
-    const targetY = rect.top + (rect.height / 2);
+    const targetX = rect.left + (rect.width / 2); // Center of target
+    const targetY = rect.top + (rect.height / 2); // Center of target
 
+    // 3. Create the Flyer Element
     const flyer = document.createElement('div');
     flyer.innerText = emoji;
     flyer.className = 'flying-food';
-    flyer.style.left = `${lastClickX}px`;
-    flyer.style.top = `${lastClickY}px`;
-
-    document.body.appendChild(flyer);
-
-    // Force reflow
-    void flyer.offsetWidth;
-
-    // Fly to target
-    flyer.style.left = `${targetX}px`;
-    flyer.style.top = `${targetY}px`;
-    flyer.style.transform = 'scale(0.1)';
-    flyer.style.opacity = '0';
-
-    // Remove after flight time (0.8s) matches CSS
-    setTimeout(() => {
-        flyer.remove();
-        // Shake the cart button for feedback
-        cartBtn.classList.add('cart-shake');
-        setTimeout(() => cartBtn.classList.remove('cart-shake'), 400);
-    }, 800);
-}
-/* --- MISSING ANIMATION & CART LOGIC --- */
-
-/* 1. The Flying Emoji Animation */
-function triggerFlyAnimation(category) {
-    const emojiMap = {
-        "Bun-Tastic Burgers": "🍔",
-        "Butcher's Best": "🥩",
-        "Italian Indulgence": "🍝",
-        "Freshly Folded": "🌯",
-        "Rice Harmony": "🍚",
-        "Salad Symphony": "🥗",
-        "Toasty Treats": "🥪",
-        "Warm Whispers": "🥣",
-        "Nibbles & Bits": "🍟",
-        "Icy Sips": "🥤",
-        "Mojito Magic": "🍹",
-        "Nature's Nectar": "🧃",
-        "Whipped Wonders": "🥤",
-        "Frosted Leaf": "🥃",
-        "ADD-ON": "🍞"
-    };
-
-    const emoji = emojiMap[category] || "😋";
     
-    // Find target (Mobile: Floating Btn, Desktop: Cart Summary or Sidebar)
-    let cartBtn;
-    if (window.innerWidth <= 1000) {
-        cartBtn = document.querySelector('.mobile-cart-btn');
-    } else {
-        cartBtn = document.querySelector('.order-sidebar');
-    }
-
-    if (!cartBtn) return;
-
-    const rect = cartBtn.getBoundingClientRect();
-    // Target is center of the button/sidebar
-    const targetX = rect.left + (rect.width / 2);
-    const targetY = rect.top + (rect.height / 2);
-
-    const flyer = document.createElement('div');
-    flyer.innerText = emoji;
-    flyer.className = 'flying-food';
-    flyer.style.left = `${lastClickX}px`;
-    flyer.style.top = `${lastClickY}px`;
+    // CRITICAL PERFORMANCE FIX: 
+    // We set fixed position at 0,0 and ONLY move using transform.
+    flyer.style.position = 'fixed';
+    flyer.style.left = '0px';
+    flyer.style.top = '0px';
+    flyer.style.zIndex = '10000';
+    flyer.style.pointerEvents = 'none'; // Click-through
+    flyer.style.fontSize = '2rem';
+    
+    // Set Start Position immediately (lastClickX/Y are global vars from your existing code)
+    flyer.style.transform = `translate(${lastClickX}px, ${lastClickY}px) scale(0.5)`;
+    flyer.style.opacity = '1';
+    
+    // Define the transition (smooth curve)
+    flyer.style.transition = 'transform 0.8s cubic-bezier(0.2, 1, 0.2, 1), opacity 0.8s ease-in';
 
     document.body.appendChild(flyer);
 
-    // Force reflow
+    // 4. Force Browser to "Paint" the start position
     void flyer.offsetWidth;
 
-    // Fly to target
-    flyer.style.left = `${targetX}px`;
-    flyer.style.top = `${targetY}px`;
-    flyer.style.transform = 'scale(0.1)';
-    flyer.style.opacity = '0';
+    // 5. Set End Position (Trigger Animation)
+    flyer.style.transform = `translate(${targetX}px, ${targetY}px) scale(0.1)`;
+    flyer.style.opacity = '0.2';
 
-    // Remove after flight time (0.8s) matches CSS
+    // 6. Cleanup after 0.8 seconds
     setTimeout(() => {
         flyer.remove();
         // Shake the cart button for feedback
@@ -1215,7 +1155,6 @@ function triggerFlyAnimation(category) {
         setTimeout(() => cartBtn.classList.remove('cart-shake'), 400);
     }, 800);
 }
-
 /* 2. The Cart Rendering Engine */
 function renderCart() {
     const list = document.getElementById('cart-items-list');
