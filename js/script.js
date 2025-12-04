@@ -438,6 +438,20 @@ function renderMenu() {
 let tempSelectedItemIndex = null;
 function openOptionModal(index) {
     const item = menuData[index];
+
+    // --- OFFENSE: TRACK ITEM INTEREST ---
+    // This tells Google Analytics someone clicked this item
+    if (typeof gtag === 'function') {
+        gtag('event', 'view_item', {
+            currency: "INR",
+            value: item.price,
+            items: [{
+                item_name: item.name,
+                item_category: item.category,
+                price: item.price
+            }]
+        });
+    }
     tempSelectedItemIndex = index;
     let availableOptions = [];
     const cheeseCats = ["Bun-Tastic Burgers", "Italian Indulgence", "Freshly Folded", "Toasty Treats"];
