@@ -898,7 +898,20 @@ function applyCoupon() {
 }
 
 function toggleCartPage() { document.getElementById('cart-sidebar').classList.toggle('active'); }
-function openCheckoutModal() { document.getElementById('checkout-modal').style.display = 'flex'; toggleOrderFields(); }
+function openCheckoutModal() { 
+    document.getElementById('checkout-modal').style.display = 'flex'; 
+    toggleOrderFields(); 
+    
+    // Force reset T&C checkbox to unchecked every time modal opens
+    const checkbox = document.getElementById('tnc-confirm');
+    const btn = document.getElementById('final-submit-btn');
+    if(checkbox && btn) {
+        checkbox.checked = false;
+        btn.disabled = true;
+        btn.style.opacity = "0.5";
+        btn.style.cursor = "not-allowed";
+    }
+}
 function closeCheckoutModal() { document.getElementById('checkout-modal').style.display = 'none';
 }
 
