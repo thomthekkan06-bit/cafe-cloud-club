@@ -5,198 +5,138 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KDS | Kitchen Commander</title>
     <style>
-        :root {
-            --bg-body: #121212;
-            --bg-card: #1e1e1e;
-            --bg-card-header: #2c2c2c;
-            --text-primary: #e0e0e0;
-            --text-secondary: #a0a0a0;
-            --accent-new: #ff4757; 
-            --accent-accepted: #ffa502;
-            --accent-ready: #2ed573;
-            --border-radius: 8px;
-            --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-body);
-            color: var(--text-primary);
-            font-family: var(--font-stack);
-            margin: 0;
-            padding: 20px;
-            overflow-x: hidden;
-        }
-
-        /* HEADER */
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #333;
-            margin-bottom: 20px;
-        }
-
+        :root { --bg-body: #121212; --bg-card: #1e1e1e; --bg-card-header: #2c2c2c; --text-primary: #e0e0e0; --text-secondary: #a0a0a0; --accent-new: #ff4757; --accent-accepted: #ffa502; --accent-ready: #2ed573; --border-radius: 8px; --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg-body); color: var(--text-primary); font-family: var(--font-stack); margin: 0; padding: 20px; overflow-x: hidden; }
+        header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid #333; margin-bottom: 20px; }
         h1 { margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.5px; }
         .clock { font-size: 1.5rem; font-weight: 300; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-
-        /* GRID */
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-        }
-
-        /* CARD */
-        .card {
-            background: var(--bg-card);
-            border-radius: var(--border-radius);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            transition: transform 0.2s, opacity 0.3s;
-            border-left: 6px solid transparent;
-            animation: slideIn 0.4s ease-out;
-            position: relative;
-        }
-
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .card { background: var(--bg-card); border-radius: var(--border-radius); box-shadow: 0 4px 6px rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden; transition: transform 0.2s, opacity 0.3s; border-left: 6px solid transparent; animation: slideIn 0.4s ease-out; position: relative; }
         .card.status-New { border-left-color: var(--accent-new); }
         .card.status-Accepted { border-left-color: var(--accent-accepted); }
-        
-        .card-header {
-            background: var(--bg-card-header);
-            padding: 12px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: 700;
-            font-size: 1.1rem;
-        }
-
-        .order-type {
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            background: #333;
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
-
-        .card-body {
-            padding: 16px;
-            flex-grow: 1;
-        }
-
-        .meta-row {
-            display: flex;
-            justify-content: space-between;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            margin-bottom: 12px;
-            padding-bottom: 12px;
-            border-bottom: 1px dashed #333;
-        }
-
+        .card-header { background: var(--bg-card-header); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 1.1rem; }
+        .order-type { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; background: #333; padding: 2px 6px; border-radius: 4px; }
+        .card-body { padding: 16px; flex-grow: 1; }
+        .meta-row { display: flex; justify-content: space-between; color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed #333; }
         .timer { font-weight: bold; color: var(--text-primary); }
         .timer.late { color: var(--accent-new); }
-
-        .items-list {
-            font-size: 1.1rem;
-            line-height: 1.5;
-            white-space: pre-wrap;
-            margin-bottom: 10px;
-        }
-
-        .note-box {
-            background: rgba(255, 71, 87, 0.1);
-            border: 1px solid var(--accent-new);
-            color: #ffcccc;
-            padding: 8px;
-            border-radius: 4px;
-            font-size: 0.9rem;
-            margin-top: 10px;
-        }
-
-        /* BUTTONS */
-        .btn-action {
-            width: 100%;
-            padding: 18px;
-            border: none;
-            font-weight: 700;
-            text-transform: uppercase;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background 0.2s;
-            margin-top: auto;
-        }
-
+        .items-list { font-size: 1.1rem; line-height: 1.5; white-space: pre-wrap; margin-bottom: 10px; }
+        .note-box { background: rgba(255, 71, 87, 0.1); border: 1px solid var(--accent-new); color: #ffcccc; padding: 8px; border-radius: 4px; font-size: 0.9rem; margin-top: 10px; }
+        .btn-action { width: 100%; padding: 18px; border: none; font-weight: 700; text-transform: uppercase; font-size: 1rem; cursor: pointer; transition: background 0.2s; margin-top: auto; }
         .btn-accept { background: #333; color: white; }
         .btn-accept:hover { background: #444; }
-
         .btn-ready { background: var(--accent-ready); color: #000; }
         .btn-ready:hover { background: #26af61; }
-
-        /* OVERLAY */
-        #start-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 100;
-            display: flex; justify-content: center; align-items: center;
-            flex-direction: column;
-        }
-        #start-btn {
-            background: var(--accent-new); color: white; border: none;
-            padding: 15px 30px; font-size: 1.2rem; font-weight: bold;
-            border-radius: 50px; cursor: pointer;
-            box-shadow: 0 0 20px rgba(255, 71, 87, 0.4);
-        }
-
-        /* TOAST NOTIFICATION */
-        #toast-container {
-            position: fixed; bottom: 20px; right: 20px; z-index: 200;
-            display: flex; flex-direction: column; gap: 10px;
-        }
-        .toast {
-            background: #333; color: white; padding: 12px 20px;
-            border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            font-size: 0.9rem; border-left: 4px solid #fff;
-            animation: slideInLeft 0.3s;
-        }
+        #start-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+        #start-btn { background: var(--accent-new); color: white; border: none; padding: 15px 30px; font-size: 1.2rem; font-weight: bold; border-radius: 50px; cursor: pointer; box-shadow: 0 0 20px rgba(255, 71, 87, 0.4); }
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 200; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background: #333; color: white; padding: 12px 20px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); font-size: 0.9rem; border-left: 4px solid #fff; animation: slideInLeft 0.3s; }
         .toast.error { border-left-color: var(--accent-new); }
         .toast.success { border-left-color: var(--accent-ready); }
-
-        /* LOADING */
+        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes slideInLeft { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         #loader { text-align: center; color: #666; margin-top: 50px; }
-        
         .empty-state { grid-column: 1 / -1; text-align: center; color: #555; padding: 40px; font-size: 1.2rem; border: 2px dashed #333; border-radius: 12px; }
     </style>
 </head>
 <body>
-
     <div id="start-overlay">
         <h2 style="color:white; margin-bottom:20px;">👨‍🍳 Kitchen Station</h2>
         <button id="start-btn" onclick="initSystem()">START SHIFT</button>
     </div>
-
     <audio id="bell" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
-
-    <header>
-        <h1>CAFE CLOUD CLUB</h1>
-        <div class="clock" id="clock">--:--</div>
-    </header>
-
+    <header><h1>CAFE CLOUD CLUB</h1><div class="clock" id="clock">--:--</div></header>
     <div id="loader">Waiting for connection...</div>
     <div class="grid" id="orders-grid"></div>
-
     <div id="toast-container"></div>
-
     <script>
-        // THIS IS YOUR EXACT, WORKING URL
         const API_URL = 'https://script.google.com/macros/s/AKfycbx_6dCuYMLPAQq8j9AsMHzjIkcugifCOfCYQnI49eVUughBQlBYmdIY6LPf5PQ7EDmv/exec';
-        
-        let systemActive = false;
-        let knownIds = new Set();
-        let activeOrdersData = []; 
-
+        let systemActive = false, knownIds = new Set(), activeOrdersData = [];
         const $ = (id) => document.getElementById(id);
-        const escape
+        const escapeHtml = (str) => (!str ? '' : String(str).replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]));
+        function showToast(msg, type = 'info') {
+            const toast = document.createElement('div'); toast.className = `toast ${type}`; toast.innerText = msg;
+            $('toast-container').appendChild(toast); setTimeout(() => toast.remove(), 4000);
+        }
+        function updateTime() {
+            $('clock').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            activeOrdersData.forEach(order => {
+                const el = document.getElementById(`timer-${order.id}`);
+                if(el) {
+                    const diffMs = new Date() - new Date(order.date);
+                    const mins = Math.floor(diffMs / 60000);
+                    el.innerText = `${mins}m ago`;
+                    if (mins > 15) el.classList.add('late');
+                }
+            });
+        }
+        setInterval(updateTime, 1000);
+        function initSystem() {
+            $('start-overlay').style.display = 'none'; $('loader').innerText = "Syncing Orders...";
+            const audio = $('bell'); audio.volume = 1.0;
+            audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(e => console.warn("Audio blocked", e));
+            systemActive = true; fetchOrders(); setInterval(fetchOrders, 10000);
+        }
+        function fetchOrders() {
+            if (!systemActive) return;
+            fetch(API_URL).then(res => res.json()).then(data => {
+                $('loader').style.display = 'none';
+                if (data.result === 'error' || data.error) throw new Error("Backend Error");
+                renderOrders(data);
+            }).catch(err => { console.error(err); showToast("Sync Error: Check Internet", "error"); });
+        }
+        function renderOrders(data) {
+            const container = $('orders-grid'); const now = new Date(); const cutoff = new Date(now.getTime() - (12 * 60 * 60 * 1000));
+            let cleanRows = [];
+            if (Array.isArray(data)) {
+                cleanRows = data.slice(1).map(row => ({
+                    date: new Date(row[0]), id: row[1], name: (row[2] && String(row[2]).trim()) ? row[2] : "Guest",
+                    items: row[4], type: row[6], note: row[8], status: row[9] ? String(row[9]).trim() : 'New'
+                })).filter(o => o.date > cutoff && o.status !== 'Ready').reverse();
+            }
+            activeOrdersData = cleanRows; let currentBatchIds = new Set(); let hasNew = false;
+            if (cleanRows.length === 0) { container.innerHTML = '<div class="empty-state">No Active Orders</div>'; return; }
+            if (container.querySelector('.empty-state')) container.innerHTML = '';
+            cleanRows.forEach(order => {
+                currentBatchIds.add(order.id); const cardId = `card-${order.id}`; let card = document.getElementById(cardId);
+                if (!card) {
+                    if (order.status === 'New') hasNew = true;
+                    card = document.createElement('div'); card.id = cardId; card.className = `card status-${order.status}`;
+                    const btnConfig = getBtnConfig(order.status, order.id);
+                    const noteHtml = (order.note && order.note !== '-') ? `<div class="note-box">NOTE: ${escapeHtml(order.note)}</div>` : '';
+                    card.innerHTML = `<div class="card-header"><span>#${order.id}</span><span class="order-type">${escapeHtml(order.type)}</span></div><div class="card-body"><div class="meta-row"><span class="timer" id="timer-${order.id}">0m ago</span><span>${escapeHtml(order.name)}</span></div><div class="items-list">${escapeHtml(order.items).replace(/, /g, '<br>')}</div>${noteHtml}</div><button class="btn-action ${btnConfig.cls}" onclick="setStatus('${order.id}', '${btnConfig.nextStatus}', this)">${btnConfig.text}</button>`;
+                    container.appendChild(card);
+                } else {
+                    const currentStatus = card.classList.contains('status-Accepted') ? 'Accepted' : 'New';
+                    if (order.status !== currentStatus) {
+                        card.className = `card status-${order.status}`;
+                        const btn = card.querySelector('.btn-action'); const config = getBtnConfig(order.status, order.id);
+                        btn.className = `btn-action ${config.cls}`; btn.innerText = config.text; btn.setAttribute('onclick', `setStatus('${order.id}', '${config.nextStatus}', this)`);
+                    }
+                }
+            });
+            document.querySelectorAll('.card').forEach(c => { if (!currentBatchIds.has(parseInt(c.id.replace('card-', ''))) && !currentBatchIds.has(c.id.replace('card-', ''))) c.remove(); });
+            const isFirstLoad = knownIds.size === 0;
+            if (hasNew && !isFirstLoad) { const actuallyNew = cleanRows.some(o => o.status === 'New' && !knownIds.has(o.id)); if(actuallyNew) $('bell').play().catch(e=>console.log(e)); }
+            knownIds = currentBatchIds; updateTime();
+        }
+        function getBtnConfig(status, id) { return status === 'Accepted' ? { text: "MARK READY (DONE)", cls: "btn-ready", nextStatus: "Ready" } : { text: "ACCEPT ORDER", cls: "btn-accept", nextStatus: "Accepted" }; }
+        function setStatus(id, newStatus, btn) {
+            const originalText = btn.innerText; btn.innerText = "SAVING..."; btn.style.opacity = 0.7; btn.disabled = true;
+            const formData = new FormData(); formData.append('action', 'update'); formData.append('orderId', id); formData.append('status', newStatus);
+            fetch(API_URL, { method: 'POST', body: formData }).then(res => res.json()).then(data => {
+                if (data.result === 'updated') {
+                    const card = $(`card-${id}`);
+                    if (newStatus === 'Accepted') {
+                        card.classList.remove('status-New'); card.classList.add('status-Accepted');
+                        const config = getBtnConfig('Accepted', id); btn.className = `btn-action ${config.cls}`; btn.innerText = config.text; btn.setAttribute('onclick', `setStatus('${id}', '${config.nextStatus}', this)`); showToast("Order Accepted", "success");
+                    } else {
+                        card.style.transform = 'scale(0.9)'; card.style.opacity = 0; setTimeout(() => card.remove(), 300); showToast("Order Complete!", "success");
+                    }
+                    btn.disabled = false; btn.style.opacity = 1;
+                } else throw new Error("Error");
+            }).catch(err => { console.error(err); showToast("Save Failed!", "error"); btn.innerText = originalText; btn.disabled = false; btn.style.opacity = 1; });
+        }
+    </script>
+</body>
+</html>
