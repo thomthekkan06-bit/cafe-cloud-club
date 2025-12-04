@@ -1039,25 +1039,22 @@ function finalizeOrder() {
     const finalUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
 
     // 4. Send Data to Google Sheets (Background)
-    // REPLACE 'YOUR_SCRIPT_URL' BELOW with the URL you got from Google Apps Script
-    const scriptURL = 'YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE'; 
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbx_6dCuYMLPAQq8j9AsMHzjIkcugifCOfCYQnI49eVUughBQlBYmdIY6LPf5PQ7EDmv/exec'; 
     
-    if (scriptURL !== 'YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE') {
-        const formData = new FormData();
-        formData.append('Date', timeString);
-        formData.append('OrderID', orderId);
-        formData.append('CustomerName', name);
-        formData.append('Phone', phone);
-        formData.append('Items', sheetItemsString);
-        formData.append('Total', grandTotal);
-        formData.append('Type', type);
-        formData.append('Address', address || "Pickup");
-        formData.append('Note', instruction || "-");
+    const formData = new FormData();
+    formData.append('Date', timeString);
+    formData.append('OrderID', orderId);
+    formData.append('CustomerName', name);
+    formData.append('Phone', phone);
+    formData.append('Items', sheetItemsString);
+    formData.append('Total', grandTotal);
+    formData.append('Type', type);
+    formData.append('Address', address || "Pickup");
+    formData.append('Note', instruction || "-");
 
-        fetch(scriptURL, { method: 'POST', body: formData, mode: 'no-cors' })
-            .then(() => console.log('Order sent to staff dashboard'))
-            .catch(err => console.error('Dashboard Error', err));
-    }
+    fetch(scriptURL, { method: 'POST', body: formData, mode: 'no-cors' })
+        .then(() => console.log('Order sent to staff dashboard'))
+        .catch(err => console.error('Dashboard Error', err));
 
     // 5. Cleanup & Redirect
     if (Object.keys(cart).length > 0) {
@@ -1073,7 +1070,6 @@ function finalizeOrder() {
     document.getElementById('checkout-modal').style.display = 'none';
     document.getElementById('success-view').style.display = 'flex';
     
-    // Revenue Tracking
     if (typeof gtag === 'function') {
         gtag('event', 'purchase', {
             transaction_id: orderId,
