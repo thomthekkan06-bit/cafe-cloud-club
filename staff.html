@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KITCHEN DISPLAY - Café Cloud Club</title>
+    <title>KDS - Café Cloud Club</title>
     <meta http-equiv="refresh" content="30">
     <style>
         body { font-family: 'Courier New', monospace; background: #111; color: #eee; padding: 20px; margin: 0; }
         h1 { border-bottom: 2px solid #FF4500; padding-bottom: 10px; display: flex; justify-content: space-between; }
-        .clock { font-size: 1.2rem; color: #888; }
         
         .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
         
@@ -16,91 +15,170 @@
             background: #222; 
             border: 1px solid #444; 
             padding: 15px; 
-            border-top: 5px solid #666; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            border-top: 6px solid #666; /* Default New */
+            display: flex; flex-direction: column; justify-content: space-between;
+            animation: fadeIn 0.5s;
+        }
+
+        /* Status Colors */
+        .ticket.status-new { border-top-color: #e74c3c; } /* Red for New */
+        .ticket.status-accepted { border-top-color: #f1c40f; background: #2c2c2c; } /* Yellow for Cooking */
+        
+        .ticket-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem; margin-bottom: 10px; border-bottom: 1px dashed #444; padding-bottom: 5px; }
+        .ticket-meta { font-size: 0.85rem; color: #aaa; margin-bottom: 10px; }
+        .ticket-items { font-size: 1.1rem; line-height: 1.4; margin-bottom: 20px; white-space: pre-wrap; flex-grow: 1; }
+        
+        .action-btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            margin-top: 10px;
         }
         
-        .ticket.delivery { border-top-color: #FF4500; } /* Orange for Delivery */
-        .ticket.pickup { border-top-color: #27ae60; }   /* Green for Pickup */
-
-        .ticket-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 1.1rem; margin-bottom: 10px; border-bottom: 1px dashed #444; padding-bottom: 5px; }
-        .ticket-meta { font-size: 0.85rem; color: #aaa; margin-bottom: 10px; }
-        .ticket-items { font-size: 1rem; line-height: 1.5; margin-bottom: 15px; white-space: pre-wrap; }
-        .ticket-total { font-weight: bold; text-align: right; font-size: 1.2rem; color: #FFD700; }
+        .btn-accept { background: #333; color: #fff; border: 1px solid #fff; }
+        .btn-accept:hover { background: #fff; color: #000; }
         
-        .note { background: #330000; color: #ffcccc; padding: 5px; font-size: 0.8rem; margin-top: 5px; }
+        .btn-ready { background: #27ae60; color: #fff; }
+        .btn-ready:hover { background: #2ecc71; }
+
+        @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
     </style>
 </head>
 <body>
 
     <h1>
-        <span>🔥 LIVE KITCHEN ORDERS</span>
-        <span class="clock" id="clock">--:--</span>
+        <span>👨‍🍳 KITCHEN DISPLAY</span>
+        <span id="clock">--:--</span>
     </h1>
 
-    <div id="loading" style="color:#666;">Connecting to Database...</div>
+    <div id="loading">Loading Tickets...</div>
     <div class="orders-grid" id="orders-container"></div>
 
     <script>
-        // YOUR API URL IS INSERTED BELOW
-        const scriptURL = 'https://script.google.com/macros/s/AKfycbx_6dCuYMLPAQq8j9AsMHzjIkcugifCOfCYQnI49eVUughBQlBYmdIY6LPf5PQ7EDmv/exec';
+        // REPLACE WITH YOUR URL
+        const scriptURL = 'YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE';
 
         function updateClock() {
-            const now = new Date();
-            document.getElementById('clock').innerText = now.toLocaleTimeString();
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString();
         }
         setInterval(updateClock, 1000);
-        updateClock();
 
-        fetch(scriptURL)
+        function loadTickets() {
+            fetch(scriptURL)
             .then(res => res.json())
             .then(data => {
                 const container = document.getElementById('orders-container');
                 document.getElementById('loading').style.display = 'none';
                 container.innerHTML = '';
                 
-                // data[0] is headers. Start from index 1.
-                // Reverse to show newest orders first.
+                // Filter Logic: Last 12 hours ONLY
+                const now = new Date();
+                const twelveHoursAgo = new Date(now.getTime() - (12 * 60 * 60 * 1000));
+                
+                // Rows (Reverse to show newest first)
                 const rows = data.slice(1).reverse(); 
 
-                if(rows.length === 0) {
-                    container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:50px; color:#444;">NO ACTIVE ORDERS</div>';
-                    return;
-                }
+                let activeCount = 0;
 
                 rows.forEach(row => {
-                    const typeClass = row[6] === 'Delivery' ? 'delivery' : 'pickup';
-                    let itemsHtml = row[4].replace(/, /g, '<br>'); 
-                    let noteHtml = row[8] && row[8] !== '-' ? `<div class="note">NOTE: ${row[8]}</div>` : '';
-                    let addressHtml = row[6] === 'Delivery' ? `<div style="font-size:0.8rem; color:#888; margin-top:5px;">📍 ${row[7]}</div>` : '';
+                    // COLUMNS: 0:Date, 1:ID, 2:Name, 3:Phone, 4:Items, 5:Total, 6:Type, 7:Address, 8:Note, 9:Status
+                    const orderDate = new Date(row[0]);
+                    const status = row[9] ? row[9].toString().trim() : 'New'; 
+                    const orderId = row[1];
 
-                    const html = `
-                        <div class="ticket ${typeClass}">
+                    // 1. Hide if too old OR if status is 'Ready'
+                    if (orderDate < twelveHoursAgo || status === 'Ready') return;
+
+                    activeCount++;
+                    
+                    // Determine UI State
+                    let statusClass = 'status-new';
+                    let btnHtml = `<button class="action-btn btn-accept" onclick="updateStatus('${orderId}', 'Accepted', this)">Accept Order</button>`;
+                    
+                    if (status === 'Accepted') {
+                        statusClass = 'status-accepted';
+                        btnHtml = `<button class="action-btn btn-ready" onclick="updateStatus('${orderId}', 'Ready', this)">Mark Ready (Done)</button>`;
+                    }
+
+                    const timeString = orderDate.toLocaleTimeString('en-IN', { hour: 'numeric', minute: 'numeric', hour12: true });
+                    const itemsHtml = row[4].replace(/, /g, '<br>');
+                    const typeDisplay = row[6].toUpperCase();
+                    const noteHtml = row[8] && row[8] !== '-' ? `<div style="background:#400; padding:5px; margin-top:5px;">NOTE: ${row[8]}</div>` : '';
+
+                    const card = `
+                        <div class="ticket ${statusClass}" id="card-${orderId}">
                             <div class="ticket-header">
-                                <span>#${row[1]}</span>
-                                <span>${row[6].toUpperCase()}</span>
+                                <span>#${orderId}</span>
+                                <span>${typeDisplay}</span>
                             </div>
                             <div class="ticket-meta">
-                                🕒 ${new Date(row[0]).toLocaleString('en-IN', { hour: 'numeric', minute: 'numeric', hour12: true })}<br>
-                                👤 ${row[2]} (${row[3]})
-                                ${addressHtml}
+                                🕒 ${timeString} | 👤 ${row[2]}
                             </div>
                             <div class="ticket-items">
                                 ${itemsHtml}
                             </div>
                             ${noteHtml}
-                            <div class="ticket-total">
-                                Total: ₹${row[5]}
-                            </div>
+                            ${btnHtml}
                         </div>
                     `;
-                    container.innerHTML += html;
+                    container.innerHTML += card;
                 });
+
+                if(activeCount === 0) container.innerHTML = '<div style="color:#666; padding:20px;">No Active Orders</div>';
+            });
+        }
+
+        // --- THE INTERACTIVE FUNCTION ---
+        function updateStatus(orderId, newStatus, btnElement) {
+            const card = document.getElementById(`card-${orderId}`);
+            
+            // 1. Optimistic UI Update (Instant Feedback)
+            if (newStatus === 'Accepted') {
+                btnElement.innerText = "UPDATING...";
+                card.classList.remove('status-new');
+                card.classList.add('status-accepted');
+            } else if (newStatus === 'Ready') {
+                // If ready, fade it out immediately
+                card.style.opacity = '0.5';
+                btnElement.innerText = "COMPLETING...";
+            }
+
+            // 2. Send to Google Sheets Background
+            const formData = new FormData();
+            formData.append('action', 'update');
+            formData.append('orderId', orderId);
+            formData.append('status', newStatus);
+
+            fetch(scriptURL, { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if(data.result === 'updated') {
+                    // Refresh to ensure sync, or just leave the UI state
+                    if(newStatus === 'Ready') {
+                        card.style.display = 'none'; // Make it vanish
+                    } else {
+                        // Re-render button to be 'Mark Ready'
+                        btnElement.className = "action-btn btn-ready";
+                        btnElement.innerText = "Mark Ready (Done)";
+                        btnElement.onclick = function() { updateStatus(orderId, 'Ready', this); };
+                    }
+                } else {
+                    alert("Error updating order. Please check internet.");
+                    location.reload();
+                }
             })
             .catch(err => {
-                document.getElementById('loading').innerText = "Error loading orders. Check connection.";
                 console.error(err);
+                alert("Connection Failed.");
             });
+        }
+
+        // Initial Load
+        loadTickets();
     </script>
 </body>
 </html>
