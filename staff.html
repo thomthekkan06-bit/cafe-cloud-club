@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KDS | Café Cloud Club</title>
+    <title>KDS | Cloud Club</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <link rel="icon" href="kitchen-icon.jpg" type="image/jpeg">
+
     <style>
         :root {
             --bg: #121212; --surface: #1E1E1E; --text-main: #FFFFFF; --text-muted: #A0A0A0;
@@ -33,7 +35,20 @@
 
         /* HEADER */
         .kds-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid #333; }
-        .brand-title { font-weight: 800; font-size: 1.8rem; letter-spacing: -1px; }
+        
+        .brand-title { 
+            font-weight: 800; font-size: 1.8rem; letter-spacing: -1px; 
+            display: flex; align-items: center; gap: 15px; 
+        }
+        
+        /* 2. CUSTOM LOGO STYLE */
+        .brand-logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px; /* Soft corners */
+            object-fit: cover;
+            border: 2px solid #333;
+        }
         
         .header-right { display: flex; align-items: center; gap: 15px; }
         
@@ -104,15 +119,20 @@
 <body>
 
     <div id="start-overlay">
-        <h1 style="color:white; font-size: 2rem;">👨‍🍳 KITCHEN DISPLAY</h1>
+        <img src="kitchen-icon.jpg" style="width:80px; border-radius:15px; margin-bottom:20px;">
+        <h1 style="color:white; font-size: 2rem; margin:0;">KITCHEN DISPLAY</h1>
         <p style="color:#aaa; max-width: 400px; margin-bottom: 30px;">
-            Click START to enable sound notifications.
+            Tap the button below to enable sound notifications.
         </p>
         <button class="start-btn" onclick="startKDS()">START SHIFT <i class="fas fa-power-off"></i></button>
     </div>
 
     <div class="kds-header">
-        <div class="brand-title">KDS <span style="font-weight:400; color:#666;">| Manager</span></div>
+        <div class="brand-title">
+            <img src="kitchen-icon.jpg" alt="Logo" class="brand-logo">
+            <span>KDS <span style="font-weight:400; color:#666; font-size:1.2rem;">| Manager</span></span>
+        </div>
+        
         <div class="header-right">
             <button class="test-sound-btn" onclick="testAudio()">Test Sound 🔔</button>
             <div class="live-indicator"><div id="status-dot" class="dot"></div><span id="status-text">Standby...</span></div>
@@ -142,23 +162,20 @@
     }
 
     function startKDS() {
-        // 1. Hide Overlay
         document.getElementById('start-overlay').style.display = 'none';
         isKDSActive = true;
         document.getElementById('status-text').innerText = "Connecting...";
 
-        // 2. Start Fetching
         fetchOrders();
         setInterval(fetchOrders, 5000);
 
-        // 3. Attempt Silent Play to unlock Audio Engine
         const audio = document.getElementById('alert-sound');
         audio.volume = 1.0;
         audio.play().then(() => {
             audio.pause();
             audio.currentTime = 0;
         }).catch(err => {
-            console.log("Auto-unlock failed (normal if file loading): " + err);
+            console.log("Auto-unlock warning: " + err);
         });
     }
 
@@ -210,7 +227,6 @@
             hasNew = incomingIDs.some(id => !knownOrderIDs.includes(id));
         }
         
-        // --- PLAY SOUND ON NEW ORDER ---
         if (hasNew) {
             const audio = document.getElementById('alert-sound');
             audio.currentTime = 0;
