@@ -191,7 +191,7 @@
     <div id="toast-container"></div>
 
     <script>
-        // THIS IS THE URL YOU CONFIRMED IS WORKING
+        // THIS IS YOUR EXACT, WORKING URL
         const API_URL = 'https://script.google.com/macros/s/AKfycbx_6dCuYMLPAQq8j9AsMHzjIkcugifCOfCYQnI49eVUughBQlBYmdIY6LPf5PQ7EDmv/exec';
         
         let systemActive = false;
@@ -199,84 +199,4 @@
         let activeOrdersData = []; 
 
         const $ = (id) => document.getElementById(id);
-        const escapeHtml = (str) => (!str ? '' : String(str).replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]));
-
-        function showToast(msg, type = 'info') {
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.innerText = msg;
-            $('toast-container').appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
-        }
-
-        // --- CLOCK & TIMERS ---
-        function updateTime() {
-            $('clock').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
-            // Update "X mins ago" on every card
-            activeOrdersData.forEach(order => {
-                const el = document.getElementById(`timer-${order.id}`);
-                if(el) {
-                    const diffMs = new Date() - new Date(order.date);
-                    const mins = Math.floor(diffMs / 60000);
-                    el.innerText = `${mins}m ago`;
-                    if (mins > 15) el.classList.add('late');
-                }
-            });
-        }
-        setInterval(updateTime, 1000);
-
-        // --- SYSTEM INIT ---
-        function initSystem() {
-            $('start-overlay').style.display = 'none';
-            $('loader').innerText = "Syncing Orders...";
-            
-            const audio = $('bell');
-            audio.volume = 1.0;
-            audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(e => console.warn("Audio blocked", e));
-            
-            systemActive = true;
-            fetchOrders();
-            setInterval(fetchOrders, 10000); 
-        }
-
-        // --- DATA FETCHING ---
-        function fetchOrders() {
-            if (!systemActive) return;
-
-            fetch(API_URL)
-                .then(res => res.json())
-                .then(data => {
-                    $('loader').style.display = 'none';
-                    // ERROR CHECK: If backend returns an error object instead of an array
-                    if (data.result === 'error' || data.error) {
-                        console.error("Backend Error:", data);
-                        throw new Error("Backend Error: " + (data.message || data.error));
-                    }
-                    renderOrders(data);
-                })
-                .catch(err => {
-                    console.error("Fetch Error:", err);
-                    showToast("Sync Error: Check Internet", "error");
-                });
-        }
-
-        // --- RENDERING ---
-        function renderOrders(data) {
-            const container = $('orders-grid');
-            const now = new Date();
-            const cutoff = new Date(now.getTime() - (12 * 60 * 60 * 1000)); // 12 hrs
-            
-            // Safe Parsing
-            let cleanRows = [];
-            if (Array.isArray(data)) {
-                cleanRows = data.slice(1).map(row => ({
-                    date: new Date(row[0]),
-                    id: row[1],
-                    // FIX: This reads Column C (Index 2) where the name is
-                    name: (row[2] && String(row[2]).trim()) ? row[2] : "Guest", 
-                    items: row[4],
-                    type: row[6],
-                    note: row[8],
-                    status: row[9] ? String(row[9]).trim() : 'New'
-                })).filter(o => o.date >
+        const escape
