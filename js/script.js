@@ -583,6 +583,19 @@ function closeCustomizationModal() {
 }
 
 function addToCart(name, finalPrice, basePrice, type, category) {
+// --- OFFENSE: TRACK BUYING INTENT ---
+    if (typeof gtag === 'function') {
+        gtag('event', 'add_to_cart', {
+            currency: "INR",
+            value: finalPrice,
+            items: [{
+                item_name: name,
+                item_category: category,
+                price: finalPrice,
+                quantity: 1
+            }]
+        });
+    }
     if (cart[name]) {
         cart[name].qty++;
     } else {
