@@ -1,233 +1,420 @@
-<script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbx_6dCuYMLPAQq8j9AsMHzjIkcugifCOfCYQnI49eVUughBQlBYmdIY6LPf5PQ7EDmv/exec';
-    
-    let isSystemStarted = false;
-    let knownOrderIds = new Set();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KDS | Kitchen Commander</title>
+    <style>
+        :root {
+            --bg-body: #121212;
+            --bg-card: #1e1e1e;
+            --bg-card-header: #2c2c2c;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --accent-new: #ff4757; /* Red/Pink for urgency */
+            --accent-accepted: #ffa502; /* Orange/Yellow for cooking */
+            --accent-ready: #2ed573; /* Green for done */
+            --border-radius: 8px;
+            --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
 
-    // CLOCK
-    function updateClock() {
-        document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: 'numeric' });
-    }
-    setInterval(updateClock, 1000);
-    updateClock();
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            font-family: var(--font-stack);
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+        }
 
-    // START SYSTEM
-    function startSystem() {
-        document.getElementById('start-overlay').style.display = 'none';
-        document.getElementById('loading').innerText = "Connecting...";
+        /* HEADER */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 20px;
+        }
+
+        h1 { margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.5px; }
+        .clock { font-size: 1.5rem; font-weight: 300; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+        /* GRID */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        /* CARD */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: transform 0.2s, opacity 0.3s;
+            border-left: 6px solid transparent;
+            animation: slideIn 0.4s ease-out;
+            position: relative;
+        }
+
+        .card.status-New { border-left-color: var(--accent-new); }
+        .card.status-Accepted { border-left-color: var(--accent-accepted); }
         
-        // Unlock audio context
-        const audio = document.getElementById('notification-sound');
-        audio.volume = 1.0;
-        audio.play().then(() => {
-            audio.pause();
-            audio.currentTime = 0;
-        }).catch(e => console.log("Audio permission issue:", e));
+        .card-header {
+            background: var(--bg-card-header);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
 
-        isSystemStarted = true;
-        loadTickets(); 
-        setInterval(loadTickets, 10000); // Poll every 10s
-    }
+        .order-type {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: #333;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
 
-    function playSound() {
-        const audio = document.getElementById('notification-sound');
-        audio.currentTime = 0;
-        audio.play().catch(e => console.error("Sound failed:", e));
-    }
+        .card-body {
+            padding: 16px;
+            flex-grow: 1;
+        }
 
-    // SECURITY: Prevent script injection (XSS)
-    // This cleans the data coming from the sheet so it can't break your HTML
-    function escapeHtml(text) {
-        if (!text) return '';
-        return text.toString()
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px dashed #333;
+        }
 
-    function loadTickets() {
-        if(!isSystemStarted) return;
+        .timer { font-weight: bold; color: var(--text-primary); }
+        .timer.late { color: var(--accent-new); }
 
-        fetch(scriptURL)
-        .then(res => res.json())
-        .then(data => {
-            document.getElementById('loading').style.display = 'none';
-            const container = document.getElementById('orders-container');
+        .items-list {
+            font-size: 1.1rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            margin-bottom: 10px;
+        }
+
+        .note-box {
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid var(--accent-new);
+            color: #ffcccc;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        /* BUTTONS */
+        .btn-action {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: auto;
+        }
+
+        .btn-accept { background: #333; color: white; }
+        .btn-accept:hover { background: #444; }
+
+        .btn-ready { background: var(--accent-ready); color: #000; }
+        .btn-ready:hover { background: #26af61; }
+
+        /* OVERLAY */
+        #start-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 100;
+            display: flex; justify-content: center; align-items: center;
+            flex-direction: column;
+        }
+        #start-btn {
+            background: var(--accent-new); color: white; border: none;
+            padding: 15px 30px; font-size: 1.2rem; font-weight: bold;
+            border-radius: 50px; cursor: pointer;
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.4);
+        }
+
+        /* TOAST NOTIFICATION */
+        #toast-container {
+            position: fixed; bottom: 20px; right: 20px; z-index: 200;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .toast {
+            background: #333; color: white; padding: 12px 20px;
+            border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            font-size: 0.9rem; border-left: 4px solid #fff;
+            animation: slideInLeft 0.3s;
+        }
+        .toast.error { border-left-color: var(--accent-new); }
+        .toast.success { border-left-color: var(--accent-ready); }
+
+        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes slideInLeft { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        /* LOADING */
+        #loader { text-align: center; color: #666; margin-top: 50px; }
+        
+        .empty-state { grid-column: 1 / -1; text-align: center; color: #555; padding: 40px; font-size: 1.2rem; border: 2px dashed #333; border-radius: 12px; }
+    </style>
+</head>
+<body>
+
+    <div id="start-overlay">
+        <h2 style="color:white; margin-bottom:20px;">👨‍🍳 Kitchen Station</h2>
+        <button id="start-btn" onclick="initSystem()">START SHIFT</button>
+    </div>
+
+    <audio id="bell" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+
+    <header>
+        <h1>CAFE CLOUD CLUB</h1>
+        <div class="clock" id="clock">--:--</div>
+    </header>
+
+    <div id="loader">Waiting for connection...</div>
+    <div class="grid" id="orders-grid"></div>
+
+    <div id="toast-container"></div>
+
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbx_6dCuYMLPAQq8j9AsMHzjIkcugifCOfCYQnI49eVUughBQlBYmdIY6LPf5PQ7EDmv/exec';
+        
+        let systemActive = false;
+        let knownIds = new Set();
+        let activeOrdersData = []; // Store raw data for timers
+
+        // --- UTILS ---
+        const $ = (id) => document.getElementById(id);
+        const escapeHtml = (str) => (!str ? '' : String(str).replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]));
+
+        function showToast(msg, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerText = msg;
+            $('toast-container').appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        // --- CLOCK & TIMERS ---
+        function updateTime() {
+            $('clock').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
-            // 1. FILTER: Last 12h
-            const now = new Date();
-            const twelveHoursAgo = new Date(now.getTime() - (12 * 60 * 60 * 1000));
-            
-            // 2. REVERSE: Newest first so they appear at top
-            const rows = data.slice(1).reverse(); 
-
-            let activeOrderIds = new Set();
-            let hasNewOrder = false;
-
-            // Check if no active orders
-            const hasActiveOrders = rows.some(row => {
-                const d = new Date(row[0]);
-                const s = row[9] ? row[9].toString().trim() : 'New';
-                return d > twelveHoursAgo && s !== 'Ready';
+            // Update "X mins ago" on every card
+            activeOrdersData.forEach(order => {
+                const el = document.getElementById(`timer-${order.id}`);
+                if(el) {
+                    const diffMs = new Date() - new Date(order.date);
+                    const mins = Math.floor(diffMs / 60000);
+                    el.innerText = `${mins}m ago`;
+                    if (mins > 15) el.classList.add('late'); // Red text if waiting > 15m
+                }
             });
+        }
+        setInterval(updateTime, 1000); // Clock ticks every second for responsiveness
 
-            if (!hasActiveOrders) {
-                container.innerHTML = '<div style="color:#444; text-align:center; padding:40px; grid-column:1/-1;">NO ACTIVE ORDERS</div>';
+        // --- SYSTEM INIT ---
+        function initSystem() {
+            $('start-overlay').style.display = 'none';
+            $('loader').innerText = "Syncing Orders...";
+            
+            // Audio unlock
+            const audio = $('bell');
+            audio.volume = 1.0;
+            audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(e => console.warn("Audio blocked", e));
+            
+            systemActive = true;
+            fetchOrders();
+            setInterval(fetchOrders, 10000); // Poll every 10s
+        }
+
+        // --- DATA FETCHING ---
+        function fetchOrders() {
+            if (!systemActive) return;
+
+            fetch(API_URL)
+                .then(res => res.json())
+                .then(data => {
+                    $('loader').style.display = 'none';
+                    renderOrders(data);
+                })
+                .catch(err => {
+                    console.error(err);
+                    showToast("Sync Error: Check Internet", "error");
+                });
+        }
+
+        // --- RENDERING (DOM DIFFING) ---
+        function renderOrders(data) {
+            const container = $('orders-grid');
+            
+            // 1. Filter Data
+            const now = new Date();
+            const cutoff = new Date(now.getTime() - (12 * 60 * 60 * 1000)); // 12 hrs
+            
+            // Convert to array of objects for easier handling
+            const cleanRows = data.slice(1).map(row => ({
+                date: new Date(row[0]),
+                id: row[1],
+                name: (row[2] && String(row[2]).trim()) ? row[2] : "Guest", // Name Fallback
+                items: row[4],
+                type: row[6],
+                note: row[8],
+                status: row[9] ? String(row[9]).trim() : 'New'
+            })).filter(o => o.date > cutoff && o.status !== 'Ready').reverse(); // Newest first
+
+            activeOrdersData = cleanRows; // Save for timer updates
+
+            let currentBatchIds = new Set();
+            let hasNew = false;
+
+            if (cleanRows.length === 0) {
+                container.innerHTML = '<div class="empty-state">No Active Orders</div>';
                 return;
             }
 
-            // Remove "No Active Orders" msg if real orders exist
-            if (container.innerText.includes("NO ACTIVE ORDERS")) {
-                container.innerHTML = '';
-            }
+            // Remove "Empty State" if it exists
+            if (container.querySelector('.empty-state')) container.innerHTML = '';
 
-            rows.forEach(row => {
-                // 0:Date, 1:ID, ... 
-                const orderDate = new Date(row[0]);
-                const orderId = row[1];
-                const rawName = row[2];
-                const phone = row[3];
-                const items = row[4];
-                const type = row[6];
-                const note = row[8];
-                const status = row[9] ? row[9].toString().trim() : 'New';
+            cleanRows.forEach(order => {
+                currentBatchIds.add(order.id);
+                const cardId = `card-${order.id}`;
+                let card = document.getElementById(cardId);
 
-                // Skip old or completed
-                if (orderDate < twelveHoursAgo || status === 'Ready') return;
-
-                activeOrderIds.add(orderId);
-
-                // --- CRITICAL FIX: MISSING NAME HANDLER ---
-                // If name is blank, use "Guest"
-                const customerName = (rawName && rawName.toString().trim() !== "") 
-                                     ? escapeHtml(rawName) 
-                                     : "Guest";
-
-                // --- CRITICAL FIX: DOM DIFFING ---
-                // We check if the card exists. If yes, we leave it alone. If no, we create it.
-                // This stops the flashing and phantom clicks.
-                let card = document.getElementById(`card-${orderId}`);
-
-                // 1. CREATE CARD IF IT DOESN'T EXIST
+                // A. CREATE CARD
                 if (!card) {
-                    if (status === 'New') hasNewOrder = true;
-
-                    const timeString = orderDate.toLocaleTimeString('en-IN', { hour: 'numeric', minute: 'numeric', hour12: true });
-                    const itemsHtml = escapeHtml(items).replace(/, /g, '<br>');
-                    const typeDisplay = escapeHtml(type).toUpperCase();
-                    const noteHtml = note && note !== '-' ? `<div class="note-box">NOTE: ${escapeHtml(note)}</div>` : '';
+                    if (order.status === 'New') hasNew = true;
                     
-                    // Button logic
-                    let btnHtml = '';
-                    let statusClass = 'status-new';
-                    let statusLabel = '';
+                    card = document.createElement('div');
+                    card.id = cardId;
+                    card.className = `card status-${order.status}`;
+                    
+                    const btnConfig = getBtnConfig(order.status, order.id);
+                    const noteHtml = (order.note && order.note !== '-') ? `<div class="note-box">NOTE: ${escapeHtml(order.note)}</div>` : '';
 
-                    if (status === 'Accepted') {
-                        statusClass = 'status-accepted';
-                        statusLabel = '<span style="color:#f1c40f; font-size:0.8rem; float:right;">COOKING...</span>';
-                        btnHtml = `<button class="action-btn btn-ready" onclick="updateStatus('${orderId}', 'Ready', this)">Mark Ready (Done)</button>`;
-                    } else {
-                        btnHtml = `<button class="action-btn btn-accept" onclick="updateStatus('${orderId}', 'Accepted', this)">Accept Order</button>`;
-                    }
-
-                    const newCardHtml = `
-                        <div class="ticket ${statusClass}" id="card-${orderId}">
-                            <div class="ticket-header">
-                                <span>#${orderId}</span>
-                                <span>${typeDisplay}</span>
-                            </div>
-                            <div class="ticket-meta">
-                                🕒 ${timeString} ${statusLabel}<br>
-                                👤 ${customerName} (${escapeHtml(phone)})
-                            </div>
-                            <div class="ticket-items">
-                                ${itemsHtml}
-                            </div>
-                            ${noteHtml}
-                            <div id="btn-container-${orderId}">
-                                ${btnHtml}
-                            </div>
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <span>#${order.id}</span>
+                            <span class="order-type">${escapeHtml(order.type)}</span>
                         </div>
+                        <div class="card-body">
+                            <div class="meta-row">
+                                <span class="timer" id="timer-${order.id}">0m ago</span>
+                                <span>${escapeHtml(order.name)}</span>
+                            </div>
+                            <div class="items-list">${escapeHtml(order.items).replace(/, /g, '<br>')}</div>
+                            ${noteHtml}
+                        </div>
+                        <button class="btn-action ${btnConfig.cls}" onclick="setStatus('${order.id}', '${btnConfig.nextStatus}', this)">
+                            ${btnConfig.text}
+                        </button>
                     `;
-                    // Add to container
-                    container.insertAdjacentHTML('beforeend', newCardHtml);
-                
-                // 2. UPDATE CARD STATUS IF CHANGED EXTERNALLY
-                } else {
-                    const currentClass = card.classList.contains('status-accepted') ? 'Accepted' : 'New';
-                    if (status !== currentClass && status === 'Accepted') {
-                        card.classList.remove('status-new');
-                        card.classList.add('status-accepted');
-                        const btnContainer = document.getElementById(`btn-container-${orderId}`);
-                        btnContainer.innerHTML = `<button class="action-btn btn-ready" onclick="updateStatus('${orderId}', 'Ready', this)">Mark Ready (Done)</button>`;
+                    container.appendChild(card);
+                } 
+                // B. UPDATE CARD STATUS (If changed remotely)
+                else {
+                    const currentStatus = card.classList.contains('status-Accepted') ? 'Accepted' : 'New';
+                    if (order.status !== currentStatus) {
+                        card.className = `card status-${order.status}`;
+                        const btn = card.querySelector('.btn-action');
+                        const config = getBtnConfig(order.status, order.id);
+                        btn.className = `btn-action ${config.cls}`;
+                        btn.innerText = config.text;
+                        btn.setAttribute('onclick', `setStatus('${order.id}', '${config.nextStatus}', this)`);
                     }
                 }
             });
 
-            // Cleanup: Remove cards that are no longer in the active list (e.g. marked ready on another device)
-            const allCards = document.querySelectorAll('.ticket');
-            allCards.forEach(card => {
-                const id = card.id.replace('card-', '');
-                // Check if this ID is in the current batch of active orders
-                if (!activeOrderIds.has(parseInt(id)) && !activeOrderIds.has(id)) {
-                    card.remove();
+            // Cleanup removed cards
+            document.querySelectorAll('.card').forEach(c => {
+                const id = c.id.replace('card-', '');
+                if (!currentBatchIds.has(parseInt(id)) && !currentBatchIds.has(id)) {
+                    c.remove();
                 }
             });
 
-            if (hasNewOrder && !knownOrderIds.has([...activeOrderIds][0])) { 
-                 playSound();
+            // Sound Alert
+            // We check if we have a new order that wasn't in the known list
+            const isFirstLoad = knownIds.size === 0;
+            if (hasNew && !isFirstLoad) {
+                // Check if the specific new order is actually new to us
+                 const actuallyNew = cleanRows.some(o => o.status === 'New' && !knownIds.has(o.id));
+                 if(actuallyNew) $('bell').play().catch(e=>console.log(e));
             }
-            knownOrderIds = activeOrderIds;
-        })
-        .catch(err => {
-            console.error(err);
-        });
-    }
+            
+            knownIds = currentBatchIds;
+            updateTime(); // Force timer update immediately
+        }
 
-    function updateStatus(orderId, newStatus, btnElement) {
-        const card = document.getElementById(`card-${orderId}`);
-        const originalBtnText = btnElement.innerText;
-        
-        // VISUAL UPDATE (Optimistic)
-        btnElement.innerText = "SAVING...";
-        btnElement.style.opacity = "0.7";
-        btnElement.disabled = true;
+        function getBtnConfig(status, id) {
+            if (status === 'Accepted') {
+                return { text: "MARK READY (DONE)", cls: "btn-ready", nextStatus: "Ready" };
+            }
+            return { text: "ACCEPT ORDER", cls: "btn-accept", nextStatus: "Accepted" };
+        }
 
-        const formData = new FormData();
-        formData.append('action', 'update');
-        formData.append('orderId', orderId);
-        formData.append('status', newStatus);
+        // --- STATUS UPDATE ---
+        function setStatus(id, newStatus, btn) {
+            const originalText = btn.innerText;
+            btn.innerText = "SAVING...";
+            btn.style.opacity = 0.7;
+            btn.disabled = true;
 
-        fetch(scriptURL, { method: 'POST', body: formData })
-        .then(res => res.json())
-        .then(data => {
-            if(data.result === 'updated') {
-                if (newStatus === 'Accepted') {
-                    card.classList.remove('status-new');
-                    card.classList.add('status-accepted');
-                    // Replace button
-                    const btnContainer = document.getElementById(`btn-container-${orderId}`);
-                    btnContainer.innerHTML = `<button class="action-btn btn-ready" onclick="updateStatus('${orderId}', 'Ready', this)">Mark Ready (Done)</button>`;
-                } else if (newStatus === 'Ready') {
-                    card.style.transition = "all 0.5s";
-                    card.style.opacity = '0';
-                    card.style.transform = 'scale(0.9)';
-                    setTimeout(() => card.remove(), 500);
+            const formData = new FormData();
+            formData.append('action', 'update');
+            formData.append('orderId', id);
+            formData.append('status', newStatus);
+
+            fetch(API_URL, { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if (data.result === 'updated') {
+                    const card = $(`card-${id}`);
+                    if (newStatus === 'Accepted') {
+                        card.classList.remove('status-New');
+                        card.classList.add('status-Accepted');
+                        const config = getBtnConfig('Accepted', id);
+                        btn.className = `btn-action ${config.cls}`;
+                        btn.innerText = config.text;
+                        btn.setAttribute('onclick', `setStatus('${id}', '${config.nextStatus}', this)`);
+                        showToast("Order Accepted", "success");
+                    } else {
+                        // Ready
+                        card.style.transform = 'scale(0.9)';
+                        card.style.opacity = 0;
+                        setTimeout(() => card.remove(), 300);
+                        showToast("Order Complete!", "success");
+                    }
+                    btn.disabled = false;
+                    btn.style.opacity = 1;
+                } else {
+                    throw new Error("Server rejected update");
                 }
-            } else {
-                throw new Error("Sync failed");
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            alert("Connection Lost! Status NOT saved.");
-            // --- CRITICAL FIX: ROLLBACK ---
-            // If internet fails, we reset the button so the chef can try again
-            btnElement.innerText = originalBtnText;
-            btnElement.style.opacity = "1";
-            btnElement.disabled = false;
-        });
-    }
-</script>
+            })
+            .catch(err => {
+                console.error(err);
+                showToast("Save Failed! Try again.", "error");
+                btn.innerText = originalText;
+                btn.disabled = false;
+                btn.style.opacity = 1;
+            });
+        }
+    </script>
+</body>
+</html>
