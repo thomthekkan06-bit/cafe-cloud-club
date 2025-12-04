@@ -1,64 +1,202 @@
-const sheetName = 'Orders';
-
-function doPost(e) {
-  const lock = LockService.getScriptLock();
-  lock.tryLock(10000);
-
-  try {
-    const doc = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = doc.getSheetByName(sheetName);
-    
-    // Check if we are UPDATING an order or CREATING a new one
-    const action = e.parameter.action;
-
-    if (action === 'update') {
-      // --- UPDATE LOGIC (Staff clicked Accept/Ready) ---
-      const orderId = e.parameter.orderId;
-      const newStatus = e.parameter.status;
-      
-      const data = sheet.getDataRange().getValues();
-      // Loop through rows to find the matching Order ID
-      for (let i = 1; i < data.length; i++) {
-        // data[i][1] is Column B (OrderID)
-        if (data[i][1] == orderId) { 
-          // Column I (Index 9) is the "Status" column.
-          // Note: Row number is i + 1. Column number is 9 (I).
-          sheet.getRange(i + 1, 9).setValue(newStatus); 
-          return ContentService.createTextOutput(JSON.stringify({ 'result': 'updated', 'id': orderId }))
-            .setMimeType(ContentService.MimeType.JSON);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KDS - Café Cloud Club</title>
+    <meta http-equiv="refresh" content="30">
+    <style>
+        body { font-family: 'Courier New', monospace; background: #111; color: #eee; padding: 20px; margin: 0; }
+        h1 { border-bottom: 2px solid #FF4500; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        
+        .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        
+        /* TICKET STYLES */
+        .ticket { 
+            background: #222; 
+            border: 1px solid #444; 
+            padding: 15px; 
+            border-top: 6px solid #666; 
+            display: flex; flex-direction: column; justify-content: space-between;
+            animation: fadeIn 0.5s ease;
+            position: relative;
         }
-      }
-      return ContentService.createTextOutput(JSON.stringify({ 'result': 'error', 'message': 'Order ID not found' }))
-        .setMimeType(ContentService.MimeType.JSON);
 
-    } else {
-      // --- CREATE LOGIC (New Order from Website) ---
-      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-      const nextRow = sheet.getLastRow() + 1;
+        /* STATUS COLORS */
+        .ticket.status-new { border-top-color: #e74c3c; box-shadow: 0 0 15px rgba(231, 76, 60, 0.1); }
+        .ticket.status-accepted { border-top-color: #f1c40f; background: #2a2a2a; border-color: #555; }
+        
+        .ticket-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 1.3rem; margin-bottom: 10px; border-bottom: 1px dashed #444; padding-bottom: 8px; }
+        .ticket-meta { font-size: 0.9rem; color: #bbb; margin-bottom: 15px; line-height: 1.4; }
+        .ticket-items { font-size: 1.1rem; line-height: 1.5; margin-bottom: 20px; white-space: pre-wrap; flex-grow: 1; font-weight: 500; }
+        
+        /* ACTION BUTTONS */
+        .action-btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            font-weight: 800;
+            font-size: 1rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            margin-top: 10px;
+            transition: all 0.2s;
+            border-radius: 4px;
+        }
+        
+        .btn-accept { background: #333; color: #fff; border: 1px solid #555; }
+        .btn-accept:hover { background: #fff; color: #000; }
+        
+        .btn-ready { background: #27ae60; color: #fff; box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3); }
+        .btn-ready:hover { background: #2ecc71; transform: translateY(-2px); }
 
-      const newRow = headers.map(function(header) {
-        if (header === 'Date') return new Date();
-        if (header === 'Status') return 'New'; // Default status
-        return e.parameter[header];
-      });
+        .note-box { background: #5a1a1a; color: #ffcccc; padding: 8px; margin-top: 5px; font-size: 0.9rem; border-left: 3px solid #ff4444; }
 
-      sheet.getRange(nextRow, 1, 1, newRow.length).setValues([newRow]);
-      return ContentService.createTextOutput(JSON.stringify({ 'result': 'success', 'row': nextRow }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
+        @keyframes fadeIn { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
 
-  } catch (e) {
-    return ContentService.createTextOutput(JSON.stringify({ 'result': 'error', 'error': e.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
-  } finally {
-    lock.releaseLock();
-  }
-}
+    <h1>
+        <span>👨‍🍳 KITCHEN DISPLAY</span>
+        <span id="clock" style="font-size: 1.5rem; color: #888;">--:--</span>
+    </h1>
 
-function doGet(e){
-  const doc = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = doc.getSheetByName(sheetName);
-  const data = sheet.getDataRange().getValues();
-  return ContentService.createTextOutput(JSON.stringify(data))
-      .setMimeType(ContentService.MimeType.JSON);
-}
+    <div id="loading" style="text-align:center; padding: 20px; color:#666;">Connecting to Cloud...</div>
+    <div class="orders-grid" id="orders-container"></div>
+
+    <script>
+        // YOUR SPECIFIC URL
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbx_6dCuYMLPAQq8j9AsMHzjIkcugifCOfCYQnI49eVUughBQlBYmdIY6LPf5PQ7EDmv/exec';
+
+        function updateClock() {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: 'numeric' });
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        function loadTickets() {
+            fetch(scriptURL)
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('orders-container');
+                document.getElementById('loading').style.display = 'none';
+                container.innerHTML = '';
+                
+                // 1. FILTER: Orders from last 12 hours ONLY
+                const now = new Date();
+                const twelveHoursAgo = new Date(now.getTime() - (12 * 60 * 60 * 1000));
+                
+                // 2. REVERSE: Newest first
+                const rows = data.slice(1).reverse(); 
+
+                let activeCount = 0;
+
+                rows.forEach(row => {
+                    // MAPPING: 0:Date, 1:ID, 2:Name, 3:Phone, 4:Items, 5:Total, 6:Type, 7:Address, 8:Note, 9:Status
+                    const orderDate = new Date(row[0]);
+                    const status = row[9] ? row[9].toString().trim() : 'New'; 
+                    const orderId = row[1];
+
+                    // LOGIC: Hide if older than 12h OR if status is 'Ready'
+                    if (orderDate < twelveHoursAgo || status === 'Ready') return;
+
+                    activeCount++;
+                    
+                    // UI STATE LOGIC
+                    let statusClass = 'status-new';
+                    let btnHtml = `<button class="action-btn btn-accept" onclick="updateStatus('${orderId}', 'Accepted', this)">Accept Order</button>`;
+                    let statusLabel = '';
+
+                    if (status === 'Accepted') {
+                        statusClass = 'status-accepted';
+                        btnHtml = `<button class="action-btn btn-ready" onclick="updateStatus('${orderId}', 'Ready', this)">Mark Ready (Done)</button>`;
+                        statusLabel = '<span style="color:#f1c40f; font-size:0.8rem; float:right;">COOKING...</span>';
+                    }
+
+                    // Formatting
+                    const timeString = orderDate.toLocaleTimeString('en-IN', { hour: 'numeric', minute: 'numeric', hour12: true });
+                    const itemsHtml = row[4].replace(/, /g, '<br>');
+                    const typeDisplay = row[6].toUpperCase();
+                    const noteHtml = row[8] && row[8] !== '-' ? `<div class="note-box">NOTE: ${row[8]}</div>` : '';
+
+                    const card = `
+                        <div class="ticket ${statusClass}" id="card-${orderId}">
+                            <div class="ticket-header">
+                                <span>#${orderId}</span>
+                                <span>${typeDisplay}</span>
+                            </div>
+                            <div class="ticket-meta">
+                                🕒 ${timeString} ${statusLabel}<br>
+                                👤 ${row[2]} (${row[3]})
+                            </div>
+                            <div class="ticket-items">
+                                ${itemsHtml}
+                            </div>
+                            ${noteHtml}
+                            ${btnHtml}
+                        </div>
+                    `;
+                    container.innerHTML += card;
+                });
+
+                if(activeCount === 0) container.innerHTML = '<div style="color:#444; text-align:center; padding:40px; grid-column:1/-1;">NO ACTIVE ORDERS</div>';
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('loading').innerText = "Connection Failed. Retrying...";
+            });
+        }
+
+        function updateStatus(orderId, newStatus, btnElement) {
+            const card = document.getElementById(`card-${orderId}`);
+            
+            // 1. INSTANT VISUAL FEEDBACK (Don't wait for server)
+            if (newStatus === 'Accepted') {
+                btnElement.innerText = "UPDATING...";
+                btnElement.style.opacity = "0.7";
+                card.classList.remove('status-new');
+                card.classList.add('status-accepted');
+            } else if (newStatus === 'Ready') {
+                // If ready, fade out immediately
+                card.style.transition = "all 0.5s";
+                card.style.opacity = '0';
+                card.style.transform = 'scale(0.9)';
+                setTimeout(() => card.style.display = 'none', 500); // Remove from layout after fade
+            }
+
+            // 2. SEND TO DATABASE
+            const formData = new FormData();
+            formData.append('action', 'update');
+            formData.append('orderId', orderId);
+            formData.append('status', newStatus);
+
+            fetch(scriptURL, { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if(data.result === 'updated') {
+                    // Sync successful
+                    if (newStatus === 'Accepted') {
+                        // Transform button to "Ready" button permanently
+                        btnElement.className = "action-btn btn-ready";
+                        btnElement.innerText = "Mark Ready (Done)";
+                        btnElement.style.opacity = "1";
+                        btnElement.onclick = function() { updateStatus(orderId, 'Ready', this); };
+                    }
+                } else {
+                    // If server failed, revert changes (Safety net)
+                    alert("Sync Error! Please refresh.");
+                    location.reload();
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Internet Error. Status not saved.");
+            });
+        }
+
+        // Initial Load
+        loadTickets();
+    </script>
+</body>
+</html>
