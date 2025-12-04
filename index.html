@@ -677,13 +677,21 @@
             <textarea class="input-field" id="c-address" rows="3" placeholder="Flat No, Street, Landmark..."></textarea>
         </div>
 
-        <div class="input-group">
+<div class="input-group">
             <label>Special Instructions (Optional)</label>
             <textarea class="input-field" id="c-instruction" rows="2" placeholder='e.g. "Doorbell doesn&#39;t work", "Dog in"'></textarea>
         </div>
 
-        <button class="checkout-btn" onclick="finalizeOrder()">Confirm Order</button>
-        <button style="background:none; border:none; width:100%; padding:10px; margin-top:10px; cursor:pointer; color:#777;" onclick="closeCheckoutModal()">Cancel</button>
+        <div class="input-group" style="display: flex; align-items: center; gap: 10px; margin-top: 15px; margin-bottom: 15px;">
+            <input type="checkbox" id="tnc-confirm" onchange="toggleFinalButton()" style="width: 20px; height: 20px; accent-color: var(--primary); cursor: pointer;">
+            <label for="tnc-confirm" style="font-size: 0.85rem; color: var(--grey-text); cursor: pointer; user-select: none;">
+                I agree to the <u onclick="closeCheckoutModal(); toggleOffersPage();" style="color:var(--primary); cursor:pointer;">Terms & Conditions</u>
+            </label>
+        </div>
+
+        <button class="checkout-btn" id="final-submit-btn" onclick="finalizeOrder()" disabled style="opacity: 0.5; cursor: not-allowed; transition: all 0.3s ease;">Confirm Order</button>
+        
+        <button style="background:none; border:none; width:100%; padding:10px; margin-top:5px; cursor:pointer; color:#777;" onclick="closeCheckoutModal()">Cancel</button>
     </div>
 </div>
 
