@@ -15,10 +15,10 @@
         }
         body { background-color: var(--bg); color: var(--text-main); font-family: 'Inter', sans-serif; margin: 0; padding: 20px; }
         
-        /* OVERLAY */
+        /* OVERLAY - HIGH Z-INDEX TO ENSURE CLICKABILITY */
         #start-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 9999;
+            background: rgba(0,0,0,0.95); z-index: 10000;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             text-align: center;
         }
@@ -27,9 +27,9 @@
             padding: 20px 40px; font-size: 1.5rem; font-weight: 800;
             border-radius: 50px; cursor: pointer; margin-top: 20px;
             box-shadow: 0 0 30px rgba(46, 204, 113, 0.4);
-            animation: pulse 2s infinite;
+            transition: transform 0.2s;
         }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        .start-btn:active { transform: scale(0.95); }
 
         /* HEADER */
         .kds-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid #333; }
@@ -109,37 +109,38 @@
     
     <div id="ticket-container" class="ticket-grid"></div>
 
-    <audio id="alert-sound" preload="auto">
-        <source src="bell.mp3" type="audio/mpeg">
-    </audio>
-
-<script>
+    <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyXl0eoAoUyn3GgxrDpoE4glfpLNKVKAZ3yNSH8wVw5-vSLSjqpaehqWgmRIlrm_Bgngg/exec";
     let knownOrderIDs = []; 
     let firstLoad = true;
     let isKDSActive = false;
+    let kitchenSound = null; // Store sound object
 
     function startKDS() {
-        // 1. Remove Overlay Instantly (So button never fails)
+        // 1. Hide Overlay IMMEDIATELY (Prevents freezing)
         document.getElementById('start-overlay').style.display = 'none';
+        
+        // 2. Initialize Sound safely
+        try {
+            // Looks for bell.mp3 in the same folder as staff.html
+            kitchenSound = new Audio('bell.mp3'); 
+            
+            // Try playing silence to unlock browser audio policy
+            kitchenSound.play().then(() => {
+                kitchenSound.pause();
+                kitchenSound.currentTime = 0;
+            }).catch(e => {
+                console.log("Auto-play blocked or file missing: " + e);
+            });
+        } catch(e) {
+            console.log("Audio Error: " + e);
+        }
+
+        // 3. Start System
         isKDSActive = true;
         document.getElementById('status-text').innerText = "Connecting...";
-
-        // 2. Start Data Fetching
         fetchOrders();
         setInterval(fetchOrders, 5000);
-
-        // 3. Try to Unlock/Play your Custom Sound
-        const audio = document.getElementById('alert-sound');
-        // Setting volume force
-        audio.volume = 1.0;
-        audio.play().then(() => {
-            // It played successfully, so pause it immediately
-            audio.pause();
-            audio.currentTime = 0;
-        }).catch(err => {
-            console.log("Audio warning (File not found or blocked): " + err);
-        });
     }
 
     async function fetchOrders() {
@@ -190,10 +191,10 @@
             hasNew = incomingIDs.some(id => !knownOrderIDs.includes(id));
         }
         
-        if (hasNew) {
-            const audio = document.getElementById('alert-sound');
-            audio.currentTime = 0;
-            audio.play().catch(e => console.log("Audio play failed:", e));
+        // --- SAFE AUDIO PLAY ---
+        if (hasNew && kitchenSound) {
+            kitchenSound.currentTime = 0;
+            kitchenSound.play().catch(e => console.log("Sound failed to play:", e));
         }
         
         knownOrderIDs = incomingIDs; 
@@ -228,4 +229,48 @@
             let rawNote = order.Note || '';
 
             const packMatch = rawNote.match(/\[PACKING:\s*(\d+)\]/);
-            if (packMatch)
+            if (packMatch) {
+                packingDisplay = `<div class="summary-line"><span>Packing Charges</span><span>₹${packMatch[1]}</span></div>`;
+                rawNote = rawNote.replace(packMatch[0], '');
+            }
+
+            const offerMatch = rawNote.match(/\[OFFER:\s*(.*?)\]/);
+            if (offerMatch) {
+                noteHtml += `<div class="coupon-box"><i class="fas fa-tags"></i> <strong>OFFER APPLIED:</strong><br>${offerMatch[1]}</div>`;
+                rawNote = rawNote.replace(offerMatch[0], '');
+            }
+
+            rawNote = rawNote.replace(/^-\s*$/, '').trim();
+            if (rawNote && rawNote.length > 1) {
+                noteHtml += `<div class="note-alert"><i class="fas fa-exclamation-circle"></i> ${rawNote}</div>`;
+            }
+
+            let btnHtml = '';
+            if (currentStatus === 'new') btnHtml = `<button class="action-btn btn-start" onclick="updateStatus('${order.OrderID}', 'preparing')"><i class="fas fa-fire"></i> Start Preparing</button>`;
+            else if (currentStatus === 'preparing') btnHtml = `<button class="action-btn btn-preparing" onclick="updateStatus('${order.OrderID}', 'ready')"><i class="fas fa-check"></i> Mark Ready</button>`;
+            else if (currentStatus === 'ready') btnHtml = `<button class="action-btn btn-ready" onclick="updateStatus('${order.OrderID}', 'cleared')"><i class="fas fa-times"></i> Clear Ticket</button>`;
+
+            const card = document.createElement('div'); card.className = `ticket-card ${timeClass}`; card.id = `card-${order.OrderID}`;
+            const timeStr = orderDate.toLocaleTimeString('en-IN', { hour: 'numeric', minute:'2-digit', hour12:true });
+
+            card.innerHTML = `
+                <div class="card-header"><div><div class="order-id">#${order.OrderID}</div><div class="order-type-badge type-${order.Type}">${order.Type}</div></div><div class="timer-display"><div class="time-elapsed">${diffMins}m</div><div class="time-ago">${timeStr}</div></div></div>
+                <div class="card-body">
+                    <div class="customer-section"><div class="c-name">${order.CustomerName}</div><div class="c-row"><div class="c-icon"><i class="fas fa-phone"></i></div> ${order.Phone}</div>${order.Address && order.Type === 'Delivery' ? `<div class="c-row"><div class="c-icon"><i class="fas fa-map-marker-alt"></i></div> ${order.Address}</div>` : ''}</div>
+                    ${noteHtml}
+                    <div class="item-list">${itemsHtml}</div>
+                </div>
+                <div class="card-footer">
+                    ${packingDisplay}
+                    <div class="total-row"><div class="total-label">Total Bill</div><div class="total-amount">₹${order.Total}</div></div>
+                    <div class="btn-container">${btnHtml}</div>
+                </div>`;
+            container.appendChild(card);
+        });
+        if (activeCount === 0) container.innerHTML = `<div class="empty-state"><i class="fas fa-check-circle empty-icon"></i><p>All active orders cleared!</p></div>`;
+    }
+    
+    function updateStatus(id, newStatus) { localStorage.setItem(`status_${id}`, newStatus); if (newStatus === 'cleared') { const card = document.getElementById(`card-${id}`); if(card) { card.classList.add('vanish'); setTimeout(() => card.remove(), 300); } } else { fetchOrders(); } }
+</script>
+</body>
+</html>
