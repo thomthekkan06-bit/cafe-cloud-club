@@ -1,3 +1,4 @@
+alert("SYSTEM UPDATED: V3");
 /* --- PRELOADER SCRIPT (OPTIMIZED) --- */
 document.addEventListener('DOMContentLoaded', () => {
     const foodQuotes = {
