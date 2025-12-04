@@ -1041,7 +1041,7 @@ function finalizeOrder() {
     // 4. Send Data to Google Sheets (Background)
     const scriptURL = 'https://script.google.com/macros/s/AKfycbx_6dCuYMLPAQq8j9AsMHzjIkcugifCOfCYQnI49eVUughBQlBYmdIY6LPf5PQ7EDmv/exec'; 
     
-const formData = new FormData();
+    const formData = new FormData();
     formData.append('Date', timeString);
     formData.append('OrderID', orderId);
     formData.append('CustomerName', name);
@@ -1051,10 +1051,6 @@ const formData = new FormData();
     formData.append('Type', type);
     formData.append('Address', address || "Pickup");
     formData.append('Note', instruction || "-");
-    
-    // --- ADD THIS LINE ---
-    formData.append('DeliveryTime', time); 
-    // ---------------------
 
     fetch(scriptURL, { method: 'POST', body: formData, mode: 'no-cors' })
         .then(() => console.log('Order sent to staff dashboard'))
