@@ -967,6 +967,7 @@ function checkStoreStatus(orderType) {
 }
 
 function finalizeOrder() {
+    // 1. Basic Validation
     const type = document.querySelector('input[name="orderType"]:checked').value;
     const status = checkStoreStatus(type);
     if (!status.isOpen) { alert("Store Closed!\n" + status.msg); return; }
@@ -977,19 +978,18 @@ function finalizeOrder() {
     const address = document.getElementById('c-address').value.trim();
     const time = document.getElementById('c-time').value;
     const instruction = document.getElementById('c-instruction').value.trim();
-    if(!name || !phone || !email || !time) { alert("Please fill in Name, Phone, Email and Time."); return;
-    }
-    if(type === 'Delivery' && !address) { alert("Please fill in the Delivery Address."); return;
-    }
-    if (!/^[0-9]{10,12}$/.test(phone)) { alert("Strict Policy: Phone number must be 10-12 digits."); return;
-    }
-    if (!email.includes('@')) { alert("Strict Policy: Invalid Email."); return;
-    }
 
+    if(!name || !phone || !email || !time) { alert("Please fill in Name, Phone, Email and Time."); return; }
+    if(type === 'Delivery' && !address) { alert("Please fill in the Delivery Address."); return; }
+    if (!/^[0-9]{10,12}$/.test(phone)) { alert("Strict Policy: Phone number must be 10-12 digits."); return; }
+    if (!email.includes('@')) { alert("Strict Policy: Invalid Email."); return; }
+
+    // 2. Setup Order Details
     const orderId = Math.floor(100000 + Math.random() * 900000);
     const now = new Date();
     const timeString = now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
 
+    // 3. Build WhatsApp Message
     let msg = `*New Order @ Café Cloud Club*\n`;
     msg += `*Type:* ${type.toUpperCase()}\n*Time:* ${timeString}\n*Order ID:* ${orderId}\n---------------------------\n`;
     msg += `*Name:* ${name}\n*Phone:* ${phone}\n*Email:* ${email}\n*Time:* ${time}\n`;
@@ -997,26 +997,36 @@ function finalizeOrder() {
     if(instruction) msg += `*Note:* ${instruction}\n`;
     
     msg += `---------------------------\n*ITEMS:*\n`;
+    
     let subTotal = 0;
     let packingTotal = 0;
+    let sheetItemsString = ""; // For Google Sheets
+
     const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
+    
     for(let key in cart) {
         let item = cart[key];
         let lineTotal = item.price * item.qty;
         subTotal += lineTotal;
+        
         let chargePerItem = 10;
         if (item.category === 'ADD-ON') chargePerItem = key.startsWith("Hummus") ? 7 : 5;
         else if (fiveRsCats.includes(item.category)) chargePerItem = 5;
+        
         packingTotal += (chargePerItem * item.qty);
         if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
+        
         let dietTag = item.type === 'veg' ? '[VEG]' : '[NON-VEG]';
         msg += `• ${dietTag} ${key} x ${item.qty} = Rs. ${lineTotal}\n`;
+        
+        // Add to string for database
+        sheetItemsString += `${key} (${item.qty}), `;
     }
     
     let discountVal = 0; let couponName = "";
     if(activeCoupon) { 
-            couponName = activeCoupon;
-            discountVal = parseInt(document.getElementById('discount-total').innerText.replace(/[^\d]/g, ''));
+        couponName = activeCoupon;
+        discountVal = parseInt(document.getElementById('discount-total').innerText.replace(/[^\d]/g, ''));
     }
 
     let grandTotal = (subTotal - discountVal) + packingTotal;
@@ -1028,6 +1038,28 @@ function finalizeOrder() {
     const encodedMsg = encodeURIComponent(msg);
     const finalUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
 
+    // 4. Send Data to Google Sheets (Background)
+    // REPLACE 'YOUR_SCRIPT_URL' BELOW with the URL you got from Google Apps Script
+    const scriptURL = 'YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE'; 
+    
+    if (scriptURL !== 'YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE') {
+        const formData = new FormData();
+        formData.append('Date', timeString);
+        formData.append('OrderID', orderId);
+        formData.append('CustomerName', name);
+        formData.append('Phone', phone);
+        formData.append('Items', sheetItemsString);
+        formData.append('Total', grandTotal);
+        formData.append('Type', type);
+        formData.append('Address', address || "Pickup");
+        formData.append('Note', instruction || "-");
+
+        fetch(scriptURL, { method: 'POST', body: formData, mode: 'no-cors' })
+            .then(() => console.log('Order sent to staff dashboard'))
+            .catch(err => console.error('Dashboard Error', err));
+    }
+
+    // 5. Cleanup & Redirect
     if (Object.keys(cart).length > 0) {
         localStorage.setItem('ccc_last_order', JSON.stringify(cart));
         lastOrder = cart;
@@ -1040,21 +1072,16 @@ function finalizeOrder() {
     document.getElementById('main-dashboard').style.display = 'none';
     document.getElementById('checkout-modal').style.display = 'none';
     document.getElementById('success-view').style.display = 'flex';
-    // --- GOOGLE ANALYTICS REVENUE TRACKING ---
-    // This tells Google: "Money was made here."
+    
+    // Revenue Tracking
     if (typeof gtag === 'function') {
         gtag('event', 'purchase', {
             transaction_id: orderId,
             value: grandTotal,
-            currency: "INR",
-            items: Object.keys(cart).map(key => ({
-                item_name: key,
-                quantity: cart[key].qty,
-                price: cart[key].price,
-                item_category: cart[key].category
-            }))
+            currency: "INR"
         });
     }
+
     document.getElementById('customer-name-display').innerText = name;
     document.getElementById('send-wa-btn').onclick = function() { window.open(finalUrl, '_blank'); };
 }
