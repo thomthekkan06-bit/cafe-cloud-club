@@ -1531,3 +1531,23 @@ function renderCart() {
         checkoutBtn.disabled = false;
     }
 }
+/* --- T&C CHECKBOX LOGIC --- */
+function toggleFinalButton() {
+    const checkbox = document.getElementById('tnc-confirm');
+    const btn = document.getElementById('final-submit-btn');
+    
+    // Safety check to ensure elements exist
+    if (checkbox && btn) {
+        if (checkbox.checked) {
+            // Enable Button
+            btn.disabled = false;
+            btn.style.opacity = "1";
+            btn.style.cursor = "pointer";
+        } else {
+            // Disable Button
+            btn.disabled = true;
+            btn.style.opacity = "0.5";
+            btn.style.cursor = "not-allowed";
+        }
+    }
+}
