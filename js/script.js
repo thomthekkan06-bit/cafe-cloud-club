@@ -992,15 +992,16 @@ function finalizeOrder() {
     // 3. Calculate Totals & Build Strings
     let subTotal = 0;
     let packingTotal = 0;
-    let sheetItemsString = ""; // For Google Sheets
+    let sheetItemsString = ""; // This is what goes to the Sheet
 
     const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
     
     for(let key in cart) {
         let item = cart[key];
-        let lineTotal = item.price * item.qty;
+        let lineTotal = item.price * item.qty; // Price calculation
         subTotal += lineTotal;
         
+        // Packing Calculation
         let chargePerItem = 10;
         if (item.category === 'ADD-ON') chargePerItem = key.startsWith("Hummus") ? 7 : 5;
         else if (fiveRsCats.includes(item.category)) chargePerItem = 5;
@@ -1008,32 +1009,39 @@ function finalizeOrder() {
         packingTotal += (chargePerItem * item.qty);
         if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
 
-        // --- CHANGE 1: Add Price to Item String for KDS ---
+        // --- CRITICAL FIX: Appending Price to the String with a Pipe '|' ---
+        // Format: "Burger (1) | 150"
         sheetItemsString += `${key} (${item.qty}) | ${lineTotal}, `;
     }
     
-    let discountVal = 0; let couponName = "";
+    let discountVal = 0; 
+    let couponName = "";
+    
     if(activeCoupon) { 
         couponName = activeCoupon;
-        discountVal = parseInt(document.getElementById('discount-total').innerText.replace(/[^\d]/g, ''));
+        // Extract number from discount text
+        let discText = document.getElementById('discount-total').innerText;
+        discountVal = parseInt(discText.replace(/[^\d]/g, ''));
     }
 
     let grandTotal = (subTotal - discountVal) + packingTotal;
 
-    // --- CHANGE 2: Add Coupon Info to Notes for KDS ---
+    // --- FIX 2: Add Coupon Info to Notes for KDS ---
     let finalNote = instruction || "";
     if (activeCoupon) {
-        finalNote += ` [COUPON: ${activeCoupon} (-₹${discountVal})]`;
+        // This adds the coupon to the Note field so KDS can see it
+        finalNote += ` [COUPON: ${activeCoupon} OFF ₹${discountVal}]`;
     }
     if (finalNote === "") finalNote = "-";
 
-    // 4. Build WhatsApp Message (Visual only)
+    // 4. Build WhatsApp Message
     let msg = `*New Order @ Café Cloud Club*\n`;
     msg += `*Type:* ${type.toUpperCase()}\n*Time:* ${timeString}\n*Order ID:* ${orderId}\n---------------------------\n`;
     msg += `*Name:* ${name}\n*Phone:* ${phone}\n*Email:* ${email}\n*Time:* ${time}\n`;
     if(type === 'Delivery') msg += `*Address:* ${address}\n`;
     if(finalNote !== "-") msg += `*Note:* ${finalNote}\n`;
     msg += `---------------------------\n*ITEMS:*\n`;
+    
     for(let key in cart) {
         let item = cart[key];
         let lineTotal = item.price * item.qty;
@@ -1049,7 +1057,7 @@ function finalizeOrder() {
     const finalUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
 
     // 5. Send Data to Google Sheets
-    // MAKE SURE THIS URL IS YOUR NEW ONE
+    // YOUR NEW URL
     const scriptURL = 'https://script.google.com/macros/s/AKfycbyXl0eoAoUyn3GgxrDpoE4glfpLNKVKAZ3yNSH8wVw5-vSLSjqpaehqWgmRIlrm_Bgngg/exec'; 
     
     const formData = new FormData();
@@ -1057,11 +1065,11 @@ function finalizeOrder() {
     formData.append('OrderID', orderId);
     formData.append('CustomerName', name);
     formData.append('Phone', phone);
-    formData.append('Items', sheetItemsString);
+    formData.append('Items', sheetItemsString); // Sends the string with prices
     formData.append('Total', grandTotal);
     formData.append('Type', type);
     formData.append('Address', address || "Pickup");
-    formData.append('Note', finalNote); // Sending the note with coupon info
+    formData.append('Note', finalNote); 
 
     fetch(scriptURL, { method: 'POST', body: formData, mode: 'no-cors' })
         .then(() => console.log('Order sent to staff dashboard'))
