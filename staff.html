@@ -45,7 +45,7 @@
         /* --- GRID --- */
         .ticket-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); /* Slightly wider for address */
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
             gap: 20px;
         }
 
@@ -74,6 +74,7 @@
         }
         .type-Delivery { background: rgba(230, 126, 34, 0.2); color: var(--delivery); }
         .type-Pickup { background: rgba(52, 152, 219, 0.2); color: var(--pickup); }
+        
         .timer-display { text-align: right; }
         .time-elapsed { font-size: 1.2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
         .time-ago { font-size: 0.75rem; color: var(--text-muted); }
@@ -85,21 +86,25 @@
         
         /* Customer Details */
         .customer-section { margin-bottom: 20px; border-bottom: 1px dashed #333; padding-bottom: 15px; }
-        .c-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; color: #ddd; font-size: 0.95rem; }
-        .c-name { font-size: 1.2rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
-        .c-icon { width: 20px; color: var(--text-muted); text-align: center; }
-        .c-address { align-items: flex-start; line-height: 1.4; color: #bbb; font-size: 0.9rem; }
+        .c-name { font-size: 1.2rem; font-weight: 700; color: #fff; margin-bottom: 8px; }
+        .c-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 6px; color: #ddd; font-size: 0.95rem; }
+        .c-icon { width: 16px; color: var(--text-muted); margin-top: 2px; }
 
         .note-alert {
             background: rgba(231, 76, 60, 0.15); border-left: 3px solid var(--danger);
-            color: #ffcccc; padding: 8px 12px; font-size: 0.85rem; margin-bottom: 15px;
+            color: #ffcccc; padding: 10px; font-size: 0.9rem; margin-bottom: 15px;
             border-radius: 0 4px 4px 0; font-weight: 500;
+        }
+        
+        /* Coupon Style */
+        .coupon-highlight {
+            color: #f1c40f; font-weight: 700; display: block; margin-top: 4px;
         }
 
         /* Items */
         .item-list { display: flex; flex-direction: column; gap: 12px; }
         .order-item-container { display: flex; flex-direction: column; gap: 4px; }
-        .main-item-row { display: flex; align-items: flex-start; gap: 10px; justify-content: space-between; }
+        .main-item-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
         .item-left { display: flex; gap: 10px; align-items: flex-start; }
         
         .qty-box {
@@ -108,7 +113,7 @@
             border-radius: 6px; font-weight: 700; font-size: 0.9rem; flex-shrink: 0;
         }
         .item-name { font-size: 1rem; line-height: 1.4; color: #e0e0e0; font-weight: 500; }
-        .item-price { font-weight: 600; color: var(--text-muted); font-size: 0.95rem; white-space: nowrap; }
+        .item-price { font-weight: 600; color: var(--safe); font-size: 0.95rem; white-space: nowrap; }
 
         .modifiers-list { padding-left: 36px; display: flex; flex-direction: column; gap: 2px; }
         .modifier-line { font-size: 0.85rem; color: #4cd137; display: flex; align-items: center; gap: 6px; }
@@ -123,7 +128,7 @@
             border-bottom: 1px solid #333;
         }
         .total-label { color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; font-weight: 600; }
-        .total-amount { color: #fff; font-size: 1.2rem; font-weight: 800; }
+        .total-amount { color: #fff; font-size: 1.4rem; font-weight: 800; }
 
         .btn-container { padding: 15px; }
         .action-btn {
@@ -196,7 +201,6 @@
         const cleanStr = itemsStr.replace(/,\s*$/, "");
         
         // Regex looks for: Name (Qty) | Price
-        // It handles the optional Price part if old orders exist without it
         const regex = /(.+?)\s\((\d+)\)(?:\s\|\s(\d+))?(?:,\s|$)/g;
         
         let matches = [];
@@ -273,6 +277,17 @@
                     </div>`;
             });
 
+            // Handle Notes & Coupons
+            let noteHtml = '';
+            if (order.Note && order.Note !== '-') {
+                let displayNote = order.Note;
+                // Highlight Coupon if present
+                if (displayNote.includes('[COUPON:')) {
+                    displayNote = displayNote.replace(/\[COUPON:/g, '<span class="coupon-highlight"><i class="fas fa-tag"></i>').replace(/\]/g, '</span>');
+                }
+                noteHtml = `<div class="note-alert"><i class="fas fa-exclamation-circle"></i> ${displayNote}</div>`;
+            }
+
             // Buttons
             let btnHtml = '';
             if (currentStatus === 'new') {
@@ -303,9 +318,9 @@
                     <div class="customer-section">
                         <div class="c-name">${order.CustomerName}</div>
                         <div class="c-row"><div class="c-icon"><i class="fas fa-phone"></i></div> ${order.Phone}</div>
-                        ${order.Address && order.Type === 'Delivery' ? `<div class="c-row c-address"><div class="c-icon"><i class="fas fa-map-marker-alt"></i></div> ${order.Address}</div>` : ''}
+                        ${order.Address && order.Type === 'Delivery' ? `<div class="c-row"><div class="c-icon"><i class="fas fa-map-marker-alt"></i></div> ${order.Address}</div>` : ''}
                     </div>
-                    ${order.Note && order.Note !== '-' ? `<div class="note-alert"><i class="fas fa-exclamation-circle"></i> ${order.Note}</div>` : ''}
+                    ${noteHtml}
                     <div class="item-list">
                         ${itemsHtml}
                     </div>
