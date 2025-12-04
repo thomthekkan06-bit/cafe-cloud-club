@@ -20,6 +20,24 @@
             --pickup: #3498db;    
         }
         body { background-color: var(--bg); color: var(--text-main); font-family: 'Inter', sans-serif; margin: 0; padding: 20px; }
+        
+        /* --- START OVERLAY (REQUIRED FOR SOUND) --- */
+        #start-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center;
+        }
+        .start-btn {
+            background: var(--safe); color: black; border: none;
+            padding: 20px 40px; font-size: 1.5rem; font-weight: 800;
+            border-radius: 50px; cursor: pointer; margin-top: 20px;
+            box-shadow: 0 0 30px rgba(46, 204, 113, 0.4);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        /* --- KDS HEADER --- */
         .kds-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid #333; }
         .brand-title { font-weight: 800; font-size: 1.8rem; letter-spacing: -1px; }
         .live-indicator { font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 8px; background: #1a1a1a; padding: 8px 16px; border-radius: 20px; }
@@ -52,17 +70,8 @@
         .c-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; color: #ddd; font-size: 1rem; }
         .c-icon { width: 16px; color: var(--text-muted); margin-top: 2px; }
         
-        /* Alerts */
-        .coupon-box {
-            background: rgba(241, 196, 15, 0.1); border: 1px solid var(--warning);
-            color: var(--warning); padding: 10px; font-size: 0.9rem; margin-bottom: 10px;
-            border-radius: 6px; font-weight: 600; line-height: 1.4;
-        }
-        .note-alert {
-            background: rgba(231, 76, 60, 0.15); border-left: 3px solid var(--danger);
-            color: #ffcccc; padding: 10px; font-size: 0.9rem; margin-bottom: 15px;
-            border-radius: 0 4px 4px 0; font-weight: 500;
-        }
+        .coupon-box { background: rgba(241, 196, 15, 0.1); border: 1px solid var(--warning); color: var(--warning); padding: 10px; font-size: 0.9rem; margin-bottom: 10px; border-radius: 6px; font-weight: 600; line-height: 1.4; }
+        .note-alert { background: rgba(231, 76, 60, 0.15); border-left: 3px solid var(--danger); color: #ffcccc; padding: 10px; font-size: 0.9rem; margin-bottom: 15px; border-radius: 0 4px 4px 0; font-weight: 500; }
         
         .item-list { display: flex; flex-direction: column; gap: 12px; }
         .order-item-container { display: flex; flex-direction: column; gap: 4px; }
@@ -71,7 +80,6 @@
         .qty-box { background: #333; color: #fff; min-width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-weight: 700; font-size: 0.9rem; flex-shrink: 0; }
         .item-name { font-size: 1rem; line-height: 1.4; color: #e0e0e0; font-weight: 500; }
         .item-price { font-weight: 600; color: var(--safe); font-size: 0.95rem; white-space: nowrap; }
-        
         .modifiers-list { padding-left: 36px; display: flex; flex-direction: column; gap: 2px; }
         .modifier-line { font-size: 0.85rem; color: #4cd137; display: flex; align-items: center; gap: 6px; }
         
@@ -80,7 +88,6 @@
         .total-row { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); border-top: 1px solid #333; }
         .total-label { color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; font-weight: 600; }
         .total-amount { color: #fff; font-size: 1.4rem; font-weight: 800; }
-        
         .btn-container { padding: 15px; }
         .action-btn { width: 100%; border: none; padding: 14px; border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; text-transform: uppercase; font-family: 'Inter', sans-serif; }
         .btn-start { background: #333; color: #fff; } .btn-start:hover { background: #444; }
@@ -92,20 +99,72 @@
     </style>
 </head>
 <body>
+
+    <div id="start-overlay">
+        <h1 style="color:white; font-size: 2rem;">👨‍🍳 KITCHEN DISPLAY</h1>
+        <p style="color:#aaa; max-width: 400px; margin-bottom: 30px;">
+            Tap the button below to enable sound notifications and connect to the live order stream.
+        </p>
+        <button class="start-btn" onclick="startKDS()">START SHIFT <i class="fas fa-power-off"></i></button>
+    </div>
+
     <div class="kds-header">
         <div class="brand-title">KDS <span style="font-weight:400; color:#666;">| Manager</span></div>
-        <div class="live-indicator"><div id="status-dot" class="dot"></div><span id="status-text">Connecting...</span></div>
+        <div class="live-indicator"><div id="status-dot" class="dot"></div><span id="status-text">Standby...</span></div>
     </div>
-    <div id="ticket-container" class="ticket-grid"><div class="empty-state"><i class="fas fa-satellite-dish empty-icon"></i><p>Waiting for incoming orders...</p></div></div>
-    <audio id="alert-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.m4a"></audio>
+    
+    <div id="ticket-container" class="ticket-grid">
+        </div>
+
+    <audio id="alert-sound" preload="auto">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.m4a" type="audio/mp4">
+    </audio>
+
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyXl0eoAoUyn3GgxrDpoE4glfpLNKVKAZ3yNSH8wVw5-vSLSjqpaehqWgmRIlrm_Bgngg/exec";
-    let knownOrderIDs = []; let firstLoad = true;
-    
+    let knownOrderIDs = []; 
+    let firstLoad = true;
+    let isKDSActive = false;
+
+    // --- 1. START KDS FUNCTION (Unlocks Audio) ---
+    function startKDS() {
+        const audio = document.getElementById('alert-sound');
+        // Play and pause immediately to unlock audio on mobile/desktop
+        audio.play().then(() => {
+            audio.pause();
+            audio.currentTime = 0;
+            
+            // Hide Overlay
+            document.getElementById('start-overlay').style.display = 'none';
+            isKDSActive = true;
+            
+            // Start Fetching
+            document.getElementById('status-text').innerText = "Connecting...";
+            fetchOrders();
+            setInterval(fetchOrders, 5000);
+        }).catch(err => {
+            alert("Audio blocked! Please interact with the page.");
+        });
+    }
+
     async function fetchOrders() {
-        const dot = document.getElementById('status-dot'); const txt = document.getElementById('status-text');
-        try { const response = await fetch(API_URL); const data = await response.json(); dot.className = "dot active"; txt.innerText = "Live"; renderTickets(data.orders); } 
-        catch (error) { console.error("Fetch Error:", error); dot.className = "dot error"; txt.innerText = "Retrying..."; }
+        if (!isKDSActive) return; // Don't fetch until started
+        
+        const dot = document.getElementById('status-dot'); 
+        const txt = document.getElementById('status-text');
+        
+        try { 
+            const response = await fetch(API_URL); 
+            const data = await response.json(); 
+            dot.className = "dot active"; 
+            txt.innerText = "Live"; 
+            renderTickets(data.orders); 
+        } 
+        catch (error) { 
+            console.error("Fetch Error:", error); 
+            dot.className = "dot error"; 
+            txt.innerText = "Retrying..."; 
+        }
     }
     
     function parseItemsString(itemsStr) {
@@ -125,20 +184,45 @@
     
     function renderTickets(orders) {
         const container = document.getElementById('ticket-container');
-        if (!orders || orders.length === 0) { container.innerHTML = `<div class="empty-state"><i class="fas fa-check-circle empty-icon"></i><p>All active orders cleared!</p></div>`; return; }
+        if (!orders || orders.length === 0) { 
+            container.innerHTML = `<div class="empty-state"><i class="fas fa-check-circle empty-icon"></i><p>All orders cleared!</p></div>`; 
+            return; 
+        }
         
-        const incomingIDs = orders.map(o => o.OrderID); let hasNew = false;
-        if (!firstLoad) hasNew = incomingIDs.some(id => !knownOrderIDs.includes(id));
-        if (hasNew) document.getElementById('alert-sound').play().catch(() => {});
-        knownOrderIDs = incomingIDs; firstLoad = false;
-        container.innerHTML = ''; let activeCount = 0;
+        const incomingIDs = orders.map(o => o.OrderID); 
+        let hasNew = false;
+        
+        // --- SOUND TRIGGER LOGIC ---
+        // Only play if it's NOT the first load (don't beep for existing orders when page opens)
+        if (!firstLoad) {
+            hasNew = incomingIDs.some(id => !knownOrderIDs.includes(id));
+        }
+        
+        if (hasNew) {
+            console.log("New Order Detected - Playing Sound");
+            const audio = document.getElementById('alert-sound');
+            audio.currentTime = 0;
+            audio.play().catch(e => console.log("Audio play failed:", e));
+        }
+        
+        knownOrderIDs = incomingIDs; 
+        firstLoad = false;
+        
+        container.innerHTML = ''; 
+        let activeCount = 0;
 
         orders.forEach(order => {
-            const statusKey = `status_${order.OrderID}`; const currentStatus = localStorage.getItem(statusKey) || 'new';
-            if (currentStatus === 'cleared') return; activeCount++;
+            const statusKey = `status_${order.OrderID}`; 
+            const currentStatus = localStorage.getItem(statusKey) || 'new';
+            if (currentStatus === 'cleared') return; 
+            activeCount++;
             
-            const orderDate = new Date(order.Date); const now = new Date(); const diffMins = Math.floor((now - orderDate) / 60000);
-            let timeClass = 'time-green'; if (diffMins >= 15 && diffMins < 20) timeClass = 'time-yellow'; if (diffMins >= 20) timeClass = 'time-red';
+            const orderDate = new Date(order.Date); 
+            const now = new Date(); 
+            const diffMins = Math.floor((now - orderDate) / 60000);
+            let timeClass = 'time-green'; 
+            if (diffMins >= 15 && diffMins < 20) timeClass = 'time-yellow'; 
+            if (diffMins >= 20) timeClass = 'time-red';
 
             const parsedItems = parseItemsString(order.Items);
             let itemsHtml = '';
@@ -148,27 +232,22 @@
                 itemsHtml += `<div class="order-item-container"><div class="main-item-row"><div class="item-left"><div class="qty-box">${item.qty}</div><div class="item-name">${item.name}</div></div><div class="item-price">${item.price}</div></div>${modsHtml}</div>`;
             });
 
-            // --- SMART NOTE PARSING ---
             let noteHtml = '';
             let packingDisplay = '';
             let rawNote = order.Note || '';
 
-            // 1. Extract Packing
             const packMatch = rawNote.match(/\[PACKING:\s*(\d+)\]/);
             if (packMatch) {
                 packingDisplay = `<div class="summary-line"><span>Packing Charges</span><span>₹${packMatch[1]}</span></div>`;
-                rawNote = rawNote.replace(packMatch[0], ''); // Remove from note
+                rawNote = rawNote.replace(packMatch[0], '');
             }
 
-            // 2. Extract Offer
             const offerMatch = rawNote.match(/\[OFFER:\s*(.*?)\]/);
             if (offerMatch) {
-                // Show Offer Box
                 noteHtml += `<div class="coupon-box"><i class="fas fa-tags"></i> <strong>OFFER APPLIED:</strong><br>${offerMatch[1]}</div>`;
                 rawNote = rawNote.replace(offerMatch[0], '');
             }
 
-            // 3. Show remaining user note
             rawNote = rawNote.replace(/^-\s*$/, '').trim();
             if (rawNote && rawNote.length > 1) {
                 noteHtml += `<div class="note-alert"><i class="fas fa-exclamation-circle"></i> ${rawNote}</div>`;
@@ -200,7 +279,6 @@
     }
     
     function updateStatus(id, newStatus) { localStorage.setItem(`status_${id}`, newStatus); if (newStatus === 'cleared') { const card = document.getElementById(`card-${id}`); if(card) { card.classList.add('vanish'); setTimeout(() => card.remove(), 300); } } else { fetchOrders(); } }
-    fetchOrders(); setInterval(fetchOrders, 5000);
 </script>
 </body>
 </html>
