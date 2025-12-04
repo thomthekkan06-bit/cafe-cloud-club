@@ -24,6 +24,18 @@
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             text-align: center;
         }
+        
+        /* UPDATED: BIGGER LOGO STYLE */
+        .overlay-logo {
+            width: 180px; /* Increased from 80px */
+            height: 180px;
+            border-radius: 30px;
+            margin-bottom: 30px;
+            object-fit: cover;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5); /* Nice shadow depth */
+            border: 4px solid #333;
+        }
+
         .start-btn {
             background: var(--safe); color: black; border: none;
             padding: 20px 40px; font-size: 1.5rem; font-weight: 800;
@@ -41,13 +53,10 @@
             display: flex; align-items: center; gap: 15px; 
         }
         
-        /* 2. CUSTOM LOGO STYLE */
+        /* HEADER LOGO (Smaller) */
         .brand-logo {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px; /* Soft corners */
-            object-fit: cover;
-            border: 2px solid #333;
+            width: 50px; height: 50px; border-radius: 12px; 
+            object-fit: cover; border: 2px solid #333;
         }
         
         .header-right { display: flex; align-items: center; gap: 15px; }
@@ -119,7 +128,8 @@
 <body>
 
     <div id="start-overlay">
-        <img src="kitchen-icon.jpg" style="width:80px; border-radius:15px; margin-bottom:20px;">
+        <img src="kitchen-icon.jpg" class="overlay-logo" alt="Cloud Club Logo">
+        
         <h1 style="color:white; font-size: 2rem; margin:0;">KITCHEN DISPLAY</h1>
         <p style="color:#aaa; max-width: 400px; margin-bottom: 30px;">
             Tap the button below to enable sound notifications.
