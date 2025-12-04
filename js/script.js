@@ -1020,7 +1020,7 @@ function finalizeOrder() {
         msg += `• ${dietTag} ${key} x ${item.qty} = Rs. ${lineTotal}\n`;
         
         // Add to string for database
-        sheetItemsString += `${key} (${item.qty}), `;
+        sheetItemsString += `${key} (${item.qty}) | ${lineTotal}, `;
     }
     
     let discountVal = 0; let couponName = "";
