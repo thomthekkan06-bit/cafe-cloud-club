@@ -3,300 +3,388 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KITCHEN DISPLAY | Café Cloud Club</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <title>KDS | Café Cloud Club</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* --- KITCHEN MODE STYLES --- */
         :root {
-            --bg: #000000;
-            --card-bg: #1a1a1a;
-            --text: #ffffff;
-            --accent: #FF4500; /* Brand Orange */
-            --green: #2ecc71;
-            --border: #333;
+            --bg: #121212;
+            --surface: #1E1E1E;
+            --surface-hover: #252525;
+            --text-main: #FFFFFF;
+            --text-muted: #A0A0A0;
+            
+            /* Status Colors */
+            --safe: #2ecc71;      /* Green (<15m) */
+            --warning: #f1c40f;   /* Yellow (15-20m) */
+            --danger: #e74c3c;    /* Red (>20m) */
+            --delivery: #e67e22;  /* Orange */
+            --pickup: #3498db;    /* Blue */
         }
 
         body {
             background-color: var(--bg);
-            color: var(--text);
-            font-family: 'Roboto Mono', monospace;
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
             margin: 0;
-            padding: 10px;
+            padding: 20px;
+            overflow-x: hidden;
         }
 
-        /* Top Status Bar */
-        .kitchen-header {
+        /* --- HEADER --- */
+        .kds-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 2px solid var(--border);
-            padding-bottom: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #333;
         }
-
-        .status-indicator {
-            display: inline-block;
-            width: 12px; height: 12px;
-            border-radius: 50%;
-            background: #555;
-            margin-right: 5px;
+        .brand-title { font-weight: 800; font-size: 1.8rem; letter-spacing: -1px; }
+        .live-indicator { 
+            font-size: 0.8rem; font-weight: 600; 
+            display: flex; align-items: center; gap: 8px; 
+            background: #1a1a1a; padding: 8px 16px; border-radius: 20px;
         }
-        .status-indicator.online { background: var(--green); box-shadow: 0 0 10px var(--green); }
-        .status-indicator.offline { background: red; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #444; }
+        .dot.active { background: var(--safe); box-shadow: 0 0 10px var(--safe); }
+        .dot.error { background: var(--danger); }
 
-        /* The Grid Layout */
-        .orders-grid {
+        /* --- GRID LAYOUT --- */
+        .ticket-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
         }
 
-        /* Individual Ticket Card */
-        .ticket {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-top: 6px solid #555; /* Default color */
-            border-radius: 6px;
-            padding: 15px;
+        /* --- TICKET CARD MODERN --- */
+        .ticket-card {
+            background: var(--surface);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
             display: flex;
             flex-direction: column;
-            animation: popIn 0.3s ease-out;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            border-top: 6px solid #444; /* Default Border */
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* Color Code by Order Type */
-        .ticket.type-Delivery { border-top-color: var(--accent); } /* Orange for Delivery */
-        .ticket.type-Pickup { border-top-color: var(--green); } /* Green for Pickup */
+        /* Timer-Based Border Colors */
+        .ticket-card.time-green { border-top-color: var(--safe); }
+        .ticket-card.time-yellow { border-top-color: var(--warning); }
+        .ticket-card.time-red { border-top-color: var(--danger); }
 
-        .ticket-header {
+        .card-header {
+            padding: 15px 20px;
             display: flex;
             justify-content: space-between;
-            border-bottom: 1px dashed #444;
-            padding-bottom: 8px;
-            margin-bottom: 10px;
-            font-size: 0.9rem;
-            color: #aaa;
+            align-items: flex-start;
+            border-bottom: 1px solid #2a2a2a;
         }
 
-        .ticket-id { font-size: 1.4rem; font-weight: bold; color: white; }
+        .order-id { font-size: 1.4rem; font-weight: 800; color: #fff; line-height: 1; }
+        .order-type-badge {
+            font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+            padding: 4px 8px; border-radius: 4px; margin-top: 5px; display: inline-block;
+        }
+        .type-Delivery { background: rgba(230, 126, 34, 0.2); color: var(--delivery); }
+        .type-Pickup { background: rgba(52, 152, 219, 0.2); color: var(--pickup); }
+
+        .timer-display {
+            text-align: right;
+        }
+        .time-elapsed { font-size: 1.2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .time-ago { font-size: 0.75rem; color: var(--text-muted); }
+
+        .time-green .time-elapsed { color: var(--safe); }
+        .time-yellow .time-elapsed { color: var(--warning); }
+        .time-red .time-elapsed { color: var(--danger); }
+
+        .card-body {
+            padding: 20px;
+            flex-grow: 1;
+        }
+
+        .customer-row { margin-bottom: 15px; }
+        .c-name { font-size: 1.1rem; font-weight: 600; color: #fff; }
+        .c-info { font-size: 0.85rem; color: var(--text-muted); margin-top: 2px; }
         
-        .customer-details { margin-bottom: 15px; font-size: 0.95rem; }
-        .customer-name { font-weight: bold; font-size: 1.1rem; margin-bottom: 2px; }
-        .customer-address { font-size: 0.8rem; color: #888; margin-top: 4px; }
-        .note-box { 
-            background: #4a1c1c; 
-            color: #ffaaaa; 
-            padding: 5px; 
-            margin-top: 5px; 
-            border-radius: 4px; 
-            font-weight: bold; 
+        .note-alert {
+            background: rgba(231, 76, 60, 0.15);
+            border-left: 3px solid var(--danger);
+            color: #ffcccc;
+            padding: 8px 12px;
             font-size: 0.85rem;
+            margin-bottom: 15px;
+            border-radius: 0 4px 4px 0;
+            font-weight: 500;
         }
 
-        .item-list { flex-grow: 1; }
+        .item-list { display: flex; flex-direction: column; gap: 8px; }
         .order-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 4px 0;
-            border-bottom: 1px solid #333;
-            font-size: 1.05rem;
+            display: flex; align-items: flex-start; gap: 10px;
+            font-size: 0.95rem; line-height: 1.4;
+            color: #e0e0e0;
         }
-        .order-item:last-child { border-bottom: none; }
-        .qty-badge {
-            background: #333;
-            color: var(--accent);
-            padding: 0 8px;
-            border-radius: 4px;
-            font-weight: bold;
-            margin-right: 8px;
+        .qty-box {
+            background: #333; color: #fff;
+            min-width: 24px; height: 24px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 6px; font-weight: 700; font-size: 0.85rem;
         }
 
-        /* Action Button */
-        .done-btn {
-            margin-top: 15px;
-            padding: 12px;
-            background: #333;
-            color: white;
-            border: 1px solid #555;
+        /* --- FOOTER ACTIONS --- */
+        .card-footer {
+            padding: 15px;
+            background: #252525;
+            border-top: 1px solid #333;
+        }
+
+        .action-btn {
             width: 100%;
-            font-family: inherit;
-            font-weight: bold;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 700;
             cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
             text-transform: uppercase;
+            font-family: 'Inter', sans-serif;
         }
-        .done-btn:hover { background: #444; }
-        
-        /* Completed State (Dimmed) */
-        .ticket.completed { opacity: 0.3; order: 100; /* Push to end */ }
 
-        @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        /* State Buttons */
+        .btn-start { background: #333; color: #fff; }
+        .btn-start:hover { background: #444; }
+
+        .btn-preparing { background: var(--warning); color: #000; }
+        .btn-preparing:hover { background: #f39c12; }
+
+        .btn-ready { background: var(--safe); color: #000; }
+        .btn-ready:hover { background: #27ae60; }
+
+        /* Animation for vanishing */
+        .vanish {
+            transform: scale(0.9);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Empty State */
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px;
+            color: #444;
+        }
+        .empty-icon { font-size: 4rem; margin-bottom: 20px; opacity: 0.2; }
+
     </style>
 </head>
 <body>
 
-    <div class="kitchen-header">
-        <div>
-            <h1 style="margin:0; font-size:1.5rem;">KITCHEN DISPLAY</h1>
-            <div style="font-size:0.8rem; color:#666;">Refreshes every 10s</div>
-        </div>
-        <div>
-            <span class="status-indicator" id="connection-dot"></span>
-            <span id="connection-text" style="font-size:0.8rem;">Connecting...</span>
+    <div class="kds-header">
+        <div class="brand-title">KDS <span style="font-weight:400; color:#666;">| Manager</span></div>
+        <div class="live-indicator">
+            <div id="status-dot" class="dot"></div>
+            <span id="status-text">Connecting...</span>
         </div>
     </div>
 
-    <div id="tickets-container" class="orders-grid">
-        <div style="color: #666; grid-column: 1/-1; text-align: center; margin-top: 50px;">
-            Waiting for order data...
+    <div id="ticket-container" class="ticket-grid">
+        <div class="empty-state">
+            <i class="fas fa-satellite-dish empty-icon"></i>
+            <p>Waiting for incoming orders...</p>
         </div>
     </div>
 
     <audio id="alert-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.m4a"></audio>
 
 <script>
-    // URL Updated as per request
+    // --- CONFIGURATION ---
+    // PASTE YOUR GOOGLE SCRIPT URL HERE
     const API_URL = "https://script.google.com/macros/s/AKfycbyXl0eoAoUyn3GgxrDpoE4glfpLNKVKAZ3yNSH8wVw5-vSLSjqpaehqWgmRIlrm_Bgngg/exec";
 
-    let knownOrderIDs = []; // Track IDs to play sound only for new ones
+    let knownOrderIDs = [];
     let firstLoad = true;
 
+    // --- MAIN LOOP ---
     async function fetchOrders() {
-        const container = document.getElementById('tickets-container');
-        const statusDot = document.getElementById('connection-dot');
-        const statusText = document.getElementById('connection-text');
+        const dot = document.getElementById('status-dot');
+        const txt = document.getElementById('status-text');
 
         try {
             const response = await fetch(API_URL);
             const data = await response.json();
 
-            // Connection Success
-            statusDot.className = "status-indicator online";
-            statusText.innerText = "Live";
+            dot.className = "dot active";
+            txt.innerText = "Live";
 
             renderTickets(data.orders);
 
         } catch (error) {
             console.error("Fetch Error:", error);
-            statusDot.className = "status-indicator offline";
-            statusText.innerText = "Error (Retrying...)";
+            dot.className = "dot error";
+            txt.innerText = "Retrying...";
         }
     }
 
     function renderTickets(orders) {
-        const container = document.getElementById('tickets-container');
+        const container = document.getElementById('ticket-container');
         
         if (!orders || orders.length === 0) {
-            container.innerHTML = '<div style="color:#444; text-align:center;">No recent orders.</div>';
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-check-circle empty-icon"></i>
+                    <p>All orders cleared!</p>
+                </div>`;
             return;
         }
 
-        // 1. Play Sound for New Orders
-        const incomingIDs = orders.map(o => o.OrderID); // Get all IDs from server
+        // 1. Alert Sound for New Orders
+        const incomingIDs = orders.map(o => o.OrderID);
         let hasNew = false;
-        
         if (!firstLoad) {
-            // Check if any incoming ID is NOT in our known list
             hasNew = incomingIDs.some(id => !knownOrderIDs.includes(id));
         }
-        
         if (hasNew) {
-            const audio = document.getElementById('alert-sound');
-            audio.play().catch(e => console.log("Click page to enable audio"));
+            document.getElementById('alert-sound').play().catch(() => {});
         }
-
-        // Update known list
         knownOrderIDs = incomingIDs;
         firstLoad = false;
 
-        // 2. Clear current list (Simple refresh method)
+        // 2. Clear Container safely (preserving order if possible, but simple rebuild is safer for synced state)
         container.innerHTML = '';
 
-        // 3. Loop through orders and create cards
+        let activeCount = 0;
+
         orders.forEach(order => {
-            // Check Local Storage to see if we marked this as done
-            const isDone = localStorage.getItem(`done_${order.OrderID}`);
+            // Get Status from Local Storage
+            // Statuses: 'new' (default), 'preparing', 'ready', 'cleared'
+            const statusKey = `status_${order.OrderID}`;
+            const currentStatus = localStorage.getItem(statusKey) || 'new';
 
-            // Create Card HTML
-            const card = document.createElement('div');
-            card.className = `ticket type-${order.Type} ${isDone ? 'completed' : ''}`;
-            card.id = `ticket-${order.OrderID}`;
+            // If cleared, skip rendering (VANISH)
+            if (currentStatus === 'cleared') return;
 
-            // Format Items (Assumes string like "Burger (1), Fries (2)")
+            activeCount++;
+
+            // Calculate Time Difference
+            const orderDate = new Date(order.Date); // Server Date (UTC)
+            const now = new Date(); // Browser Date
+            const diffMs = now - orderDate; 
+            const diffMins = Math.floor(diffMs / 60000);
+
+            // Determine Color Class
+            let timeClass = 'time-green';
+            if (diffMins >= 15 && diffMins < 20) timeClass = 'time-yellow';
+            if (diffMins >= 20) timeClass = 'time-red';
+
+            // Format Items
             let itemsHtml = '';
             if (order.Items) {
-                // Remove trailing comma
                 const cleanItems = order.Items.replace(/,\s*$/, "");
                 const itemArray = cleanItems.split(', ');
-                
                 itemArray.forEach(itm => {
-                    // Try to split quantity from name "Burger (1)"
                     const match = itm.match(/(.*)\s\((\d+)\)/);
                     if (match) {
-                        itemsHtml += `<div class="order-item"><span class="qty-badge">${match[2]}</span> <span>${match[1]}</span></div>`;
+                        itemsHtml += `<div class="order-item"><div class="qty-box">${match[2]}</div> <span>${match[1]}</span></div>`;
                     } else {
-                        itemsHtml += `<div class="order-item"><span>${itm}</span></div>`;
+                        itemsHtml += `<div class="order-item"><div class="qty-box">1</div> <span>${itm}</span></div>`;
                     }
                 });
             }
 
-// Parse Time to Indian Standard Time (IST)
-let timeDisplay = order.Date;
-try {
-    const dateObj = new Date(order.Date);
-    // Format to: "1:30 PM"
-    timeDisplay = dateObj.toLocaleTimeString('en-IN', { 
-        hour: 'numeric', 
-        minute: '2-digit', 
-        hour12: true 
-    });
-} catch(e) {}
+            // Determine Button State
+            let btnHtml = '';
+            if (currentStatus === 'new') {
+                btnHtml = `<button class="action-btn btn-start" onclick="updateStatus('${order.OrderID}', 'preparing')"><i class="fas fa-fire"></i> Start Preparing</button>`;
+            } else if (currentStatus === 'preparing') {
+                btnHtml = `<button class="action-btn btn-preparing" onclick="updateStatus('${order.OrderID}', 'ready')"><i class="fas fa-check"></i> Mark Ready</button>`;
+            } else if (currentStatus === 'ready') {
+                btnHtml = `<button class="action-btn btn-ready" onclick="updateStatus('${order.OrderID}', 'cleared')"><i class="fas fa-times"></i> Clear Ticket</button>`;
+            }
+
+            // Create Card
+            const card = document.createElement('div');
+            card.className = `ticket-card ${timeClass}`;
+            card.id = `card-${order.OrderID}`;
+            
+            // Format Time for Header (e.g., 1:30 PM)
+            const timeStr = orderDate.toLocaleTimeString('en-IN', { hour: 'numeric', minute:'2-digit', hour12:true });
 
             card.innerHTML = `
-                <div class="ticket-header">
-                    <span class="ticket-id">#${order.OrderID}</span>
-                    <span>${timeDisplay}</span>
+                <div class="card-header">
+                    <div>
+                        <div class="order-id">#${order.OrderID}</div>
+                        <div class="order-type-badge type-${order.Type}">${order.Type}</div>
+                    </div>
+                    <div class="timer-display">
+                        <div class="time-elapsed">${diffMins}m</div>
+                        <div class="time-ago">${timeStr}</div>
+                    </div>
                 </div>
-                <div class="customer-details">
-                    <div style="color: ${order.Type === 'Delivery' ? 'var(--accent)' : 'var(--green)'}; font-weight:bold; text-transform:uppercase; margin-bottom:5px;">${order.Type}</div>
-                    <div class="customer-name">${order.CustomerName}</div>
-                    <div>${order.Phone}</div>
-                    ${order.Address && order.Type === 'Delivery' ? `<div class="customer-address">${order.Address}</div>` : ''}
-                    ${order.Note && order.Note !== '-' ? `<div class="note-box">NOTE: ${order.Note}</div>` : ''}
+                <div class="card-body">
+                    <div class="customer-row">
+                        <div class="c-name">${order.CustomerName}</div>
+                        ${order.Address && order.Type === 'Delivery' ? `<div class="c-info"><i class="fas fa-map-marker-alt"></i> ${order.Address}</div>` : ''}
+                    </div>
+                    ${order.Note && order.Note !== '-' ? `<div class="note-alert"><i class="fas fa-exclamation-circle"></i> ${order.Note}</div>` : ''}
+                    <div class="item-list">
+                        ${itemsHtml}
+                    </div>
                 </div>
-                <div class="item-list">
-                    ${itemsHtml}
+                <div class="card-footer">
+                    ${btnHtml}
                 </div>
-                <button class="done-btn" onclick="toggleDone('${order.OrderID}')">
-                    ${isDone ? 'COMPLETED' : 'MARK DONE'}
-                </button>
             `;
-
             container.appendChild(card);
         });
-    }
 
-    function toggleDone(orderID) {
-        const card = document.getElementById(`ticket-${orderID}`);
-        const btn = card.querySelector('.done-btn');
-        const key = `done_${orderID}`;
-
-        if (localStorage.getItem(key)) {
-            // Undo
-            localStorage.removeItem(key);
-            card.classList.remove('completed');
-            btn.innerText = "MARK DONE";
-        } else {
-            // Mark Done
-            localStorage.setItem(key, 'true');
-            card.classList.add('completed');
-            btn.innerText = "COMPLETED";
+        if (activeCount === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-check-circle empty-icon"></i>
+                    <p>All active orders cleared!</p>
+                </div>`;
         }
     }
 
-    // Start Polling
-    fetchOrders(); // Run immediately
-    setInterval(fetchOrders, 10000); // Run every 10 seconds
+    function updateStatus(id, newStatus) {
+        // Save to local storage
+        localStorage.setItem(`status_${id}`, newStatus);
+        
+        // Immediate UI Update (for snappy feel)
+        // We just re-fetch or re-render? Re-fetch is safer but slower. 
+        // Let's manually remove if cleared to make it vanish instantly.
+        if (newStatus === 'cleared') {
+            const card = document.getElementById(`card-${id}`);
+            if(card) {
+                card.classList.add('vanish');
+                setTimeout(() => card.remove(), 300); // Remove after animation
+            }
+        } else {
+            // For other states, wait for the next refresh (max 5s) or force refresh now
+            // To make it instant, we reload the fetch logic
+            fetchOrders(); 
+        }
+    }
 
+    // Refresh Loop
+    fetchOrders();
+    setInterval(fetchOrders, 5000); // 5 Seconds refresh for timer updates
 </script>
 </body>
 </html>
