@@ -52,11 +52,16 @@
         .c-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; color: #ddd; font-size: 1rem; }
         .c-icon { width: 16px; color: var(--text-muted); margin-top: 2px; }
         
-        /* Coupon Alert */
+        /* Alerts */
         .coupon-box {
-            background: rgba(241, 196, 15, 0.15); border: 1px dashed var(--warning);
-            color: var(--warning); padding: 10px; font-size: 0.9rem; margin-bottom: 15px;
-            border-radius: 6px; font-weight: 600; text-align: center;
+            background: rgba(241, 196, 15, 0.1); border: 1px solid var(--warning);
+            color: var(--warning); padding: 10px; font-size: 0.9rem; margin-bottom: 10px;
+            border-radius: 6px; font-weight: 600; line-height: 1.4;
+        }
+        .note-alert {
+            background: rgba(231, 76, 60, 0.15); border-left: 3px solid var(--danger);
+            color: #ffcccc; padding: 10px; font-size: 0.9rem; margin-bottom: 15px;
+            border-radius: 0 4px 4px 0; font-weight: 500;
         }
         
         .item-list { display: flex; flex-direction: column; gap: 12px; }
@@ -71,16 +76,17 @@
         .modifier-line { font-size: 0.85rem; color: #4cd137; display: flex; align-items: center; gap: 6px; }
         
         .card-footer { padding: 0; background: #252525; border-top: 1px solid #333; }
-        .total-row { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); border-bottom: 1px solid #333; }
+        .summary-line { padding: 8px 20px; display: flex; justify-content: space-between; font-size: 0.9rem; color: #aaa; }
+        .total-row { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); border-top: 1px solid #333; }
         .total-label { color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; font-weight: 600; }
         .total-amount { color: #fff; font-size: 1.4rem; font-weight: 800; }
+        
         .btn-container { padding: 15px; }
         .action-btn { width: 100%; border: none; padding: 14px; border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; text-transform: uppercase; font-family: 'Inter', sans-serif; }
         .btn-start { background: #333; color: #fff; } .btn-start:hover { background: #444; }
         .btn-preparing { background: var(--warning); color: #000; } .btn-preparing:hover { background: #f39c12; }
         .btn-ready { background: var(--safe); color: #000; } .btn-ready:hover { background: #27ae60; }
         .vanish { transform: scale(0.9); opacity: 0; pointer-events: none; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .empty-state { grid-column: 1 / -1; text-align: center; padding: 60px; color: #444; }
         .empty-icon { font-size: 4rem; margin-bottom: 20px; opacity: 0.2; }
     </style>
@@ -95,11 +101,13 @@
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyXl0eoAoUyn3GgxrDpoE4glfpLNKVKAZ3yNSH8wVw5-vSLSjqpaehqWgmRIlrm_Bgngg/exec";
     let knownOrderIDs = []; let firstLoad = true;
+    
     async function fetchOrders() {
         const dot = document.getElementById('status-dot'); const txt = document.getElementById('status-text');
         try { const response = await fetch(API_URL); const data = await response.json(); dot.className = "dot active"; txt.innerText = "Live"; renderTickets(data.orders); } 
         catch (error) { console.error("Fetch Error:", error); dot.className = "dot error"; txt.innerText = "Retrying..."; }
     }
+    
     function parseItemsString(itemsStr) {
         if (!itemsStr) return [];
         const cleanStr = itemsStr.replace(/,\s*$/, "");
@@ -114,9 +122,10 @@
         }
         return matches;
     }
+    
     function renderTickets(orders) {
         const container = document.getElementById('ticket-container');
-        if (!orders || orders.length === 0) { container.innerHTML = `<div class="empty-state"><i class="fas fa-check-circle empty-icon"></i><p>All orders cleared!</p></div>`; return; }
+        if (!orders || orders.length === 0) { container.innerHTML = `<div class="empty-state"><i class="fas fa-check-circle empty-icon"></i><p>All active orders cleared!</p></div>`; return; }
         
         const incomingIDs = orders.map(o => o.OrderID); let hasNew = false;
         if (!firstLoad) hasNew = incomingIDs.some(id => !knownOrderIDs.includes(id));
@@ -127,6 +136,7 @@
         orders.forEach(order => {
             const statusKey = `status_${order.OrderID}`; const currentStatus = localStorage.getItem(statusKey) || 'new';
             if (currentStatus === 'cleared') return; activeCount++;
+            
             const orderDate = new Date(order.Date); const now = new Date(); const diffMins = Math.floor((now - orderDate) / 60000);
             let timeClass = 'time-green'; if (diffMins >= 15 && diffMins < 20) timeClass = 'time-yellow'; if (diffMins >= 20) timeClass = 'time-red';
 
@@ -138,15 +148,30 @@
                 itemsHtml += `<div class="order-item-container"><div class="main-item-row"><div class="item-left"><div class="qty-box">${item.qty}</div><div class="item-name">${item.name}</div></div><div class="item-price">${item.price}</div></div>${modsHtml}</div>`;
             });
 
-            // Logic for Coupons in Note
+            // --- SMART NOTE PARSING ---
             let noteHtml = '';
-            if (order.Note && order.Note !== '-') {
-                if (order.Note.includes('[COUPON:')) {
-                    const cleanNote = order.Note.replace('[COUPON:', '').replace(']', '');
-                    noteHtml = `<div class="coupon-box"><i class="fas fa-tag"></i> ${cleanNote}</div>`;
-                } else {
-                    noteHtml = `<div class="note-alert" style="background: rgba(231, 76, 60, 0.15); color: #ffcccc;"><i class="fas fa-exclamation-circle"></i> ${order.Note}</div>`;
-                }
+            let packingDisplay = '';
+            let rawNote = order.Note || '';
+
+            // 1. Extract Packing
+            const packMatch = rawNote.match(/\[PACKING:\s*(\d+)\]/);
+            if (packMatch) {
+                packingDisplay = `<div class="summary-line"><span>Packing Charges</span><span>₹${packMatch[1]}</span></div>`;
+                rawNote = rawNote.replace(packMatch[0], ''); // Remove from note
+            }
+
+            // 2. Extract Offer
+            const offerMatch = rawNote.match(/\[OFFER:\s*(.*?)\]/);
+            if (offerMatch) {
+                // Show Offer Box
+                noteHtml += `<div class="coupon-box"><i class="fas fa-tags"></i> <strong>OFFER APPLIED:</strong><br>${offerMatch[1]}</div>`;
+                rawNote = rawNote.replace(offerMatch[0], '');
+            }
+
+            // 3. Show remaining user note
+            rawNote = rawNote.replace(/^-\s*$/, '').trim();
+            if (rawNote && rawNote.length > 1) {
+                noteHtml += `<div class="note-alert"><i class="fas fa-exclamation-circle"></i> ${rawNote}</div>`;
             }
 
             let btnHtml = '';
@@ -164,11 +189,16 @@
                     ${noteHtml}
                     <div class="item-list">${itemsHtml}</div>
                 </div>
-                <div class="card-footer"><div class="total-row"><div class="total-label">Total Bill</div><div class="total-amount">₹${order.Total}</div></div><div class="btn-container">${btnHtml}</div></div>`;
+                <div class="card-footer">
+                    ${packingDisplay}
+                    <div class="total-row"><div class="total-label">Total Bill</div><div class="total-amount">₹${order.Total}</div></div>
+                    <div class="btn-container">${btnHtml}</div>
+                </div>`;
             container.appendChild(card);
         });
         if (activeCount === 0) container.innerHTML = `<div class="empty-state"><i class="fas fa-check-circle empty-icon"></i><p>All active orders cleared!</p></div>`;
     }
+    
     function updateStatus(id, newStatus) { localStorage.setItem(`status_${id}`, newStatus); if (newStatus === 'cleared') { const card = document.getElementById(`card-${id}`); if(card) { card.classList.add('vanish'); setTimeout(() => card.remove(), 300); } } else { fetchOrders(); } }
     fetchOrders(); setInterval(fetchOrders, 5000);
 </script>
