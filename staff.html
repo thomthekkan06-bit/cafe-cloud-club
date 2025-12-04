@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KDS - Café Cloud Club</title>
-    <meta http-equiv="refresh" content="30">
     <style>
         body { font-family: 'Courier New', monospace; background: #111; color: #eee; padding: 20px; margin: 0; }
         h1 { border-bottom: 2px solid #FF4500; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
@@ -22,7 +21,6 @@
             position: relative;
         }
 
-        /* STATUS COLORS */
         .ticket.status-new { border-top-color: #e74c3c; box-shadow: 0 0 15px rgba(231, 76, 60, 0.1); }
         .ticket.status-accepted { border-top-color: #f1c40f; background: #2a2a2a; border-color: #555; }
         
@@ -30,44 +28,50 @@
         .ticket-meta { font-size: 0.9rem; color: #bbb; margin-bottom: 15px; line-height: 1.4; }
         .ticket-items { font-size: 1.1rem; line-height: 1.5; margin-bottom: 20px; white-space: pre-wrap; flex-grow: 1; font-weight: 500; }
         
-        /* ACTION BUTTONS */
-        .action-btn {
-            width: 100%;
-            padding: 16px;
-            border: none;
-            font-weight: 800;
-            font-size: 1rem;
-            cursor: pointer;
-            text-transform: uppercase;
-            margin-top: 10px;
-            transition: all 0.2s;
-            border-radius: 4px;
-        }
-        
+        .action-btn { width: 100%; padding: 16px; border: none; font-weight: 800; font-size: 1rem; cursor: pointer; text-transform: uppercase; margin-top: 10px; transition: all 0.2s; border-radius: 4px; }
         .btn-accept { background: #333; color: #fff; border: 1px solid #555; }
         .btn-accept:hover { background: #fff; color: #000; }
-        
         .btn-ready { background: #27ae60; color: #fff; box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3); }
         .btn-ready:hover { background: #2ecc71; transform: translateY(-2px); }
-
+        
         .note-box { background: #5a1a1a; color: #ffcccc; padding: 8px; margin-top: 5px; font-size: 0.9rem; border-left: 3px solid #ff4444; }
+
+        /* START OVERLAY */
+        #start-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 9999;
+            display: flex; justify-content: center; align-items: center; flex-direction: column;
+        }
+        #start-btn {
+            padding: 20px 40px; font-size: 1.5rem; background: #FF4500; color: white;
+            border: none; border-radius: 10px; cursor: pointer; font-weight: bold;
+        }
 
         @keyframes fadeIn { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
+    <div id="start-overlay">
+        <h2 style="color:white; margin-bottom:20px;">🔊 Audio Required</h2>
+        <button id="start-btn" onclick="startSystem()">CLICK TO START SYSTEM</button>
+    </div>
+
+    <audio id="notification-sound" src="bell.mp3" preload="auto"></audio>
+
     <h1>
         <span>👨‍🍳 KITCHEN DISPLAY</span>
         <span id="clock" style="font-size: 1.5rem; color: #888;">--:--</span>
     </h1>
 
-    <div id="loading" style="text-align:center; padding: 20px; color:#666;">Connecting to Cloud...</div>
+    <div id="loading" style="text-align:center; padding: 20px; color:#666;">Waiting for start...</div>
     <div class="orders-grid" id="orders-container"></div>
 
     <script>
-        // YOUR SPECIFIC URL
         const scriptURL = 'https://script.google.com/macros/s/AKfycbx_6dCuYMLPAQq8j9AsMHzjIkcugifCOfCYQnI49eVUughBQlBYmdIY6LPf5PQ7EDmv/exec';
+        
+        let knownOrderIds = new Set();
+        let isSystemStarted = false;
 
         function updateClock() {
             document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: 'numeric' });
@@ -75,35 +79,67 @@
         setInterval(updateClock, 1000);
         updateClock();
 
+        function startSystem() {
+            document.getElementById('start-overlay').style.display = 'none';
+            document.getElementById('loading').innerText = "Connecting...";
+            
+            // Unlock audio
+            const audio = document.getElementById('notification-sound');
+            audio.volume = 1.0;
+            audio.play().then(() => {
+                audio.pause();
+                audio.currentTime = 0;
+            }).catch(e => console.log("Audio permission issue:", e));
+
+            isSystemStarted = true;
+            loadTickets(); 
+            setInterval(loadTickets, 10000); // Poll every 10s
+        }
+
+        function playSound() {
+            const audio = document.getElementById('notification-sound');
+            audio.currentTime = 0;
+            audio.play().catch(e => console.error("Sound failed:", e));
+        }
+
         function loadTickets() {
+            if(!isSystemStarted) return;
+
             fetch(scriptURL)
             .then(res => res.json())
             .then(data => {
                 const container = document.getElementById('orders-container');
                 document.getElementById('loading').style.display = 'none';
-                container.innerHTML = '';
                 
-                // 1. FILTER: Orders from last 12 hours ONLY
+                // 1. FILTER: Last 12h
                 const now = new Date();
                 const twelveHoursAgo = new Date(now.getTime() - (12 * 60 * 60 * 1000));
                 
                 // 2. REVERSE: Newest first
                 const rows = data.slice(1).reverse(); 
 
+                let htmlBuffer = ''; 
                 let activeCount = 0;
+                let hasNewOrder = false;
+                let currentBatchIds = new Set();
 
                 rows.forEach(row => {
-                    // MAPPING: 0:Date, 1:ID, 2:Name, 3:Phone, 4:Items, 5:Total, 6:Type, 7:Address, 8:Note, 9:Status
+                    // 0:Date, 1:ID, ... 9:Status
                     const orderDate = new Date(row[0]);
                     const status = row[9] ? row[9].toString().trim() : 'New'; 
                     const orderId = row[1];
 
-                    // LOGIC: Hide if older than 12h OR if status is 'Ready'
                     if (orderDate < twelveHoursAgo || status === 'Ready') return;
 
                     activeCount++;
+                    currentBatchIds.add(orderId);
+
+                    // Check for NEW orders to play sound
+                    if (!knownOrderIds.has(orderId) && status === 'New') {
+                        hasNewOrder = true;
+                    }
                     
-                    // UI STATE LOGIC
+                    // UI STATE
                     let statusClass = 'status-new';
                     let btnHtml = `<button class="action-btn btn-accept" onclick="updateStatus('${orderId}', 'Accepted', this)">Accept Order</button>`;
                     let statusLabel = '';
@@ -114,13 +150,12 @@
                         statusLabel = '<span style="color:#f1c40f; font-size:0.8rem; float:right;">COOKING...</span>';
                     }
 
-                    // Formatting
                     const timeString = orderDate.toLocaleTimeString('en-IN', { hour: 'numeric', minute: 'numeric', hour12: true });
                     const itemsHtml = row[4].replace(/, /g, '<br>');
                     const typeDisplay = row[6].toUpperCase();
                     const noteHtml = row[8] && row[8] !== '-' ? `<div class="note-box">NOTE: ${row[8]}</div>` : '';
 
-                    const card = `
+                    htmlBuffer += `
                         <div class="ticket ${statusClass}" id="card-${orderId}">
                             <div class="ticket-header">
                                 <span>#${orderId}</span>
@@ -137,10 +172,17 @@
                             ${btnHtml}
                         </div>
                     `;
-                    container.innerHTML += card;
                 });
 
+                container.innerHTML = htmlBuffer;
+
                 if(activeCount === 0) container.innerHTML = '<div style="color:#444; text-align:center; padding:40px; grid-column:1/-1;">NO ACTIVE ORDERS</div>';
+
+                if (hasNewOrder) {
+                    playSound();
+                }
+
+                knownOrderIds = currentBatchIds;
             })
             .catch(err => {
                 console.error(err);
@@ -151,21 +193,20 @@
         function updateStatus(orderId, newStatus, btnElement) {
             const card = document.getElementById(`card-${orderId}`);
             
-            // 1. INSTANT VISUAL FEEDBACK (Don't wait for server)
+            // VISUAL UPDATE
             if (newStatus === 'Accepted') {
                 btnElement.innerText = "UPDATING...";
                 btnElement.style.opacity = "0.7";
                 card.classList.remove('status-new');
                 card.classList.add('status-accepted');
             } else if (newStatus === 'Ready') {
-                // If ready, fade out immediately
                 card.style.transition = "all 0.5s";
                 card.style.opacity = '0';
                 card.style.transform = 'scale(0.9)';
-                setTimeout(() => card.style.display = 'none', 500); // Remove from layout after fade
+                setTimeout(() => card.style.display = 'none', 500); 
             }
 
-            // 2. SEND TO DATABASE
+            // DB UPDATE
             const formData = new FormData();
             formData.append('action', 'update');
             formData.append('orderId', orderId);
@@ -175,16 +216,13 @@
             .then(res => res.json())
             .then(data => {
                 if(data.result === 'updated') {
-                    // Sync successful
                     if (newStatus === 'Accepted') {
-                        // Transform button to "Ready" button permanently
                         btnElement.className = "action-btn btn-ready";
                         btnElement.innerText = "Mark Ready (Done)";
                         btnElement.style.opacity = "1";
                         btnElement.onclick = function() { updateStatus(orderId, 'Ready', this); };
                     }
                 } else {
-                    // If server failed, revert changes (Safety net)
                     alert("Sync Error! Please refresh.");
                     location.reload();
                 }
@@ -194,9 +232,6 @@
                 alert("Internet Error. Status not saved.");
             });
         }
-
-        // Initial Load
-        loadTickets();
     </script>
 </body>
 </html>
