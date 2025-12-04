@@ -967,7 +967,7 @@ function checkStoreStatus(orderType) {
 }
 
 function finalizeOrder() {
-    // --- 1. Basic Validation ---
+    // 1. Basic Validation
     const type = document.querySelector('input[name="orderType"]:checked').value;
     const status = checkStoreStatus(type);
     if (!status.isOpen) { alert("Store Closed!\n" + status.msg); return; }
@@ -984,12 +984,12 @@ function finalizeOrder() {
     if (!/^[0-9]{10,12}$/.test(phone)) { alert("Strict Policy: Phone number must be 10-12 digits."); return; }
     if (!email.includes('@')) { alert("Strict Policy: Invalid Email."); return; }
 
-    // --- 2. Setup Order Details ---
+    // 2. Setup Order Details
     const orderId = Math.floor(100000 + Math.random() * 900000);
     const now = new Date();
     const timeString = now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
 
-    // --- 3. Calculate Totals & Build Strings ---
+    // 3. Calculate Totals & Build Strings
     let subTotal = 0;
     let packingTotal = 0;
     let sheetItemsString = ""; 
@@ -1008,39 +1008,46 @@ function finalizeOrder() {
         packingTotal += (chargePerItem * item.qty);
         if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
 
-        // *** THIS IS THE CRITICAL PART ***
-        // It adds the | symbol and the price. 
         sheetItemsString += `${key} (${item.qty}) | ${lineTotal}, `;
     }
     
     let discountVal = 0; 
-    let couponName = "";
+    let couponDesc = ""; // Store the text description of the offer
+    
     if(activeCoupon) { 
-        couponName = activeCoupon;
-        // Safe extraction of discount amount
+        // Grab the value
         let discElem = document.getElementById('discount-total');
-        if(discElem) {
-             discountVal = parseInt(discElem.innerText.replace(/[^\d]/g, '')) || 0;
-        }
+        if(discElem) discountVal = parseInt(discElem.innerText.replace(/[^\d]/g, '')) || 0;
+        
+        // Grab the description (e.g., "Mon: Chicken+Fries @ 222")
+        let descElem = document.querySelector('#discount-row span:first-child');
+        if(descElem) couponDesc = descElem.innerText;
     }
 
     let grandTotal = (subTotal - discountVal) + packingTotal;
 
-    // Add Coupon to Note
+    // --- NEW: Smart Note Construction ---
+    // We append the hidden data into the Note field using special tags
     let finalNote = instruction || "";
+    
     if (activeCoupon) {
-        finalNote += ` [COUPON: ${activeCoupon} OFF ₹${discountVal}]`;
+        // Adds detail like: [OFFER: Mon: Chicken+Fries @ 222 (Code: MONBURGER)]
+        finalNote += ` [OFFER: ${couponDesc} (Code: ${activeCoupon})]`;
     }
-    if (finalNote === "") finalNote = "-";
+    
+    // Adds packing detail: [PACKING: 50]
+    finalNote += ` [PACKING: ${packingTotal}]`;
+    
+    if (finalNote.trim() === "") finalNote = "-";
 
-    // --- 4. Build WhatsApp Message ---
+    // 4. Build WhatsApp Message
     let msg = `*New Order @ Café Cloud Club*\n`;
     msg += `*Type:* ${type.toUpperCase()}\n*Time:* ${timeString}\n*Order ID:* ${orderId}\n---------------------------\n`;
     msg += `*Name:* ${name}\n*Phone:* ${phone}\n*Email:* ${email}\n*Time:* ${time}\n`;
     if(type === 'Delivery') msg += `*Address:* ${address}\n`;
-    if(finalNote !== "-") msg += `*Note:* ${finalNote}\n`;
-    msg += `---------------------------\n*ITEMS:*\n`;
+    if(instruction) msg += `*Note:* ${instruction}\n`; // Only show user note in WA, not technical tags
     
+    msg += `---------------------------\n*ITEMS:*\n`;
     for(let key in cart) {
         let item = cart[key];
         let lineTotal = item.price * item.qty;
@@ -1050,13 +1057,11 @@ function finalizeOrder() {
     msg += `---------------------------\nSub Total: Rs. ${subTotal}\n`;
     if (discountVal > 0) msg += `*Coupon (${couponName}): -Rs. ${discountVal}*\n`;
     msg += `Packing: Rs. ${packingTotal}\n*TOTAL: Rs. ${grandTotal}*\n`;
-    if(type === 'Delivery') msg += `\n_Delivery fee calculated by Delivery Agent._`;
     
     const encodedMsg = encodeURIComponent(msg);
     const finalUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
 
-    // --- 5. Send Data to Google Sheets ---
-    // Ensure this URL is correct
+    // 5. Send Data to Google Sheets
     const scriptURL = 'https://script.google.com/macros/s/AKfycbyXl0eoAoUyn3GgxrDpoE4glfpLNKVKAZ3yNSH8wVw5-vSLSjqpaehqWgmRIlrm_Bgngg/exec'; 
     
     const formData = new FormData();
@@ -1068,13 +1073,13 @@ function finalizeOrder() {
     formData.append('Total', grandTotal);
     formData.append('Type', type);
     formData.append('Address', address || "Pickup");
-    formData.append('Note', finalNote); 
+    formData.append('Note', finalNote); // Sends the smart note
 
     fetch(scriptURL, { method: 'POST', body: formData, mode: 'no-cors' })
         .then(() => console.log('Order sent'))
         .catch(err => console.error('Error', err));
 
-    // --- 6. Cleanup ---
+    // 6. Cleanup
     if (Object.keys(cart).length > 0) {
         localStorage.setItem('ccc_last_order', JSON.stringify(cart));
         lastOrder = cart;
