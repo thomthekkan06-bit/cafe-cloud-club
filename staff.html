@@ -1,184 +1,64 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KDS - Café Cloud Club</title>
-    <meta http-equiv="refresh" content="30">
-    <style>
-        body { font-family: 'Courier New', monospace; background: #111; color: #eee; padding: 20px; margin: 0; }
-        h1 { border-bottom: 2px solid #FF4500; padding-bottom: 10px; display: flex; justify-content: space-between; }
-        
-        .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-        
-        .ticket { 
-            background: #222; 
-            border: 1px solid #444; 
-            padding: 15px; 
-            border-top: 6px solid #666; /* Default New */
-            display: flex; flex-direction: column; justify-content: space-between;
-            animation: fadeIn 0.5s;
+const sheetName = 'Orders';
+
+function doPost(e) {
+  const lock = LockService.getScriptLock();
+  lock.tryLock(10000);
+
+  try {
+    const doc = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = doc.getSheetByName(sheetName);
+    
+    // Check if we are UPDATING an order or CREATING a new one
+    const action = e.parameter.action;
+
+    if (action === 'update') {
+      // --- UPDATE LOGIC (Staff clicked Accept/Ready) ---
+      const orderId = e.parameter.orderId;
+      const newStatus = e.parameter.status;
+      
+      const data = sheet.getDataRange().getValues();
+      // Loop through rows to find the matching Order ID
+      for (let i = 1; i < data.length; i++) {
+        // data[i][1] is Column B (OrderID)
+        if (data[i][1] == orderId) { 
+          // Column I (Index 9) is the "Status" column.
+          // Note: Row number is i + 1. Column number is 9 (I).
+          sheet.getRange(i + 1, 9).setValue(newStatus); 
+          return ContentService.createTextOutput(JSON.stringify({ 'result': 'updated', 'id': orderId }))
+            .setMimeType(ContentService.MimeType.JSON);
         }
+      }
+      return ContentService.createTextOutput(JSON.stringify({ 'result': 'error', 'message': 'Order ID not found' }))
+        .setMimeType(ContentService.MimeType.JSON);
 
-        /* Status Colors */
-        .ticket.status-new { border-top-color: #e74c3c; } /* Red for New */
-        .ticket.status-accepted { border-top-color: #f1c40f; background: #2c2c2c; } /* Yellow for Cooking */
-        
-        .ticket-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem; margin-bottom: 10px; border-bottom: 1px dashed #444; padding-bottom: 5px; }
-        .ticket-meta { font-size: 0.85rem; color: #aaa; margin-bottom: 10px; }
-        .ticket-items { font-size: 1.1rem; line-height: 1.4; margin-bottom: 20px; white-space: pre-wrap; flex-grow: 1; }
-        
-        .action-btn {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            font-weight: bold;
-            font-size: 1rem;
-            cursor: pointer;
-            text-transform: uppercase;
-            margin-top: 10px;
-        }
-        
-        .btn-accept { background: #333; color: #fff; border: 1px solid #fff; }
-        .btn-accept:hover { background: #fff; color: #000; }
-        
-        .btn-ready { background: #27ae60; color: #fff; }
-        .btn-ready:hover { background: #2ecc71; }
+    } else {
+      // --- CREATE LOGIC (New Order from Website) ---
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      const nextRow = sheet.getLastRow() + 1;
 
-        @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
-    </style>
-</head>
-<body>
+      const newRow = headers.map(function(header) {
+        if (header === 'Date') return new Date();
+        if (header === 'Status') return 'New'; // Default status
+        return e.parameter[header];
+      });
 
-    <h1>
-        <span>👨‍🍳 KITCHEN DISPLAY</span>
-        <span id="clock">--:--</span>
-    </h1>
+      sheet.getRange(nextRow, 1, 1, newRow.length).setValues([newRow]);
+      return ContentService.createTextOutput(JSON.stringify({ 'result': 'success', 'row': nextRow }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
 
-    <div id="loading">Loading Tickets...</div>
-    <div class="orders-grid" id="orders-container"></div>
+  } catch (e) {
+    return ContentService.createTextOutput(JSON.stringify({ 'result': 'error', 'error': e.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    lock.releaseLock();
+  }
+}
 
-    <script>
-        // REPLACE WITH YOUR URL
-        const scriptURL = 'YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE';
-
-        function updateClock() {
-            document.getElementById('clock').innerText = new Date().toLocaleTimeString();
-        }
-        setInterval(updateClock, 1000);
-
-        function loadTickets() {
-            fetch(scriptURL)
-            .then(res => res.json())
-            .then(data => {
-                const container = document.getElementById('orders-container');
-                document.getElementById('loading').style.display = 'none';
-                container.innerHTML = '';
-                
-                // Filter Logic: Last 12 hours ONLY
-                const now = new Date();
-                const twelveHoursAgo = new Date(now.getTime() - (12 * 60 * 60 * 1000));
-                
-                // Rows (Reverse to show newest first)
-                const rows = data.slice(1).reverse(); 
-
-                let activeCount = 0;
-
-                rows.forEach(row => {
-                    // COLUMNS: 0:Date, 1:ID, 2:Name, 3:Phone, 4:Items, 5:Total, 6:Type, 7:Address, 8:Note, 9:Status
-                    const orderDate = new Date(row[0]);
-                    const status = row[9] ? row[9].toString().trim() : 'New'; 
-                    const orderId = row[1];
-
-                    // 1. Hide if too old OR if status is 'Ready'
-                    if (orderDate < twelveHoursAgo || status === 'Ready') return;
-
-                    activeCount++;
-                    
-                    // Determine UI State
-                    let statusClass = 'status-new';
-                    let btnHtml = `<button class="action-btn btn-accept" onclick="updateStatus('${orderId}', 'Accepted', this)">Accept Order</button>`;
-                    
-                    if (status === 'Accepted') {
-                        statusClass = 'status-accepted';
-                        btnHtml = `<button class="action-btn btn-ready" onclick="updateStatus('${orderId}', 'Ready', this)">Mark Ready (Done)</button>`;
-                    }
-
-                    const timeString = orderDate.toLocaleTimeString('en-IN', { hour: 'numeric', minute: 'numeric', hour12: true });
-                    const itemsHtml = row[4].replace(/, /g, '<br>');
-                    const typeDisplay = row[6].toUpperCase();
-                    const noteHtml = row[8] && row[8] !== '-' ? `<div style="background:#400; padding:5px; margin-top:5px;">NOTE: ${row[8]}</div>` : '';
-
-                    const card = `
-                        <div class="ticket ${statusClass}" id="card-${orderId}">
-                            <div class="ticket-header">
-                                <span>#${orderId}</span>
-                                <span>${typeDisplay}</span>
-                            </div>
-                            <div class="ticket-meta">
-                                🕒 ${timeString} | 👤 ${row[2]}
-                            </div>
-                            <div class="ticket-items">
-                                ${itemsHtml}
-                            </div>
-                            ${noteHtml}
-                            ${btnHtml}
-                        </div>
-                    `;
-                    container.innerHTML += card;
-                });
-
-                if(activeCount === 0) container.innerHTML = '<div style="color:#666; padding:20px;">No Active Orders</div>';
-            });
-        }
-
-        // --- THE INTERACTIVE FUNCTION ---
-        function updateStatus(orderId, newStatus, btnElement) {
-            const card = document.getElementById(`card-${orderId}`);
-            
-            // 1. Optimistic UI Update (Instant Feedback)
-            if (newStatus === 'Accepted') {
-                btnElement.innerText = "UPDATING...";
-                card.classList.remove('status-new');
-                card.classList.add('status-accepted');
-            } else if (newStatus === 'Ready') {
-                // If ready, fade it out immediately
-                card.style.opacity = '0.5';
-                btnElement.innerText = "COMPLETING...";
-            }
-
-            // 2. Send to Google Sheets Background
-            const formData = new FormData();
-            formData.append('action', 'update');
-            formData.append('orderId', orderId);
-            formData.append('status', newStatus);
-
-            fetch(scriptURL, { method: 'POST', body: formData })
-            .then(res => res.json())
-            .then(data => {
-                if(data.result === 'updated') {
-                    // Refresh to ensure sync, or just leave the UI state
-                    if(newStatus === 'Ready') {
-                        card.style.display = 'none'; // Make it vanish
-                    } else {
-                        // Re-render button to be 'Mark Ready'
-                        btnElement.className = "action-btn btn-ready";
-                        btnElement.innerText = "Mark Ready (Done)";
-                        btnElement.onclick = function() { updateStatus(orderId, 'Ready', this); };
-                    }
-                } else {
-                    alert("Error updating order. Please check internet.");
-                    location.reload();
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                alert("Connection Failed.");
-            });
-        }
-
-        // Initial Load
-        loadTickets();
-    </script>
-</body>
-</html>
+function doGet(e){
+  const doc = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = doc.getSheetByName(sheetName);
+  const data = sheet.getDataRange().getValues();
+  return ContentService.createTextOutput(JSON.stringify(data))
+      .setMimeType(ContentService.MimeType.JSON);
+}
