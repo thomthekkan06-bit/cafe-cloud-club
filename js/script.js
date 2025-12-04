@@ -1039,7 +1039,7 @@ function finalizeOrder() {
     const finalUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
 
     // 4. Send Data to Google Sheets (Background)
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbx_6dCuYMLPAQq8j9AsMHzjIkcugifCOfCYQnI49eVUughBQlBYmdIY6LPf5PQ7EDmv/exec'; 
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbyXl0eoAoUyn3GgxrDpoE4glfpLNKVKAZ3yNSH8wVw5-vSLSjqpaehqWgmRIlrm_Bgngg/exec'; 
     
     const formData = new FormData();
     formData.append('Date', timeString);
