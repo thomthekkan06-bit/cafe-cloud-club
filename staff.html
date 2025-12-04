@@ -109,48 +109,37 @@
     
     <div id="ticket-container" class="ticket-grid"></div>
 
-    <script>
+    <audio id="alert-sound" preload="auto">
+        <source src="bell.mp3" type="audio/mpeg">
+    </audio>
+
+<script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyXl0eoAoUyn3GgxrDpoE4glfpLNKVKAZ3yNSH8wVw5-vSLSjqpaehqWgmRIlrm_Bgngg/exec";
     let knownOrderIDs = []; 
     let firstLoad = true;
     let isKDSActive = false;
 
-    // --- SOUND ENGINE (Internal Beep) ---
-    // No external file dependency
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    
-    function playBeep() {
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        const oscillator = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // High pitch A5
-        oscillator.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.5); // Drop to A4
-        gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-        oscillator.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-        oscillator.start();
-        oscillator.stop(audioCtx.currentTime + 0.5);
-    }
-
-    // --- START FUNCTION ---
     function startKDS() {
-        // 1. Remove Overlay IMMEDIATELY
+        // 1. Remove Overlay Instantly (So button never fails)
         document.getElementById('start-overlay').style.display = 'none';
         isKDSActive = true;
         document.getElementById('status-text').innerText = "Connecting...";
 
-        // 2. Wake up Audio Context
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-        // Test beep (quietly)
-        playBeep();
-
-        // 3. Start Loop
+        // 2. Start Data Fetching
         fetchOrders();
         setInterval(fetchOrders, 5000);
+
+        // 3. Try to Unlock/Play your Custom Sound
+        const audio = document.getElementById('alert-sound');
+        // Setting volume force
+        audio.volume = 1.0;
+        audio.play().then(() => {
+            // It played successfully, so pause it immediately
+            audio.pause();
+            audio.currentTime = 0;
+        }).catch(err => {
+            console.log("Audio warning (File not found or blocked): " + err);
+        });
     }
 
     async function fetchOrders() {
@@ -190,7 +179,7 @@
     function renderTickets(orders) {
         const container = document.getElementById('ticket-container');
         if (!orders || orders.length === 0) { 
-            container.innerHTML = `<div class="empty-state"><i class="fas fa-check-circle empty-icon"></i><p>All orders cleared!</p></div>`; 
+            container.innerHTML = `<div class="empty-state"><i class="fas fa-check-circle empty-icon"></i><p>All active orders cleared!</p></div>`; 
             return; 
         }
         
@@ -202,7 +191,9 @@
         }
         
         if (hasNew) {
-            playBeep(); // Play internal sound
+            const audio = document.getElementById('alert-sound');
+            audio.currentTime = 0;
+            audio.play().catch(e => console.log("Audio play failed:", e));
         }
         
         knownOrderIDs = incomingIDs; 
@@ -237,48 +228,4 @@
             let rawNote = order.Note || '';
 
             const packMatch = rawNote.match(/\[PACKING:\s*(\d+)\]/);
-            if (packMatch) {
-                packingDisplay = `<div class="summary-line"><span>Packing Charges</span><span>₹${packMatch[1]}</span></div>`;
-                rawNote = rawNote.replace(packMatch[0], '');
-            }
-
-            const offerMatch = rawNote.match(/\[OFFER:\s*(.*?)\]/);
-            if (offerMatch) {
-                noteHtml += `<div class="coupon-box"><i class="fas fa-tags"></i> <strong>OFFER APPLIED:</strong><br>${offerMatch[1]}</div>`;
-                rawNote = rawNote.replace(offerMatch[0], '');
-            }
-
-            rawNote = rawNote.replace(/^-\s*$/, '').trim();
-            if (rawNote && rawNote.length > 1) {
-                noteHtml += `<div class="note-alert"><i class="fas fa-exclamation-circle"></i> ${rawNote}</div>`;
-            }
-
-            let btnHtml = '';
-            if (currentStatus === 'new') btnHtml = `<button class="action-btn btn-start" onclick="updateStatus('${order.OrderID}', 'preparing')"><i class="fas fa-fire"></i> Start Preparing</button>`;
-            else if (currentStatus === 'preparing') btnHtml = `<button class="action-btn btn-preparing" onclick="updateStatus('${order.OrderID}', 'ready')"><i class="fas fa-check"></i> Mark Ready</button>`;
-            else if (currentStatus === 'ready') btnHtml = `<button class="action-btn btn-ready" onclick="updateStatus('${order.OrderID}', 'cleared')"><i class="fas fa-times"></i> Clear Ticket</button>`;
-
-            const card = document.createElement('div'); card.className = `ticket-card ${timeClass}`; card.id = `card-${order.OrderID}`;
-            const timeStr = orderDate.toLocaleTimeString('en-IN', { hour: 'numeric', minute:'2-digit', hour12:true });
-
-            card.innerHTML = `
-                <div class="card-header"><div><div class="order-id">#${order.OrderID}</div><div class="order-type-badge type-${order.Type}">${order.Type}</div></div><div class="timer-display"><div class="time-elapsed">${diffMins}m</div><div class="time-ago">${timeStr}</div></div></div>
-                <div class="card-body">
-                    <div class="customer-section"><div class="c-name">${order.CustomerName}</div><div class="c-row"><div class="c-icon"><i class="fas fa-phone"></i></div> ${order.Phone}</div>${order.Address && order.Type === 'Delivery' ? `<div class="c-row"><div class="c-icon"><i class="fas fa-map-marker-alt"></i></div> ${order.Address}</div>` : ''}</div>
-                    ${noteHtml}
-                    <div class="item-list">${itemsHtml}</div>
-                </div>
-                <div class="card-footer">
-                    ${packingDisplay}
-                    <div class="total-row"><div class="total-label">Total Bill</div><div class="total-amount">₹${order.Total}</div></div>
-                    <div class="btn-container">${btnHtml}</div>
-                </div>`;
-            container.appendChild(card);
-        });
-        if (activeCount === 0) container.innerHTML = `<div class="empty-state"><i class="fas fa-check-circle empty-icon"></i><p>All active orders cleared!</p></div>`;
-    }
-    
-    function updateStatus(id, newStatus) { localStorage.setItem(`status_${id}`, newStatus); if (newStatus === 'cleared') { const card = document.getElementById(`card-${id}`); if(card) { card.classList.add('vanish'); setTimeout(() => card.remove(), 300); } } else { fetchOrders(); } }
-</script>
-</body>
-</html>
+            if (packMatch)
