@@ -989,15 +989,7 @@ function finalizeOrder() {
     const now = new Date();
     const timeString = now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
 
-    // 3. Build WhatsApp Message
-    let msg = `*New Order @ Café Cloud Club*\n`;
-    msg += `*Type:* ${type.toUpperCase()}\n*Time:* ${timeString}\n*Order ID:* ${orderId}\n---------------------------\n`;
-    msg += `*Name:* ${name}\n*Phone:* ${phone}\n*Email:* ${email}\n*Time:* ${time}\n`;
-    if(type === 'Delivery') msg += `*Address:* ${address}\n`;
-    if(instruction) msg += `*Note:* ${instruction}\n`;
-    
-    msg += `---------------------------\n*ITEMS:*\n`;
-    
+    // 3. Calculate Totals & Build Strings
     let subTotal = 0;
     let packingTotal = 0;
     let sheetItemsString = ""; // For Google Sheets
@@ -1015,11 +1007,8 @@ function finalizeOrder() {
         
         packingTotal += (chargePerItem * item.qty);
         if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
-        
-        let dietTag = item.type === 'veg' ? '[VEG]' : '[NON-VEG]';
-        msg += `• ${dietTag} ${key} x ${item.qty} = Rs. ${lineTotal}\n`;
-        
-        // Add to string for database
+
+        // --- CHANGE 1: Add Price to Item String for KDS ---
         sheetItemsString += `${key} (${item.qty}) | ${lineTotal}, `;
     }
     
@@ -1030,15 +1019,37 @@ function finalizeOrder() {
     }
 
     let grandTotal = (subTotal - discountVal) + packingTotal;
+
+    // --- CHANGE 2: Add Coupon Info to Notes for KDS ---
+    let finalNote = instruction || "";
+    if (activeCoupon) {
+        finalNote += ` [COUPON: ${activeCoupon} (-₹${discountVal})]`;
+    }
+    if (finalNote === "") finalNote = "-";
+
+    // 4. Build WhatsApp Message (Visual only)
+    let msg = `*New Order @ Café Cloud Club*\n`;
+    msg += `*Type:* ${type.toUpperCase()}\n*Time:* ${timeString}\n*Order ID:* ${orderId}\n---------------------------\n`;
+    msg += `*Name:* ${name}\n*Phone:* ${phone}\n*Email:* ${email}\n*Time:* ${time}\n`;
+    if(type === 'Delivery') msg += `*Address:* ${address}\n`;
+    if(finalNote !== "-") msg += `*Note:* ${finalNote}\n`;
+    msg += `---------------------------\n*ITEMS:*\n`;
+    for(let key in cart) {
+        let item = cart[key];
+        let lineTotal = item.price * item.qty;
+        let dietTag = item.type === 'veg' ? '[VEG]' : '[NON-VEG]';
+        msg += `• ${dietTag} ${key} x ${item.qty} = Rs. ${lineTotal}\n`;
+    }
     msg += `---------------------------\nSub Total: Rs. ${subTotal}\n`;
     if (discountVal > 0) msg += `*Coupon (${couponName}): -Rs. ${discountVal}*\n`;
     msg += `Packing: Rs. ${packingTotal}\n*TOTAL: Rs. ${grandTotal}*\n`;
-    
     if(type === 'Delivery') msg += `\n_Delivery fee calculated by Delivery Agent._`;
+    
     const encodedMsg = encodeURIComponent(msg);
     const finalUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
 
-    // 4. Send Data to Google Sheets (Background)
+    // 5. Send Data to Google Sheets
+    // MAKE SURE THIS URL IS YOUR NEW ONE
     const scriptURL = 'https://script.google.com/macros/s/AKfycbyXl0eoAoUyn3GgxrDpoE4glfpLNKVKAZ3yNSH8wVw5-vSLSjqpaehqWgmRIlrm_Bgngg/exec'; 
     
     const formData = new FormData();
@@ -1050,18 +1061,17 @@ function finalizeOrder() {
     formData.append('Total', grandTotal);
     formData.append('Type', type);
     formData.append('Address', address || "Pickup");
-    formData.append('Note', instruction || "-");
+    formData.append('Note', finalNote); // Sending the note with coupon info
 
     fetch(scriptURL, { method: 'POST', body: formData, mode: 'no-cors' })
         .then(() => console.log('Order sent to staff dashboard'))
         .catch(err => console.error('Dashboard Error', err));
 
-    // 5. Cleanup & Redirect
+    // 6. Cleanup & Redirect
     if (Object.keys(cart).length > 0) {
         localStorage.setItem('ccc_last_order', JSON.stringify(cart));
         lastOrder = cart;
     }
-
     cart = {};
     localStorage.removeItem('ccc_cart_v1'); 
     renderCart();
