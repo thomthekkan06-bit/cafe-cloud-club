@@ -81,7 +81,7 @@
                                 <span>${row[6].toUpperCase()}</span>
                             </div>
                             <div class="ticket-meta">
-                                🕒 ${row[0]}<br>
+                                🕒 ${new Date(row[0]).toLocaleString('en-IN', { hour: 'numeric', minute: 'numeric', hour12: true })}<br>
                                 👤 ${row[2]} (${row[3]})
                                 ${addressHtml}
                             </div>
