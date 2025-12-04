@@ -14,13 +14,11 @@
             --surface-hover: #252525;
             --text-main: #FFFFFF;
             --text-muted: #A0A0A0;
-            
-            /* Status Colors */
-            --safe: #2ecc71;      /* Green (<15m) */
-            --warning: #f1c40f;   /* Yellow (15-20m) */
-            --danger: #e74c3c;    /* Red (>20m) */
-            --delivery: #e67e22;  /* Orange */
-            --pickup: #3498db;    /* Blue */
+            --safe: #2ecc71;      
+            --warning: #f1c40f;   
+            --danger: #e74c3c;    
+            --delivery: #e67e22;  
+            --pickup: #3498db;    
         }
 
         body {
@@ -29,7 +27,6 @@
             font-family: 'Inter', sans-serif;
             margin: 0;
             padding: 20px;
-            overflow-x: hidden;
         }
 
         /* --- HEADER --- */
@@ -51,28 +48,25 @@
         .dot.active { background: var(--safe); box-shadow: 0 0 10px var(--safe); }
         .dot.error { background: var(--danger); }
 
-        /* --- GRID LAYOUT --- */
+        /* --- GRID --- */
         .ticket-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 20px;
         }
 
-        /* --- TICKET CARD MODERN --- */
+        /* --- CARD STYLES --- */
         .ticket-card {
             background: var(--surface);
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.3);
             display: flex;
             flex-direction: column;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            border-top: 6px solid #444; /* Default Border */
+            border-top: 6px solid #444;
             animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 0.3s ease;
         }
 
-        /* Timer-Based Border Colors */
         .ticket-card.time-green { border-top-color: var(--safe); }
         .ticket-card.time-yellow { border-top-color: var(--warning); }
         .ticket-card.time-red { border-top-color: var(--danger); }
@@ -93,21 +87,14 @@
         .type-Delivery { background: rgba(230, 126, 34, 0.2); color: var(--delivery); }
         .type-Pickup { background: rgba(52, 152, 219, 0.2); color: var(--pickup); }
 
-        .timer-display {
-            text-align: right;
-        }
+        .timer-display { text-align: right; }
         .time-elapsed { font-size: 1.2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
         .time-ago { font-size: 0.75rem; color: var(--text-muted); }
-
         .time-green .time-elapsed { color: var(--safe); }
         .time-yellow .time-elapsed { color: var(--warning); }
         .time-red .time-elapsed { color: var(--danger); }
 
-        .card-body {
-            padding: 20px;
-            flex-grow: 1;
-        }
-
+        .card-body { padding: 20px; flex-grow: 1; }
         .customer-row { margin-bottom: 15px; }
         .c-name { font-size: 1.1rem; font-weight: 600; color: #fff; }
         .c-info { font-size: 0.85rem; color: var(--text-muted); margin-top: 2px; }
@@ -123,72 +110,70 @@
             font-weight: 500;
         }
 
-        .item-list { display: flex; flex-direction: column; gap: 8px; }
-        .order-item {
-            display: flex; align-items: flex-start; gap: 10px;
-            font-size: 0.95rem; line-height: 1.4;
-            color: #e0e0e0;
+        /* --- NEW ITEM LIST STYLES --- */
+        .item-list { display: flex; flex-direction: column; gap: 12px; }
+        
+        .order-item-container {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }
+
+        .main-item-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
         .qty-box {
             background: #333; color: #fff;
-            min-width: 24px; height: 24px;
+            min-width: 26px; height: 26px;
             display: flex; align-items: center; justify-content: center;
-            border-radius: 6px; font-weight: 700; font-size: 0.85rem;
+            border-radius: 6px; font-weight: 700; font-size: 0.9rem;
+            flex-shrink: 0;
         }
 
-        /* --- FOOTER ACTIONS --- */
-        .card-footer {
-            padding: 15px;
-            background: #252525;
-            border-top: 1px solid #333;
+        .item-name {
+            font-size: 1rem;
+            line-height: 1.4;
+            color: #e0e0e0;
+            font-weight: 500;
         }
 
-        .action-btn {
-            width: 100%;
-            border: none;
-            padding: 14px;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
+        .modifiers-list {
+            padding-left: 36px; /* Align with text, not qty box */
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .modifier-line {
+            font-size: 0.85rem;
+            color: #4cd137; /* Bright green for extras */
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 10px;
-            text-transform: uppercase;
-            font-family: 'Inter', sans-serif;
+            gap: 6px;
         }
 
-        /* State Buttons */
+        /* --- FOOTER --- */
+        .card-footer { padding: 15px; background: #252525; border-top: 1px solid #333; }
+        .action-btn {
+            width: 100%; border: none; padding: 14px; border-radius: 8px;
+            font-size: 0.95rem; font-weight: 700; cursor: pointer;
+            transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px;
+            text-transform: uppercase; font-family: 'Inter', sans-serif;
+        }
+
         .btn-start { background: #333; color: #fff; }
         .btn-start:hover { background: #444; }
-
         .btn-preparing { background: var(--warning); color: #000; }
         .btn-preparing:hover { background: #f39c12; }
-
         .btn-ready { background: var(--safe); color: #000; }
         .btn-ready:hover { background: #27ae60; }
 
-        /* Animation for vanishing */
-        .vanish {
-            transform: scale(0.9);
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        /* Empty State */
-        .empty-state {
-            grid-column: 1 / -1;
-            text-align: center;
-            padding: 60px;
-            color: #444;
-        }
+        .vanish { transform: scale(0.9); opacity: 0; pointer-events: none; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .empty-state { grid-column: 1 / -1; text-align: center; padding: 60px; color: #444; }
         .empty-icon { font-size: 4rem; margin-bottom: 20px; opacity: 0.2; }
 
     </style>
@@ -213,14 +198,11 @@
     <audio id="alert-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.m4a"></audio>
 
 <script>
-    // --- CONFIGURATION ---
-    // PASTE YOUR GOOGLE SCRIPT URL HERE
     const API_URL = "https://script.google.com/macros/s/AKfycbyXl0eoAoUyn3GgxrDpoE4glfpLNKVKAZ3yNSH8wVw5-vSLSjqpaehqWgmRIlrm_Bgngg/exec";
 
     let knownOrderIDs = [];
     let firstLoad = true;
 
-    // --- MAIN LOOP ---
     async function fetchOrders() {
         const dot = document.getElementById('status-dot');
         const txt = document.getElementById('status-text');
@@ -241,6 +223,42 @@
         }
     }
 
+    // --- NEW SMART PARSER ---
+    function parseItemsString(itemsStr) {
+        if (!itemsStr) return [];
+        // Remove trailing comma/space
+        const cleanStr = itemsStr.replace(/,\s*$/, "");
+        
+        // Regex to find "Item Name (Qty)" pairs
+        // Matches anything non-greedy (.+?) followed by (Number) and either a comma or end of string
+        const regex = /(.+?)\s\((\d+)\)(?:,\s|$)/g;
+        
+        let matches = [];
+        let match;
+        while ((match = regex.exec(cleanStr)) !== null) {
+            let fullName = match[1]; // e.g. "Burger [Cheese, Egg]"
+            let qty = match[2];      // e.g. "1"
+            
+            // Extract Modifiers inside brackets []
+            let mainName = fullName;
+            let modifiers = [];
+            
+            const modMatch = fullName.match(/(.*)\s\[(.*)\]/);
+            if (modMatch) {
+                mainName = modMatch[1]; // "Burger"
+                // Split modifiers by comma
+                modifiers = modMatch[2].split(',').map(s => s.trim());
+            }
+
+            matches.push({
+                name: mainName,
+                qty: qty,
+                modifiers: modifiers
+            });
+        }
+        return matches;
+    }
+
     function renderTickets(orders) {
         const container = document.getElementById('ticket-container');
         
@@ -253,7 +271,7 @@
             return;
         }
 
-        // 1. Alert Sound for New Orders
+        // Alert Sound Logic
         const incomingIDs = orders.map(o => o.OrderID);
         let hasNew = false;
         if (!firstLoad) {
@@ -265,49 +283,49 @@
         knownOrderIDs = incomingIDs;
         firstLoad = false;
 
-        // 2. Clear Container safely (preserving order if possible, but simple rebuild is safer for synced state)
         container.innerHTML = '';
-
         let activeCount = 0;
 
         orders.forEach(order => {
-            // Get Status from Local Storage
-            // Statuses: 'new' (default), 'preparing', 'ready', 'cleared'
             const statusKey = `status_${order.OrderID}`;
             const currentStatus = localStorage.getItem(statusKey) || 'new';
 
-            // If cleared, skip rendering (VANISH)
             if (currentStatus === 'cleared') return;
-
             activeCount++;
 
-            // Calculate Time Difference
-            const orderDate = new Date(order.Date); // Server Date (UTC)
-            const now = new Date(); // Browser Date
+            // Timer Logic
+            const orderDate = new Date(order.Date); 
+            const now = new Date();
             const diffMs = now - orderDate; 
             const diffMins = Math.floor(diffMs / 60000);
 
-            // Determine Color Class
             let timeClass = 'time-green';
             if (diffMins >= 15 && diffMins < 20) timeClass = 'time-yellow';
             if (diffMins >= 20) timeClass = 'time-red';
 
-            // Format Items
+            // --- USE SMART PARSER ---
+            const parsedItems = parseItemsString(order.Items);
             let itemsHtml = '';
-            if (order.Items) {
-                const cleanItems = order.Items.replace(/,\s*$/, "");
-                const itemArray = cleanItems.split(', ');
-                itemArray.forEach(itm => {
-                    const match = itm.match(/(.*)\s\((\d+)\)/);
-                    if (match) {
-                        itemsHtml += `<div class="order-item"><div class="qty-box">${match[2]}</div> <span>${match[1]}</span></div>`;
-                    } else {
-                        itemsHtml += `<div class="order-item"><div class="qty-box">1</div> <span>${itm}</span></div>`;
-                    }
-                });
-            }
+            
+            parsedItems.forEach(item => {
+                let modsHtml = '';
+                if(item.modifiers.length > 0) {
+                    modsHtml = `<div class="modifiers-list">
+                        ${item.modifiers.map(m => `<div class="modifier-line"><i class="fas fa-plus-circle" style="font-size:0.7rem;"></i> ${m}</div>`).join('')}
+                    </div>`;
+                }
 
-            // Determine Button State
+                itemsHtml += `
+                    <div class="order-item-container">
+                        <div class="main-item-row">
+                            <div class="qty-box">${item.qty}</div>
+                            <div class="item-name">${item.name}</div>
+                        </div>
+                        ${modsHtml}
+                    </div>`;
+            });
+
+            // Button Logic
             let btnHtml = '';
             if (currentStatus === 'new') {
                 btnHtml = `<button class="action-btn btn-start" onclick="updateStatus('${order.OrderID}', 'preparing')"><i class="fas fa-fire"></i> Start Preparing</button>`;
@@ -317,12 +335,10 @@
                 btnHtml = `<button class="action-btn btn-ready" onclick="updateStatus('${order.OrderID}', 'cleared')"><i class="fas fa-times"></i> Clear Ticket</button>`;
             }
 
-            // Create Card
             const card = document.createElement('div');
             card.className = `ticket-card ${timeClass}`;
             card.id = `card-${order.OrderID}`;
             
-            // Format Time for Header (e.g., 1:30 PM)
             const timeStr = orderDate.toLocaleTimeString('en-IN', { hour: 'numeric', minute:'2-digit', hour12:true });
 
             card.innerHTML = `
@@ -363,28 +379,21 @@
     }
 
     function updateStatus(id, newStatus) {
-        // Save to local storage
         localStorage.setItem(`status_${id}`, newStatus);
         
-        // Immediate UI Update (for snappy feel)
-        // We just re-fetch or re-render? Re-fetch is safer but slower. 
-        // Let's manually remove if cleared to make it vanish instantly.
         if (newStatus === 'cleared') {
             const card = document.getElementById(`card-${id}`);
             if(card) {
                 card.classList.add('vanish');
-                setTimeout(() => card.remove(), 300); // Remove after animation
+                setTimeout(() => card.remove(), 300);
             }
         } else {
-            // For other states, wait for the next refresh (max 5s) or force refresh now
-            // To make it instant, we reload the fetch logic
             fetchOrders(); 
         }
     }
 
-    // Refresh Loop
     fetchOrders();
-    setInterval(fetchOrders, 5000); // 5 Seconds refresh for timer updates
+    setInterval(fetchOrders, 5000);
 </script>
 </body>
 </html>
