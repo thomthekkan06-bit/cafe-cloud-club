@@ -11,9 +11,9 @@
             --bg-card-header: #2c2c2c;
             --text-primary: #e0e0e0;
             --text-secondary: #a0a0a0;
-            --accent-new: #ff4757; /* Red/Pink for urgency */
-            --accent-accepted: #ffa502; /* Orange/Yellow for cooking */
-            --accent-ready: #2ed573; /* Green for done */
+            --accent-new: #ff4757; 
+            --accent-accepted: #ffa502;
+            --accent-ready: #2ed573;
             --border-radius: 8px;
             --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
@@ -165,9 +165,6 @@
         .toast.error { border-left-color: var(--accent-new); }
         .toast.success { border-left-color: var(--accent-ready); }
 
-        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes slideInLeft { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-
         /* LOADING */
         #loader { text-align: center; color: #666; margin-top: 50px; }
         
@@ -194,13 +191,13 @@
     <div id="toast-container"></div>
 
     <script>
+        // THIS IS THE URL YOU CONFIRMED IS WORKING
         const API_URL = 'https://script.google.com/macros/s/AKfycbx_6dCuYMLPAQq8j9AsMHzjIkcugifCOfCYQnI49eVUughBQlBYmdIY6LPf5PQ7EDmv/exec';
         
         let systemActive = false;
         let knownIds = new Set();
-        let activeOrdersData = []; // Store raw data for timers
+        let activeOrdersData = []; 
 
-        // --- UTILS ---
         const $ = (id) => document.getElementById(id);
         const escapeHtml = (str) => (!str ? '' : String(str).replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]));
 
@@ -223,25 +220,24 @@
                     const diffMs = new Date() - new Date(order.date);
                     const mins = Math.floor(diffMs / 60000);
                     el.innerText = `${mins}m ago`;
-                    if (mins > 15) el.classList.add('late'); // Red text if waiting > 15m
+                    if (mins > 15) el.classList.add('late');
                 }
             });
         }
-        setInterval(updateTime, 1000); // Clock ticks every second for responsiveness
+        setInterval(updateTime, 1000);
 
         // --- SYSTEM INIT ---
         function initSystem() {
             $('start-overlay').style.display = 'none';
             $('loader').innerText = "Syncing Orders...";
             
-            // Audio unlock
             const audio = $('bell');
             audio.volume = 1.0;
             audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(e => console.warn("Audio blocked", e));
             
             systemActive = true;
             fetchOrders();
-            setInterval(fetchOrders, 10000); // Poll every 10s
+            setInterval(fetchOrders, 10000); 
         }
 
         // --- DATA FETCHING ---
@@ -252,169 +248,35 @@
                 .then(res => res.json())
                 .then(data => {
                     $('loader').style.display = 'none';
+                    // ERROR CHECK: If backend returns an error object instead of an array
+                    if (data.result === 'error' || data.error) {
+                        console.error("Backend Error:", data);
+                        throw new Error("Backend Error: " + (data.message || data.error));
+                    }
                     renderOrders(data);
                 })
                 .catch(err => {
-                    console.error(err);
+                    console.error("Fetch Error:", err);
                     showToast("Sync Error: Check Internet", "error");
                 });
         }
 
-        // --- RENDERING (DOM DIFFING) ---
+        // --- RENDERING ---
         function renderOrders(data) {
             const container = $('orders-grid');
-            
-            // 1. Filter Data
             const now = new Date();
             const cutoff = new Date(now.getTime() - (12 * 60 * 60 * 1000)); // 12 hrs
             
-            // Convert to array of objects for easier handling
-            const cleanRows = data.slice(1).map(row => ({
-                date: new Date(row[0]),
-                id: row[1],
-                name: (row[2] && String(row[2]).trim()) ? row[2] : "Guest", // Name Fallback
-                items: row[4],
-                type: row[6],
-                note: row[8],
-                status: row[9] ? String(row[9]).trim() : 'New'
-            })).filter(o => o.date > cutoff && o.status !== 'Ready').reverse(); // Newest first
-
-            activeOrdersData = cleanRows; // Save for timer updates
-
-            let currentBatchIds = new Set();
-            let hasNew = false;
-
-            if (cleanRows.length === 0) {
-                container.innerHTML = '<div class="empty-state">No Active Orders</div>';
-                return;
-            }
-
-            // Remove "Empty State" if it exists
-            if (container.querySelector('.empty-state')) container.innerHTML = '';
-
-            cleanRows.forEach(order => {
-                currentBatchIds.add(order.id);
-                const cardId = `card-${order.id}`;
-                let card = document.getElementById(cardId);
-
-                // A. CREATE CARD
-                if (!card) {
-                    if (order.status === 'New') hasNew = true;
-                    
-                    card = document.createElement('div');
-                    card.id = cardId;
-                    card.className = `card status-${order.status}`;
-                    
-                    const btnConfig = getBtnConfig(order.status, order.id);
-                    const noteHtml = (order.note && order.note !== '-') ? `<div class="note-box">NOTE: ${escapeHtml(order.note)}</div>` : '';
-
-                    card.innerHTML = `
-                        <div class="card-header">
-                            <span>#${order.id}</span>
-                            <span class="order-type">${escapeHtml(order.type)}</span>
-                        </div>
-                        <div class="card-body">
-                            <div class="meta-row">
-                                <span class="timer" id="timer-${order.id}">0m ago</span>
-                                <span>${escapeHtml(order.name)}</span>
-                            </div>
-                            <div class="items-list">${escapeHtml(order.items).replace(/, /g, '<br>')}</div>
-                            ${noteHtml}
-                        </div>
-                        <button class="btn-action ${btnConfig.cls}" onclick="setStatus('${order.id}', '${btnConfig.nextStatus}', this)">
-                            ${btnConfig.text}
-                        </button>
-                    `;
-                    container.appendChild(card);
-                } 
-                // B. UPDATE CARD STATUS (If changed remotely)
-                else {
-                    const currentStatus = card.classList.contains('status-Accepted') ? 'Accepted' : 'New';
-                    if (order.status !== currentStatus) {
-                        card.className = `card status-${order.status}`;
-                        const btn = card.querySelector('.btn-action');
-                        const config = getBtnConfig(order.status, order.id);
-                        btn.className = `btn-action ${config.cls}`;
-                        btn.innerText = config.text;
-                        btn.setAttribute('onclick', `setStatus('${order.id}', '${config.nextStatus}', this)`);
-                    }
-                }
-            });
-
-            // Cleanup removed cards
-            document.querySelectorAll('.card').forEach(c => {
-                const id = c.id.replace('card-', '');
-                if (!currentBatchIds.has(parseInt(id)) && !currentBatchIds.has(id)) {
-                    c.remove();
-                }
-            });
-
-            // Sound Alert
-            // We check if we have a new order that wasn't in the known list
-            const isFirstLoad = knownIds.size === 0;
-            if (hasNew && !isFirstLoad) {
-                // Check if the specific new order is actually new to us
-                 const actuallyNew = cleanRows.some(o => o.status === 'New' && !knownIds.has(o.id));
-                 if(actuallyNew) $('bell').play().catch(e=>console.log(e));
-            }
-            
-            knownIds = currentBatchIds;
-            updateTime(); // Force timer update immediately
-        }
-
-        function getBtnConfig(status, id) {
-            if (status === 'Accepted') {
-                return { text: "MARK READY (DONE)", cls: "btn-ready", nextStatus: "Ready" };
-            }
-            return { text: "ACCEPT ORDER", cls: "btn-accept", nextStatus: "Accepted" };
-        }
-
-        // --- STATUS UPDATE ---
-        function setStatus(id, newStatus, btn) {
-            const originalText = btn.innerText;
-            btn.innerText = "SAVING...";
-            btn.style.opacity = 0.7;
-            btn.disabled = true;
-
-            const formData = new FormData();
-            formData.append('action', 'update');
-            formData.append('orderId', id);
-            formData.append('status', newStatus);
-
-            fetch(API_URL, { method: 'POST', body: formData })
-            .then(res => res.json())
-            .then(data => {
-                if (data.result === 'updated') {
-                    const card = $(`card-${id}`);
-                    if (newStatus === 'Accepted') {
-                        card.classList.remove('status-New');
-                        card.classList.add('status-Accepted');
-                        const config = getBtnConfig('Accepted', id);
-                        btn.className = `btn-action ${config.cls}`;
-                        btn.innerText = config.text;
-                        btn.setAttribute('onclick', `setStatus('${id}', '${config.nextStatus}', this)`);
-                        showToast("Order Accepted", "success");
-                    } else {
-                        // Ready
-                        card.style.transform = 'scale(0.9)';
-                        card.style.opacity = 0;
-                        setTimeout(() => card.remove(), 300);
-                        showToast("Order Complete!", "success");
-                    }
-                    btn.disabled = false;
-                    btn.style.opacity = 1;
-                } else {
-                    throw new Error("Server rejected update");
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                showToast("Save Failed! Try again.", "error");
-                btn.innerText = originalText;
-                btn.disabled = false;
-                btn.style.opacity = 1;
-            });
-        }
-    </script>
-</body>
-</html>
+            // Safe Parsing
+            let cleanRows = [];
+            if (Array.isArray(data)) {
+                cleanRows = data.slice(1).map(row => ({
+                    date: new Date(row[0]),
+                    id: row[1],
+                    // FIX: This reads Column C (Index 2) where the name is
+                    name: (row[2] && String(row[2]).trim()) ? row[2] : "Guest", 
+                    items: row[4],
+                    type: row[6],
+                    note: row[8],
+                    status: row[9] ? String(row[9]).trim() : 'New'
+                })).filter(o => o.date >
