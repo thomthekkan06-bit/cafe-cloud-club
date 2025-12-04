@@ -239,12 +239,17 @@
                 });
             }
 
-            // Parse Time from Timestamp
-            let timeDisplay = order.Date;
-            try {
-                // If it's a full date string, just grab the time part if possible
-                if(timeDisplay.includes(',')) timeDisplay = timeDisplay.split(',')[1];
-            } catch(e) {}
+// Parse Time to Indian Standard Time (IST)
+let timeDisplay = order.Date;
+try {
+    const dateObj = new Date(order.Date);
+    // Format to: "1:30 PM"
+    timeDisplay = dateObj.toLocaleTimeString('en-IN', { 
+        hour: 'numeric', 
+        minute: '2-digit', 
+        hour12: true 
+    });
+} catch(e) {}
 
             card.innerHTML = `
                 <div class="ticket-header">
