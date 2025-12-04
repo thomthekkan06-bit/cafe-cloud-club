@@ -15,7 +15,7 @@
         }
         body { background-color: var(--bg); color: var(--text-main); font-family: 'Inter', sans-serif; margin: 0; padding: 20px; }
         
-        /* OVERLAY - HIGH Z-INDEX TO ENSURE CLICKABILITY */
+        /* OVERLAY */
         #start-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 10000;
@@ -27,13 +27,22 @@
             padding: 20px 40px; font-size: 1.5rem; font-weight: 800;
             border-radius: 50px; cursor: pointer; margin-top: 20px;
             box-shadow: 0 0 30px rgba(46, 204, 113, 0.4);
-            transition: transform 0.2s;
+            transition: transform 0.1s;
         }
         .start-btn:active { transform: scale(0.95); }
 
         /* HEADER */
         .kds-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid #333; }
         .brand-title { font-weight: 800; font-size: 1.8rem; letter-spacing: -1px; }
+        
+        .header-right { display: flex; align-items: center; gap: 15px; }
+        
+        .test-sound-btn {
+            background: #333; color: #fff; border: 1px solid #555;
+            padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: 600; font-size: 0.8rem;
+        }
+        .test-sound-btn:hover { background: #444; }
+
         .live-indicator { font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 8px; background: #1a1a1a; padding: 8px 16px; border-radius: 20px; }
         .dot { width: 10px; height: 10px; border-radius: 50%; background: #444; }
         .dot.active { background: var(--safe); box-shadow: 0 0 10px var(--safe); }
@@ -97,50 +106,60 @@
     <div id="start-overlay">
         <h1 style="color:white; font-size: 2rem;">👨‍🍳 KITCHEN DISPLAY</h1>
         <p style="color:#aaa; max-width: 400px; margin-bottom: 30px;">
-            Tap the button below to enable sound notifications.
+            Click START to enable sound notifications.
         </p>
         <button class="start-btn" onclick="startKDS()">START SHIFT <i class="fas fa-power-off"></i></button>
     </div>
 
     <div class="kds-header">
         <div class="brand-title">KDS <span style="font-weight:400; color:#666;">| Manager</span></div>
-        <div class="live-indicator"><div id="status-dot" class="dot"></div><span id="status-text">Standby...</span></div>
+        <div class="header-right">
+            <button class="test-sound-btn" onclick="testAudio()">Test Sound 🔔</button>
+            <div class="live-indicator"><div id="status-dot" class="dot"></div><span id="status-text">Standby...</span></div>
+        </div>
     </div>
     
     <div id="ticket-container" class="ticket-grid"></div>
 
-    <script>
+    <audio id="alert-sound" preload="auto">
+        <source src="bell.mp3" type="audio/mpeg">
+    </audio>
+
+<script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyXl0eoAoUyn3GgxrDpoE4glfpLNKVKAZ3yNSH8wVw5-vSLSjqpaehqWgmRIlrm_Bgngg/exec";
     let knownOrderIDs = []; 
     let firstLoad = true;
     let isKDSActive = false;
-    let kitchenSound = null; // Store sound object
+
+    // --- TEST SOUND BUTTON ---
+    function testAudio() {
+        const audio = document.getElementById('alert-sound');
+        audio.currentTime = 0;
+        audio.volume = 1.0;
+        audio.play().catch(e => {
+            alert("Error playing sound: " + e.message + "\nCheck if 'bell.mp3' is in the main folder!");
+        });
+    }
 
     function startKDS() {
-        // 1. Hide Overlay IMMEDIATELY (Prevents freezing)
+        // 1. Hide Overlay
         document.getElementById('start-overlay').style.display = 'none';
-        
-        // 2. Initialize Sound safely
-        try {
-            // Looks for bell.mp3 in the same folder as staff.html
-            kitchenSound = new Audio('bell.mp3'); 
-            
-            // Try playing silence to unlock browser audio policy
-            kitchenSound.play().then(() => {
-                kitchenSound.pause();
-                kitchenSound.currentTime = 0;
-            }).catch(e => {
-                console.log("Auto-play blocked or file missing: " + e);
-            });
-        } catch(e) {
-            console.log("Audio Error: " + e);
-        }
-
-        // 3. Start System
         isKDSActive = true;
         document.getElementById('status-text').innerText = "Connecting...";
+
+        // 2. Start Fetching
         fetchOrders();
         setInterval(fetchOrders, 5000);
+
+        // 3. Attempt Silent Play to unlock Audio Engine
+        const audio = document.getElementById('alert-sound');
+        audio.volume = 1.0;
+        audio.play().then(() => {
+            audio.pause();
+            audio.currentTime = 0;
+        }).catch(err => {
+            console.log("Auto-unlock failed (normal if file loading): " + err);
+        });
     }
 
     async function fetchOrders() {
@@ -191,10 +210,11 @@
             hasNew = incomingIDs.some(id => !knownOrderIDs.includes(id));
         }
         
-        // --- SAFE AUDIO PLAY ---
-        if (hasNew && kitchenSound) {
-            kitchenSound.currentTime = 0;
-            kitchenSound.play().catch(e => console.log("Sound failed to play:", e));
+        // --- PLAY SOUND ON NEW ORDER ---
+        if (hasNew) {
+            const audio = document.getElementById('alert-sound');
+            audio.currentTime = 0;
+            audio.play().catch(e => console.log("Audio play failed:", e));
         }
         
         knownOrderIDs = incomingIDs; 
