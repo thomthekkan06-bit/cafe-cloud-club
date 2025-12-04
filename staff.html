@@ -1,161 +1,138 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KDS - Café Cloud Club</title>
-    <style>
-        body { font-family: 'Courier New', monospace; background: #111; color: #eee; padding: 20px; margin: 0; }
-        h1 { border-bottom: 2px solid #FF4500; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+<script>
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbx_6dCuYMLPAQq8j9AsMHzjIkcugifCOfCYQnI49eVUughBQlBYmdIY6LPf5PQ7EDmv/exec';
+    
+    let isSystemStarted = false;
+    let knownOrderIds = new Set();
+
+    // CLOCK
+    function updateClock() {
+        document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: 'numeric' });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // START SYSTEM
+    function startSystem() {
+        document.getElementById('start-overlay').style.display = 'none';
+        document.getElementById('loading').innerText = "Connecting...";
         
-        .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-        
-        /* TICKET STYLES */
-        .ticket { 
-            background: #222; 
-            border: 1px solid #444; 
-            padding: 15px; 
-            border-top: 6px solid #666; 
-            display: flex; flex-direction: column; justify-content: space-between;
-            animation: fadeIn 0.5s ease;
-            position: relative;
-        }
-
-        .ticket.status-new { border-top-color: #e74c3c; box-shadow: 0 0 15px rgba(231, 76, 60, 0.1); }
-        .ticket.status-accepted { border-top-color: #f1c40f; background: #2a2a2a; border-color: #555; }
-        
-        .ticket-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 1.3rem; margin-bottom: 10px; border-bottom: 1px dashed #444; padding-bottom: 8px; }
-        .ticket-meta { font-size: 0.9rem; color: #bbb; margin-bottom: 15px; line-height: 1.4; }
-        .ticket-items { font-size: 1.1rem; line-height: 1.5; margin-bottom: 20px; white-space: pre-wrap; flex-grow: 1; font-weight: 500; }
-        
-        .action-btn { width: 100%; padding: 16px; border: none; font-weight: 800; font-size: 1rem; cursor: pointer; text-transform: uppercase; margin-top: 10px; transition: all 0.2s; border-radius: 4px; }
-        .btn-accept { background: #333; color: #fff; border: 1px solid #555; }
-        .btn-accept:hover { background: #fff; color: #000; }
-        .btn-ready { background: #27ae60; color: #fff; box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3); }
-        .btn-ready:hover { background: #2ecc71; transform: translateY(-2px); }
-        
-        .note-box { background: #5a1a1a; color: #ffcccc; padding: 8px; margin-top: 5px; font-size: 0.9rem; border-left: 3px solid #ff4444; }
-
-        /* START OVERLAY */
-        #start-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 9999;
-            display: flex; justify-content: center; align-items: center; flex-direction: column;
-        }
-        #start-btn {
-            padding: 20px 40px; font-size: 1.5rem; background: #FF4500; color: white;
-            border: none; border-radius: 10px; cursor: pointer; font-weight: bold;
-        }
-
-        @keyframes fadeIn { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
-    </style>
-</head>
-<body>
-
-    <div id="start-overlay">
-        <h2 style="color:white; margin-bottom:20px;">🔊 Audio Required</h2>
-        <button id="start-btn" onclick="startSystem()">CLICK TO START SYSTEM</button>
-    </div>
-
-    <audio id="notification-sound" src="bell.mp3" preload="auto"></audio>
-
-    <h1>
-        <span>👨‍🍳 KITCHEN DISPLAY</span>
-        <span id="clock" style="font-size: 1.5rem; color: #888;">--:--</span>
-    </h1>
-
-    <div id="loading" style="text-align:center; padding: 20px; color:#666;">Waiting for start...</div>
-    <div class="orders-grid" id="orders-container"></div>
-
-    <script>
-        const scriptURL = 'https://script.google.com/macros/s/AKfycbx_6dCuYMLPAQq8j9AsMHzjIkcugifCOfCYQnI49eVUughBQlBYmdIY6LPf5PQ7EDmv/exec';
-        
-        let knownOrderIds = new Set();
-        let isSystemStarted = false;
-
-        function updateClock() {
-            document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: 'numeric' });
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
-
-        function startSystem() {
-            document.getElementById('start-overlay').style.display = 'none';
-            document.getElementById('loading').innerText = "Connecting...";
-            
-            // Unlock audio
-            const audio = document.getElementById('notification-sound');
-            audio.volume = 1.0;
-            audio.play().then(() => {
-                audio.pause();
-                audio.currentTime = 0;
-            }).catch(e => console.log("Audio permission issue:", e));
-
-            isSystemStarted = true;
-            loadTickets(); 
-            setInterval(loadTickets, 10000); // Poll every 10s
-        }
-
-        function playSound() {
-            const audio = document.getElementById('notification-sound');
+        // Unlock audio context
+        const audio = document.getElementById('notification-sound');
+        audio.volume = 1.0;
+        audio.play().then(() => {
+            audio.pause();
             audio.currentTime = 0;
-            audio.play().catch(e => console.error("Sound failed:", e));
-        }
+        }).catch(e => console.log("Audio permission issue:", e));
 
-        function loadTickets() {
-            if(!isSystemStarted) return;
+        isSystemStarted = true;
+        loadTickets(); 
+        setInterval(loadTickets, 10000); // Poll every 10s
+    }
 
-            fetch(scriptURL)
-            .then(res => res.json())
-            .then(data => {
-                const container = document.getElementById('orders-container');
-                document.getElementById('loading').style.display = 'none';
-                
-                // 1. FILTER: Last 12h
-                const now = new Date();
-                const twelveHoursAgo = new Date(now.getTime() - (12 * 60 * 60 * 1000));
-                
-                // 2. REVERSE: Newest first
-                const rows = data.slice(1).reverse(); 
+    function playSound() {
+        const audio = document.getElementById('notification-sound');
+        audio.currentTime = 0;
+        audio.play().catch(e => console.error("Sound failed:", e));
+    }
 
-                let htmlBuffer = ''; 
-                let activeCount = 0;
-                let hasNewOrder = false;
-                let currentBatchIds = new Set();
+    // SECURITY: Prevent script injection (XSS)
+    // This cleans the data coming from the sheet so it can't break your HTML
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text.toString()
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
 
-                rows.forEach(row => {
-                    // 0:Date, 1:ID, ... 9:Status
-                    const orderDate = new Date(row[0]);
-                    const status = row[9] ? row[9].toString().trim() : 'New'; 
-                    const orderId = row[1];
+    function loadTickets() {
+        if(!isSystemStarted) return;
 
-                    if (orderDate < twelveHoursAgo || status === 'Ready') return;
+        fetch(scriptURL)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('loading').style.display = 'none';
+            const container = document.getElementById('orders-container');
+            
+            // 1. FILTER: Last 12h
+            const now = new Date();
+            const twelveHoursAgo = new Date(now.getTime() - (12 * 60 * 60 * 1000));
+            
+            // 2. REVERSE: Newest first so they appear at top
+            const rows = data.slice(1).reverse(); 
 
-                    activeCount++;
-                    currentBatchIds.add(orderId);
+            let activeOrderIds = new Set();
+            let hasNewOrder = false;
 
-                    // Check for NEW orders to play sound
-                    if (!knownOrderIds.has(orderId) && status === 'New') {
-                        hasNewOrder = true;
-                    }
+            // Check if no active orders
+            const hasActiveOrders = rows.some(row => {
+                const d = new Date(row[0]);
+                const s = row[9] ? row[9].toString().trim() : 'New';
+                return d > twelveHoursAgo && s !== 'Ready';
+            });
+
+            if (!hasActiveOrders) {
+                container.innerHTML = '<div style="color:#444; text-align:center; padding:40px; grid-column:1/-1;">NO ACTIVE ORDERS</div>';
+                return;
+            }
+
+            // Remove "No Active Orders" msg if real orders exist
+            if (container.innerText.includes("NO ACTIVE ORDERS")) {
+                container.innerHTML = '';
+            }
+
+            rows.forEach(row => {
+                // 0:Date, 1:ID, ... 
+                const orderDate = new Date(row[0]);
+                const orderId = row[1];
+                const rawName = row[2];
+                const phone = row[3];
+                const items = row[4];
+                const type = row[6];
+                const note = row[8];
+                const status = row[9] ? row[9].toString().trim() : 'New';
+
+                // Skip old or completed
+                if (orderDate < twelveHoursAgo || status === 'Ready') return;
+
+                activeOrderIds.add(orderId);
+
+                // --- CRITICAL FIX: MISSING NAME HANDLER ---
+                // If name is blank, use "Guest"
+                const customerName = (rawName && rawName.toString().trim() !== "") 
+                                     ? escapeHtml(rawName) 
+                                     : "Guest";
+
+                // --- CRITICAL FIX: DOM DIFFING ---
+                // We check if the card exists. If yes, we leave it alone. If no, we create it.
+                // This stops the flashing and phantom clicks.
+                let card = document.getElementById(`card-${orderId}`);
+
+                // 1. CREATE CARD IF IT DOESN'T EXIST
+                if (!card) {
+                    if (status === 'New') hasNewOrder = true;
+
+                    const timeString = orderDate.toLocaleTimeString('en-IN', { hour: 'numeric', minute: 'numeric', hour12: true });
+                    const itemsHtml = escapeHtml(items).replace(/, /g, '<br>');
+                    const typeDisplay = escapeHtml(type).toUpperCase();
+                    const noteHtml = note && note !== '-' ? `<div class="note-box">NOTE: ${escapeHtml(note)}</div>` : '';
                     
-                    // UI STATE
+                    // Button logic
+                    let btnHtml = '';
                     let statusClass = 'status-new';
-                    let btnHtml = `<button class="action-btn btn-accept" onclick="updateStatus('${orderId}', 'Accepted', this)">Accept Order</button>`;
                     let statusLabel = '';
 
                     if (status === 'Accepted') {
                         statusClass = 'status-accepted';
-                        btnHtml = `<button class="action-btn btn-ready" onclick="updateStatus('${orderId}', 'Ready', this)">Mark Ready (Done)</button>`;
                         statusLabel = '<span style="color:#f1c40f; font-size:0.8rem; float:right;">COOKING...</span>';
+                        btnHtml = `<button class="action-btn btn-ready" onclick="updateStatus('${orderId}', 'Ready', this)">Mark Ready (Done)</button>`;
+                    } else {
+                        btnHtml = `<button class="action-btn btn-accept" onclick="updateStatus('${orderId}', 'Accepted', this)">Accept Order</button>`;
                     }
 
-                    const timeString = orderDate.toLocaleTimeString('en-IN', { hour: 'numeric', minute: 'numeric', hour12: true });
-                    const itemsHtml = row[4].replace(/, /g, '<br>');
-                    const typeDisplay = row[6].toUpperCase();
-                    const noteHtml = row[8] && row[8] !== '-' ? `<div class="note-box">NOTE: ${row[8]}</div>` : '';
-
-                    htmlBuffer += `
+                    const newCardHtml = `
                         <div class="ticket ${statusClass}" id="card-${orderId}">
                             <div class="ticket-header">
                                 <span>#${orderId}</span>
@@ -163,75 +140,94 @@
                             </div>
                             <div class="ticket-meta">
                                 🕒 ${timeString} ${statusLabel}<br>
-                                👤 ${row[2]} (${row[3]})
+                                👤 ${customerName} (${escapeHtml(phone)})
                             </div>
                             <div class="ticket-items">
                                 ${itemsHtml}
                             </div>
                             ${noteHtml}
-                            ${btnHtml}
+                            <div id="btn-container-${orderId}">
+                                ${btnHtml}
+                            </div>
                         </div>
                     `;
-                });
-
-                container.innerHTML = htmlBuffer;
-
-                if(activeCount === 0) container.innerHTML = '<div style="color:#444; text-align:center; padding:40px; grid-column:1/-1;">NO ACTIVE ORDERS</div>';
-
-                if (hasNewOrder) {
-                    playSound();
-                }
-
-                knownOrderIds = currentBatchIds;
-            })
-            .catch(err => {
-                console.error(err);
-                document.getElementById('loading').innerText = "Connection Failed. Retrying...";
-            });
-        }
-
-        function updateStatus(orderId, newStatus, btnElement) {
-            const card = document.getElementById(`card-${orderId}`);
-            
-            // VISUAL UPDATE
-            if (newStatus === 'Accepted') {
-                btnElement.innerText = "UPDATING...";
-                btnElement.style.opacity = "0.7";
-                card.classList.remove('status-new');
-                card.classList.add('status-accepted');
-            } else if (newStatus === 'Ready') {
-                card.style.transition = "all 0.5s";
-                card.style.opacity = '0';
-                card.style.transform = 'scale(0.9)';
-                setTimeout(() => card.style.display = 'none', 500); 
-            }
-
-            // DB UPDATE
-            const formData = new FormData();
-            formData.append('action', 'update');
-            formData.append('orderId', orderId);
-            formData.append('status', newStatus);
-
-            fetch(scriptURL, { method: 'POST', body: formData })
-            .then(res => res.json())
-            .then(data => {
-                if(data.result === 'updated') {
-                    if (newStatus === 'Accepted') {
-                        btnElement.className = "action-btn btn-ready";
-                        btnElement.innerText = "Mark Ready (Done)";
-                        btnElement.style.opacity = "1";
-                        btnElement.onclick = function() { updateStatus(orderId, 'Ready', this); };
-                    }
+                    // Add to container
+                    container.insertAdjacentHTML('beforeend', newCardHtml);
+                
+                // 2. UPDATE CARD STATUS IF CHANGED EXTERNALLY
                 } else {
-                    alert("Sync Error! Please refresh.");
-                    location.reload();
+                    const currentClass = card.classList.contains('status-accepted') ? 'Accepted' : 'New';
+                    if (status !== currentClass && status === 'Accepted') {
+                        card.classList.remove('status-new');
+                        card.classList.add('status-accepted');
+                        const btnContainer = document.getElementById(`btn-container-${orderId}`);
+                        btnContainer.innerHTML = `<button class="action-btn btn-ready" onclick="updateStatus('${orderId}', 'Ready', this)">Mark Ready (Done)</button>`;
+                    }
                 }
-            })
-            .catch(err => {
-                console.error(err);
-                alert("Internet Error. Status not saved.");
             });
-        }
-    </script>
-</body>
-</html>
+
+            // Cleanup: Remove cards that are no longer in the active list (e.g. marked ready on another device)
+            const allCards = document.querySelectorAll('.ticket');
+            allCards.forEach(card => {
+                const id = card.id.replace('card-', '');
+                // Check if this ID is in the current batch of active orders
+                if (!activeOrderIds.has(parseInt(id)) && !activeOrderIds.has(id)) {
+                    card.remove();
+                }
+            });
+
+            if (hasNewOrder && !knownOrderIds.has([...activeOrderIds][0])) { 
+                 playSound();
+            }
+            knownOrderIds = activeOrderIds;
+        })
+        .catch(err => {
+            console.error(err);
+        });
+    }
+
+    function updateStatus(orderId, newStatus, btnElement) {
+        const card = document.getElementById(`card-${orderId}`);
+        const originalBtnText = btnElement.innerText;
+        
+        // VISUAL UPDATE (Optimistic)
+        btnElement.innerText = "SAVING...";
+        btnElement.style.opacity = "0.7";
+        btnElement.disabled = true;
+
+        const formData = new FormData();
+        formData.append('action', 'update');
+        formData.append('orderId', orderId);
+        formData.append('status', newStatus);
+
+        fetch(scriptURL, { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if(data.result === 'updated') {
+                if (newStatus === 'Accepted') {
+                    card.classList.remove('status-new');
+                    card.classList.add('status-accepted');
+                    // Replace button
+                    const btnContainer = document.getElementById(`btn-container-${orderId}`);
+                    btnContainer.innerHTML = `<button class="action-btn btn-ready" onclick="updateStatus('${orderId}', 'Ready', this)">Mark Ready (Done)</button>`;
+                } else if (newStatus === 'Ready') {
+                    card.style.transition = "all 0.5s";
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.9)';
+                    setTimeout(() => card.remove(), 500);
+                }
+            } else {
+                throw new Error("Sync failed");
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Connection Lost! Status NOT saved.");
+            // --- CRITICAL FIX: ROLLBACK ---
+            // If internet fails, we reset the button so the chef can try again
+            btnElement.innerText = originalBtnText;
+            btnElement.style.opacity = "1";
+            btnElement.disabled = false;
+        });
+    }
+</script>
