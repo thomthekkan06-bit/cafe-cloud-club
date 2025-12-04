@@ -992,16 +992,15 @@ function finalizeOrder() {
     // 3. Calculate Totals & Build Strings
     let subTotal = 0;
     let packingTotal = 0;
-    let sheetItemsString = ""; // This is what goes to the Sheet
+    let sheetItemsString = ""; 
 
     const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
     
     for(let key in cart) {
         let item = cart[key];
-        let lineTotal = item.price * item.qty; // Price calculation
+        let lineTotal = item.price * item.qty; 
         subTotal += lineTotal;
         
-        // Packing Calculation
         let chargePerItem = 10;
         if (item.category === 'ADD-ON') chargePerItem = key.startsWith("Hummus") ? 7 : 5;
         else if (fiveRsCats.includes(item.category)) chargePerItem = 5;
@@ -1009,27 +1008,23 @@ function finalizeOrder() {
         packingTotal += (chargePerItem * item.qty);
         if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
 
-        // --- CRITICAL FIX: Appending Price to the String with a Pipe '|' ---
-        // Format: "Burger (1) | 150"
+        // --- THE FIX: Sends Price to Sheet ---
         sheetItemsString += `${key} (${item.qty}) | ${lineTotal}, `;
     }
     
     let discountVal = 0; 
     let couponName = "";
-    
     if(activeCoupon) { 
         couponName = activeCoupon;
-        // Extract number from discount text
         let discText = document.getElementById('discount-total').innerText;
         discountVal = parseInt(discText.replace(/[^\d]/g, ''));
     }
 
     let grandTotal = (subTotal - discountVal) + packingTotal;
 
-    // --- FIX 2: Add Coupon Info to Notes for KDS ---
+    // --- THE FIX: Sends Coupon to Note ---
     let finalNote = instruction || "";
     if (activeCoupon) {
-        // This adds the coupon to the Note field so KDS can see it
         finalNote += ` [COUPON: ${activeCoupon} OFF ₹${discountVal}]`;
     }
     if (finalNote === "") finalNote = "-";
@@ -1051,13 +1046,11 @@ function finalizeOrder() {
     msg += `---------------------------\nSub Total: Rs. ${subTotal}\n`;
     if (discountVal > 0) msg += `*Coupon (${couponName}): -Rs. ${discountVal}*\n`;
     msg += `Packing: Rs. ${packingTotal}\n*TOTAL: Rs. ${grandTotal}*\n`;
-    if(type === 'Delivery') msg += `\n_Delivery fee calculated by Delivery Agent._`;
     
     const encodedMsg = encodeURIComponent(msg);
     const finalUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
 
     // 5. Send Data to Google Sheets
-    // YOUR NEW URL
     const scriptURL = 'https://script.google.com/macros/s/AKfycbyXl0eoAoUyn3GgxrDpoE4glfpLNKVKAZ3yNSH8wVw5-vSLSjqpaehqWgmRIlrm_Bgngg/exec'; 
     
     const formData = new FormData();
@@ -1065,17 +1058,17 @@ function finalizeOrder() {
     formData.append('OrderID', orderId);
     formData.append('CustomerName', name);
     formData.append('Phone', phone);
-    formData.append('Items', sheetItemsString); // Sends the string with prices
+    formData.append('Items', sheetItemsString); 
     formData.append('Total', grandTotal);
     formData.append('Type', type);
     formData.append('Address', address || "Pickup");
     formData.append('Note', finalNote); 
 
     fetch(scriptURL, { method: 'POST', body: formData, mode: 'no-cors' })
-        .then(() => console.log('Order sent to staff dashboard'))
-        .catch(err => console.error('Dashboard Error', err));
+        .then(() => console.log('Order sent'))
+        .catch(err => console.error('Error', err));
 
-    // 6. Cleanup & Redirect
+    // 6. Cleanup
     if (Object.keys(cart).length > 0) {
         localStorage.setItem('ccc_last_order', JSON.stringify(cart));
         lastOrder = cart;
@@ -1089,11 +1082,7 @@ function finalizeOrder() {
     document.getElementById('success-view').style.display = 'flex';
     
     if (typeof gtag === 'function') {
-        gtag('event', 'purchase', {
-            transaction_id: orderId,
-            value: grandTotal,
-            currency: "INR"
-        });
+        gtag('event', 'purchase', { transaction_id: orderId, value: grandTotal, currency: "INR" });
     }
 
     document.getElementById('customer-name-display').innerText = name;
