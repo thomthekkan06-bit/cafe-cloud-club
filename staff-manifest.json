@@ -1,0 +1,16 @@
+{
+  "name": "Cloud Club Kitchen",
+  "short_name": "Kitchen",
+  "start_url": "./staff.html",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#FF4500",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "kitchen-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
