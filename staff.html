@@ -154,20 +154,19 @@
 
     // --- CENTRAL STATUS UPDATER (Called by buttons) ---
     async function updateCentralStatus(orderId, newStatus) {
-        if (!confirm(`Confirm status change to: ${newStatus}?`)) return;
+        if (!confirm(`Confirm order ${orderId} status change to: ${newStatus}?`)) return;
 
         const formData = new FormData();
         formData.append('orderId', orderId);
         formData.append('newStatus', newStatus);
 
         try {
-            // Send update request to the new status API
             const response = await fetch(STATUS_API_URL, { 
                 method: 'POST', 
                 body: formData, 
                 mode: 'no-cors' 
             });
-            // Immediately clear local state if successful to update UI
+            // Clear local state immediately for instant feedback
             localStorage.setItem(`status_${orderId}`, 'cleared'); 
             fetchOrders(); 
 
@@ -176,7 +175,6 @@
             console.error("Status Update Failed:", e);
         }
     }
-
 
     function testAudio() {
         const audio = document.getElementById('alert-sound');
@@ -266,13 +264,13 @@
         let activeCount = 0;
 
         orders.forEach(order => {
-            // --- NEW CENTRAL FILTER: HIDE IF DELIVERED ---
+            // --- CENTRAL FILTER: HIDE IF DELIVERED ---
             if (order.Status && order.Status.toLowerCase().includes('delivered')) return;
 
             const statusKey = `status_${order.OrderID}`; 
             const currentStatus = localStorage.getItem(statusKey) || 'new';
             
-            // --- NEW LOCAL FILTER: ONLY HIDE IF CHEF LOCALLY CLEARED IT ---
+            // --- LOCAL FILTER: Only hide if CHEF locally cleared it ---
             if (currentStatus === 'cleared') return; 
             activeCount++;
             
@@ -318,7 +316,7 @@
             } else if (currentStatus === 'preparing') {
                 btnHtml = `<button class="action-btn btn-preparing" onclick="updateStatus('${order.OrderID}', 'ready')"><i class="fas fa-check"></i> Mark Ready</button>`;
             } else if (currentStatus === 'ready') {
-                // Final button when order is ready to leave the kitchen
+                // KDS FINAL BUTTON: Calls central API
                 btnHtml = `<button class="action-btn btn-delivered" onclick="updateCentralStatus('${order.OrderID}', 'Delivered')">MARK DELIVERED (Final)</button>`;
             }
 
