@@ -1,4 +1,4 @@
-/* --- PRELOADER SCRIPT (OPTIMIZED) --- */
+/* --- PRELOADER SCRIPT --- */
 document.addEventListener('DOMContentLoaded', () => {
     const foodQuotes = {
         0: "Midnight munchies? A Burger fixes everything.",
@@ -35,12 +35,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const preloader = document.getElementById('preloader');
     if (preloader) {
-        // Removed the 500ms setTimeout. Speed is priority.
         preloader.classList.add('preloader-hidden');
     }
 });
 
-/* --- MOUSE TRACKER FOR ANIMATION --- */
+/* --- MOUSE TRACKER --- */
 let lastClickX = 0;
 let lastClickY = 0;
 document.addEventListener('click', (e) => {
@@ -245,11 +244,13 @@ const menuData = [
     { name: "Hash Brown", price: 40, category: "ADD-ON", type: "veg" },
     { name: "Hummus", price: 50, category: "ADD-ON", type: "veg" }
 ];
+
 let cart = {};
 let activeCoupon = null; 
 
 let favorites = JSON.parse(localStorage.getItem('ccc_favorites')) || [];
 let lastOrder = JSON.parse(localStorage.getItem('ccc_last_order')) || null;
+
 function saveCart() {
     localStorage.setItem('ccc_cart_v1', JSON.stringify(cart));
 }
@@ -302,6 +303,7 @@ let currentSort = 'default';
 let currentType = 'all';
 let currentIngredient = 'all';
 let isUnder200 = false;
+
 function setCategoryFilter(cat, btn) {
     document.querySelectorAll('.filter-item').forEach(b => b.classList.remove('active'));
     if(btn) btn.classList.add('active');
@@ -387,6 +389,7 @@ function renderMenu() {
         }
         return true;
     });
+
     if (currentSort === 'low-high') {
         filteredItems.sort((a, b) => a.price - b.price);
     } else if (currentSort === 'high-low') {
@@ -407,7 +410,6 @@ function renderMenu() {
         const isFav = favorites.includes(item.name);
         const favClass = isFav ? 'active' : '';
         const uniqueId = item.name.replace(/[^a-zA-Z0-9]/g, '-');
-         
         const emojiStr = item.type === 'veg' ? vegIcon : nonVegIcon;
         
         card.innerHTML = `
@@ -420,7 +422,7 @@ function renderMenu() {
             <div class="card-top">
                 <div class="food-title">
                      <span class="type-emoji">${emojiStr}</span>
-                    ${item.name}
+                     ${item.name}
                 </div>
                 <div class="food-meta">${item.category}</div>
             </div>
@@ -438,9 +440,6 @@ function renderMenu() {
 let tempSelectedItemIndex = null;
 function openOptionModal(index) {
     const item = menuData[index];
-
-    // --- OFFENSE: TRACK ITEM INTEREST ---
-    // This tells Google Analytics someone clicked this item
     if (typeof gtag === 'function') {
         gtag('event', 'view_item', {
             currency: "INR",
@@ -545,6 +544,7 @@ function openOptionModal(index) {
     document.getElementById('customization-modal').style.display = 'flex';
     updateModalTotal();
 }
+
 function updateModalTotal() {
     if (tempSelectedItemIndex === null) return;
     const item = menuData[tempSelectedItemIndex];
@@ -583,7 +583,6 @@ function closeCustomizationModal() {
 }
 
 function addToCart(name, finalPrice, basePrice, type, category) {
-// --- OFFENSE: TRACK BUYING INTENT ---
     if (typeof gtag === 'function') {
         gtag('event', 'add_to_cart', {
             currency: "INR",
@@ -612,9 +611,7 @@ function addToCart(name, finalPrice, basePrice, type, category) {
     const btn = document.querySelector('.mobile-cart-btn');
     btn.style.transform = "scale(1.2)";
     setTimeout(() => btn.style.transform = "scale(1)", 200);
-    // Trigger Flying Animation
     triggerFlyAnimation(category);
-    
     checkUpsell(category);
 }
 
@@ -691,7 +688,6 @@ function applyCoupon() {
     const codeInput = document.getElementById('coupon-input');
     const msgBox = document.getElementById('coupon-msg');
     const code = codeInput.value.trim().toUpperCase();
-    
     const todayIndex = new Date().getDay();
 
     if (code === 'MONBURGER') {
@@ -720,7 +716,6 @@ function applyCoupon() {
         return;
     }
 
-// --- 1. WEDSTEAK (Steaks Only) ---
     if (code === 'WEDSTEAK') {
         if(todayIndex !== 3) { 
             msgBox.innerText = "Wednesday Only!";
@@ -729,9 +724,9 @@ function applyCoupon() {
         }
         
         let hasSteak = false;
-        // Check if ANY steak exists
         for(let key in cart) {
-            if(cart[key].category === "Butcher's Best") { hasSteak = true; break; }
+            if(cart[key].category === "Butcher's Best") { hasSteak = true;
+            break; }
         }
 
         if(hasSteak) {
@@ -747,7 +742,6 @@ function applyCoupon() {
         return;
     }
 
-    // --- 2. WEDSHAKE (Shakes Only, No Vanilla) ---
     if (code === 'WEDSHAKE') {
         if(todayIndex !== 3) { 
             msgBox.innerText = "Wednesday Only!";
@@ -756,10 +750,10 @@ function applyCoupon() {
         }
 
         let hasShake = false;
-        // Check if ANY valid shake exists
         for(let key in cart) {
             if(cart[key].category === "Whipped Wonders" && !key.toLowerCase().includes("vanilla")) { 
-                hasShake = true; break; 
+                hasShake = true;
+                break; 
             }
         }
 
@@ -913,9 +907,7 @@ function applyCoupon() {
         return;
     }
 
-    // Default Fallback
     if(activeCoupon && (activeCoupon.includes('CLOUD') || activeCoupon.includes('STEAK') || activeCoupon.includes('QUICK') || activeCoupon.includes('FEAST'))) {
-         // Should be handled above, but just in case
          renderCart();
          return;
     }
@@ -927,9 +919,7 @@ function applyCoupon() {
 function toggleCartPage() { document.getElementById('cart-sidebar').classList.toggle('active'); }
 function openCheckoutModal() { 
     document.getElementById('checkout-modal').style.display = 'flex'; 
-    toggleOrderFields(); 
-    
-    // Force reset T&C checkbox to unchecked every time modal opens
+    toggleOrderFields();
     const checkbox = document.getElementById('tnc-confirm');
     const btn = document.getElementById('final-submit-btn');
     if(checkbox && btn) {
@@ -939,30 +929,32 @@ function openCheckoutModal() {
         btn.style.cursor = "not-allowed";
     }
 }
-function closeCheckoutModal() { document.getElementById('checkout-modal').style.display = 'none';
-}
+function closeCheckoutModal() { document.getElementById('checkout-modal').style.display = 'none'; }
 
 function toggleOrderFields() {
     const type = document.querySelector('input[name="orderType"]:checked').value;
     const addrGroup = document.getElementById('address-group');
     const timeLabel = document.getElementById('time-label');
-    if(type === 'Pickup') { addrGroup.style.display = 'none'; timeLabel.innerText = "Preferred Pickup Time";
-    } 
-    else { addrGroup.style.display = 'block'; timeLabel.innerText = "Preferred Delivery Time";
-    }
+    if(type === 'Pickup') { addrGroup.style.display = 'none'; timeLabel.innerText = "Preferred Pickup Time"; } 
+    else { addrGroup.style.display = 'block'; timeLabel.innerText = "Preferred Delivery Time"; }
 }
 
 function checkStoreStatus(orderType) {
     const now = new Date();
     const hour = now.getHours();
+    
+    // Delivery: 2 PM (14:00) to 3 AM (03:00)
     if (orderType === 'Delivery') {
         if (hour >= 14 || hour < 3) return { isOpen: true };
         return { isOpen: false, msg: "Delivery is only available from 2:00 PM to 3:00 AM." };
     }
+    
+    // Pickup: 3 PM (15:00) to 3 AM (03:00)
     if (orderType === 'Pickup') {
         if (hour >= 15 || hour < 3) return { isOpen: true };
         return { isOpen: false, msg: "Pickup/Dine-In is only available from 3:00 PM to 3:00 AM." };
     }
+    
     return { isOpen: true };
 }
 
@@ -1012,42 +1004,32 @@ function finalizeOrder() {
     }
     
     let discountVal = 0; 
-    let couponDesc = ""; // Store the text description of the offer
-    
+    let couponName = "";
     if(activeCoupon) { 
-        // Grab the value
+        couponName = activeCoupon;
         let discElem = document.getElementById('discount-total');
-        if(discElem) discountVal = parseInt(discElem.innerText.replace(/[^\d]/g, '')) || 0;
-        
-        // Grab the description (e.g., "Mon: Chicken+Fries @ 222")
-        let descElem = document.querySelector('#discount-row span:first-child');
-        if(descElem) couponDesc = descElem.innerText;
+        if(discElem) {
+             discountVal = parseInt(discElem.innerText.replace(/[^\d]/g, '')) || 0;
+        }
     }
 
     let grandTotal = (subTotal - discountVal) + packingTotal;
 
-    // --- NEW: Smart Note Construction ---
-    // We append the hidden data into the Note field using special tags
+    // Add Coupon to Note
     let finalNote = instruction || "";
-    
     if (activeCoupon) {
-        // Adds detail like: [OFFER: Mon: Chicken+Fries @ 222 (Code: MONBURGER)]
-        finalNote += ` [OFFER: ${couponDesc} (Code: ${activeCoupon})]`;
+        finalNote += ` [COUPON: ${activeCoupon} OFF ₹${discountVal}]`;
     }
-    
-    // Adds packing detail: [PACKING: 50]
-    finalNote += ` [PACKING: ${packingTotal}]`;
-    
-    if (finalNote.trim() === "") finalNote = "-";
+    if (finalNote === "") finalNote = "-";
 
     // 4. Build WhatsApp Message
     let msg = `*New Order @ Café Cloud Club*\n`;
     msg += `*Type:* ${type.toUpperCase()}\n*Time:* ${timeString}\n*Order ID:* ${orderId}\n---------------------------\n`;
     msg += `*Name:* ${name}\n*Phone:* ${phone}\n*Email:* ${email}\n*Time:* ${time}\n`;
     if(type === 'Delivery') msg += `*Address:* ${address}\n`;
-    if(instruction) msg += `*Note:* ${instruction}\n`; // Only show user note in WA, not technical tags
-    
+    if(finalNote !== "-") msg += `*Note:* ${finalNote}\n`;
     msg += `---------------------------\n*ITEMS:*\n`;
+    
     for(let key in cart) {
         let item = cart[key];
         let lineTotal = item.price * item.qty;
@@ -1057,12 +1039,14 @@ function finalizeOrder() {
     msg += `---------------------------\nSub Total: Rs. ${subTotal}\n`;
     if (discountVal > 0) msg += `*Coupon (${couponName}): -Rs. ${discountVal}*\n`;
     msg += `Packing: Rs. ${packingTotal}\n*TOTAL: Rs. ${grandTotal}*\n`;
+    if(type === 'Delivery') msg += `\n_Delivery fee calculated by Delivery Agent._`;
     
     const encodedMsg = encodeURIComponent(msg);
     const finalUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
 
     // 5. Send Data to Google Sheets
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbyXl0eoAoUyn3GgxrDpoE4glfpLNKVKAZ3yNSH8wVw5-vSLSjqpaehqWgmRIlrm_Bgngg/exec'; 
+    // *** NEW AUTHORIZED URL ***
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbwBLcGdLK5Fuh8H_T1hCvOPzXJiIskJwaS8x6FvA2kC_5jdmcLg-jg3HlFHH_VALmeqHA/exec'; 
     
     const formData = new FormData();
     formData.append('Date', timeString);
@@ -1073,7 +1057,7 @@ function finalizeOrder() {
     formData.append('Total', grandTotal);
     formData.append('Type', type);
     formData.append('Address', address || "Pickup");
-    formData.append('Note', finalNote); // Sends the smart note
+    formData.append('Note', finalNote); 
 
     fetch(scriptURL, { method: 'POST', body: formData, mode: 'no-cors' })
         .then(() => console.log('Order sent'))
@@ -1109,13 +1093,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const dayIndex = new Date().getDay();
     const dailyOfferTexts = [
-        "SUNDAY SPECIAL: Fam-Jam Feast! 1 Pasta + 1 Slider + 1 Shake = ₹399. Use Code: SUNFEAST", // 0
-        "MEAT-UP MONDAY: Burger + Fries = ₹222. Strictly 1 Beef Burger gets ₹20 OFF. Use Code: MONBURGER", // 1
-        "TWISTED TUESDAY: Any Penne Pasta (Alfredo/Pesto/Arabiata/Cloud) Flat @ ₹179. Veg/Non-Veg. Use Code: TUEPASTA", // 2
-        "WICKED WEDNESDAY: Steak @ ₹300 (Code: WEDSTEAK) OR Premium Shake @ ₹120 (Code: WEDSHAKE)", // 3
-        "THURSDAY CLUB: Any Sandwich + Any Chiller = ₹189. Use Code: THUSAND", // 4
-        "FRI-YAY FRY-DAY: Veg Loaded Fries ₹119 | Chicken Loaded Fries ₹179. Use Code: FRIFRIES", // 5
-        "ROCK N' ROLL SATURDAY: Any Roll (Tandoori, Pesto, Chipotle) for ₹129. Use Code: SATROLL" // 6
+        "SUNDAY SPECIAL: Fam-Jam Feast! 1 Pasta + 1 Slider + 1 Shake = ₹399. Use Code: SUNFEAST",
+        "MEAT-UP MONDAY: Burger + Fries = ₹222. Strictly 1 Beef Burger gets ₹20 OFF. Use Code: MONBURGER",
+        "TWISTED TUESDAY: Any Penne Pasta (Alfredo/Pesto/Arabiata/Cloud) Flat @ ₹179. Veg/Non-Veg. Use Code: TUEPASTA",
+        "WICKED WEDNESDAY: Steak @ ₹300 (Code: WEDSTEAK) OR Premium Shake @ ₹120 (Code: WEDSHAKE)",
+        "THURSDAY CLUB: Any Sandwich + Any Chiller = ₹189. Use Code: THUSAND",
+        "FRI-YAY FRY-DAY: Veg Loaded Fries ₹119 | Chicken Loaded Fries ₹179. Use Code: FRIFRIES",
+        "ROCK N' ROLL SATURDAY: Any Roll (Tandoori, Pesto, Chipotle) for ₹129. Use Code: SATROLL"
     ];
     
     const tickerElement = document.getElementById('daily-ticker-text');
@@ -1156,7 +1140,7 @@ function checkUpsell(category) {
 
     // 2. PASTA -> GARLIC BREAD
     else if (category === "Italian Indulgence") {
-        if (Object.keys(cart).some(key => key.includes("Garlic Bread"))) return; // Already has bread
+        if (Object.keys(cart).some(key => key.includes("Garlic Bread"))) return;
         
         currentUpsellItem = { 
             name: "Garlic Bread (4)", 
@@ -1172,7 +1156,7 @@ function checkUpsell(category) {
 
     // 3. STEAK -> MOJITO
     else if (category === "Butcher's Best") {
-        if (Object.keys(cart).some(key => key.includes("Mojito"))) return; // Already has drink
+        if (Object.keys(cart).some(key => key.includes("Mojito"))) return;
         
         currentUpsellItem = { 
             name: "Lemon Mojito", 
@@ -1189,12 +1173,11 @@ function checkUpsell(category) {
 
 function closeUpsell() {
     document.getElementById('upsell-modal').style.display = 'none';
-    currentUpsellItem = null; // Reset
+    currentUpsellItem = null;
 }
 
 function acceptUpsell() {
     if (!currentUpsellItem) return;
-    // Add the specific item defined in checkUpsell
     addToCart(
         currentUpsellItem.name, 
         currentUpsellItem.price, 
@@ -1203,7 +1186,6 @@ function acceptUpsell() {
         currentUpsellItem.cat
     );
     closeUpsell();
-    // alert(currentUpsellItem.name + " added!"); // Optional: Feedback
 }
 
 /* --- GPU ACCELERATED FLYING ANIMATION (Fixes Lag) --- */
@@ -1215,9 +1197,7 @@ function triggerFlyAnimation(category) {
         "Icy Sips": "🥤", "Mojito Magic": "🍹", "Nature's Nectar": "🧃",
         "Whipped Wonders": "🥤", "Frosted Leaf": "🥃", "ADD-ON": "🍞"
     };
-    // If emoji not found, default to Yummy face
     const emoji = emojiMap[category] || "😋";
-    // 1. Identify Target (Mobile Button or Desktop Sidebar)
     let cartBtn;
     if (window.innerWidth <= 1000) {
         cartBtn = document.querySelector('.mobile-cart-btn');
@@ -1225,44 +1205,33 @@ function triggerFlyAnimation(category) {
         cartBtn = document.querySelector('.order-sidebar');
     }
 
-    // Safety check: if button isn't there, stop.
     if (!cartBtn) return;
-    // 2. Calculate Coordinates
     const rect = cartBtn.getBoundingClientRect();
-    const targetX = rect.left + (rect.width / 2); // Center of target
-    const targetY = rect.top + (rect.height / 2); // Center of target
+    const targetX = rect.left + (rect.width / 2);
+    const targetY = rect.top + (rect.height / 2);
 
-    // 3. Create the Flyer Element
     const flyer = document.createElement('div');
     flyer.innerText = emoji;
     flyer.className = 'flying-food';
     
-    // CRITICAL PERFORMANCE FIX: 
-    // We set fixed position at 0,0 and ONLY move using transform.
     flyer.style.position = 'fixed';
     flyer.style.left = '0px';
     flyer.style.top = '0px';
     flyer.style.zIndex = '10000';
-    flyer.style.pointerEvents = 'none'; // Click-through
+    flyer.style.pointerEvents = 'none';
     flyer.style.fontSize = '2rem';
     
-    // Set Start Position immediately (lastClickX/Y are global vars from your existing code)
     flyer.style.transform = `translate(${lastClickX}px, ${lastClickY}px) scale(0.5)`;
     flyer.style.opacity = '1';
     
-    // Define the transition (smooth curve)
     flyer.style.transition = 'transform 0.8s cubic-bezier(0.2, 1, 0.2, 1), opacity 0.8s ease-in';
     document.body.appendChild(flyer);
 
-    // 4. Force Browser to "Paint" the start position
     void flyer.offsetWidth;
-    // 5. Set End Position (Trigger Animation)
     flyer.style.transform = `translate(${targetX}px, ${targetY}px) scale(0.1)`;
     flyer.style.opacity = '0.2';
-    // 6. Cleanup after 0.8 seconds
     setTimeout(() => {
         flyer.remove();
-        // Shake the cart button for feedback
         cartBtn.classList.add('cart-shake');
         setTimeout(() => cartBtn.classList.remove('cart-shake'), 400);
     }, 800);
@@ -1304,12 +1273,14 @@ function renderCart() {
                     <span class="cart-name">${key}</span>
                     <span class="cart-price">${rupeeSign}${item.price}</span>
                 </div>
+  
                 <div class="qty-wrapper">
                     <button class="qty-btn" onclick="updateQty('${key}', -1)">−</button>
                     <span>${item.qty}</span>
                     <button class="qty-btn" onclick="updateQty('${key}', 1)">+</button>
                 </div>
-             </div>
+   
+            </div>
         `;
     }
 
@@ -1323,18 +1294,14 @@ function renderCart() {
         let beefItem = null;
         const msgBox = document.getElementById('coupon-msg');
 
-        // 1. Scan for ingredients
         for(let key in cart) {
             let item = cart[key];
-            // Find first Chicken Burger
             if(!chickenItem && item.category === 'Bun-Tastic Burgers' && key.toLowerCase().includes('chicken')) { 
                 chickenItem = item;
             }
-            // Find first Fries (Salted or Peri Peri only)
             if(!friesItem && (key === "French Fries - Salted" || key === "French Fries - Peri Peri")) { 
                 friesItem = item;
             }
-            // Find first Beef Burger
             if(!beefItem && item.category === 'Bun-Tastic Burgers' && key.toLowerCase().includes('beef')) { 
                 beefItem = item;
             }
@@ -1343,7 +1310,6 @@ function renderCart() {
         const hasCombo = (chickenItem && friesItem);
         const hasBeef = (beefItem !== null);
 
-        // 2. Strict Mutual Exclusivity Check
         if (hasCombo && hasBeef) {
             discountVal = 0;
             discountText = "Conflict: Choose 1 Offer";
@@ -1352,25 +1318,21 @@ function renderCart() {
                 msgBox.className = "coupon-msg error";
             }
         } 
-        // 3. SCENARIO A: Chicken + Fries = 222 (Base Price Only)
         else if (hasCombo) {
             let comboBaseTotal = chickenItem.basePrice + friesItem.basePrice;
             if (comboBaseTotal > 222) {
-                // Determine how much to subtract to bring base total down to 222
                 discountVal = comboBaseTotal - 222;
             }
             discountText = "Mon: Chicken+Fries @ 222";
             if(msgBox) { msgBox.innerText = "Meat-Up Monday: Combo Applied!"; msgBox.className = "coupon-msg success";
             }
         } 
-        // 4. SCENARIO B: Beef = Flat 20 OFF (Base Price Only)
         else if (hasBeef) {
             discountVal = 20;
             discountText = "Mon: ₹20 OFF Beef";
             if(msgBox) { msgBox.innerText = "Meat-Up Monday: Beef Offer Applied!"; msgBox.className = "coupon-msg success";
             }
         }
-        // 5. Criteria not met (user deleted items)
         else {
             discountVal = 0;
             discountText = "Requirements not met";
@@ -1383,26 +1345,19 @@ function renderCart() {
 
     if(activeCoupon === 'TUEPASTA') {
         let pastaDiscountApplied = false;
-        // Strict Filter: Penne Only + Specific Flavors + Max 1
         for(let key in cart) {
             let item = cart[key];
             const lowerName = key.toLowerCase();
 
-            // Check Category & Base Type (Penne)
             if(item.category === 'Italian Indulgence' && lowerName.includes('penne') && !pastaDiscountApplied) {
-
-                // Check Specific Flavors (Alfredo, Pesto, Arabiata, Cloud Special)
-                // This covers: "Arabiata Chicken Pasta - Penne", "Veg Pasta - Arabiata - Penne", etc.
                 const isEligibleFlavor = lowerName.includes('alfredo') || 
                                          lowerName.includes('pesto') || 
                                          lowerName.includes('arabiata') || 
                                          lowerName.includes('cloud special');
-
                 if (isEligibleFlavor) {
-                    // Apply Discount: Base Price -> 179
                     if(item.basePrice > 179) { 
                         discountVal += (item.basePrice - 179);
-                        pastaDiscountApplied = true; // Lock it
+                        pastaDiscountApplied = true;
                     }
                 }
             }
@@ -1411,9 +1366,7 @@ function renderCart() {
         if (pastaDiscountApplied) {
              discountText = "Twisted Tuesday (Flat ₹179)";
         } else {
-             // User applied code but has no valid items, or items are < 179 (unlikely for pasta)
-             // Or they have Spaghetti/Invalid pasta
-             discountText = "Add Eligible Penne Pasta"; 
+             discountText = "Add Eligible Penne Pasta";
              const msgBox = document.getElementById('coupon-msg');
              if(msgBox) {
                  msgBox.innerText = "Add Valid Penne (Alfredo/Pesto/Arabiata/Cloud) to apply.";
@@ -1422,49 +1375,38 @@ function renderCart() {
         }
     }
 
-// --- WEDSTEAK CALCULATION (Strictly 1 Item) ---
     if(activeCoupon === 'WEDSTEAK') {
         let steakItem = null;
-        
-        // Loop finds the FIRST steak and stops. 
-        // This ensures if they have 5 steaks, only the first one gets the deal.
         for(let key in cart) {
             let item = cart[key];
             if(item.category === "Butcher's Best") {
                 steakItem = item;
-                break; // Stop looking after finding one
+                break;
             }
         }
 
         if (steakItem) {
-            // Apply Flat Rate ₹300 to ONE unit
-            // Calculation: Discount = BasePrice - 300
             if(steakItem.basePrice > 300) {
-                 discountVal = steakItem.basePrice - 300;
+                discountVal = steakItem.basePrice - 300;
             }
             discountText = "Wed: Flat ₹300 Steak";
         } else {
-            // They removed the steak after applying code
             discountVal = 0;
             discountText = "Item Removed";
         }
     }
 
-    // --- WEDSHAKE CALCULATION (Strictly 1 Item) ---
     if(activeCoupon === 'WEDSHAKE') {
         let shakeItem = null;
-
-        // Loop finds the FIRST non-vanilla shake and stops.
         for(let key in cart) {
             let item = cart[key];
             if(item.category === "Whipped Wonders" && !key.toLowerCase().includes("vanilla")) {
                 shakeItem = item;
-                break; // Stop looking after finding one
+                break;
             }
         }
 
         if (shakeItem) {
-            // Apply Flat Rate ₹120 to ONE unit
             if(shakeItem.basePrice > 120) {
                 discountVal = shakeItem.basePrice - 120;
             }
@@ -1545,28 +1487,21 @@ function renderCart() {
             let item = cart[key];
             let lineTotal = item.basePrice * item.qty; 
 
-            // CLOUD15: Burger + Fries + Drink
             if(activeCoupon === 'CLOUD15') {
                 if(item.category === 'Bun-Tastic Burgers' || key.includes('French Fries') || item.category === 'Icy Sips') {
                     qualifyingTotal += lineTotal;
                 }
             }
-            
-            // STEAK13: Steak + Shake
             else if(activeCoupon === 'STEAK13') {
                 if(item.category === "Butcher's Best" || item.category === "Whipped Wonders") {
                     qualifyingTotal += lineTotal;
                 }
             }
-
-            // QUICK20: Wrap + Side
             else if(activeCoupon === 'QUICK20') {
                 if(item.category === "Freshly Folded" || key.includes("French Fries") || key === "Chicken Nuggets") {
                     qualifyingTotal += lineTotal;
                 }
             }
-
-            // FEAST14: Burgers, Mains, Loaded Fries, Drinks
             else if(activeCoupon === 'FEAST14') {
                 if(item.category === "Bun-Tastic Burgers" || item.category === "Italian Indulgence" || item.category === "Rice Harmony" || key.includes("Loaded Fries") || item.category === "Nature's Nectar") {
                     qualifyingTotal += lineTotal;
@@ -1612,20 +1547,16 @@ function renderCart() {
         checkoutBtn.disabled = false;
     }
 }
-/* --- T&C CHECKBOX LOGIC --- */
+
 function toggleFinalButton() {
     const checkbox = document.getElementById('tnc-confirm');
     const btn = document.getElementById('final-submit-btn');
-    
-    // Safety check to ensure elements exist
     if (checkbox && btn) {
         if (checkbox.checked) {
-            // Enable Button
             btn.disabled = false;
             btn.style.opacity = "1";
             btn.style.cursor = "pointer";
         } else {
-            // Disable Button
             btn.disabled = true;
             btn.style.opacity = "0.5";
             btn.style.cursor = "not-allowed";
