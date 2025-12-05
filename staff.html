@@ -24,7 +24,18 @@
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             text-align: center;
         }
-        .overlay-logo { width: 180px; height: 180px; border-radius: 30px; margin-bottom: 30px; object-fit: cover; box-shadow: 0 10px 40px rgba(0,0,0,0.5); border: 4px solid #333; }
+        
+        /* UPDATED: BIGGER LOGO STYLE */
+        .overlay-logo {
+            width: 180px; /* Increased from 80px */
+            height: 180px;
+            border-radius: 30px;
+            margin-bottom: 30px;
+            object-fit: cover;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5); /* Nice shadow depth */
+            border: 4px solid #333;
+        }
+
         .start-btn {
             background: var(--safe); color: black; border: none;
             padding: 20px 40px; font-size: 1.5rem; font-weight: 800;
@@ -41,6 +52,8 @@
             font-weight: 800; font-size: 1.8rem; letter-spacing: -1px; 
             display: flex; align-items: center; gap: 15px; 
         }
+        
+        /* HEADER LOGO (Smaller) */
         .brand-logo {
             width: 50px; height: 50px; border-radius: 12px; 
             object-fit: cover; border: 2px solid #333;
@@ -107,8 +120,6 @@
         .btn-start { background: #333; color: #fff; } .btn-start:hover { background: #444; }
         .btn-preparing { background: var(--warning); color: #000; } .btn-preparing:hover { background: #f39c12; }
         .btn-ready { background: var(--safe); color: #000; } .btn-ready:hover { background: #27ae60; }
-        .btn-delivered { background: var(--delivery); color: white; }
-        .btn-delivered:hover { background: #c0392b; }
         .vanish { transform: scale(0.9); opacity: 0; pointer-events: none; }
         .empty-state { grid-column: 1 / -1; text-align: center; padding: 60px; color: #444; }
         .empty-icon { font-size: 4rem; margin-bottom: 20px; opacity: 0.2; }
@@ -118,6 +129,7 @@
 
     <div id="start-overlay">
         <img src="kitchen-icon.jpg" class="overlay-logo" alt="Cloud Club Logo">
+        
         <h1 style="color:white; font-size: 2rem; margin:0;">KITCHEN DISPLAY</h1>
         <p style="color:#aaa; max-width: 400px; margin-bottom: 30px;">
             Tap the button below to enable sound notifications.
@@ -145,37 +157,11 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyXl0eoAoUyn3GgxrDpoE4glfpLNKVKAZ3yNSH8wVw5-vSLSjqpaehqWgmRIlrm_Bgngg/exec";
-    // *** FINAL STATUS API URL INJECTED ***
-    const STATUS_API_URL = "https://script.google.com/macros/s/AKfycbzUGOiD9ryglAM-uFDeOjqRUzcYzSGDsYZiYGNQipf0eIJY7uKrtGsx8fL3VyvTPp9YoQ/exec";
-    
     let knownOrderIDs = []; 
     let firstLoad = true;
     let isKDSActive = false;
 
-    // --- CENTRAL STATUS UPDATER (Called by buttons) ---
-    async function updateCentralStatus(orderId, newStatus) {
-        if (!confirm(`Confirm order ${orderId} status change to: ${newStatus}?`)) return;
-
-        const formData = new FormData();
-        formData.append('orderId', orderId);
-        formData.append('newStatus', newStatus);
-
-        try {
-            const response = await fetch(STATUS_API_URL, { 
-                method: 'POST', 
-                body: formData, 
-                mode: 'no-cors' 
-            });
-            // Clear local state immediately for instant feedback
-            localStorage.setItem(`status_${orderId}`, 'cleared'); 
-            fetchOrders(); 
-
-        } catch (e) {
-            alert("Error updating status. Check API link or network.");
-            console.error("Status Update Failed:", e);
-        }
-    }
-
+    // --- TEST SOUND BUTTON ---
     function testAudio() {
         const audio = document.getElementById('alert-sound');
         audio.currentTime = 0;
@@ -264,13 +250,8 @@
         let activeCount = 0;
 
         orders.forEach(order => {
-            // --- CENTRAL FILTER: HIDE IF DELIVERED ---
-            if (order.Status && order.Status.toLowerCase().includes('delivered')) return;
-
             const statusKey = `status_${order.OrderID}`; 
             const currentStatus = localStorage.getItem(statusKey) || 'new';
-            
-            // --- LOCAL FILTER: Only hide if CHEF locally cleared it ---
             if (currentStatus === 'cleared') return; 
             activeCount++;
             
@@ -311,15 +292,9 @@
             }
 
             let btnHtml = '';
-            if (currentStatus === 'new') {
-                btnHtml = `<button class="action-btn btn-start" onclick="updateStatus('${order.OrderID}', 'preparing')"><i class="fas fa-fire"></i> Start Preparing</button>`;
-            } else if (currentStatus === 'preparing') {
-                btnHtml = `<button class="action-btn btn-preparing" onclick="updateStatus('${order.OrderID}', 'ready')"><i class="fas fa-check"></i> Mark Ready</button>`;
-            } else if (currentStatus === 'ready') {
-                // KDS FINAL BUTTON: Calls central API
-                btnHtml = `<button class="action-btn btn-delivered" onclick="updateCentralStatus('${order.OrderID}', 'Delivered')">MARK DELIVERED (Final)</button>`;
-            }
-
+            if (currentStatus === 'new') btnHtml = `<button class="action-btn btn-start" onclick="updateStatus('${order.OrderID}', 'preparing')"><i class="fas fa-fire"></i> Start Preparing</button>`;
+            else if (currentStatus === 'preparing') btnHtml = `<button class="action-btn btn-preparing" onclick="updateStatus('${order.OrderID}', 'ready')"><i class="fas fa-check"></i> Mark Ready</button>`;
+            else if (currentStatus === 'ready') btnHtml = `<button class="action-btn btn-ready" onclick="updateStatus('${order.OrderID}', 'cleared')"><i class="fas fa-times"></i> Clear Ticket</button>`;
 
             const card = document.createElement('div'); card.className = `ticket-card ${timeClass}`; card.id = `card-${order.OrderID}`;
             const timeStr = orderDate.toLocaleTimeString('en-IN', { hour: 'numeric', minute:'2-digit', hour12:true });
@@ -341,9 +316,7 @@
         if (activeCount === 0) container.innerHTML = `<div class="empty-state"><i class="fas fa-check-circle empty-icon"></i><p>All active orders cleared!</p></div>`;
     }
     
-    // --- LOCAL STATUS UPDATER (Only for chef workflow stages) ---
-    function updateStatus(id, newStatus) { 
-        localStorage.setItem(`status_${id}`, newStatus); 
-        fetchOrders(); // Refresh immediately
-    }
+    function updateStatus(id, newStatus) { localStorage.setItem(`status_${id}`, newStatus); if (newStatus === 'cleared') { const card = document.getElementById(`card-${id}`); if(card) { card.classList.add('vanish'); setTimeout(() => card.remove(), 300); } } else { fetchOrders(); } }
 </script>
+</body>
+</html>
