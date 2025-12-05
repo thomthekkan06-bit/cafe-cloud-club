@@ -1043,26 +1043,6 @@ function finalizeOrder() {
     
     const encodedMsg = encodeURIComponent(msg);
     const finalUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
-
-    // 5. Send Data to Google Sheets
-    // *** NEW AUTHORIZED URL ***
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbwBLcGdLK5Fuh8H_T1hCvOPzXJiIskJwaS8x6FvA2kC_5jdmcLg-jg3HlFHH_VALmeqHA/exec'; 
-    
-    const formData = new FormData();
-    formData.append('Date', timeString);
-    formData.append('OrderID', orderId);
-    formData.append('CustomerName', name);
-    formData.append('Phone', phone);
-    formData.append('Items', sheetItemsString); 
-    formData.append('Total', grandTotal);
-    formData.append('Type', type);
-    formData.append('Address', address || "Pickup");
-    formData.append('Note', finalNote); 
-
-    fetch(scriptURL, { method: 'POST', body: formData, mode: 'no-cors' })
-        .then(() => console.log('Order sent'))
-        .catch(err => console.error('Error', err));
-
     // 6. Cleanup
     if (Object.keys(cart).length > 0) {
         localStorage.setItem('ccc_last_order', JSON.stringify(cart));
