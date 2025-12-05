@@ -981,10 +981,10 @@ function finalizeOrder() {
     const now = new Date();
     const timeString = now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
 
-    // 3. Calculate Totals & Build Strings
+// 3. Calculate Totals & Build Strings
     let subTotal = 0;
-    let packingTotal = 0; 
-
+    let packingTotal = 0;
+    let sheetItemsString = ""; // <--- ADD THIS LINE HERE
     const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
     
     for(let key in cart) {
