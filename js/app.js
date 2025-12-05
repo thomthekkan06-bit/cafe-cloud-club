@@ -983,8 +983,7 @@ function finalizeOrder() {
 
     // 3. Calculate Totals & Build Strings
     let subTotal = 0;
-    let packingTotal = 0;
-    let sheetItemsString = ""; 
+    let packingTotal = 0; 
 
     const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
     
