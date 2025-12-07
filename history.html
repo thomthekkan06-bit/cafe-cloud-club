@@ -26,18 +26,8 @@
 
         /* STICKY HEADER */
         .header { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            margin-bottom: 30px; 
-            border-bottom: 1px solid var(--border); 
-            padding-bottom: 20px;
-            /* Sticky Props */
-            position: sticky;
-            top: 0;
-            background: var(--bg);
-            z-index: 100;
-            padding-top: 10px;
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px;
+            position: sticky; top: 0; background: var(--bg); z-index: 100; padding-top: 10px;
         }
         
         .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 40px; }
@@ -54,6 +44,21 @@
         .del { background: rgba(52, 152, 219, 0.2); color: #3498db; }
         .pick { background: rgba(243, 156, 18, 0.2); color: #f39c12; }
         .money { color: var(--accent-green); font-weight: bold; }
+
+        /* DELETE BUTTON STYLE */
+        .btn-trash {
+            background: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-trash:hover {
+            background: #e74c3c;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -92,17 +97,18 @@
                     <th>Customer</th>
                     <th>Items</th>
                     <th>Total</th>
-                </tr>
+                    <th>Action</th> </tr>
             </thead>
             <tbody id="table-body">
-                <tr><td colspan="6" style="text-align:center; padding:30px; color:#555;">Loading records...</td></tr>
+                <tr><td colspan="7" style="text-align:center; padding:30px; color:#555;">Loading records...</td></tr>
             </tbody>
         </table>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        /* ADDED 'remove' to imports below */
+        import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
@@ -117,8 +123,8 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // PIN LOGIC - UPDATED
-        const KITCHEN_PIN = "2024"; 
+        // PIN LOGIC
+        const KITCHEN_PIN = "2024";
         
         document.getElementById('unlock-btn').addEventListener('click', () => {
             if(document.getElementById('pin-input').value === KITCHEN_PIN) {
@@ -129,6 +135,21 @@
             }
         });
 
+        // Make delete function global so HTML onclick can see it
+        window.deleteHistoryItem = function(key) {
+            const password = prompt("⚠ DELETE CONFIRMATION ⚠\nEnter Admin Password to permanently delete this record:");
+            
+            if (password === "2021") {
+                if(confirm("Are you sure? This cannot be undone.")) {
+                    remove(ref(db, 'history/' + key))
+                        .then(() => alert("Record deleted."))
+                        .catch(err => alert("Error: " + err));
+                }
+            } else if (password !== null) {
+                alert("❌ WRONG PASSWORD. Access Denied.");
+            }
+        }
+
         function loadHistory() {
             onValue(ref(db, 'history'), (snapshot) => {
                 const data = snapshot.val();
@@ -136,15 +157,20 @@
                 tbody.innerHTML = "";
                 
                 if (!data) {
-                    tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; padding:30px;'>No history found.</td></tr>";
+                    tbody.innerHTML = "<tr><td colspan='7' style='text-align:center; padding:30px;'>No history found.</td></tr>";
+                    document.getElementById('total-revenue').innerText = "₹0";
+                    document.getElementById('total-orders').innerText = "0";
                     return;
                 }
 
                 let totalRev = 0;
                 let count = 0;
-                const orders = Object.values(data).sort((a,b) => b.completedAt - a.completedAt);
+                
+                // Converted to entries to get the KEY (needed for deletion)
+                // sort based on order contents (index 1)
+                const orders = Object.entries(data).sort((a,b) => b[1].completedAt - a[1].completedAt);
 
-                orders.forEach(order => {
+                orders.forEach(([key, order]) => {
                     count++;
                     const grandTotal = order.financials ? order.financials.grandTotal : 0;
                     totalRev += grandTotal;
@@ -170,6 +196,11 @@
                             </td>
                             <td style="max-width:300px; color:#ccc;">${itemsSummary}</td>
                             <td class="mono money">₹${grandTotal}</td>
+                            <td>
+                                <button class="btn-trash" onclick="deleteHistoryItem('${key}')">
+                                    🗑️
+                                </button>
+                            </td>
                         </tr>
                     `;
                     tbody.innerHTML += row;
