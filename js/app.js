@@ -1002,29 +1002,52 @@ window.finalizeOrder = function() {
     const now = new Date();
     const timeString = now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
 
-    // 3. Calculate Totals & Build Strings
+    // 3. Calculate Totals
     let subTotal = 0;
     let packingTotal = 0;
     const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
     
-    // Create Summary String for Kitchen Dashboard
-    let kitchenItemsSummary = [];
-
+    // 4. Prepare Items List (NEW ENHANCED LOGIC)
+    const richItems = [];
     for(let key in cart) {
         let item = cart[key];
+        
+        // Calculate Line Totals for internal use
         let lineTotal = item.price * item.qty; 
         subTotal += lineTotal;
         
+        // Packing Calc
         let chargePerItem = 10;
         if (item.category === 'ADD-ON') chargePerItem = key.startsWith("Hummus") ? 7 : 5;
         else if (fiveRsCats.includes(item.category)) chargePerItem = 5;
         packingTotal += (chargePerItem * item.qty);
         if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
-        
-        // Add to kitchen summary
-        kitchenItemsSummary.push(`${item.qty}x ${key}`);
+
+        // Check for Active Offer on this specific item
+        let isOfferItem = false;
+        if (activeCoupon) {
+            if (activeCoupon === 'MONBURGER' && (item.category === 'Bun-Tastic Burgers' || key.includes('Fries'))) isOfferItem = true;
+            else if (activeCoupon === 'TUEPASTA' && item.category === 'Italian Indulgence') isOfferItem = true;
+            else if (activeCoupon === 'WEDSTEAK' && item.category === "Butcher's Best") isOfferItem = true;
+            else if (activeCoupon === 'WEDSHAKE' && item.category === "Whipped Wonders") isOfferItem = true;
+            else if (activeCoupon === 'THUSAND' && (item.category === 'Toasty Treats' || item.category === 'Icy Sips')) isOfferItem = true;
+            else if (activeCoupon === 'FRIFRIES' && key.includes('Fries')) isOfferItem = true;
+            else if (activeCoupon === 'SATROLL' && item.category === 'Freshly Folded') isOfferItem = true;
+            else if (activeCoupon.includes('COMBO') || activeCoupon === 'SUNFEAST' || activeCoupon === 'CLOUD15') isOfferItem = true;
+        }
+
+        // PUSH DATA WITH TYPE AND OFFER STATUS
+        richItems.push({
+            name: key, 
+            qty: item.qty,
+            category: item.category,
+            price: item.price,
+            type: item.type, // <--- THIS WAS MISSING
+            isOffer: isOfferItem // <--- THIS WAS MISSING
+        });
     }
     
+    // Discount Calculation
     let discountVal = 0;
     let couponName = "";
     if(activeCoupon) { 
@@ -1044,62 +1067,34 @@ window.finalizeOrder = function() {
     }
     if (finalNote === "") finalNote = "-";
 
-// --- FIREBASE INJECTION START (UPDATED) ---
-    
-    // 1. Prepare Items List (Keep rich details)
-    const richItems = [];
-    for(let key in cart) {
-        let item = cart[key];
-        richItems.push({
-            name: key, // This already includes "[Extra Cheese]" or "(Note: Spicy)" from addToCart logic
-            qty: item.qty,
-            category: item.category,
-            price: item.price
-        });
-    }
-
-    // 2. Prepare Data Packet
+    // 5. Send to Firebase
     const kitchenOrderData = {
         orderId: orderId,
-        orderType: type, // "Delivery" or "Pickup"
+        orderType: type,
         timestamp: Date.now(),
         status: 'pending',
-        
-        // Customer Details
         customer: {
             name: name,
             phone: phone,
             address: address || "Pickup / Dine-in",
             email: email
         },
-
-        // The Food
-        items: richItems,
-
-        // The Money & Offers
+        items: richItems, // Now contains Veg/Non-Veg data
         financials: {
             subTotal: subTotal,
-            discountVal: discountVal, // Reduced Amount
-            couponCode: activeCoupon || "NONE", // Offer Code
+            discountVal: discountVal,
+            couponCode: activeCoupon || "NONE",
             packingTotal: packingTotal,
             grandTotal: grandTotal
         },
-
-        // Special Instructions
         globalNote: finalNote
     };
 
     push(ref(db, 'orders'), kitchenOrderData)
-        .then(() => {
-            console.log("Full Order Data sent to Kitchen");
-        })
-        .catch((error) => {
-            console.error("Firebase Error:", error);
-        });
-    // --- FIREBASE INJECTION END ---
+        .then(() => { console.log("Sent to Kitchen"); })
+        .catch((error) => { console.error("Firebase Error:", error); });
 
-
-    // 4. Build WhatsApp Message
+    // 6. Build WhatsApp Message & Redirect (Same as before)
     let msg = `*New Order @ Café Cloud Club*\n`;
     msg += `*Type:* ${type.toUpperCase()}\n*Time:* ${timeString}\n*Order ID:* ${orderId}\n---------------------------\n`;
     msg += `*Name:* ${name}\n*Phone:* ${phone}\n*Email:* ${email}\n*Time:* ${time}\n`;
@@ -1120,7 +1115,6 @@ window.finalizeOrder = function() {
     const encodedMsg = encodeURIComponent(msg);
     const finalUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
 
-    // 6. Cleanup
     if (Object.keys(cart).length > 0) {
         localStorage.setItem('ccc_last_order', JSON.stringify(cart));
         lastOrder = cart;
