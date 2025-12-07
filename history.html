@@ -102,8 +102,9 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // PIN LOGIC
-        const KITCHEN_PIN = "2021"; 
+        // PIN LOGIC - UPDATED
+        const KITCHEN_PIN = "2024"; 
+        
         document.getElementById('unlock-btn').addEventListener('click', () => {
             if(document.getElementById('pin-input').value === KITCHEN_PIN) {
                 document.getElementById('pin-overlay').style.display = 'none';
