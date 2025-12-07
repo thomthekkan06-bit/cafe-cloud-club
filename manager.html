@@ -195,13 +195,34 @@
         </div>
     </div>
 
-    <div class="header-bar">
+<div class="header-bar">
         <div class="status-indicator" id="conn-wrapper">
             <span class="status-dot"></span>
             <span id="conn-text">Connecting...</span>
         </div>
-        <h1>🔥 Kitchen Manager</h1>
-        <div class="live-clock" id="clock-display">00:00:00 PM</div>
+        
+        <h1 style="text-align:center; flex:1;">🔥 Kitchen Manager</h1>
+
+        <div style="display:flex; align-items:center; gap:15px;">
+            <div class="live-clock" id="clock-display">00:00:00 PM</div>
+            <a href="history.html" style="text-decoration:none;">
+                <button style="
+                    background: #333; 
+                    color: #fff; 
+                    border: 1px solid #555; 
+                    padding: 8px 15px; 
+                    border-radius: 6px; 
+                    cursor: pointer; 
+                    font-weight: 600;
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                    transition: all 0.2s;
+                " onmouseover="this.style.background='#444'" onmouseout="this.style.background='#333'">
+                    📜 History
+                </button>
+            </a>
+        </div>
     </div>
 
     <div id="orders-grid">
