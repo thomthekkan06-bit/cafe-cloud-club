@@ -322,7 +322,12 @@
     <div id="orders-grid">
         <p class="empty-state-msg">Waiting for orders...</p>
     </div>
-
+<div class="header-bar" style="margin-top: 40px; background: #1a1a1a;">
+    <h2 style="margin:0; font-size:1.2rem;">🚫 Stock Control</h2>
+</div>
+<div id="stock-grid" class="stock-grid">
+    <p style="color:#666; padding:20px;">Loading menu...</p>
+</div>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue, update, remove, get, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
