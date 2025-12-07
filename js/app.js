@@ -1,3 +1,22 @@
+/* --- FIREBASE CONFIGURATION (The New Engine) --- */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
+    authDomain: "cafe-orders-1afa1.firebaseapp.com",
+    databaseURL: "https://cafe-orders-1afa1-default-rtdb.firebaseio.com",
+    projectId: "cafe-orders-1afa1",
+    storageBucket: "cafe-orders-1afa1.firebasestorage.app",
+    messagingSenderId: "274410745480",
+    appId: "1:274410745480:web:9964c3914d512aed8d793d"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+
 /* --- PRELOADER SCRIPT --- */
 document.addEventListener('DOMContentLoaded', () => {
     const foodQuotes = {
@@ -265,7 +284,8 @@ function loadCart() {
     }
 }
 
-function toggleFavorite(itemName) {
+// Make functions accessible globally since we are in module mode
+window.toggleFavorite = function(itemName) {
     const index = favorites.indexOf(itemName);
     if (index === -1) {
         favorites.push(itemName);
@@ -282,7 +302,7 @@ function toggleFavorite(itemName) {
     }
 }
 
-function repeatLastOrder() {
+window.repeatLastOrder = function() {
     if (!lastOrder || Object.keys(lastOrder).length === 0) {
         alert("No previous order found on this device!");
         return;
@@ -304,7 +324,7 @@ let currentType = 'all';
 let currentIngredient = 'all';
 let isUnder200 = false;
 
-function setCategoryFilter(cat, btn) {
+window.setCategoryFilter = function(cat, btn) {
     document.querySelectorAll('.filter-item').forEach(b => b.classList.remove('active'));
     if(btn) btn.classList.add('active');
     currentCategory = cat;
@@ -314,34 +334,34 @@ function setCategoryFilter(cat, btn) {
     }
 }
 
-function updateSearch() {
+window.updateSearch = function() {
     currentSearch = document.getElementById('search-input').value;
     renderMenu();
 }
 
-function setSort(val) {
+window.setSort = function(val) {
     currentSort = val;
     renderMenu();
 }
 
-function setType(val) {
+window.setType = function(val) {
     currentType = val;
     renderMenu();
 }
 
-function setIngredient(val) {
+window.setIngredient = function(val) {
     currentIngredient = val;
     renderMenu();
 }
 
-function toggleUnder200(btn) {
+window.toggleUnder200 = function(btn) {
     isUnder200 = !isUnder200;
     if(isUnder200) btn.classList.add('active');
     else btn.classList.remove('active');
     renderMenu();
 }
 
-function copyCode(code) {
+window.copyCode = function(code) {
     const couponInput = document.getElementById('coupon-input');
     const couponBtn = document.getElementById('coupon-apply-btn');
     couponInput.value = code;
@@ -355,9 +375,8 @@ function copyCode(code) {
     setTimeout(() => couponInput.style.borderColor = "#ddd", 500);
 }
 
-function toggleOffersPage() {
+window.toggleOffersPage = function() {
     const offersView = document.getElementById('offers-view');
-    const mainDash = document.getElementById('main-dashboard');
     if (offersView.classList.contains('active')) {
         offersView.classList.remove('active');
     } else {
@@ -383,7 +402,7 @@ function renderMenu() {
             const ingLower = currentIngredient.toLowerCase();
             if(ingLower === 'paneer') {
                  if(!nameLower.includes('paneer')) return false;
-            } else {
+             } else {
                 if(!nameLower.includes(ingLower)) return false;
             }
         }
@@ -410,7 +429,7 @@ function renderMenu() {
         const isFav = favorites.includes(item.name);
         const favClass = isFav ? 'active' : '';
         const uniqueId = item.name.replace(/[^a-zA-Z0-9]/g, '-');
-        const emojiStr = item.type === 'veg' ? vegIcon : nonVegIcon;
+         const emojiStr = item.type === 'veg' ? vegIcon : nonVegIcon;
         
         card.innerHTML = `
             <div style="position:relative;"> 
@@ -423,13 +442,13 @@ function renderMenu() {
                 <div class="food-title">
                      <span class="type-emoji">${emojiStr}</span>
                      ${item.name}
-                </div>
+                 </div>
                 <div class="food-meta">${item.category}</div>
             </div>
             <div class="price-row">
                 <div class="price">${rupeeSign}${item.price}</div>
                 <button class="add-btn-mini" aria-label="Add ${item.name} to cart" onclick="openOptionModal(${originalIndex})">
-                    ADD <i class="fas fa-plus" aria-hidden="true"></i>
+                     ADD <i class="fas fa-plus" aria-hidden="true"></i>
                 </button>
             </div>
         `;
@@ -438,7 +457,7 @@ function renderMenu() {
 }
 
 let tempSelectedItemIndex = null;
-function openOptionModal(index) {
+window.openOptionModal = function(index) {
     const item = menuData[index];
     if (typeof gtag === 'function') {
         gtag('event', 'view_item', {
@@ -465,7 +484,7 @@ function openOptionModal(index) {
             "Cloud Special Chicken Burger",
             "Egg Burger",
             "Pesto Chicken Burger",
-            "Tandoori Burger Chicken",
+             "Tandoori Burger Chicken",
             "Tandoori Special Chicken Burger",
             "Tropical Beef Burger",
             "Tropical Pesto Chicken Burger",
@@ -545,7 +564,7 @@ function openOptionModal(index) {
     updateModalTotal();
 }
 
-function updateModalTotal() {
+window.updateModalTotal = function() {
     if (tempSelectedItemIndex === null) return;
     const item = menuData[tempSelectedItemIndex];
     let currentTotal = item.price;
@@ -557,7 +576,7 @@ function updateModalTotal() {
     document.getElementById('modal-live-total').innerText = `${rupeeSign}${currentTotal}`;
 }
 
-function addToCartFromModal() {
+window.addToCartFromModal = function() {
     if (tempSelectedItemIndex === null) return;
     const item = menuData[tempSelectedItemIndex];
     const checkboxes = document.querySelectorAll('.modal-opt-checkbox:checked');
@@ -577,7 +596,7 @@ function addToCartFromModal() {
     closeCustomizationModal();
 }
 
-function closeCustomizationModal() {
+window.closeCustomizationModal = function() {
     document.getElementById('customization-modal').style.display = 'none';
     tempSelectedItemIndex = null;
 }
@@ -615,7 +634,7 @@ function addToCart(name, finalPrice, basePrice, type, category) {
     checkUpsell(category);
 }
 
-function updateQty(name, change) {
+window.updateQty = function(name, change) {
     if (cart[name]) {
         cart[name].qty += change;
         if (cart[name].qty <= 0) {
@@ -684,7 +703,7 @@ function isSundayPasta(name) {
     return false;
 }
 
-function applyCoupon() {
+window.applyCoupon = function() {
     const codeInput = document.getElementById('coupon-input');
     const msgBox = document.getElementById('coupon-msg');
     const code = codeInput.value.trim().toUpperCase();
@@ -753,7 +772,7 @@ function applyCoupon() {
         for(let key in cart) {
             if(cart[key].category === "Whipped Wonders" && !key.toLowerCase().includes("vanilla")) { 
                 hasShake = true;
-                break; 
+            break; 
             }
         }
 
@@ -909,15 +928,15 @@ function applyCoupon() {
 
     if(activeCoupon && (activeCoupon.includes('CLOUD') || activeCoupon.includes('STEAK') || activeCoupon.includes('QUICK') || activeCoupon.includes('FEAST'))) {
          renderCart();
-         return;
+        return;
     }
     
     msgBox.innerText = "Invalid Coupon Code";
     msgBox.className = "coupon-msg error";
 }
 
-function toggleCartPage() { document.getElementById('cart-sidebar').classList.toggle('active'); }
-function openCheckoutModal() { 
+window.toggleCartPage = function() { document.getElementById('cart-sidebar').classList.toggle('active'); }
+window.openCheckoutModal = function() { 
     document.getElementById('checkout-modal').style.display = 'flex'; 
     toggleOrderFields();
     const checkbox = document.getElementById('tnc-confirm');
@@ -929,20 +948,22 @@ function openCheckoutModal() {
         btn.style.cursor = "not-allowed";
     }
 }
-function closeCheckoutModal() { document.getElementById('checkout-modal').style.display = 'none'; }
+window.closeCheckoutModal = function() { document.getElementById('checkout-modal').style.display = 'none';
+}
 
-function toggleOrderFields() {
+window.toggleOrderFields = function() {
     const type = document.querySelector('input[name="orderType"]:checked').value;
     const addrGroup = document.getElementById('address-group');
     const timeLabel = document.getElementById('time-label');
-    if(type === 'Pickup') { addrGroup.style.display = 'none'; timeLabel.innerText = "Preferred Pickup Time"; } 
-    else { addrGroup.style.display = 'block'; timeLabel.innerText = "Preferred Delivery Time"; }
+    if(type === 'Pickup') { addrGroup.style.display = 'none'; timeLabel.innerText = "Preferred Pickup Time";
+    } 
+    else { addrGroup.style.display = 'block'; timeLabel.innerText = "Preferred Delivery Time";
+    }
 }
 
 function checkStoreStatus(orderType) {
     const now = new Date();
     const hour = now.getHours();
-    
     // Delivery: 2 PM (14:00) to 3 AM (03:00)
     if (orderType === 'Delivery') {
         if (hour >= 14 || hour < 3) return { isOpen: true };
@@ -958,7 +979,7 @@ function checkStoreStatus(orderType) {
     return { isOpen: true };
 }
 
-function finalizeOrder() {
+window.finalizeOrder = function() {
     // 1. Basic Validation
     const type = document.querySelector('input[name="orderType"]:checked').value;
     const status = checkStoreStatus(type);
@@ -981,12 +1002,14 @@ function finalizeOrder() {
     const now = new Date();
     const timeString = now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
 
-// 3. Calculate Totals & Build Strings
+    // 3. Calculate Totals & Build Strings
     let subTotal = 0;
     let packingTotal = 0;
-    let sheetItemsString = ""; // <--- ADD THIS LINE HERE
     const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
     
+    // Create Summary String for Kitchen Dashboard
+    let kitchenItemsSummary = [];
+
     for(let key in cart) {
         let item = cart[key];
         let lineTotal = item.price * item.qty; 
@@ -995,14 +1018,14 @@ function finalizeOrder() {
         let chargePerItem = 10;
         if (item.category === 'ADD-ON') chargePerItem = key.startsWith("Hummus") ? 7 : 5;
         else if (fiveRsCats.includes(item.category)) chargePerItem = 5;
-        
         packingTotal += (chargePerItem * item.qty);
         if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
-
-        sheetItemsString += `${key} (${item.qty}) | ${lineTotal}, `;
+        
+        // Add to kitchen summary
+        kitchenItemsSummary.push(`${item.qty}x ${key}`);
     }
     
-    let discountVal = 0; 
+    let discountVal = 0;
     let couponName = "";
     if(activeCoupon) { 
         couponName = activeCoupon;
@@ -1021,6 +1044,31 @@ function finalizeOrder() {
     }
     if (finalNote === "") finalNote = "-";
 
+    // --- FIREBASE INJECTION START ---
+    // Send data to the Kitchen Dashboard
+    const kitchenOrderData = {
+        table: `${type} #${orderId}`, // Display Order ID as Table for Kitchen
+        item: kitchenItemsSummary.join(', '), // List all items as a string
+        price: grandTotal,
+        status: 'pending',
+        timestamp: Date.now(),
+        customerName: name,
+        phone: phone,
+        address: address,
+        note: finalNote
+    };
+
+    push(ref(db, 'orders'), kitchenOrderData)
+        .then(() => {
+            console.log("Order sent to Kitchen Dashboard");
+        })
+        .catch((error) => {
+            console.error("Firebase Error:", error);
+            // We do NOT block the user if Firebase fails, whatsapp is backup
+        });
+    // --- FIREBASE INJECTION END ---
+
+
     // 4. Build WhatsApp Message
     let msg = `*New Order @ Café Cloud Club*\n`;
     msg += `*Type:* ${type.toUpperCase()}\n*Time:* ${timeString}\n*Order ID:* ${orderId}\n---------------------------\n`;
@@ -1028,7 +1076,6 @@ function finalizeOrder() {
     if(type === 'Delivery') msg += `*Address:* ${address}\n`;
     if(finalNote !== "-") msg += `*Note:* ${finalNote}\n`;
     msg += `---------------------------\n*ITEMS:*\n`;
-    
     for(let key in cart) {
         let item = cart[key];
         let lineTotal = item.price * item.qty;
@@ -1042,6 +1089,7 @@ function finalizeOrder() {
     
     const encodedMsg = encodeURIComponent(msg);
     const finalUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
+
     // 6. Cleanup
     if (Object.keys(cart).length > 0) {
         localStorage.setItem('ccc_last_order', JSON.stringify(cart));
@@ -1068,7 +1116,9 @@ document.addEventListener('DOMContentLoaded', () => {
     renderMenu();
     const cInput = document.getElementById('coupon-input');
     const cBtn = document.getElementById('coupon-apply-btn');
-    cInput.addEventListener('input', function() { cBtn.disabled = this.value.trim().length === 0; });
+    if(cInput && cBtn) {
+        cInput.addEventListener('input', function() { cBtn.disabled = this.value.trim().length === 0; });
+    }
     
     const dayIndex = new Date().getDay();
     const dailyOfferTexts = [
@@ -1087,23 +1137,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function returnToMenu() {
+window.returnToMenu = function() {
     document.getElementById('success-view').style.display = 'none';
     document.getElementById('main-dashboard').style.display = ''; 
 }
 
-/* --- DYNAMIC UPSELL LOGIC (Burger->Fries, Pasta->Bread, Steak->Mojito) --- */
-let currentUpsellItem = null; // Stores the active offer
+/* --- DYNAMIC UPSELL LOGIC --- */
+let currentUpsellItem = null;
 
-function checkUpsell(category) {
+window.checkUpsell = function(category) {
     const modal = document.getElementById('upsell-modal');
     const title = modal.querySelector('h3');
     const desc = modal.querySelector('p');
+    
     const yesBtn = modal.querySelector('button[onclick="acceptUpsell()"]');
     
     // 1. BURGER -> FRIES
     if (category === "Bun-Tastic Burgers") {
-        if (Object.keys(cart).some(key => key.includes("French Fries"))) return; // Already has fries
+        if (Object.keys(cart).some(key => key.includes("French Fries"))) return; 
         
         currentUpsellItem = { 
             name: "French Fries - Salted", 
@@ -1120,7 +1171,6 @@ function checkUpsell(category) {
     // 2. PASTA -> GARLIC BREAD
     else if (category === "Italian Indulgence") {
         if (Object.keys(cart).some(key => key.includes("Garlic Bread"))) return;
-        
         currentUpsellItem = { 
             name: "Garlic Bread (4)", 
             price: 50, 
@@ -1136,7 +1186,6 @@ function checkUpsell(category) {
     // 3. STEAK -> MOJITO
     else if (category === "Butcher's Best") {
         if (Object.keys(cart).some(key => key.includes("Mojito"))) return;
-        
         currentUpsellItem = { 
             name: "Lemon Mojito", 
             price: 125, 
@@ -1150,12 +1199,12 @@ function checkUpsell(category) {
     }
 }
 
-function closeUpsell() {
+window.closeUpsell = function() {
     document.getElementById('upsell-modal').style.display = 'none';
     currentUpsellItem = null;
 }
 
-function acceptUpsell() {
+window.acceptUpsell = function() {
     if (!currentUpsellItem) return;
     addToCart(
         currentUpsellItem.name, 
@@ -1167,8 +1216,8 @@ function acceptUpsell() {
     closeUpsell();
 }
 
-/* --- GPU ACCELERATED FLYING ANIMATION (Fixes Lag) --- */
-function triggerFlyAnimation(category) {
+/* --- GPU ACCELERATED FLYING ANIMATION --- */
+window.triggerFlyAnimation = function(category) {
     const emojiMap = {
         "Bun-Tastic Burgers": "🍔", "Butcher's Best": "🥩", "Italian Indulgence": "🍝",
         "Freshly Folded": "🌯", "Rice Harmony": "🍚", "Salad Symphony": "🥗",
@@ -1188,7 +1237,6 @@ function triggerFlyAnimation(category) {
     const rect = cartBtn.getBoundingClientRect();
     const targetX = rect.left + (rect.width / 2);
     const targetY = rect.top + (rect.height / 2);
-
     const flyer = document.createElement('div');
     flyer.innerText = emoji;
     flyer.className = 'flying-food';
@@ -1202,7 +1250,6 @@ function triggerFlyAnimation(category) {
     
     flyer.style.transform = `translate(${lastClickX}px, ${lastClickY}px) scale(0.5)`;
     flyer.style.opacity = '1';
-    
     flyer.style.transition = 'transform 0.8s cubic-bezier(0.2, 1, 0.2, 1), opacity 0.8s ease-in';
     document.body.appendChild(flyer);
 
@@ -1216,7 +1263,6 @@ function triggerFlyAnimation(category) {
     }, 800);
 }
 
-/* 2. The Cart Rendering Engine */
 function renderCart() {
     const list = document.getElementById('cart-items-list');
     list.innerHTML = '';
@@ -1252,18 +1298,17 @@ function renderCart() {
                     <span class="cart-name">${key}</span>
                     <span class="cart-price">${rupeeSign}${item.price}</span>
                 </div>
-  
                 <div class="qty-wrapper">
                     <button class="qty-btn" onclick="updateQty('${key}', -1)">−</button>
                     <span>${item.qty}</span>
                     <button class="qty-btn" onclick="updateQty('${key}', 1)">+</button>
                 </div>
-   
             </div>
         `;
     }
 
     if(!hasItems) list.innerHTML = `<div style="text-align: center; color: #ccc; margin-top: 50px;">Cart is empty</div>`;
+
     // --- DISCOUNT CALCULATIONS ---
     let discountVal = 0;
     let discountText = "";
@@ -1329,7 +1374,7 @@ function renderCart() {
             const lowerName = key.toLowerCase();
 
             if(item.category === 'Italian Indulgence' && lowerName.includes('penne') && !pastaDiscountApplied) {
-                const isEligibleFlavor = lowerName.includes('alfredo') || 
+                const isEligibleFlavor = lowerName.includes('alfredo') ||
                                          lowerName.includes('pesto') || 
                                          lowerName.includes('arabiata') || 
                                          lowerName.includes('cloud special');
@@ -1360,7 +1405,7 @@ function renderCart() {
             let item = cart[key];
             if(item.category === "Butcher's Best") {
                 steakItem = item;
-                break;
+            break;
             }
         }
 
@@ -1381,7 +1426,7 @@ function renderCart() {
             let item = cart[key];
             if(item.category === "Whipped Wonders" && !key.toLowerCase().includes("vanilla")) {
                 shakeItem = item;
-                break;
+            break;
             }
         }
 
@@ -1527,7 +1572,7 @@ function renderCart() {
     }
 }
 
-function toggleFinalButton() {
+window.toggleFinalButton = function() {
     const checkbox = document.getElementById('tnc-confirm');
     const btn = document.getElementById('final-submit-btn');
     if (checkbox && btn) {
