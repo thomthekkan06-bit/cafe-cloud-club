@@ -1214,3 +1214,62 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
 .cart-shake {
     animation: shakeCart 0.4s ease;
 }
+/* --- STOCK MANAGEMENT STYLES (Paste this at the bottom of css.txt) --- */
+
+/* 1. Customer Side: Grey out the item and add a stamp */
+.food-card.sold-out {
+    opacity: 0.6;
+    pointer-events: none; /* Stops customers from clicking/adding it */
+    filter: grayscale(100%); /* Makes it black & white */
+    position: relative;
+}
+
+.food-card.sold-out::after {
+    content: "SOLD OUT";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-10deg);
+    background: #c0392b; /* Red background */
+    color: white;
+    padding: 10px 20px;
+    font-weight: 800;
+    font-size: 1.2rem;
+    border: 2px solid white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    z-index: 10;
+}
+
+/* 2. Manager Side: The buttons you click to toggle stock */
+.stock-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.stock-btn {
+    padding: 10px;
+    text-align: center;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    border: 1px solid #444;
+    background: #222;
+    color: #fff;
+}
+
+/* Green style for In Stock */
+.stock-btn.in-stock {
+    border-color: #27ae60;
+    background: rgba(39, 174, 96, 0.2);
+    color: #2ecc71;
+}
+
+/* Red style for Sold Out */
+.stock-btn.sold-out {
+    border-color: #c0392b;
+    background: rgba(192, 57, 43, 0.2);
+    color: #e74c3c;
+}
