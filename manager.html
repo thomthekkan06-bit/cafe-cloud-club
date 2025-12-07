@@ -70,15 +70,11 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
-        h1 { margin: 0; font-size: 1.5rem; letter-spacing: -0.5px; flex: 1; text-align: center; }
-
         .live-clock {
             font-family: 'Roboto Mono', monospace;
             font-size: 1.2rem;
             font-weight: 700;
             color: var(--accent-yellow);
-            width: 150px;
-            text-align: right;
         }
 
         .status-indicator { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 0.9rem; width: 150px; }
@@ -128,7 +124,7 @@
             background: rgba(255,255,255,0.05);
             padding: 12px 15px;
             display: flex;
-            flex-direction: column; /* Stack rows */
+            flex-direction: column;
             gap: 10px;
             border-bottom: 1px solid var(--border);
         }
@@ -180,7 +176,7 @@
 
         .status-done { opacity: 0.6; filter: grayscale(0.8); }
         .status-done .btn-main { background: #333; color: #888; }
-        .status-done .btn-main::after { content: "Archive Order"; } /* Changed Text */
+        .status-done .btn-main::after { content: "Archive Order"; }
     </style>
 </head>
 <body>
@@ -195,7 +191,7 @@
         </div>
     </div>
 
-<div class="header-bar">
+    <div class="header-bar">
         <div class="status-indicator" id="conn-wrapper">
             <span class="status-dot"></span>
             <span id="conn-text">Connecting...</span>
@@ -231,7 +227,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        // ADDED: get and set imports for archiving
         import { getDatabase, ref, onValue, update, remove, get, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         // CONFIG
@@ -249,7 +244,7 @@
         const db = getDatabase(app);
 
         // --- SECURITY & AUDIO SETUP ---
-        const KITCHEN_PIN = "2024"; // CHANGE THIS IF YOU WANT
+        const KITCHEN_PIN = "2024"; // UPDATED PIN
         const bell = new Audio('bell.mp3');
         bell.loop = true; 
         let audioUnlocked = false;
