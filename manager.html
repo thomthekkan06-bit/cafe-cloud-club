@@ -574,6 +574,50 @@ if (!data) {
                 }
             }
         };
+    /* --- STOCK CONTROL LOGIC --- */
+    // Listen to the 'menu' node in Firebase
+    onValue(ref(db, 'menu'), (snapshot) => {
+        const stockGrid = document.getElementById('stock-grid');
+        const data = snapshot.val();
+        
+        // Safety check: if menu is empty
+        if(!data) {
+            stockGrid.innerHTML = "<p style='padding:20px; color:#aaa;'>No menu data found.</p>";
+            return;
+        }
+
+        stockGrid.innerHTML = "";
+        
+        // Loop through the menu items from Firebase
+        Object.keys(data).forEach(key => {
+            const item = data[key];
+            if(!item) return; // Skip null items
+
+            const btn = document.createElement('div');
+            // Check if it is currently sold out (default to false if undefined)
+            const isOut = item.isSoldOut === true;
+            
+            // Apply the CSS classes we added earlier
+            btn.className = `stock-btn ${isOut ? 'sold-out' : 'in-stock'}`;
+            
+            // Set the text content
+            btn.innerHTML = `
+                <strong>${item.name}</strong><br>
+                ${isOut ? "❌ SOLD OUT" : "✅ IN STOCK"}
+            `;
+            
+            // CLICK TO TOGGLE
+            btn.onclick = () => {
+                // This updates ONLY the 'isSoldOut' status in the database
+                // It leaves the price/name/category alone.
+                update(ref(db, 'menu/' + key), {
+                    isSoldOut: !isOut
+                });
+            };
+            
+            stockGrid.appendChild(btn);
+        });
+    });
     </script>
 </body>
 </html>
