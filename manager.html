@@ -237,6 +237,44 @@
 .font-bold { font-weight: bold; }
 .font-small { font-size: 0.75rem; }
 .ml-5 { margin-left: 5px; }
+        /* --- MOBILE LAYOUT FIXES (Fix 3) --- */
+@media (max-width: 600px) {
+    .header-bar {
+        flex-wrap: wrap; /* Allows items to drop to next line */
+        padding: 12px;
+        gap: 10px;
+    }
+
+    /* 1. Status Indicator stays top left */
+    .status-indicator {
+        order: 1;
+        font-size: 0.8rem;
+    }
+
+    /* 2. Clock & History Button go to top right */
+    .header-actions {
+        order: 2;
+        margin-left: auto; /* Pushes group to the right */
+        gap: 10px;
+    }
+
+    /* 3. Title drops to the bottom and shrinks */
+    .header-bar h1 {
+        order: 3;
+        width: 100%; /* Forces it to take a full new line */
+        font-size: 1.3rem;
+        margin-top: 5px;
+        padding-top: 10px;
+        border-top: 1px solid #333; /* Adds a separator line */
+    }
+
+    /* Resize the clock and button for mobile fingers */
+    .live-clock { font-size: 0.9rem; }
+    .btn-history { 
+        font-size: 0.8rem; 
+        padding: 6px 10px; 
+    }
+}
     </style>
 </head>
 <body>
