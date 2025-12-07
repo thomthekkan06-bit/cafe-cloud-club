@@ -6,11 +6,6 @@
     <title>Kitchen Manager | Cafe Cloud Club</title>
 
     <link rel="icon" type="image/png" href="icon.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
-    <link rel="manifest" href="manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link href="https://fonts.googleapis.com/css2?family=Inter..." rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
     <style>
         /* --- THEME & BASICS --- */
@@ -22,8 +17,8 @@
             --border: #333;
             --accent-green: #27ae60;
             --accent-red: #c0392b;
+            --accent-yellow: #f1c40f; 
             --accent-blue: #2980b9;
-            --accent-gold: #f1c40f;
         }
 
         body {
@@ -34,7 +29,7 @@
             padding: 20px;
         }
 
-        /* --- NEW HEADER BAR --- */
+        /* --- HEADER --- */
         .header-bar {
             display: flex;
             justify-content: space-between;
@@ -49,62 +44,29 @@
 
         h1 { margin: 0; font-size: 1.5rem; letter-spacing: -0.5px; flex: 1; text-align: center; }
 
-        /* CLOCK STYLES */
         .live-clock {
             font-family: 'Roboto Mono', monospace;
             font-size: 1.2rem;
             font-weight: 700;
-            color: var(--accent-gold);
-            width: 150px; /* Fixed width to prevent jumping */
+            color: var(--accent-yellow);
+            width: 150px;
             text-align: right;
         }
 
-        /* CONNECTION STATUS STYLES */
-        .status-indicator {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            width: 150px;
-        }
-
-        .status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background-color: #555;
-            transition: all 0.3s ease;
-        }
-
-        /* Glowing Animations */
-        @keyframes pulseGreen {
-            0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
-        }
-
+        .status-indicator { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 0.9rem; width: 150px; }
+        .status-dot { width: 12px; height: 12px; border-radius: 50%; background-color: #555; transition: all 0.3s ease; }
         .status-online { color: #2ecc71; }
-        .status-online .status-dot {
-            background-color: #2ecc71;
-            animation: pulseGreen 2s infinite;
-        }
-
+        .status-online .status-dot { background-color: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
         .status-offline { color: #e74c3c; }
-        .status-offline .status-dot {
-            background-color: #e74c3c;
-            box-shadow: 0 0 10px #e74c3c; /* Static red glow */
-        }
+        .status-offline .status-dot { background-color: #e74c3c; }
 
-
-        /* --- GRID LAYOUT --- */
+        /* --- GRID & CARDS --- */
         #orders-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
             gap: 25px;
         }
 
-        /* --- THE RECEIPT CARD --- */
         .order-card {
             background: var(--card-bg);
             border: 1px solid var(--border);
@@ -115,11 +77,30 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
             position: relative;
             animation: slideUp 0.3s ease-out;
-            border-top: 5px solid var(--accent-red);
+            border-top: 6px solid #555; /* Default */
+            transition: border-color 0.5s ease, box-shadow 0.5s ease;
         }
 
+        /* --- COLOR CODING & ANIMATIONS --- */
+        /* < 15 Mins: Green */
+        .order-card.age-fresh { border-top-color: var(--accent-green); }
+        
+        /* 15 - 35 Mins: Yellow */
+        .order-card.age-warning { border-top-color: var(--accent-yellow); }
+        
+        /* > 35 Mins: Red Flashing */
+        .order-card.age-critical { 
+            border-top-color: var(--accent-red); 
+            animation: criticalPulse 1s infinite alternate;
+        }
+
+        @keyframes criticalPulse {
+            from { box-shadow: 0 0 10px rgba(192, 57, 43, 0.2); }
+            to { box-shadow: 0 0 25px rgba(192, 57, 43, 0.9); }
+        }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
+        /* --- CARD CONTENT --- */
         .card-header {
             background: rgba(255,255,255,0.05);
             padding: 15px;
@@ -129,26 +110,28 @@
             border-bottom: 1px solid var(--border);
         }
         .order-id { font-family: 'Roboto Mono', monospace; font-size: 1.1rem; font-weight: 800; color: #fff; }
-        .order-type-badge { 
-            padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; 
-        }
+        .order-type-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
         .type-delivery { background: rgba(52, 152, 219, 0.2); color: #3498db; border: 1px solid #3498db; }
         .type-pickup { background: rgba(243, 156, 18, 0.2); color: #f39c12; border: 1px solid #f39c12; }
-        .time-stamp { font-size: 0.8rem; color: var(--text-muted); margin-top: 5px; }
+        
+        .time-wrapper { text-align: right; }
+        .time-stamp { font-size: 0.8rem; color: var(--text-muted); display: block;}
+        .time-ago { font-size: 0.75rem; font-weight: 700; color: var(--text-main); display: block; margin-top: 2px;}
 
         .customer-section { padding: 15px; border-bottom: 1px dashed var(--border); font-size: 0.9rem; }
         .customer-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
         .c-icon { width: 15px; color: var(--text-muted); text-align: center; }
         .c-data { flex: 1; color: #fff; }
-        .c-address { color: var(--accent-gold); font-weight: 500; }
+        .c-address { color: var(--accent-yellow); font-weight: 500; }
         .c-phone a { color: var(--accent-blue); text-decoration: none; }
 
         .items-section { padding: 0; flex-grow: 1; }
-        .item-row { padding: 12px 15px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; }
+        .item-row { padding: 12px 15px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: flex-start; }
         .qty-box { background: #333; color: #fff; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-weight: 700; flex-shrink: 0; }
         .item-details { flex: 1; }
         .item-name { font-weight: 600; font-size: 1rem; color: #fff; line-height: 1.3; }
-        .item-mods { font-size: 0.85rem; color: var(--accent-gold); margin-top: 4px; font-style: italic; }
+        .item-mods { font-size: 0.85rem; color: var(--accent-yellow); margin-top: 4px; font-style: italic; display: block; }
+        .item-price { font-family: 'Roboto Mono', monospace; color: var(--text-muted); font-size: 0.9rem; font-weight: 600; align-self: center; }
 
         .finance-section { background: rgba(0,0,0,0.2); padding: 15px; font-size: 0.9rem; border-top: 2px solid var(--border); }
         .f-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
@@ -157,38 +140,52 @@
         .row-discount { color: var(--accent-red); }
         .row-total { font-size: 1.2rem; font-weight: 800; color: var(--accent-green); margin-top: 10px; padding-top: 10px; border-top: 1px dashed #444; }
 
-        .notes-section { padding: 10px 15px; background: rgba(192, 57, 43, 0.1); color: #ff6b6b; font-size: 0.85rem; border-top: 1px solid #444; display: none; }
+        .notes-section { padding: 10px 15px; background: rgba(192, 57, 43, 0.1); color: #ff6b6b; font-size: 0.85rem; border-top: 1px solid #444; }
 
         .actions-section { padding: 15px; }
         .btn-main { width: 100%; padding: 15px; border: none; border-radius: 6px; font-size: 1rem; font-weight: 800; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
         
-        .status-pending .btn-main { background: var(--accent-blue); color: white; content: "Start Cooking"; }
-        .status-pending .btn-main::after { content: "Start Cooking"; }
+        .status-pending .btn-main { background: var(--accent-blue); color: white; }
+        .status-pending .btn-main::after { content: "Start Cooking (Stop Sound)"; }
         
-        .status-cooking { border-top-color: var(--accent-gold); }
         .status-cooking .btn-main { background: var(--accent-green); color: white; }
         .status-cooking .btn-main::after { content: "Mark Ready"; }
 
-        .status-done { opacity: 0.6; border-top-color: var(--accent-green); filter: grayscale(0.8); }
+        .status-done { opacity: 0.6; filter: grayscale(0.8); }
         .status-done .btn-main { background: #333; color: #888; }
         .status-done .btn-main::after { content: "Clear Order"; }
+
+        /* Overlay to force audio interaction */
+        #audio-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        #audio-overlay h2 { color: white; margin-bottom: 20px; }
+        #enable-audio-btn {
+            padding: 15px 30px; font-size: 1.2rem; background: var(--accent-green);
+            color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;
+        }
     </style>
 </head>
 <body>
+
+    <div id="audio-overlay">
+        <h2>🔊 Kitchen Alert System</h2>
+        <button id="enable-audio-btn">Click to Enable Sound & Start</button>
+    </div>
 
     <div class="header-bar">
         <div class="status-indicator" id="conn-wrapper">
             <span class="status-dot"></span>
             <span id="conn-text">Connecting...</span>
         </div>
-        
         <h1>🔥 Kitchen Manager</h1>
-        
         <div class="live-clock" id="clock-display">00:00:00 PM</div>
     </div>
 
     <div id="orders-grid">
-        <p style="text-align: center; color: #666;">Waiting for orders...</p>
+        <p style="text-align: center; color: #666; grid-column: 1/-1;">Waiting for orders...</p>
     </div>
 
     <script type="module">
@@ -208,26 +205,66 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+
+        // --- AUDIO SETUP ---
+        const bell = new Audio('bell.mp3');
+        bell.loop = true; // Loop sound until stopped
         
-        // --- 1. CLOCK LOGIC ---
+        // Handle Audio Context Unlock
+        document.getElementById('enable-audio-btn').addEventListener('click', () => {
+            bell.play().then(() => {
+                bell.pause();
+                bell.currentTime = 0;
+                document.getElementById('audio-overlay').style.display = 'none';
+            }).catch(e => alert("Audio failed: " + e));
+        });
+
+        // --- CLOCK & TIMERS ---
         function updateClock() {
             const now = new Date();
             document.getElementById('clock-display').innerText = now.toLocaleTimeString('en-US', { 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                second: '2-digit',
-                hour12: true 
+                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true 
+            });
+            updateOrderAges(); // Update color coding
+        }
+
+        function updateOrderAges() {
+            const now = Date.now();
+            document.querySelectorAll('.order-card').forEach(card => {
+                const ts = parseInt(card.dataset.timestamp);
+                if (!ts) return;
+
+                const diffMins = Math.floor((now - ts) / 60000);
+                
+                // Update Text
+                const timeAgoSpan = card.querySelector('.time-ago');
+                if (timeAgoSpan) {
+                    if (diffMins < 1) timeAgoSpan.innerText = "Just now";
+                    else timeAgoSpan.innerText = `${diffMins} mins ago`;
+                }
+
+                // Update Colors (Only for active orders)
+                if (!card.classList.contains('status-done')) {
+                    card.classList.remove('age-fresh', 'age-warning', 'age-critical');
+                    
+                    if (diffMins > 35) {
+                        card.classList.add('age-critical'); // Red Flash
+                    } else if (diffMins > 15) {
+                        card.classList.add('age-warning'); // Yellow
+                    } else {
+                        card.classList.add('age-fresh'); // Green
+                    }
+                }
             });
         }
-        setInterval(updateClock, 1000);
-        updateClock(); // Run immediately
 
-        // --- 2. CONNECTION STATUS LOGIC ---
+        setInterval(updateClock, 1000); // Run every second
+
+        // --- CONNECTION STATUS ---
         const connectedRef = ref(db, ".info/connected");
         onValue(connectedRef, (snap) => {
             const wrapper = document.getElementById('conn-wrapper');
             const text = document.getElementById('conn-text');
-            
             if (snap.val() === true) {
                 wrapper.className = "status-indicator status-online";
                 text.innerText = "ONLINE";
@@ -237,35 +274,69 @@
             }
         });
 
-        // --- 3. ORDER RENDERING LOGIC ---
+        // --- ORDERS LOGIC ---
         const formatMoney = (amount) => "₹" + amount;
         const formatDate = (ts) => new Date(ts).toLocaleString('en-IN', { hour: '2-digit', minute:'2-digit', day:'2-digit', month:'short' });
+        
+        let previousOrderCount = 0;
+        let isFirstLoad = true;
 
         onValue(ref(db, 'orders'), (snapshot) => {
             const grid = document.getElementById('orders-grid');
-            grid.innerHTML = ""; 
-            
             const data = snapshot.val();
+            
+            grid.innerHTML = ""; 
+
             if (!data) {
                 grid.innerHTML = "<h3 style='grid-column:1/-1; text-align:center; color:#555;'>No Active Orders</h3>";
+                previousOrderCount = 0;
                 return;
             }
 
-            Object.entries(data).reverse().forEach(([key, order]) => {
+            const ordersArray = Object.entries(data).reverse();
+            const currentOrderCount = ordersArray.length;
+
+            // --- SOUND TRIGGER LOGIC ---
+            // If we have more orders than before, and it's not the very first page load
+            if (currentOrderCount > previousOrderCount && !isFirstLoad) {
+                // Check if the newest order is actually 'pending'
+                const newestOrder = ordersArray[0][1];
+                if (newestOrder.status === 'pending') {
+                    bell.play().catch(e => console.error("Sound blocked", e));
+                }
+            }
+            previousOrderCount = currentOrderCount;
+            isFirstLoad = false;
+
+            // --- RENDER CARDS ---
+            ordersArray.forEach(([key, order]) => {
                 const statusClass = `status-${order.status || 'pending'}`;
                 
+                // Item Rendering
                 let itemsHtml = '';
                 if(Array.isArray(order.items)) {
                     order.items.forEach(item => {
-                        let nameDisplay = item.name.replace(/\[(.*?)\]/g, '<br><span class="item-mods">Add: $1</span>')
-                                                   .replace(/\((Note:.*?)\)/g, '<br><span class="item-mods" style="color:#e74c3c">$1</span>');
+                        // Discount Mention
+                        let discountBadge = "";
+                        if (item.isOffer) {
+                            discountBadge = `<span style="color:var(--accent-green); font-weight:bold; font-size:0.75rem; margin-left:5px;">(OFFER APPLIED)</span>`;
+                        }
+
+                        // Formatting Modifiers
+                        let nameDisplay = item.name
+                            .replace(/\[(.*?)\]/g, '<br><span class="item-mods">Add: $1</span>')
+                            .replace(/\((Note:.*?)\)/g, '<br><span class="item-mods" style="color:#e74c3c">$1</span>');
                         
+                        // Price calculation per line
+                        const linePrice = item.price * item.qty;
+
                         itemsHtml += `
                             <div class="item-row">
                                 <div class="qty-box">${item.qty}</div>
                                 <div class="item-details">
-                                    <div class="item-name">${nameDisplay}</div>
+                                    <div class="item-name">${nameDisplay} ${discountBadge}</div>
                                 </div>
+                                <div class="item-price">${formatMoney(linePrice)}</div>
                             </div>
                         `;
                     });
@@ -273,24 +344,31 @@
                     itemsHtml = `<div class="item-row"><div class="item-details">${order.item || "Unknown Items"}</div></div>`;
                 }
 
+                // Financials & Extras
                 const fins = order.financials || { subTotal:0, packingTotal:0, discountVal:0, grandTotal:order.price };
                 const couponDisplay = fins.couponCode && fins.couponCode !== "NONE" ? `(Code: ${fins.couponCode})` : "";
                 
                 const noteHtml = order.globalNote && order.globalNote !== "-" 
                     ? `<div class="notes-section"><strong>⚠️ Note:</strong> ${order.globalNote}</div>` 
                     : "";
-
+                
                 const addressHtml = order.orderType === 'Delivery' 
                     ? `<div class="customer-row"><div class="c-icon">📍</div><div class="c-data c-address">${order.customer.address}</div></div>` 
                     : "";
 
+                // Build Card
                 const card = document.createElement('div');
                 card.className = `order-card ${statusClass}`;
+                card.dataset.timestamp = order.timestamp; // For Timer Logic
+                
                 card.innerHTML = `
                     <div class="card-header">
                         <div>
                             <span class="order-type-badge type-${order.orderType.toLowerCase()}">${order.orderType}</span>
-                            <div class="time-stamp">${formatDate(order.timestamp)}</div>
+                            <div class="time-wrapper">
+                                <span class="time-stamp">${formatDate(order.timestamp)}</span>
+                                <span class="time-ago">Just now</span>
+                            </div>
                         </div>
                         <div class="order-id">#${order.orderId}</div>
                     </div>
@@ -335,10 +413,17 @@
                 `;
                 grid.appendChild(card);
             });
+            
+            // Immediately run timer update after render to set colors/text
+            updateOrderAges();
         });
 
+        // --- BUTTON ACTIONS ---
         window.cycleStatus = (key, currentStatus) => {
             if(!currentStatus || currentStatus === 'pending') {
+                // STOP SOUND when moving to cooking
+                bell.pause();
+                bell.currentTime = 0;
                 update(ref(db, 'orders/' + key), { status: 'cooking' });
             } else if (currentStatus === 'cooking') {
                 update(ref(db, 'orders/' + key), { status: 'done' });
