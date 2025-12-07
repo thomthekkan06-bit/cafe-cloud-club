@@ -176,4 +176,152 @@
             if (snap.val() === true) {
                 wrapper.className = "status-indicator status-online"; text.innerText = "ONLINE";
             } else {
-                wrapper.className = "status-indicator status-
+                wrapper.className = "status-indicator status-offline"; text.innerText = "OFFLINE";
+            }
+        });
+
+        // 3. AUDIO
+        const alarm = document.getElementById('order-alarm');
+        let isAlarmPlaying = false;
+
+        function checkAlarmState(orders) {
+            const hasNewOrders = Object.values(orders).some(order => order.status === 'pending');
+            if (hasNewOrders && !isAlarmPlaying) {
+                alarm.play().then(() => { isAlarmPlaying = true; }).catch(e => console.log("Audio blocked:", e));
+            } else if (!hasNewOrders && isAlarmPlaying) {
+                alarm.pause(); alarm.currentTime = 0; isAlarmPlaying = false;
+            }
+        }
+
+        // 4. MAIN RENDER
+        onValue(ref(db, 'orders'), (snapshot) => {
+            const grid = document.getElementById('orders-grid');
+            grid.innerHTML = ""; 
+            const data = snapshot.val();
+            
+            if (!data) {
+                grid.innerHTML = "<h3 style='grid-column:1/-1; text-align:center; color:#555;'>No Active Orders</h3>";
+                if(isAlarmPlaying) { alarm.pause(); isAlarmPlaying = false; }
+                return;
+            }
+
+            checkAlarmState(data);
+
+            Object.entries(data).reverse().forEach(([key, order]) => {
+                const now = Date.now();
+                const minsAgo = Math.floor((now - order.timestamp) / 60000);
+                
+                let timerClass = 'timer-safe'; 
+                if (order.status !== 'done') {
+                    if (minsAgo >= 25) timerClass = 'timer-danger';
+                    else if (minsAgo >= 15) timerClass = 'timer-warning';
+                }
+
+                let itemsHtml = '';
+                if(Array.isArray(order.items)) {
+                    order.items.forEach(item => {
+                        let nameDisplay = item.name.replace(/\[(.*?)\]/g, '<br><span class="item-mods">Add: $1</span>')
+                                                   .replace(/\((Note:.*?)\)/g, '<br><span class="item-mods" style="color:#e74c3c">$1</span>');
+                        const dotClass = item.type === 'veg' ? 'dot-veg' : 'dot-non-veg';
+                        const offerHtml = item.isOffer ? `<span class="offer-tag">OFFER</span>` : '';
+
+                        itemsHtml += `
+                            <div class="item-row">
+                                <div class="qty-box">${item.qty}</div>
+                                <div class="item-details">
+                                    <div class="item-name">
+                                        <span class="diet-dot ${dotClass}"></span>
+                                        ${nameDisplay} ${offerHtml}
+                                    </div>
+                                </div>
+                                <div class="item-price">₹${item.price * item.qty}</div>
+                            </div>
+                        `;
+                    });
+                }
+
+                const fins = order.financials || { subTotal:0, packingTotal:0, discountVal:0, grandTotal:order.price };
+                const couponDisplay = fins.couponCode && fins.couponCode !== "NONE" ? `(Code: ${fins.couponCode})` : "";
+                
+                let btnHtml = '';
+                if (!order.status || order.status === 'pending') {
+                    btnHtml = `<button class="btn-main btn-start" onclick="updateStatus('${key}', 'cooking')">Start Cooking</button>`;
+                } else if (order.status === 'cooking') {
+                    btnHtml = `<button class="btn-main btn-ready" onclick="updateStatus('${key}', 'done')">Mark Ready</button>`;
+                } else {
+                    btnHtml = `<button class="btn-main btn-clear" onclick="deleteOrder('${key}')">Clear Order</button>`;
+                }
+
+                const addressHtml = order.orderType === 'Delivery' ? `<div class="c-row"><span class="c-icon">📍</span><span class="c-val c-address">${order.customer.address}</span></div>` : "";
+                const noteHtml = order.globalNote && order.globalNote !== "-" ? `<div class="notes-box">⚠️ ${order.globalNote}</div>` : "";
+
+                const card = document.createElement('div');
+                card.className = `order-card ${timerClass}`;
+                
+                // CRITICAL: DATA ATTRIBUTES FOR TIMER SCRIPT
+                card.dataset.ts = order.timestamp;
+                card.dataset.status = order.status || 'pending';
+                
+                if (order.status === 'done') card.style.opacity = '0.6';
+
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div>
+                            <span class="order-type-badge type-${order.orderType.toLowerCase()}">${order.orderType}</span>
+                            <div class="time-ago-badge">${minsAgo} min ago</div>
+                        </div>
+                        <div class="order-id">#${order.orderId}</div>
+                    </div>
+                    <div class="customer-section">
+                        <div class="c-row"><span>👤</span><span class="c-val">${order.customer.name}</span></div>
+                        <div class="c-row"><span>📞</span><span class="c-val"><a href="tel:${order.customer.phone}" style="color:#3498db;text-decoration:none;">${order.customer.phone}</a></span></div>
+                        ${addressHtml}
+                    </div>
+                    <div class="items-section">${itemsHtml}</div>
+                    <div style="height:10px;"></div>
+                    ${noteHtml}
+                    <div class="finance-section">
+                        <div class="f-row row-discount"><span class="f-label">Discount ${couponDisplay}</span><span class="f-val">-${fins.discountVal}</span></div>
+                        <div class="f-row"><span class="f-label">Sub Total</span><span class="f-val">₹${fins.subTotal}</span></div>
+                        <div class="f-row"><span class="f-label">Packing</span><span class="f-val">+₹${fins.packingTotal}</span></div>
+                        <div class="f-row row-total"><span class="f-label">TOTAL</span><span class="f-val">₹${fins.grandTotal}</span></div>
+                    </div>
+                    <div class="actions-section">${btnHtml}</div>
+                `;
+                grid.appendChild(card);
+            });
+        });
+
+        // 5. AUTO-REFRESH TIMER LOGIC (THE HEARTBEAT)
+        function refreshTimers() {
+            const now = Date.now();
+            document.querySelectorAll('.order-card').forEach(card => {
+                const ts = parseInt(card.dataset.ts);
+                const status = card.dataset.status;
+                if (!ts || status === 'done') return;
+
+                const minsAgo = Math.floor((now - ts) / 60000);
+                
+                // Update Text
+                const badge = card.querySelector('.time-ago-badge');
+                if(badge) badge.innerText = `${minsAgo} min ago`;
+
+                // Update Colors
+                card.classList.remove('timer-safe', 'timer-warning', 'timer-danger');
+                if (minsAgo >= 25) card.classList.add('timer-danger');
+                else if (minsAgo >= 15) card.classList.add('timer-warning');
+                else card.classList.add('timer-safe');
+            });
+        }
+        setInterval(refreshTimers, 5000); // Runs every 5 seconds
+
+        window.updateStatus = (key, status) => update(ref(db, 'orders/' + key), { status: status });
+        window.deleteOrder = (key) => { if(confirm("Delete this order?")) remove(ref(db, 'orders/' + key)); };
+
+        async function requestWakeLock() { try { if ('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch (e) {} }
+        requestWakeLock();
+        document.addEventListener('click', () => { requestWakeLock(); if(alarm.paused && isAlarmPlaying) alarm.play(); }, {once:true});
+        
+    </script>
+</body>
+</html>
