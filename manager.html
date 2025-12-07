@@ -251,30 +251,18 @@
         </div>
     </div>
 
-    <div class="header-bar">
+<div class="header-bar">
         <div class="status-indicator" id="conn-wrapper">
             <span class="status-dot"></span>
             <span id="conn-text">Connecting...</span>
         </div>
         
-        <h1 style="text-align:center; flex:1;">🔥 Kitchen Manager</h1>
+        <h1 class="text-center flex-1">🔥 Kitchen Manager</h1>
 
-        <div style="display:flex; align-items:center; gap:15px;">
+        <div class="header-actions">
             <div class="live-clock" id="clock-display">00:00:00 PM</div>
-            <a href="history.html" style="text-decoration:none;">
-                <button style="
-                    background: #333; 
-                    color: #fff; 
-                    border: 1px solid #555; 
-                    padding: 8px 15px; 
-                    border-radius: 6px; 
-                    cursor: pointer; 
-                    font-weight: 600;
-                    display: flex;
-                    align-items: center;
-                    gap: 5px;
-                    transition: all 0.2s;
-                " onmouseover="this.style.background='#444'" onmouseout="this.style.background='#333'">
+            <a href="history.html" class="no-decoration">
+                <button class="btn-history">
                     📜 History
                 </button>
             </a>
@@ -282,7 +270,7 @@
     </div>
 
     <div id="orders-grid">
-        <p style="text-align: center; color: #666; grid-column: 1/-1;">Waiting for orders...</p>
+        <p class="empty-state-msg">Waiting for orders...</p>
     </div>
 
     <script type="module">
