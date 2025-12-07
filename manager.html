@@ -386,7 +386,7 @@
             grid.innerHTML = ""; 
 
             if (!data) {
-                grid.innerHTML = "<h3 style='grid-column:1/-1; text-align:center; color:#555;'>No Active Orders</h3>";
+                grid.innerHTML = "<h3 class='empty-state-msg'>No Active Orders</h3>";
                 activeOrders = [];
                 checkAudioState(); 
                 return;
@@ -403,7 +403,7 @@
                 let itemsHtml = '';
                 if(Array.isArray(order.items)) {
                     order.items.forEach(item => {
-                        let discountBadge = item.isOffer ? `<span style="color:var(--accent-green); font-weight:bold; font-size:0.75rem; margin-left:5px;">(OFFER APPLIED)</span>` : "";
+                        let discountBadge = item.isOffer ? `<span class="text-accent-green font-bold font-small ml-5">(OFFER APPLIED)</span>` : "";
                         
                         // DIET DOT LOGIC
                         let dotHtml = '';
@@ -415,7 +415,7 @@
 
                         let nameDisplay = item.name
                             .replace(/\[(.*?)\]/g, '<span class="item-mods">Add: $1</span>')
-                            .replace(/\((Note:.*?)\)/g, '<span class="item-mods" style="color:#e74c3c">$1</span>');
+                            .replace(/\((Note:.*?)\)/g, '<span class="item-mods text-danger">$1</span>');
                         
                         const linePrice = item.price * item.qty;
                         itemsHtml += `
