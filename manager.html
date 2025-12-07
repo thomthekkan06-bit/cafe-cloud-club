@@ -82,13 +82,8 @@
         }
 
         /* --- COLOR CODING & ANIMATIONS --- */
-        /* < 15 Mins: Green */
         .order-card.age-fresh { border-top-color: var(--accent-green); }
-        
-        /* 15 - 35 Mins: Yellow */
         .order-card.age-warning { border-top-color: var(--accent-yellow); }
-        
-        /* > 35 Mins: Red Flashing */
         .order-card.age-critical { 
             border-top-color: var(--accent-red); 
             animation: criticalPulse 1s infinite alternate;
@@ -100,24 +95,43 @@
         }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        /* --- CARD CONTENT --- */
+        /* --- FIXED CARD HEADER ALIGNMENT --- */
         .card-header {
             background: rgba(255,255,255,0.05);
-            padding: 15px;
+            padding: 12px 15px;
+            display: flex;
+            flex-direction: column; /* Stack rows */
+            gap: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        /* Row 1: Badge left, ID right */
+        .header-top {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid var(--border);
+            width: 100%;
         }
-        .order-id { font-family: 'Roboto Mono', monospace; font-size: 1.1rem; font-weight: 800; color: #fff; }
-        .order-type-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+
+        /* Row 2: Date left, Timer right */
+        .header-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding-top: 8px;
+        }
+
+        .order-id { font-family: 'Roboto Mono', monospace; font-size: 1.2rem; font-weight: 800; color: #fff; }
+        .order-type-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
         .type-delivery { background: rgba(52, 152, 219, 0.2); color: #3498db; border: 1px solid #3498db; }
         .type-pickup { background: rgba(243, 156, 18, 0.2); color: #f39c12; border: 1px solid #f39c12; }
         
-        .time-wrapper { text-align: right; }
-        .time-stamp { font-size: 0.8rem; color: var(--text-muted); display: block;}
-        .time-ago { font-size: 0.75rem; font-weight: 700; color: var(--text-main); display: block; margin-top: 2px;}
+        .time-stamp { font-size: 0.8rem; color: var(--text-muted); font-family: 'Roboto Mono', monospace; }
+        .time-ago { font-size: 0.85rem; font-weight: 700; color: var(--text-main); background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; }
 
+        /* --- CONTENT SECTIONS --- */
         .customer-section { padding: 15px; border-bottom: 1px dashed var(--border); font-size: 0.9rem; }
         .customer-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
         .c-icon { width: 15px; color: var(--text-muted); text-align: center; }
@@ -146,7 +160,7 @@
         .btn-main { width: 100%; padding: 15px; border: none; border-radius: 6px; font-size: 1rem; font-weight: 800; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
         
         .status-pending .btn-main { background: var(--accent-blue); color: white; }
-        .status-pending .btn-main::after { content: "Start Cooking (Stop Sound)"; }
+        .status-pending .btn-main::after { content: "Start Cooking"; } /* Text Changed to reflect new logic */
         
         .status-cooking .btn-main { background: var(--accent-green); color: white; }
         .status-cooking .btn-main::after { content: "Mark Ready"; }
@@ -208,14 +222,18 @@
 
         // --- AUDIO SETUP ---
         const bell = new Audio('bell.mp3');
-        bell.loop = true; // Loop sound until stopped
+        bell.loop = true; 
+        let audioUnlocked = false;
         
         // Handle Audio Context Unlock
         document.getElementById('enable-audio-btn').addEventListener('click', () => {
             bell.play().then(() => {
                 bell.pause();
                 bell.currentTime = 0;
+                audioUnlocked = true;
                 document.getElementById('audio-overlay').style.display = 'none';
+                // Trigger check immediately in case orders are already loaded
+                checkAudioState(); 
             }).catch(e => alert("Audio failed: " + e));
         });
 
@@ -225,7 +243,7 @@
             document.getElementById('clock-display').innerText = now.toLocaleTimeString('en-US', { 
                 hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true 
             });
-            updateOrderAges(); // Update color coding
+            updateOrderAges(); 
         }
 
         function updateOrderAges() {
@@ -240,7 +258,7 @@
                 const timeAgoSpan = card.querySelector('.time-ago');
                 if (timeAgoSpan) {
                     if (diffMins < 1) timeAgoSpan.innerText = "Just now";
-                    else timeAgoSpan.innerText = `${diffMins} mins ago`;
+                    else timeAgoSpan.innerText = `${diffMins}m ago`;
                 }
 
                 // Update Colors (Only for active orders)
@@ -258,7 +276,7 @@
             });
         }
 
-        setInterval(updateClock, 1000); // Run every second
+        setInterval(updateClock, 1000); 
 
         // --- CONNECTION STATUS ---
         const connectedRef = ref(db, ".info/connected");
@@ -278,8 +296,7 @@
         const formatMoney = (amount) => "₹" + amount;
         const formatDate = (ts) => new Date(ts).toLocaleString('en-IN', { hour: '2-digit', minute:'2-digit', day:'2-digit', month:'short' });
         
-        let previousOrderCount = 0;
-        let isFirstLoad = true;
+        let activeOrders = []; // Store orders globally to check audio state
 
         onValue(ref(db, 'orders'), (snapshot) => {
             const grid = document.getElementById('orders-grid');
@@ -289,24 +306,14 @@
 
             if (!data) {
                 grid.innerHTML = "<h3 style='grid-column:1/-1; text-align:center; color:#555;'>No Active Orders</h3>";
-                previousOrderCount = 0;
+                activeOrders = [];
+                checkAudioState(); // Ensure sound stops if all orders removed
                 return;
             }
 
             const ordersArray = Object.entries(data).reverse();
-            const currentOrderCount = ordersArray.length;
-
-            // --- SOUND TRIGGER LOGIC ---
-            // If we have more orders than before, and it's not the very first page load
-            if (currentOrderCount > previousOrderCount && !isFirstLoad) {
-                // Check if the newest order is actually 'pending'
-                const newestOrder = ordersArray[0][1];
-                if (newestOrder.status === 'pending') {
-                    bell.play().catch(e => console.error("Sound blocked", e));
-                }
-            }
-            previousOrderCount = currentOrderCount;
-            isFirstLoad = false;
+            activeOrders = ordersArray; // Update global state
+            checkAudioState(); // Check if we should play/pause sound based on DATA, not clicks
 
             // --- RENDER CARDS ---
             ordersArray.forEach(([key, order]) => {
@@ -316,18 +323,12 @@
                 let itemsHtml = '';
                 if(Array.isArray(order.items)) {
                     order.items.forEach(item => {
-                        // Discount Mention
-                        let discountBadge = "";
-                        if (item.isOffer) {
-                            discountBadge = `<span style="color:var(--accent-green); font-weight:bold; font-size:0.75rem; margin-left:5px;">(OFFER APPLIED)</span>`;
-                        }
+                        let discountBadge = item.isOffer ? `<span style="color:var(--accent-green); font-weight:bold; font-size:0.75rem; margin-left:5px;">(OFFER APPLIED)</span>` : "";
 
-                        // Formatting Modifiers
                         let nameDisplay = item.name
                             .replace(/\[(.*?)\]/g, '<br><span class="item-mods">Add: $1</span>')
                             .replace(/\((Note:.*?)\)/g, '<br><span class="item-mods" style="color:#e74c3c">$1</span>');
                         
-                        // Price calculation per line
                         const linePrice = item.price * item.qty;
 
                         itemsHtml += `
@@ -356,21 +357,21 @@
                     ? `<div class="customer-row"><div class="c-icon">📍</div><div class="c-data c-address">${order.customer.address}</div></div>` 
                     : "";
 
-                // Build Card
+                // Build Card - FIXED HEADER STRUCTURE
                 const card = document.createElement('div');
                 card.className = `order-card ${statusClass}`;
-                card.dataset.timestamp = order.timestamp; // For Timer Logic
+                card.dataset.timestamp = order.timestamp; 
                 
                 card.innerHTML = `
                     <div class="card-header">
-                        <div>
+                        <div class="header-top">
                             <span class="order-type-badge type-${order.orderType.toLowerCase()}">${order.orderType}</span>
-                            <div class="time-wrapper">
-                                <span class="time-stamp">${formatDate(order.timestamp)}</span>
-                                <span class="time-ago">Just now</span>
-                            </div>
+                            <div class="order-id">#${order.orderId}</div>
                         </div>
-                        <div class="order-id">#${order.orderId}</div>
+                        <div class="header-bottom">
+                            <span class="time-stamp">${formatDate(order.timestamp)}</span>
+                            <span class="time-ago">Just now</span>
+                        </div>
                     </div>
 
                     <div class="customer-section">
@@ -414,17 +415,36 @@
                 grid.appendChild(card);
             });
             
-            // Immediately run timer update after render to set colors/text
             updateOrderAges();
         });
+
+        // --- AUDIO SYNC CHECKER ---
+        // This function runs every time Firebase sends data.
+        // It looks for ANY pending order. If found, play sound. If not, stop sound.
+        function checkAudioState() {
+            if(!audioUnlocked) return;
+
+            // Check if there is AT LEAST ONE 'pending' order
+            const hasPending = activeOrders.some(([key, order]) => order.status === 'pending');
+
+            if (hasPending) {
+                // Only play if not already playing to avoid stutter
+                if (bell.paused) {
+                    bell.play().catch(e => console.log("Sound error", e));
+                }
+            } else {
+                // No pending orders? Stop immediately.
+                bell.pause();
+                bell.currentTime = 0;
+            }
+        }
 
         // --- BUTTON ACTIONS ---
         window.cycleStatus = (key, currentStatus) => {
             if(!currentStatus || currentStatus === 'pending') {
-                // STOP SOUND when moving to cooking
-                bell.pause();
-                bell.currentTime = 0;
                 update(ref(db, 'orders/' + key), { status: 'cooking' });
+                // We do NOT stop the audio here manually anymore.
+                // The DB update will trigger onValue -> checkAudioState -> which stops audio.
             } else if (currentStatus === 'cooking') {
                 update(ref(db, 'orders/' + key), { status: 'done' });
             } else {
