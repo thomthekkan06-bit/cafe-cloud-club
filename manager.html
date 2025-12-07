@@ -29,6 +29,34 @@
             padding: 20px;
         }
 
+        /* --- LOCK SCREEN (PIN + AUDIO UNLOCK) --- */
+        #pin-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 10000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+        .pin-box {
+            background: #1e1e1e; padding: 40px; border-radius: 12px;
+            border: 1px solid #333; text-align: center; width: 300px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        .pin-input {
+            width: 100%; padding: 15px; margin: 20px 0;
+            background: #121212; border: 1px solid #333; color: white;
+            font-size: 1.5rem; text-align: center; letter-spacing: 5px;
+            border-radius: 8px; font-family: 'Roboto Mono', monospace;
+        }
+        .pin-btn {
+            width: 100%; padding: 15px; background: var(--accent-blue);
+            color: white; border: none; font-weight: 800; font-size: 1rem;
+            border-radius: 8px; cursor: pointer; text-transform: uppercase;
+        }
+        .pin-error { color: var(--accent-red); margin-top: 10px; display: none; font-weight: bold; }
+        .shake { animation: shake 0.3s ease-in-out; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+
+
         /* --- HEADER --- */
         .header-bar {
             display: flex;
@@ -105,23 +133,8 @@
             border-bottom: 1px solid var(--border);
         }
         
-        /* Row 1: Badge left, ID right */
-        .header-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-        }
-
-        /* Row 2: Date left, Timer right */
-        .header-bottom {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            border-top: 1px solid rgba(255,255,255,0.05);
-            padding-top: 8px;
-        }
+        .header-top { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .header-bottom { display: flex; justify-content: space-between; align-items: center; width: 100%; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px; }
 
         .order-id { font-family: 'Roboto Mono', monospace; font-size: 1.2rem; font-weight: 800; color: #fff; }
         .order-type-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -160,7 +173,7 @@
         .btn-main { width: 100%; padding: 15px; border: none; border-radius: 6px; font-size: 1rem; font-weight: 800; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
         
         .status-pending .btn-main { background: var(--accent-blue); color: white; }
-        .status-pending .btn-main::after { content: "Start Cooking"; } /* Text Changed to reflect new logic */
+        .status-pending .btn-main::after { content: "Start Cooking"; } 
         
         .status-cooking .btn-main { background: var(--accent-green); color: white; }
         .status-cooking .btn-main::after { content: "Mark Ready"; }
@@ -168,25 +181,18 @@
         .status-done { opacity: 0.6; filter: grayscale(0.8); }
         .status-done .btn-main { background: #333; color: #888; }
         .status-done .btn-main::after { content: "Clear Order"; }
-
-        /* Overlay to force audio interaction */
-        #audio-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 9999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        #audio-overlay h2 { color: white; margin-bottom: 20px; }
-        #enable-audio-btn {
-            padding: 15px 30px; font-size: 1.2rem; background: var(--accent-green);
-            color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;
-        }
     </style>
 </head>
 <body>
 
-    <div id="audio-overlay">
-        <h2>🔊 Kitchen Alert System</h2>
-        <button id="enable-audio-btn">Click to Enable Sound & Start</button>
+    <div id="pin-overlay">
+        <div class="pin-box">
+            <h2 style="margin-top:0;">🔒 Kitchen Access</h2>
+            <p style="color:#aaa; font-size:0.9rem;">Enter PIN to unlock & enable sound</p>
+            <input type="password" id="pin-input" class="pin-input" placeholder="****" maxlength="4">
+            <button class="pin-btn" id="unlock-btn">Unlock System</button>
+            <div class="pin-error" id="pin-error">Incorrect PIN</div>
+        </div>
     </div>
 
     <div class="header-bar">
@@ -220,22 +226,43 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- AUDIO SETUP ---
+        // --- SECURITY & AUDIO SETUP ---
+        const KITCHEN_PIN = "2024"; // CHANGE THIS IF YOU WANT
         const bell = new Audio('bell.mp3');
         bell.loop = true; 
         let audioUnlocked = false;
-        
-        // Handle Audio Context Unlock
-        document.getElementById('enable-audio-btn').addEventListener('click', () => {
-            bell.play().then(() => {
-                bell.pause();
-                bell.currentTime = 0;
-                audioUnlocked = true;
-                document.getElementById('audio-overlay').style.display = 'none';
-                // Trigger check immediately in case orders are already loaded
-                checkAudioState(); 
-            }).catch(e => alert("Audio failed: " + e));
+
+        const pinInput = document.getElementById('pin-input');
+        const unlockBtn = document.getElementById('unlock-btn');
+        const pinOverlay = document.getElementById('pin-overlay');
+        const pinError = document.getElementById('pin-error');
+
+        function attemptUnlock() {
+            if (pinInput.value === KITCHEN_PIN) {
+                // Correct PIN: Unlock Audio Context
+                bell.play().then(() => {
+                    bell.pause();
+                    bell.currentTime = 0;
+                    audioUnlocked = true;
+                    // Hide Overlay
+                    pinOverlay.style.opacity = '0';
+                    setTimeout(() => pinOverlay.style.display = 'none', 500);
+                    checkAudioState(); // Check immediately
+                }).catch(e => alert("Audio System Failed: " + e));
+            } else {
+                // Wrong PIN: Shake animation
+                pinError.style.display = 'block';
+                pinInput.classList.add('shake');
+                setTimeout(() => pinInput.classList.remove('shake'), 300);
+                pinInput.value = "";
+            }
+        }
+
+        unlockBtn.addEventListener('click', attemptUnlock);
+        pinInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') attemptUnlock();
         });
+
 
         // --- CLOCK & TIMERS ---
         function updateClock() {
@@ -261,21 +288,15 @@
                     else timeAgoSpan.innerText = `${diffMins}m ago`;
                 }
 
-                // Update Colors (Only for active orders)
+                // Update Colors
                 if (!card.classList.contains('status-done')) {
                     card.classList.remove('age-fresh', 'age-warning', 'age-critical');
-                    
-                    if (diffMins > 35) {
-                        card.classList.add('age-critical'); // Red Flash
-                    } else if (diffMins > 15) {
-                        card.classList.add('age-warning'); // Yellow
-                    } else {
-                        card.classList.add('age-fresh'); // Green
-                    }
+                    if (diffMins > 35) card.classList.add('age-critical'); 
+                    else if (diffMins > 15) card.classList.add('age-warning');
+                    else card.classList.add('age-fresh');
                 }
             });
         }
-
         setInterval(updateClock, 1000); 
 
         // --- CONNECTION STATUS ---
@@ -296,7 +317,7 @@
         const formatMoney = (amount) => "₹" + amount;
         const formatDate = (ts) => new Date(ts).toLocaleString('en-IN', { hour: '2-digit', minute:'2-digit', day:'2-digit', month:'short' });
         
-        let activeOrders = []; // Store orders globally to check audio state
+        let activeOrders = []; 
 
         onValue(ref(db, 'orders'), (snapshot) => {
             const grid = document.getElementById('orders-grid');
@@ -307,39 +328,32 @@
             if (!data) {
                 grid.innerHTML = "<h3 style='grid-column:1/-1; text-align:center; color:#555;'>No Active Orders</h3>";
                 activeOrders = [];
-                checkAudioState(); // Ensure sound stops if all orders removed
+                checkAudioState(); 
                 return;
             }
 
             const ordersArray = Object.entries(data).reverse();
-            activeOrders = ordersArray; // Update global state
-            checkAudioState(); // Check if we should play/pause sound based on DATA, not clicks
+            activeOrders = ordersArray;
+            checkAudioState(); 
 
-            // --- RENDER CARDS ---
             ordersArray.forEach(([key, order]) => {
                 const statusClass = `status-${order.status || 'pending'}`;
                 
-                // Item Rendering
+                // Items
                 let itemsHtml = '';
                 if(Array.isArray(order.items)) {
                     order.items.forEach(item => {
                         let discountBadge = item.isOffer ? `<span style="color:var(--accent-green); font-weight:bold; font-size:0.75rem; margin-left:5px;">(OFFER APPLIED)</span>` : "";
-
                         let nameDisplay = item.name
                             .replace(/\[(.*?)\]/g, '<br><span class="item-mods">Add: $1</span>')
                             .replace(/\((Note:.*?)\)/g, '<br><span class="item-mods" style="color:#e74c3c">$1</span>');
-                        
                         const linePrice = item.price * item.qty;
-
                         itemsHtml += `
                             <div class="item-row">
                                 <div class="qty-box">${item.qty}</div>
-                                <div class="item-details">
-                                    <div class="item-name">${nameDisplay} ${discountBadge}</div>
-                                </div>
+                                <div class="item-details"><div class="item-name">${nameDisplay} ${discountBadge}</div></div>
                                 <div class="item-price">${formatMoney(linePrice)}</div>
-                            </div>
-                        `;
+                            </div>`;
                     });
                 } else {
                     itemsHtml = `<div class="item-row"><div class="item-details">${order.item || "Unknown Items"}</div></div>`;
@@ -348,16 +362,9 @@
                 // Financials & Extras
                 const fins = order.financials || { subTotal:0, packingTotal:0, discountVal:0, grandTotal:order.price };
                 const couponDisplay = fins.couponCode && fins.couponCode !== "NONE" ? `(Code: ${fins.couponCode})` : "";
-                
-                const noteHtml = order.globalNote && order.globalNote !== "-" 
-                    ? `<div class="notes-section"><strong>⚠️ Note:</strong> ${order.globalNote}</div>` 
-                    : "";
-                
-                const addressHtml = order.orderType === 'Delivery' 
-                    ? `<div class="customer-row"><div class="c-icon">📍</div><div class="c-data c-address">${order.customer.address}</div></div>` 
-                    : "";
+                const noteHtml = order.globalNote && order.globalNote !== "-" ? `<div class="notes-section"><strong>⚠️ Note:</strong> ${order.globalNote}</div>` : "";
+                const addressHtml = order.orderType === 'Delivery' ? `<div class="customer-row"><div class="c-icon">📍</div><div class="c-data c-address">${order.customer.address}</div></div>` : "";
 
-                // Build Card - FIXED HEADER STRUCTURE
                 const card = document.createElement('div');
                 card.className = `order-card ${statusClass}`;
                 card.dataset.timestamp = order.timestamp; 
@@ -373,69 +380,36 @@
                             <span class="time-ago">Just now</span>
                         </div>
                     </div>
-
                     <div class="customer-section">
-                        <div class="customer-row">
-                            <div class="c-icon">👤</div>
-                            <div class="c-data"><strong>${order.customer.name}</strong></div>
-                        </div>
-                        <div class="customer-row">
-                            <div class="c-icon">📞</div>
-                            <div class="c-data c-phone"><a href="tel:${order.customer.phone}">${order.customer.phone}</a></div>
-                        </div>
+                        <div class="customer-row"><div class="c-icon">👤</div><div class="c-data"><strong>${order.customer.name}</strong></div></div>
+                        <div class="customer-row"><div class="c-icon">📞</div><div class="c-data c-phone"><a href="tel:${order.customer.phone}">${order.customer.phone}</a></div></div>
                         ${addressHtml}
                     </div>
-
                     <div class="items-section">${itemsHtml}</div>
                     ${noteHtml}
-
                     <div class="finance-section">
-                        <div class="f-row row-discount">
-                            <span class="f-label">Discount ${couponDisplay}</span>
-                            <span class="f-val">-${formatMoney(fins.discountVal)}</span>
-                        </div>
-                         <div class="f-row">
-                            <span class="f-label">Sub Total</span>
-                            <span class="f-val">${formatMoney(fins.subTotal)}</span>
-                        </div>
-                        <div class="f-row">
-                            <span class="f-label">Packing Charges</span>
-                            <span class="f-val">+${formatMoney(fins.packingTotal)}</span>
-                        </div>
-                        <div class="f-row row-total">
-                            <span class="f-label">GRAND TOTAL</span>
-                            <span class="f-val">${formatMoney(fins.grandTotal)}</span>
-                        </div>
+                        <div class="f-row row-discount"><span class="f-label">Discount ${couponDisplay}</span><span class="f-val">-${formatMoney(fins.discountVal)}</span></div>
+                         <div class="f-row"><span class="f-label">Sub Total</span><span class="f-val">${formatMoney(fins.subTotal)}</span></div>
+                        <div class="f-row"><span class="f-label">Packing Charges</span><span class="f-val">+${formatMoney(fins.packingTotal)}</span></div>
+                        <div class="f-row row-total"><span class="f-label">GRAND TOTAL</span><span class="f-val">${formatMoney(fins.grandTotal)}</span></div>
                     </div>
-
                     <div class="actions-section">
                         <button class="btn-main" onclick="cycleStatus('${key}', '${order.status}')"></button>
                     </div>
                 `;
                 grid.appendChild(card);
             });
-            
             updateOrderAges();
         });
 
         // --- AUDIO SYNC CHECKER ---
-        // This function runs every time Firebase sends data.
-        // It looks for ANY pending order. If found, play sound. If not, stop sound.
         function checkAudioState() {
             if(!audioUnlocked) return;
-
-            // Check if there is AT LEAST ONE 'pending' order
             const hasPending = activeOrders.some(([key, order]) => order.status === 'pending');
-
             if (hasPending) {
-                // Only play if not already playing to avoid stutter
-                if (bell.paused) {
-                    bell.play().catch(e => console.log("Sound error", e));
-                }
+                if (bell.paused) bell.play().catch(e => console.log("Sound error", e));
             } else {
-                // No pending orders? Stop immediately.
-                bell.pause();
-                bell.currentTime = 0;
+                bell.pause(); bell.currentTime = 0;
             }
         }
 
@@ -443,8 +417,6 @@
         window.cycleStatus = (key, currentStatus) => {
             if(!currentStatus || currentStatus === 'pending') {
                 update(ref(db, 'orders/' + key), { status: 'cooking' });
-                // We do NOT stop the audio here manually anymore.
-                // The DB update will trigger onValue -> checkAudioState -> which stops audio.
             } else if (currentStatus === 'cooking') {
                 update(ref(db, 'orders/' + key), { status: 'done' });
             } else {
