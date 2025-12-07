@@ -14,16 +14,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #121212;
-            --card-bg: #1e1e1e;
-            --text-main: #e0e0e0;
-            --text-muted: #a0a0a0;
-            --border: #333;
-            
-            /* STATUS COLORS */
-            --safe-green: #27ae60;
-            --warn-yellow: #f39c12;
-            --danger-red: #c0392b;
+            --bg: #121212; --card-bg: #1e1e1e; --text-main: #e0e0e0; --text-muted: #a0a0a0;
+            --border: #333; --safe-green: #27ae60; --warn-yellow: #f39c12; --danger-red: #c0392b;
         }
 
         body {
@@ -31,10 +23,11 @@
             background-color: var(--bg);
             color: var(--text-main);
             margin: 0;
-            padding: 0 20px 20px 20px; /* Adjusted for sticky header */
+            /* Remove top padding so sticky header hits the edge */
+            padding: 0 20px 20px 20px; 
         }
 
-        /* --- STICKY HEADER --- */
+        /* --- STICKY HEADER FIXED --- */
         .header-bar {
             display: flex;
             justify-content: space-between;
@@ -43,12 +36,14 @@
             padding: 15px 25px;
             border-bottom: 2px solid var(--border);
             box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-            position: sticky;
-            top: 0;
+            
+            /* THIS MAKES IT STICK */
+            position: sticky; 
+            top: 0; 
             z-index: 1000;
-            margin: 0 -20px 30px -20px;
-            padding-left: 40px;
-            padding-right: 40px;
+            
+            /* Stretch to edges */
+            margin: 0 -20px 30px -20px; 
         }
 
         h1 { margin: 0; font-size: 1.5rem; letter-spacing: -0.5px; flex: 1; text-align: center; }
@@ -59,7 +54,6 @@
         .status-online { color: #2ecc71; } .status-online .status-dot { background-color: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
         .status-offline { color: #e74c3c; } .status-offline .status-dot { background-color: #e74c3c; }
 
-        /* GRID */
         #orders-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
@@ -67,7 +61,7 @@
             padding-top: 10px;
         }
 
-        /* --- CARD --- */
+        /* CARD */
         .order-card {
             background: var(--card-bg);
             border: 2px solid var(--border);
@@ -80,13 +74,11 @@
             animation: slideUp 0.3s ease-out;
             transition: border-color 0.5s ease;
         }
-
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        /* DYNAMIC TIMER STYLES */
+        /* TIMER COLORS */
         .timer-safe { border-top: 6px solid var(--safe-green); }
         .timer-warning { border-color: var(--warn-yellow); border-top: 6px solid var(--warn-yellow); }
-        
         .timer-danger { 
             border-color: var(--danger-red); 
             border-top: 6px solid var(--danger-red);
@@ -102,7 +94,6 @@
         .type-delivery { background: rgba(52, 152, 219, 0.2); color: #3498db; border: 1px solid #3498db; }
         .type-pickup { background: rgba(243, 156, 18, 0.2); color: #f39c12; border: 1px solid #f39c12; }
         .order-id { font-family: 'Roboto Mono', monospace; font-size: 1.2rem; font-weight: 800; color: #fff; }
-        
         .time-ago-badge { font-size: 0.8rem; font-weight: 600; color: #fff; background: #333; padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block; }
 
         .customer-section { padding: 12px 15px; border-bottom: 1px dashed var(--border); font-size: 0.9rem; }
@@ -171,154 +162,18 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         
-        // 1. HEADER CLOCK
+        // 1. CLOCK
         function updateClock() {
             const now = new Date();
             document.getElementById('clock-display').innerText = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
         }
         setInterval(updateClock, 1000); updateClock();
 
-        // 2. CONNECTION STATUS
+        // 2. CONNECTION
         onValue(ref(db, ".info/connected"), (snap) => {
             const wrapper = document.getElementById('conn-wrapper');
             const text = document.getElementById('conn-text');
             if (snap.val() === true) {
                 wrapper.className = "status-indicator status-online"; text.innerText = "ONLINE";
             } else {
-                wrapper.className = "status-indicator status-offline"; text.innerText = "OFFLINE";
-            }
-        });
-
-        // 3. AUDIO SYSTEM
-        const alarm = document.getElementById('order-alarm');
-        let isAlarmPlaying = false;
-
-        function checkAlarmState(orders) {
-            const hasNewOrders = Object.values(orders).some(order => order.status === 'pending');
-            if (hasNewOrders && !isAlarmPlaying) {
-                alarm.play().then(() => { isAlarmPlaying = true; }).catch(e => console.log("Audio blocked:", e));
-            } else if (!hasNewOrders && isAlarmPlaying) {
-                alarm.pause(); alarm.currentTime = 0; isAlarmPlaying = false;
-            }
-        }
-
-        // 4. MAIN RENDER
-        onValue(ref(db, 'orders'), (snapshot) => {
-            const grid = document.getElementById('orders-grid');
-            grid.innerHTML = ""; 
-            const data = snapshot.val();
-            
-            if (!data) {
-                grid.innerHTML = "<h3 style='grid-column:1/-1; text-align:center; color:#555;'>No Active Orders</h3>";
-                if(isAlarmPlaying) { alarm.pause(); isAlarmPlaying = false; }
-                return;
-            }
-
-            checkAlarmState(data);
-
-            Object.entries(data).reverse().forEach(([key, order]) => {
-                // Determine Classes (Initial Render)
-                const now = Date.now();
-                const minsAgo = Math.floor((now - order.timestamp) / 60000);
-                let timerClass = 'timer-safe'; 
-                if (order.status !== 'done') {
-                    if (minsAgo >= 25) timerClass = 'timer-danger';
-                    else if (minsAgo >= 15) timerClass = 'timer-warning';
-                }
-
-                // Render Items
-                let itemsHtml = '';
-                if(Array.isArray(order.items)) {
-                    order.items.forEach(item => {
-                        let nameDisplay = item.name.replace(/\[(.*?)\]/g, '<br><span class="item-mods">Add: $1</span>')
-                                                   .replace(/\((Note:.*?)\)/g, '<br><span class="item-mods" style="color:#e74c3c">$1</span>');
-                        const dotClass = item.type === 'veg' ? 'dot-veg' : 'dot-non-veg';
-                        const offerHtml = item.isOffer ? `<span class="offer-tag">OFFER</span>` : '';
-
-                        itemsHtml += `
-                            <div class="item-row">
-                                <div class="qty-box">${item.qty}</div>
-                                <div class="item-details">
-                                    <div class="item-name">
-                                        <span class="diet-dot ${dotClass}"></span>
-                                        ${nameDisplay} ${offerHtml}
-                                    </div>
-                                </div>
-                                <div class="item-price">₹${item.price * item.qty}</div>
-                            </div>
-                        `;
-                    });
-                }
-
-                const fins = order.financials || { subTotal:0, packingTotal:0, discountVal:0, grandTotal:order.price };
-                const couponDisplay = fins.couponCode && fins.couponCode !== "NONE" ? `(Code: ${fins.couponCode})` : "";
-                
-                // Action Buttons
-                let btnHtml = '';
-                if (!order.status || order.status === 'pending') {
-                    btnHtml = `<button class="btn-main btn-start" onclick="updateStatus('${key}', 'cooking')">Start Cooking</button>`;
-                } else if (order.status === 'cooking') {
-                    btnHtml = `<button class="btn-main btn-ready" onclick="updateStatus('${key}', 'done')">Mark Ready</button>`;
-                } else {
-                    btnHtml = `<button class="btn-main btn-clear" onclick="deleteOrder('${key}')">Clear Order</button>`;
-                }
-
-                const addressHtml = order.orderType === 'Delivery' ? `<div class="c-row"><span class="c-icon">📍</span><span class="c-val c-address">${order.customer.address}</span></div>` : "";
-                const noteHtml = order.globalNote && order.globalNote !== "-" ? `<div class="notes-box">⚠️ ${order.globalNote}</div>` : "";
-
-                // IMPORTANT: Add data-ts and data-status so the timer script can find them
-                const card = document.createElement('div');
-                card.className = `order-card ${timerClass}`;
-                card.dataset.ts = order.timestamp; // <--- This stores the time
-                card.dataset.status = order.status || 'pending'; // <--- This stores status
-                if (order.status === 'done') card.style.opacity = '0.6';
-
-                card.innerHTML = `
-                    <div class="card-header">
-                        <div>
-                            <span class="order-type-badge type-${order.orderType.toLowerCase()}">${order.orderType}</span>
-                            <div class="time-ago-badge">${minsAgo} min ago</div>
-                        </div>
-                        <div class="order-id">#${order.orderId}</div>
-                    </div>
-
-                    <div class="customer-section">
-                        <div class="c-row"><span>👤</span><span class="c-val">${order.customer.name}</span></div>
-                        <div class="c-row"><span>📞</span><span class="c-val"><a href="tel:${order.customer.phone}" style="color:#3498db;text-decoration:none;">${order.customer.phone}</a></span></div>
-                        ${addressHtml}
-                    </div>
-
-                    <div class="items-section">${itemsHtml}</div>
-                    <div style="height:10px;"></div>
-                    ${noteHtml}
-
-                    <div class="finance-section">
-                        <div class="f-row row-discount"><span class="f-label">Discount ${couponDisplay}</span><span class="f-val">-${fins.discountVal}</span></div>
-                        <div class="f-row"><span class="f-label">Sub Total</span><span class="f-val">₹${fins.subTotal}</span></div>
-                        <div class="f-row"><span class="f-label">Packing</span><span class="f-val">+₹${fins.packingTotal}</span></div>
-                        <div class="f-row row-total"><span class="f-label">TOTAL</span><span class="f-val">₹${fins.grandTotal}</span></div>
-                    </div>
-
-                    <div class="actions-section">${btnHtml}</div>
-                `;
-                grid.appendChild(card);
-            });
-        });
-
-        // 5. AUTO-REFRESH TIMER LOGIC (HEARTBEAT)
-        function refreshTimers() {
-            const now = Date.now();
-            const cards = document.querySelectorAll('.order-card');
-            
-            cards.forEach(card => {
-                const ts = parseInt(card.dataset.ts);
-                const status = card.dataset.status;
-                
-                // Skip if no timestamp or if order is done
-                if (!ts || status === 'done') return;
-
-                const minsAgo = Math.floor((now - ts) / 60000);
-                
-                // Update Text
-                const badge = card.querySelector('.time-ago-badge');
-                if(badge) badge.innerText = `${mins
+                wrapper.className = "status-indicator status-
