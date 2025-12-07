@@ -435,8 +435,17 @@
             
             grid.innerHTML = ""; 
 
-            if (!data) {
-                grid.innerHTML = "<h3 class='empty-state-msg'>No Active Orders</h3>";
+if (!data) {
+                // --- NEW EMPTY STATE VISUAL ---
+                grid.innerHTML = `
+                    <div class="empty-state-container">
+                        <div class="empty-icon">🍳</div>
+                        <div class="empty-text">All Caught Up!</div>
+                        <div style="font-size:0.9rem; margin-top:10px; color:#444;">Ready for the next rush...</div>
+                    </div>
+                `;
+                // -----------------------------
+                
                 activeOrders = [];
                 checkAudioState(); 
                 return;
