@@ -189,6 +189,54 @@
         .status-done { opacity: 0.6; filter: grayscale(0.8); }
         .status-done .btn-main { background: #333; color: #888; }
         .status-done .btn-main::after { content: "Archive Order"; }
+        /* --- CLEANED UTILITY CLASSES (FIX 1) --- */
+
+/* Layout Utilities */
+.text-center { text-align: center; }
+.flex-1 { flex: 1; }
+.no-decoration { text-decoration: none; }
+.header-actions { 
+    display: flex; 
+    align-items: center; 
+    gap: 15px; 
+}
+
+/* Fixed History Button - Replaces the inline mess */
+.btn-history {
+    background: #333;
+    color: #fff;
+    border: 1px solid #555;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+/* Hover state replaces the JS onmouseover */
+.btn-history:hover {
+    background: #444; 
+}
+
+/* Empty State Message */
+.empty-state-msg {
+    text-align: center;
+    color: #666;
+    grid-column: 1/-1;
+    font-size: 1.1rem;
+    padding: 40px 0;
+}
+
+/* Utility Classes for JS Injections */
+.text-accent-green { color: var(--accent-green); }
+.text-danger { color: #e74c3c; }
+.font-bold { font-weight: bold; }
+.font-small { font-size: 0.75rem; }
+.ml-5 { margin-left: 5px; }
     </style>
 </head>
 <body>
