@@ -1044,27 +1044,57 @@ window.finalizeOrder = function() {
     }
     if (finalNote === "") finalNote = "-";
 
-    // --- FIREBASE INJECTION START ---
-    // Send data to the Kitchen Dashboard
+// --- FIREBASE INJECTION START (UPDATED) ---
+    
+    // 1. Prepare Items List (Keep rich details)
+    const richItems = [];
+    for(let key in cart) {
+        let item = cart[key];
+        richItems.push({
+            name: key, // This already includes "[Extra Cheese]" or "(Note: Spicy)" from addToCart logic
+            qty: item.qty,
+            category: item.category,
+            price: item.price
+        });
+    }
+
+    // 2. Prepare Data Packet
     const kitchenOrderData = {
-        table: `${type} #${orderId}`, // Display Order ID as Table for Kitchen
-        item: kitchenItemsSummary.join(', '), // List all items as a string
-        price: grandTotal,
-        status: 'pending',
+        orderId: orderId,
+        orderType: type, // "Delivery" or "Pickup"
         timestamp: Date.now(),
-        customerName: name,
-        phone: phone,
-        address: address,
-        note: finalNote
+        status: 'pending',
+        
+        // Customer Details
+        customer: {
+            name: name,
+            phone: phone,
+            address: address || "Pickup / Dine-in",
+            email: email
+        },
+
+        // The Food
+        items: richItems,
+
+        // The Money & Offers
+        financials: {
+            subTotal: subTotal,
+            discountVal: discountVal, // Reduced Amount
+            couponCode: activeCoupon || "NONE", // Offer Code
+            packingTotal: packingTotal,
+            grandTotal: grandTotal
+        },
+
+        // Special Instructions
+        globalNote: finalNote
     };
 
     push(ref(db, 'orders'), kitchenOrderData)
         .then(() => {
-            console.log("Order sent to Kitchen Dashboard");
+            console.log("Full Order Data sent to Kitchen");
         })
         .catch((error) => {
             console.error("Firebase Error:", error);
-            // We do NOT block the user if Firebase fails, whatsapp is backup
         });
     // --- FIREBASE INJECTION END ---
 
