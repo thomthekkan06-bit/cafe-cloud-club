@@ -995,7 +995,11 @@ window.finalizeOrder = function() {
     if(!name || !phone || !email || !time) { alert("Please fill in Name, Phone, Email and Time."); return; }
     if(type === 'Delivery' && !address) { alert("Please fill in the Delivery Address."); return; }
     if (!/^[0-9]{10,12}$/.test(phone)) { alert("Strict Policy: Phone number must be 10-12 digits."); return; }
-    if (!email.includes('@')) { alert("Strict Policy: Invalid Email."); return; }
+    // Soften the blow. Explain the value.
+    if (!email.includes('@')) { 
+        alert("Please enter a valid email so we can send your Loyalty Points and Receipt!"); 
+        return; 
+    }
 
     // 2. Setup Order Details
     const orderId = Math.floor(100000 + Math.random() * 900000);
