@@ -986,20 +986,38 @@ window.finalizeOrder = function() {
     if (!status.isOpen) { alert("Store Closed!\n" + status.msg); return; }
 
     const name = document.getElementById('c-name').value.trim();
-    const phone = document.getElementById('c-phone').value.trim();
+    
+    // --- PHONE FIX START ---
+    // Get raw value and strip out everything that isn't a number
+    let rawPhone = document.getElementById('c-phone').value.trim();
+    let phone = rawPhone.replace(/\D/g, ''); 
+    
+    // Remove '91' country code if they added it, to standardize to 10 digits
+    if (phone.length > 10 && phone.startsWith('91')) {
+        phone = phone.substring(2);
+    }
+
+    // Validate length (10-12 digits allowed)
+    if (phone.length < 10 || phone.length > 12) { 
+        alert("Please enter a valid 10-digit mobile number."); 
+        return;
+    }
+    // --- PHONE FIX END ---
+
     const email = document.getElementById('c-email').value.trim();
     const address = document.getElementById('c-address').value.trim();
     const time = document.getElementById('c-time').value;
     const instruction = document.getElementById('c-instruction').value.trim();
 
-    if(!name || !phone || !email || !time) { alert("Please fill in Name, Phone, Email and Time."); return; }
-    if(type === 'Delivery' && !address) { alert("Please fill in the Delivery Address."); return; }
-    if (!/^[0-9]{10,12}$/.test(phone)) { alert("Strict Policy: Phone number must be 10-12 digits."); return; }
-    // Soften the blow. Explain the value.
-    if (!email.includes('@')) { 
-        alert("Please enter a valid email so we can send your Loyalty Points and Receipt!"); 
-        return; 
+    if(!name || !time) { alert("Please fill in Name and Preferred Time."); return; }
+    
+    // --- EMAIL MESSAGE FIX ---
+    if (!email || !email.includes('@')) { 
+        alert("Please enter a valid email to receive your Loyalty Points & Receipt!"); 
+        return;
     }
+
+    if(type === 'Delivery' && !address) { alert("Please fill in the Delivery Address."); return; }
 
     // 2. Setup Order Details
     const orderId = Math.floor(100000 + Math.random() * 900000);
@@ -1011,19 +1029,18 @@ window.finalizeOrder = function() {
     let packingTotal = 0;
     const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
     
-    // 4. Prepare Items List (NEW ENHANCED LOGIC)
+    // 4. Prepare Items List
     const richItems = [];
     for(let key in cart) {
         let item = cart[key];
-        
-        // Calculate Line Totals for internal use
-        let lineTotal = item.price * item.qty; 
+        let lineTotal = item.price * item.qty;
         subTotal += lineTotal;
         
-        // Packing Calc
+        // Packing Calc (Kept Original as requested)
         let chargePerItem = 10;
         if (item.category === 'ADD-ON') chargePerItem = key.startsWith("Hummus") ? 7 : 5;
         else if (fiveRsCats.includes(item.category)) chargePerItem = 5;
+        
         packingTotal += (chargePerItem * item.qty);
         if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
 
@@ -1040,14 +1057,14 @@ window.finalizeOrder = function() {
             else if (activeCoupon.includes('COMBO') || activeCoupon === 'SUNFEAST' || activeCoupon === 'CLOUD15') isOfferItem = true;
         }
 
-        // PUSH DATA WITH TYPE AND OFFER STATUS
+        // PUSH DATA
         richItems.push({
             name: key, 
             qty: item.qty,
             category: item.category,
             price: item.price,
-            type: item.type, // <--- THIS WAS MISSING
-            isOffer: isOfferItem // <--- THIS WAS MISSING
+            type: item.type,
+            isOffer: isOfferItem
         });
     }
     
@@ -1079,11 +1096,11 @@ window.finalizeOrder = function() {
         status: 'pending',
         customer: {
             name: name,
-            phone: phone,
+            phone: phone, // This is now the clean number
             address: address || "Pickup / Dine-in",
             email: email
         },
-        items: richItems, // Now contains Veg/Non-Veg data
+        items: richItems, 
         financials: {
             subTotal: subTotal,
             discountVal: discountVal,
@@ -1098,13 +1115,14 @@ window.finalizeOrder = function() {
         .then(() => { console.log("Sent to Kitchen"); })
         .catch((error) => { console.error("Firebase Error:", error); });
 
-    // 6. Build WhatsApp Message & Redirect (Same as before)
+    // 6. Build WhatsApp Message & Redirect
     let msg = `*New Order @ Café Cloud Club*\n`;
     msg += `*Type:* ${type.toUpperCase()}\n*Time:* ${timeString}\n*Order ID:* ${orderId}\n---------------------------\n`;
     msg += `*Name:* ${name}\n*Phone:* ${phone}\n*Email:* ${email}\n*Time:* ${time}\n`;
     if(type === 'Delivery') msg += `*Address:* ${address}\n`;
     if(finalNote !== "-") msg += `*Note:* ${finalNote}\n`;
     msg += `---------------------------\n*ITEMS:*\n`;
+    
     for(let key in cart) {
         let item = cart[key];
         let lineTotal = item.price * item.qty;
@@ -1130,7 +1148,7 @@ window.finalizeOrder = function() {
     document.getElementById('main-dashboard').style.display = 'none';
     document.getElementById('checkout-modal').style.display = 'none';
     document.getElementById('success-view').style.display = 'flex';
-    
+
     if (typeof gtag === 'function') {
         gtag('event', 'purchase', { transaction_id: orderId, value: grandTotal, currency: "INR" });
     }
