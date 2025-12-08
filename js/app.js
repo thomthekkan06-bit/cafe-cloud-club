@@ -1336,7 +1336,7 @@ function renderCart() {
     // --- DISCOUNT CALCULATIONS ---
     let discountVal = 0;
     let discountText = "";
-    if(activeCoupon === 'MONBURGER') {
+if(activeCoupon === 'MONBURGER') {
         let chickenItem = null;
         let friesItem = null;
         let beefItem = null;
@@ -1358,27 +1358,24 @@ function renderCart() {
         const hasCombo = (chickenItem && friesItem);
         const hasBeef = (beefItem !== null);
 
-        if (hasCombo && hasBeef) {
-            discountVal = 0;
-            discountText = "Conflict: Choose 1 Offer";
-            if(msgBox) {
-                msgBox.innerText = "Error: Cannot combine Chicken Combo and Beef Offer. Remove one.";
-                msgBox.className = "coupon-msg error";
-            }
-        } 
-        else if (hasCombo) {
+        // LOGIC FIX: Prioritize Combo over Beef if both exist
+        if (hasCombo) {
             let comboBaseTotal = chickenItem.basePrice + friesItem.basePrice;
             if (comboBaseTotal > 222) {
                 discountVal = comboBaseTotal - 222;
             }
             discountText = "Mon: Chicken+Fries @ 222";
-            if(msgBox) { msgBox.innerText = "Meat-Up Monday: Combo Applied!"; msgBox.className = "coupon-msg success";
+            if(msgBox) { 
+                msgBox.innerText = "Meat-Up Monday: Combo Applied!"; 
+                msgBox.className = "coupon-msg success";
             }
         } 
         else if (hasBeef) {
             discountVal = 20;
             discountText = "Mon: ₹20 OFF Beef";
-            if(msgBox) { msgBox.innerText = "Meat-Up Monday: Beef Offer Applied!"; msgBox.className = "coupon-msg success";
+            if(msgBox) { 
+                msgBox.innerText = "Meat-Up Monday: Beef Offer Applied!"; 
+                msgBox.className = "coupon-msg success";
             }
         }
         else {
