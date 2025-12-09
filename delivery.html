@@ -63,7 +63,7 @@
                 if (data) {
                     Object.entries(data).forEach(([key, order]) => {
                         // Filter: Delivery AND (Cooking OR Out for Delivery)
-                        if (order.orderType === 'Delivery' && (order.status === 'cooking' || order.status === 'out_for_delivery')) {
+                        // Now includes 'done' (which means Ready to Pickup) if (order.orderType === 'Delivery' && (order.status === 'cooking' || order.status === 'done' || order.status === 'out_for_delivery')) {
                             
                             activeDeliveryCount++;
                             currentVisibleIds.add(key);
