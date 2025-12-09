@@ -1,18 +1,19 @@
 {
-  "name": "Cafe Cloud Club",
-  "short_name": "CafeCloud",
+  "name": "Kitchen Manager",
+  "short_name": "Kitchen",
   "start_url": "/manager.html",
   "display": "standalone",
+  "orientation": "landscape",
   "background_color": "#121212",
   "theme_color": "#121212",
   "icons": [
     {
-      "src": "icon.png",
+      "src": "/icon.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "icon.png",
+      "src": "/icon.png",
       "sizes": "512x512",
       "type": "image/png"
     }
