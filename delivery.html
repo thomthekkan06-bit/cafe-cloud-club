@@ -4,15 +4,95 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Delivery Partner | Café Cloud Club</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Inter', sans-serif; background: #121212; color: #fff; margin: 0; padding: 15px; padding-bottom: 50px; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: #121212; 
+            color: #fff; 
+            margin: 0; 
+            /* Remove padding here to let header touch edges */
+        }
         
-        /* HEADER */
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #333; }
-        .logo { font-weight: 800; color: #FF4500; font-size: 1.2rem; }
-        .refresh-btn { background: #333; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+        /* --- STICKY HEADER SECTION --- */
+        .sticky-wrapper {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: #121212;
+            border-bottom: 1px solid #333;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            padding: 15px;
+        }
+
+        .header-top { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 15px; 
+        }
+
+        .logo { 
+            font-weight: 800; 
+            color: #FF4500; 
+            font-size: 1.2rem; 
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .live-clock {
+            font-family: 'Roboto Mono', monospace;
+            font-weight: 700;
+            color: #aaa;
+            font-size: 1rem;
+            background: #1e1e1e;
+            padding: 5px 10px;
+            border-radius: 6px;
+            border: 1px solid #333;
+        }
+
+        /* STATS DASHBOARD */
+        .stats-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .stat-card {
+            flex: 1;
+            background: #1e1e1e;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-val {
+            font-size: 1.4rem;
+            font-weight: 900;
+            font-family: 'Roboto Mono', monospace;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #888;
+            margin-top: 2px;
+            font-weight: 600;
+        }
+
+        .stat-pickup .stat-val { color: #f1c40f; } /* Yellow */
+        .stat-delivered .stat-val { color: #2ecc71; } /* Green */
+
+        /* --- CONTENT AREA --- */
+        #orders-container {
+            padding: 15px;
+            padding-bottom: 50px;
+        }
 
         /* CARDS */
         .delivery-card { background: #1e1e1e; border: 1px solid #333; border-radius: 12px; margin-bottom: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
@@ -83,9 +163,22 @@
         <p style="color:#444; margin-top:20px; font-size:0.8rem;">Enter 2024 to Start</p>
     </div>
 
-    <div class="header">
-        <div class="logo"><i class="fas fa-motorcycle"></i> Cloud Delivery</div>
-        <button class="refresh-btn" onclick="location.reload()"><i class="fas fa-sync"></i></button>
+    <div class="sticky-wrapper">
+        <div class="header-top">
+            <div class="logo"><i class="fas fa-motorcycle"></i> Cloud Delivery</div>
+            <div class="live-clock" id="clock-display">00:00 PM</div>
+        </div>
+        
+        <div class="stats-row">
+            <div class="stat-card stat-pickup">
+                <div class="stat-val" id="count-pickup">0</div>
+                <div class="stat-label">To Pickup</div>
+            </div>
+            <div class="stat-card stat-delivered">
+                <div class="stat-val" id="count-delivered">0</div>
+                <div class="stat-label">Delivered</div>
+            </div>
+        </div>
     </div>
 
     <div id="orders-container">
@@ -97,7 +190,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        // Added 'get', 'set', 'remove' to imports for history moving
         import { getDatabase, ref, onValue, update, get, set, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
@@ -122,6 +214,41 @@
         let isFirstLoad = true;
         let isRinging = false;
 
+        // --- CLOCK & LOCAL STORAGE FOR STATS ---
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock-display').innerText = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        }
+        setInterval(updateClock, 1000);
+
+        // Get delivered count from LocalStorage (resets daily logic included)
+        function getDeliveredCount() {
+            const today = new Date().toDateString(); // e.g., "Tue Dec 09 2025"
+            const storedDate = localStorage.getItem('ccc_delivery_date');
+            
+            if (storedDate !== today) {
+                // New day, reset count
+                localStorage.setItem('ccc_delivery_date', today);
+                localStorage.setItem('ccc_delivered_count', '0');
+                return 0;
+            }
+            return parseInt(localStorage.getItem('ccc_delivered_count')) || 0;
+        }
+
+        function incrementDeliveredCount() {
+            let count = getDeliveredCount();
+            count++;
+            localStorage.setItem('ccc_delivered_count', count.toString());
+            renderStats();
+        }
+
+        function renderStats(pickupCount = null) {
+            document.getElementById('count-delivered').innerText = getDeliveredCount();
+            if (pickupCount !== null) {
+                document.getElementById('count-pickup').innerText = pickupCount;
+            }
+        }
+
         // --- PIN UNLOCK ---
         window.unlockApp = async function() {
             const input = document.getElementById('pin-input');
@@ -136,6 +263,7 @@
                 } catch(err) { console.log("Wake Lock ignored"); }
 
                 document.getElementById('pin-overlay').style.display = 'none';
+                renderStats(0); // Init stats
                 initOrders();
             } else { 
                 alert("Wrong PIN");
@@ -151,34 +279,35 @@
                 const container = document.getElementById('orders-container');
                 container.innerHTML = "";
                 
-                let activeDeliveryCount = 0;
+                let activeDeliveryCount = 0; // Total active orders (Pickup + Out)
+                let pickupCount = 0;         // Only those waiting for pickup
                 const currentVisibleIds = new Set();
                 let hasNewOrder = false;
 
                 if (data) {
                     Object.entries(data).forEach(([key, order]) => {
-                        // Only show if Delivery AND (Cooking OR Done OR Out)
-                        // If 'pending', driver doesn't see it yet.
                         if (order.orderType === 'Delivery' && (order.status === 'cooking' || order.status === 'done' || order.status === 'out_for_delivery')) {
                             
                             activeDeliveryCount++;
                             currentVisibleIds.add(key);
                             
+                            // Check for New Order
                             if (!isFirstLoad && !knownOrders.has(key)) hasNewOrder = true;
 
                             const isOut = order.status === 'out_for_delivery';
+                            
+                            // Count Stats
+                            if (!isOut) pickupCount++; 
+
                             const btnText = isOut ? "MARK DELIVERED" : "PICK UP ORDER";
                             const btnClass = isOut ? "complete" : "pickup";
-                            
-                            // Determine what function to call
                             const actionFunction = isOut ? `completeDelivery('${key}')` : `markPickedUp('${key}')`;
-
-                            const mapLink = `https://www.google.com/maps/search/?api=1&query=$?q=${encodeURIComponent(order.customer.address)}`;
+                            const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.customer.address)}`;
 
                             // Financials
                             const fins = order.financials || { grandTotal: 0 };
                             const delCharge = fins.deliveryFee || 0;
-                            const totalToCollect = fins.grandTotal; // grandTotal already includes deliveryFee if updated in DB
+                            const totalToCollect = fins.grandTotal;
 
                             const html = `
                                 <div class="delivery-card">
@@ -228,10 +357,13 @@
                     });
                 }
                 
+                // Update Dashboard Stats
+                renderStats(pickupCount);
+
                 if (hasNewOrder) playAlarm();
 
                 if(activeDeliveryCount === 0) {
-                     container.innerHTML = `<div style="text-align:center; color:#555; margin-top:100px;"><i class="fas fa-check-circle" style="font-size:3rem; margin-bottom:20px;"></i><p>No active deliveries</p><p style="font-size:0.8rem;">Waiting for orders...</p></div>`;
+                     container.innerHTML = `<div style="text-align:center; color:#555; margin-top:50px;"><i class="fas fa-check-circle" style="font-size:3rem; margin-bottom:20px;"></i><p>No active deliveries</p><p style="font-size:0.8rem;">Waiting for orders...</p></div>`;
                      stopAlarm(); 
                 }
 
@@ -258,11 +390,9 @@
 
         // --- ACTIONS ---
         
-        // 1. Update Fee: Calculates new total and saves to DB instantly
+        // 1. Update Fee
         window.updateDeliveryFee = (key, val, sub, disc, pack) => {
             const fee = parseInt(val) || 0;
-            // Recalculate Grand Total
-            // Note: GrandTotal = (Sub - Disc) + Pack + Delivery
             const newTotal = (sub - disc) + pack + fee;
             
             update(ref(db, 'orders/' + key + '/financials'), { 
@@ -271,29 +401,28 @@
             });
         }
 
-        // 2. Pick Up: Sets status to out_for_delivery
+        // 2. Pick Up
         window.markPickedUp = (key) => {
             stopAlarm();
             update(ref(db, 'orders/' + key), { status: 'out_for_delivery' });
         }
 
-        // 3. Complete: Moves to History -> Deletes from Orders
+        // 3. Complete (and increment stats)
         window.completeDelivery = (key) => {
             stopAlarm();
-            if(!confirm("Confirm CASH Collected & Delivered? This will remove the order.")) return;
+            if(!confirm("Confirm CASH Collected & Delivered?")) return;
 
             const orderRef = ref(db, 'orders/' + key);
             get(orderRef).then((snapshot) => {
                 if (snapshot.exists()) {
                     const data = snapshot.val();
                     data.completedAt = Date.now(); 
-                    data.status = 'delivered'; // Final status for history
+                    data.status = 'delivered'; 
 
-                    // Move to History node
                     set(ref(db, 'history/' + key), data)
                         .then(() => { 
-                            // Remove from Active Orders node (Vanishes from both apps)
-                            remove(orderRef); 
+                            remove(orderRef);
+                            incrementDeliveredCount(); // Update the top counter
                         })
                         .catch((err) => alert("Error completing: " + err));
                 }
