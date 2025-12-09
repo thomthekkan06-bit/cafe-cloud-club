@@ -1,0 +1,172 @@
+<script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
+            authDomain: "cafe-orders-1afa1.firebaseapp.com",
+            databaseURL: "https://cafe-orders-1afa1-default-rtdb.firebaseio.com",
+            projectId: "cafe-orders-1afa1",
+            storageBucket: "cafe-orders-1afa1.firebasestorage.app",
+            messagingSenderId: "274410745480",
+            appId: "1:274410745480:web:9964c3914d512aed8d793d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        
+        // --- 1. PIN UPDATE ---
+        const DRIVER_PIN = "2024"; 
+        
+        const alertSound = new Audio('bell.mp3'); 
+        alertSound.loop = true; // Make it ring until answered
+        
+        let knownOrders = new Set();
+        let isFirstLoad = true;
+        let isRinging = false;
+
+        window.unlockApp = async function() {
+            const input = document.getElementById('pin-input');
+            if(input.value === DRIVER_PIN) {
+                // Prime Audio: Play and pause immediately so browser trusts us
+                alertSound.play().then(() => {
+                    alertSound.pause();
+                    alertSound.currentTime = 0;
+                }).catch(e => console.log("Audio waiting for interaction"));
+
+                // Wake Lock: Keep screen alive
+                try {
+                    if ('wakeLock' in navigator) {
+                        await navigator.wakeLock.request('screen');
+                    }
+                } catch(err) { console.log("Wake Lock ignored"); }
+
+                document.getElementById('pin-overlay').style.display = 'none';
+                initOrders();
+            } else { 
+                alert("Wrong PIN"); 
+                input.value = "";
+            }
+        }
+
+        function initOrders() {
+            const ordersRef = ref(db, 'orders');
+            onValue(ordersRef, (snapshot) => {
+                const data = snapshot.val();
+                const container = document.getElementById('orders-container');
+                container.innerHTML = "";
+                
+                let activeDeliveryCount = 0;
+                const currentVisibleIds = new Set();
+                let hasNewOrder = false;
+
+                if (data) {
+                    Object.entries(data).forEach(([key, order]) => {
+                        // Filter: Delivery AND (Cooking OR Out for Delivery)
+                        if (order.orderType === 'Delivery' && (order.status === 'cooking' || order.status === 'out_for_delivery')) {
+                            
+                            activeDeliveryCount++;
+                            currentVisibleIds.add(key);
+                            
+                            // Check if this is a brand new order we haven't seen
+                            if (!isFirstLoad && !knownOrders.has(key)) {
+                                hasNewOrder = true;
+                            }
+
+                            const isOut = order.status === 'out_for_delivery';
+                            const btnText = isOut ? "MARK DELIVERED" : "PICK UP ORDER";
+                            const btnClass = isOut ? "complete" : "pickup";
+                            // If picking up, we set status to 'out_for_delivery'
+                            // If delivering, we set status to 'done' (or 'delivered' if you prefer an archive step)
+                            const nextStatus = isOut ? "delivered" : "out_for_delivery";
+                            
+                            const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.customer.address)}`;
+
+                            const html = `
+                                <div class="delivery-card">
+                                    <div class="card-header">
+                                        <span class="order-id">#${order.orderId}</span>
+                                        <span class="status-badge">${order.status.replace(/_/g, ' ')}</span>
+                                    </div>
+                                    <div class="info-body">
+                                        <div class="customer-row">
+                                            <div class="icon"><i class="fas fa-user"></i></div>
+                                            <div style="font-weight:bold;">${order.customer.name}</div>
+                                        </div>
+                                        <div class="customer-row">
+                                            <div class="icon"><i class="fas fa-map-marker-alt" style="color:#e74c3c;"></i></div>
+                                            <div class="address-text">${order.customer.address}</div>
+                                        </div>
+                                        <div style="margin-top:10px; font-size:0.9rem; color:#888;">
+                                            Collect Cash: <span style="color:#fff; font-weight:bold;">₹${order.financials.grandTotal}</span>
+                                        </div>
+                                    </div>
+                                    <div class="action-grid">
+                                        <a href="${mapLink}" target="_blank" style="text-decoration:none;">
+                                            <button class="btn btn-map"><i class="fas fa-location-arrow"></i> Navigate</button>
+                                        </a>
+                                        <a href="tel:${order.customer.phone}" style="text-decoration:none;">
+                                            <button class="btn btn-call"><i class="fas fa-phone"></i> Call</button>
+                                        </a>
+                                    </div>
+                                    <div class="status-area">
+                                        <button class="btn btn-status ${btnClass}" onclick="stopAlarmAndUpdate('${key}', '${nextStatus}')">
+                                            ${btnText}
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                            container.innerHTML += html;
+                        }
+                    });
+                }
+                
+                // If we found a new order, start ringing
+                if (hasNewOrder) {
+                    playAlarm();
+                }
+
+                if(activeDeliveryCount === 0) {
+                     container.innerHTML = `<div style="text-align:center; color:#555; margin-top:50px;"><i class="fas fa-check-circle" style="font-size:3rem; margin-bottom:10px;"></i><p>No active deliveries</p></div>`;
+                     // Safety: If no orders, ensure sound is off
+                     stopAlarm();
+                }
+
+                knownOrders = currentVisibleIds;
+                isFirstLoad = false;
+            });
+        }
+
+        function playAlarm() {
+            if(isRinging) return; // Don't restart if already ringing
+            isRinging = true;
+            alertSound.currentTime = 0;
+            alertSound.play().catch(e => console.log("Sound blocked"));
+            
+            // Continuous vibration
+            if ("vibrate" in navigator) {
+                // Vibrate pattern: 1s on, 1s off, repeat
+                navigator.vibrate([1000, 1000, 1000, 1000, 1000]); 
+            }
+        }
+
+        function stopAlarm() {
+            isRinging = false;
+            alertSound.pause();
+            alertSound.currentTime = 0;
+            if ("vibrate" in navigator) navigator.vibrate(0); // Stop vibration
+        }
+
+        // --- 2. COMBINED FUNCTION: Stop Sound + Update Firebase ---
+        window.stopAlarmAndUpdate = function(key, status) {
+            // Stop sound immediately when they click
+            stopAlarm();
+
+            if(status === 'delivered') {
+                if(!confirm("Confirm order is delivered and cash collected?")) return;
+                update(ref(db, 'orders/' + key), { status: 'done' });
+            } else {
+                update(ref(db, 'orders/' + key), { status: status });
+            }
+        }
+    </script>
