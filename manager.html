@@ -352,23 +352,36 @@
         const pinOverlay = document.getElementById('pin-overlay');
         const pinError = document.getElementById('pin-error');
 
-        function attemptUnlock() {
-            if (pinInput.value === KITCHEN_PIN) {
-                bell.play().then(() => {
-                    bell.pause();
-                    bell.currentTime = 0;
-                    audioUnlocked = true;
-                    pinOverlay.style.opacity = '0';
-                    setTimeout(() => pinOverlay.style.display = 'none', 500);
-                    checkAudioState(); 
-                }).catch(e => alert("Audio System Failed: " + e));
-            } else {
-                pinError.style.display = 'block';
-                pinInput.classList.add('shake');
-                setTimeout(() => pinInput.classList.remove('shake'), 300);
-                pinInput.value = "";
+async function attemptUnlock() {
+    if (pinInput.value === KITCHEN_PIN) {
+        
+        // 1. Play Audio (Your existing logic)
+        bell.play().then(() => {
+            bell.pause();
+            bell.currentTime = 0;
+            audioUnlocked = true;
+            pinOverlay.style.opacity = '0';
+            setTimeout(() => pinOverlay.style.display = 'none', 500);
+            checkAudioState(); 
+        }).catch(e => alert("Audio System Failed: " + e));
+
+        // 2. NEW: Force Screen to Stay Awake (Wake Lock API)
+        try {
+            if ('wakeLock' in navigator) {
+                const wakeLock = await navigator.wakeLock.request('screen');
+                console.log('Screen Wake Lock Active');
             }
+        } catch (err) {
+            console.log('Wake Lock not supported on this device');
         }
+
+    } else {
+        pinError.style.display = 'block';
+        pinInput.classList.add('shake');
+        setTimeout(() => pinInput.classList.remove('shake'), 300);
+        pinInput.value = "";
+    }
+}
 
         unlockBtn.addEventListener('click', attemptUnlock);
         pinInput.addEventListener('keypress', (e) => {
