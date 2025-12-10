@@ -436,6 +436,15 @@
                         </div>
                     `;
                 }
+                // --- ADD THIS BLOCK TO KILL ZOMBIE ORDERS ---
+else {
+    actionButtonsHtml = `
+        <button class="btn-action btn-reject" onclick="rejectOrder('${key}')" style="background:purple;">
+            FORCE DELETE 🗑️
+        </button>
+    `;
+}
+// ---------------------------------------------
 
                 const card = document.createElement('div');
                 card.className = `order-card ${statusClass}`;
