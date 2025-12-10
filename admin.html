@@ -46,7 +46,12 @@
         .item-row { display: grid; grid-template-columns: 1fr auto auto; gap: 20px; background: var(--card); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; align-items: center; transition: background 0.2s; }
         .item-row:hover { border-color: #555; }
         .item-details h4 { margin: 0 0 4px 0; font-size: 1rem; color: #fff; }
-        .item-details span { font-size: 0.8rem; color: #777; font-weight: 600; background: #111; padding: 2px 6px; border-radius: 3px; }
+        
+        /* --- CHANGED: TYPE BADGES --- */
+        .type-badge { font-size: 0.75rem; font-weight: 800; padding: 2px 6px; border-radius: 3px; letter-spacing: 0.5px; border: 1px solid transparent; }
+        .type-veg { color: #2ecc71; border-color: #2ecc71; background: rgba(46, 204, 113, 0.1); }
+        .type-non { color: #e74c3c; border-color: #e74c3c; background: rgba(231, 76, 60, 0.1); }
+
         .item-price { font-family: monospace; font-size: 1rem; color: var(--accent); font-weight: 700; }
         
         /* STATUS BADGES */
@@ -61,7 +66,7 @@
         .btn-blue { background: #2980b9; } .btn-blue:hover { background: #21618c; }
         .btn-red { background: #c0392b; }
         
-        /* MODALS (Same as before but tweaked) */
+        /* MODALS */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
         .modal-card { background: #1e1e1e; padding: 30px; border-radius: 16px; width: 90%; max-width: 450px; text-align: center; border: 1px solid #444; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
         .stock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
@@ -99,8 +104,7 @@
         
         <div class="sidebar">
             <div class="nav-header">Categories</div>
-            <div id="nav-list">
-                </div>
+            <div id="nav-list"></div>
         </div>
 
         <div class="main-content">
@@ -190,7 +194,7 @@
         window.checkPin = () => {
             if(document.getElementById('pin').value === "2021") {
                 document.getElementById('pin-overlay').style.display = 'none';
-                document.getElementById('app').style.display = 'flex'; // Changed to flex for layout
+                document.getElementById('app').style.display = 'flex'; 
                 loadMenu();
             } else alert("Wrong PIN");
         }
@@ -261,11 +265,10 @@
                                 badgeText = `OFF (${minsLeft}m)`;
                                 isOff = true;
                             }
-                        } else if (item.inStock === false) { // Legacy check
+                        } else if (item.inStock === false) { 
                             badgeClass = 'st-off'; badgeText = 'OFF'; isOff = true;
                         }
 
-                        // Add to Stock Watch if OFF
                         if(isOff) {
                             outOfStockCount++;
                             const alert = document.createElement('div');
@@ -274,13 +277,16 @@
                             stockList.appendChild(alert);
                         }
 
-                        // Create Row
+                        // --- CHANGED: COLOR LOGIC ---
+                        const typeClass = (item.type === 'veg') ? 'type-veg' : 'type-non';
+                        const typeLabel = item.type.toUpperCase();
+
                         const row = document.createElement('div');
                         row.className = 'item-row';
                         row.innerHTML = `
                             <div class="item-details">
                                 <h4>${item.name}</h4>
-                                <span>${item.type.toUpperCase()}</span>
+                                <span class="type-badge ${typeClass}">${typeLabel}</span>
                             </div>
                             <div class="item-price">₹${item.price}</div>
                             <div style="text-align:right;">
@@ -294,7 +300,6 @@
                     root.appendChild(section);
                 });
 
-                // Toggle Stock Watch visibility
                 if(outOfStockCount > 0) stockWatch.style.display = 'block';
                 else stockWatch.style.display = 'none';
             });
