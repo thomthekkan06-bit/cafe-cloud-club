@@ -149,46 +149,72 @@
             } else alert("Wrong PIN");
         }
 
-        // --- DATA LOADING ---
-        function loadMenu() {
-            onValue(ref(db, 'menu'), (snap) => {
-                const list = document.getElementById('menu-list');
-                const migrationBox = document.getElementById('migration-area');
-                list.innerHTML = "";
-                
-                const data = snap.val();
-                if(!data) {
-                    list.innerHTML = "<div style='text-align:center; padding:20px; color:#666;'>No Items Found. Use Migration Tool above.</div>";
-                    migrationBox.style.display = 'block';
-                    return;
-                }
-
-                migrationBox.style.display = 'none'; // Hide migration if data exists
-
-                // Convert to array and sort by Category then Name
-                const items = Object.entries(data).map(([key, val]) => ({ ...val, key }));
-                items.sort((a,b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
-
-                items.forEach(item => {
-                    const isStock = item.inStock !== false; // Default true if undefined
-                    const stockClass = isStock ? 'in-stock' : 'out-stock';
-                    const stockText = isStock ? 'IN STOCK' : 'OUT OF STOCK';
-
-                    const div = document.createElement('div');
-                    div.className = 'menu-item';
-                    div.style.opacity = isStock ? '1' : '0.5';
-                    div.innerHTML = `
-                        <div class="item-info">
-                            <div class="item-name">${item.name} <span class="stock-toggle ${stockClass}" onclick="event.stopPropagation(); toggleStock('${item.key}', ${isStock})">${stockText}</span></div>
-                            <div class="item-meta">${item.category} • ${item.type.toUpperCase()}</div>
-                        </div>
-                        <div class="item-price">₹${item.price}</div>
-                        <button onclick="editItem('${item.key}')" class="btn btn-blue" style="margin-left:15px; padding:5px 10px; font-size:0.8rem;">EDIT</button>
-                    `;
-                    list.appendChild(div);
-                });
-            });
+// --- NEW LOAD MENU FUNCTION (Categorized) ---
+function loadMenu() {
+    onValue(ref(db, 'menu'), (snap) => {
+        const list = document.getElementById('menu-list');
+        const migrationBox = document.getElementById('migration-area');
+        list.innerHTML = "";
+        
+        const data = snap.val();
+        if(!data) {
+            list.innerHTML = "<div style='text-align:center; padding:20px; color:#666;'>No Items Found. Use Migration Tool above.</div>";
+            if(migrationBox) migrationBox.style.display = 'block';
+            return;
         }
+
+        if(migrationBox) migrationBox.style.display = 'none';
+
+        // 1. Convert Database Object to an Array
+        const items = Object.entries(data).map(([key, val]) => ({ ...val, key }));
+
+        // 2. Group items by Category
+        const grouped = items.reduce((acc, item) => {
+            const cat = item.category || "Uncategorized";
+            if (!acc[cat]) acc[cat] = [];
+            acc[cat].push(item);
+            return acc;
+        }, {});
+
+        // 3. Get Category Names and Sort them Alphabetically
+        const categories = Object.keys(grouped).sort();
+
+        // 4. Render Categories and their Items
+        categories.forEach(cat => {
+            // A. Create the Category Header
+            const header = document.createElement('div');
+            header.className = 'category-header';
+            header.innerText = cat;
+            list.appendChild(header);
+
+            // B. Sort items inside this category by Name
+            grouped[cat].sort((a, b) => a.name.localeCompare(b.name));
+
+            // C. Render Items for this category
+            grouped[cat].forEach(item => {
+                const isStock = item.inStock !== false;
+                const stockClass = isStock ? 'in-stock' : 'out-stock';
+                const stockText = isStock ? 'IN STOCK' : 'OUT OF STOCK';
+
+                const div = document.createElement('div');
+                div.className = 'menu-item';
+                div.style.opacity = isStock ? '1' : '0.5';
+                div.innerHTML = `
+                    <div class="item-info">
+                        <div class="item-name">
+                            ${item.name} 
+                            <span class="stock-toggle ${stockClass}" onclick="event.stopPropagation(); toggleStock('${item.key}', ${isStock})">${stockText}</span>
+                        </div>
+                        <div class="item-meta">${item.type.toUpperCase()}</div>
+                    </div>
+                    <div class="item-price">₹${item.price}</div>
+                    <button onclick="editItem('${item.key}')" class="btn btn-blue" style="margin-left:15px; padding:5px 10px; font-size:0.8rem;">EDIT</button>
+                `;
+                list.appendChild(div);
+            });
+        });
+    });
+}
 
         // --- CRUD ACTIONS ---
         window.saveItem = () => {
