@@ -88,7 +88,6 @@ onValue(menuRef, (snapshot) => {
         Object.keys(data).forEach(key => {
             const item = data[key];
             
-tool_code
 // 2. Filter: Logic to check stockStatus AND legacy inStock
 let isAvailable = true;
 
