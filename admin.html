@@ -47,7 +47,7 @@
         .item-row:hover { border-color: #555; }
         .item-details h4 { margin: 0 0 4px 0; font-size: 1rem; color: #fff; }
         
-        /* --- CHANGED: TYPE BADGES --- */
+        /* TYPE BADGES */
         .type-badge { font-size: 0.75rem; font-weight: 800; padding: 2px 6px; border-radius: 3px; letter-spacing: 0.5px; border: 1px solid transparent; }
         .type-veg { color: #2ecc71; border-color: #2ecc71; background: rgba(46, 204, 113, 0.1); }
         .type-non { color: #e74c3c; border-color: #e74c3c; background: rgba(231, 76, 60, 0.1); }
@@ -82,13 +82,56 @@
         input, select { width: 100%; padding: 12px; background: #111; border: 1px solid #444; color: white; border-radius: 6px; box-sizing: border-box; font-family: inherit; }
         input:focus, select:focus { border-color: var(--accent); outline: none; }
 
-        /* RESPONSIVE */
+        /* --- RESPONSIVE FIX (MOBILE LAYOUT) --- */
         @media (max-width: 800px) {
-            body { flex-direction: column; overflow: auto; height: auto; }
-            .sidebar { width: 100%; height: auto; flex-direction: row; overflow-x: auto; padding: 10px; border-bottom: 1px solid var(--border); border-right: none; }
-            .nav-btn { white-space: nowrap; border-left: none; border-bottom: 3px solid transparent; }
-            .nav-btn.active { background: transparent; border-bottom-color: var(--accent); }
-            .content-scroll { padding: 15px; overflow: visible; }
+            body { 
+                flex-direction: column;
+                overflow: auto; 
+                height: auto; 
+            }
+            
+            /* FIX: Allow main app wrapper to grow */
+            #app {
+                height: auto !important;
+                overflow: visible !important;
+                display: flex !important;
+                flex-direction: column;
+            }
+
+            /* FIX: Stop clipping content on mobile */
+            .main-content {
+                height: auto;
+                overflow: visible;
+                display: block;
+            }
+
+            .sidebar { 
+                width: 100%;
+                height: auto; 
+                flex-direction: row; 
+                overflow-x: auto; 
+                padding: 10px; 
+                border-bottom: 1px solid var(--border); 
+                border-right: none;
+                flex-shrink: 0;
+            }
+            
+            .nav-btn { 
+                white-space: nowrap; 
+                border-left: none;
+                border-bottom: 3px solid transparent; 
+            }
+            
+            .nav-btn.active { 
+                background: transparent;
+                border-bottom-color: var(--accent); 
+            }
+            
+            .content-scroll { 
+                padding: 15px; 
+                overflow: visible;
+                height: auto; /* Ensure this grows too */
+            }
         }
     </style>
 </head>
@@ -249,7 +292,7 @@
                             <button class="cat-stock-btn" onclick="openBatchModal('${cat}')">Category Options</button>
                         </div>
                     `;
-
+                    
                     grouped[cat].sort((a,b) => a.name.localeCompare(b.name)).forEach(item => {
                         // Status Logic
                         let badgeClass = 'st-active';
@@ -307,7 +350,6 @@
 
         // --- STOCK LOGIC ---
         let targetKeys = [];
-
         window.openSingleModal = (key, name) => {
             targetKeys = [key];
             document.getElementById('stock-title').innerText = `${name}`;
@@ -327,7 +369,6 @@
         }
 
         window.closeStockModal = () => document.getElementById('stock-modal').style.display = 'none';
-
         window.applyStock = (mode) => {
             const updates = {};
             targetKeys.forEach(key => {
@@ -374,14 +415,13 @@
         window.deleteItem = () => { if(confirm("Delete this item permanently?")) remove(ref(db, 'menu/' + document.getElementById('edit-key').value)).then(hideForm); }
         
         window.showAddForm = () => { 
-            document.getElementById('editor-overlay').style.display='flex'; 
+            document.getElementById('editor-overlay').style.display='flex';
             document.getElementById('form-title').innerText = "New Item";
             document.getElementById('edit-key').value = "";
             document.getElementById('inp-name').value = "";
             document.getElementById('inp-price').value = "";
         }
         window.hideForm = () => document.getElementById('editor-overlay').style.display='none';
-        
         window.editItem = (key) => {
             onValue(ref(db, 'menu/'+key), (s) => {
                 const d=s.val();
