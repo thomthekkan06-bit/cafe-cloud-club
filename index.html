@@ -311,6 +311,8 @@
     </div>
 </div>
 
+<div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
 <div class="dashboard" id="main-dashboard">
     <div class="left-sidebar">
         <h1 class="brand-title">Café Cloud Club</h1>
@@ -397,6 +399,10 @@
         </div>
 
         <div class="header-bar">
+            <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Open Menu">
+                <i class="fas fa-bars"></i>
+            </button>
+            
             <div class="search-box">
                 <i class="fas fa-search" style="color: #ccc;"></i>
                 <input type="text" id="search-input" placeholder="Search..." onkeyup="updateSearch()">
