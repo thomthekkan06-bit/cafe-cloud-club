@@ -88,11 +88,29 @@ onValue(menuRef, (snapshot) => {
         Object.keys(data).forEach(key => {
             const item = data[key];
             
-            // 2. Filter: Only show items that are IN STOCK
-            // (If 'inStock' is undefined, we assume it's true to be safe)
-            if (item.inStock !== false) {
-                menuData.push(item);
-            }
+tool_code
+// 2. Filter: Logic to check stockStatus AND legacy inStock
+let isAvailable = true;
+
+// Check New Logic (Admin Panel uses this)
+if (item.stockStatus === 'MANUAL_OFF') {
+    isAvailable = false;
+} 
+else if (item.stockStatus === 'TEMP_OFF') {
+    // If current time is BEFORE the return time, it is still OFF
+    if (item.stockReturnTime && Date.now() < item.stockReturnTime) {
+        isAvailable = false;
+    }
+}
+
+// Check Legacy Logic (Just in case)
+if (item.inStock === false) {
+    isAvailable = false;
+}
+
+if (isAvailable) {
+    menuData.push(item);
+}
         });
 
         // 3. Sort: Keep the menu organized by Category, then by Name
