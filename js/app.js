@@ -16,7 +16,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-
 /* --- PRELOADER SCRIPT --- */
 document.addEventListener('DOMContentLoaded', () => {
     const foodQuotes = {
@@ -88,31 +87,31 @@ onValue(menuRef, (snapshot) => {
         Object.keys(data).forEach(key => {
             const item = data[key];
             
-// 2. Filter: Logic to check stockStatus AND legacy inStock
-let isAvailable = true;
+            [cite_start]// 2. Filter: Logic to check stockStatus AND legacy inStock [cite: 836]
+            let isAvailable = true;
 
-// Check New Logic (Admin Panel uses this)
-if (item.stockStatus === 'MANUAL_OFF') {
-    isAvailable = false;
-} 
-else if (item.stockStatus === 'TEMP_OFF') {
-    // If current time is BEFORE the return time, it is still OFF
-    if (item.stockReturnTime && Date.now() < item.stockReturnTime) {
-        isAvailable = false;
-    }
-}
+            // Check New Logic (Admin Panel uses this)
+            if (item.stockStatus === 'MANUAL_OFF') {
+                isAvailable = false;
+            } 
+            else if (item.stockStatus === 'TEMP_OFF') {
+                // If current time is BEFORE the return time, it is still OFF
+                if (item.stockReturnTime && Date.now() < item.stockReturnTime) {
+                    isAvailable = false;
+                }
+            }
 
-// Check Legacy Logic (Just in case)
-if (item.inStock === false) {
-    isAvailable = false;
-}
+            // Check Legacy Logic (Just in case)
+            if (item.inStock === false) {
+                isAvailable = false;
+            }
 
-if (isAvailable) {
-    menuData.push(item);
-}
+            if (isAvailable) {
+                menuData.push(item);
+            }
         });
 
-        // 3. Sort: Keep the menu organized by Category, then by Name
+        [cite_start]// 3. Sort: Keep the menu organized by Category, then by Name [cite: 838]
         menuData.sort((a, b) => {
             return a.category.localeCompare(b.category) || a.name.localeCompare(b.name);
         });
@@ -175,6 +174,20 @@ window.repeatLastOrder = function() {
     }
 }
 
+/* --- NEW: MOBILE SIDEBAR DRAWER LOGIC --- */
+window.toggleSidebar = function() {
+    const sidebar = document.querySelector('.left-sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    
+    if (sidebar.classList.contains('active')) {
+        sidebar.classList.remove('active');
+        if(overlay) overlay.classList.remove('active');
+    } else {
+        sidebar.classList.add('active');
+        if(overlay) overlay.classList.add('active');
+    }
+}
+
 let currentCategory = 'All';
 let currentSearch = '';
 let currentSort = 'default';
@@ -187,8 +200,16 @@ window.setCategoryFilter = function(cat, btn) {
     if(btn) btn.classList.add('active');
     currentCategory = cat;
     renderMenu();
+
+    // AUTO-CLOSE LOGIC FOR MOBILE
     if(window.innerWidth <= 1000) {
         document.querySelector('.main-content').scrollTop = 0;
+        
+        // Close the sidebar if it's open
+        const sidebar = document.querySelector('.left-sidebar');
+        if (sidebar && sidebar.classList.contains('active')) {
+            toggleSidebar(); // This closes it
+        }
     }
 }
 
@@ -260,7 +281,7 @@ function renderMenu() {
             const ingLower = currentIngredient.toLowerCase();
             if(ingLower === 'paneer') {
                  if(!nameLower.includes('paneer')) return false;
-             } else {
+              } else {
                 if(!nameLower.includes(ingLower)) return false;
             }
         }
@@ -287,7 +308,7 @@ function renderMenu() {
         const isFav = favorites.includes(item.name);
         const favClass = isFav ? 'active' : '';
         const uniqueId = item.name.replace(/[^a-zA-Z0-9]/g, '-');
-         const emojiStr = item.type === 'veg' ? vegIcon : nonVegIcon;
+        const emojiStr = item.type === 'veg' ? vegIcon : nonVegIcon;
         
         card.innerHTML = `
             <div style="position:relative;"> 
@@ -306,7 +327,7 @@ function renderMenu() {
             <div class="price-row">
                 <div class="price">${rupeeSign}${item.price}</div>
                 <button class="add-btn-mini" aria-label="Add ${item.name} to cart" onclick="openOptionModal(${originalIndex})">
-                     ADD <i class="fas fa-plus" aria-hidden="true"></i>
+                      ADD <i class="fas fa-plus" aria-hidden="true"></i>
                 </button>
             </div>
         `;
@@ -342,14 +363,14 @@ window.openOptionModal = function(index) {
             "Cloud Special Chicken Burger",
             "Egg Burger",
             "Pesto Chicken Burger",
-             "Tandoori Burger Chicken",
+            "Tandoori Burger Chicken",
             "Tandoori Special Chicken Burger",
             "Tropical Beef Burger",
             "Tropical Pesto Chicken Burger",
             "Tropical Tandoori Chicken Burger",
             "Classic Beef Burger",
             "Double Decker Beef Burger"
-        ];
+         ];
         if (friedEggEligible.includes(item.name)) {
             availableOptions.push({ name: "Add Fried Egg (Non-Veg)", price: 20 });
         }
@@ -566,7 +587,6 @@ window.applyCoupon = function() {
     const msgBox = document.getElementById('coupon-msg');
     const code = codeInput.value.trim().toUpperCase();
     const todayIndex = new Date().getDay();
-
     if (code === 'MONBURGER') {
         if(todayIndex !== 1) { 
             msgBox.innerText = "This code is only valid on Mondays!";
@@ -630,7 +650,7 @@ window.applyCoupon = function() {
         for(let key in cart) {
             if(cart[key].category === "Whipped Wonders" && !key.toLowerCase().includes("vanilla")) { 
                 hasShake = true;
-            break; 
+                break; 
             }
         }
 
@@ -786,7 +806,7 @@ window.applyCoupon = function() {
 
     if(activeCoupon && (activeCoupon.includes('CLOUD') || activeCoupon.includes('STEAK') || activeCoupon.includes('QUICK') || activeCoupon.includes('FEAST'))) {
          renderCart();
-        return;
+         return;
     }
     
     msgBox.innerText = "Invalid Coupon Code";
@@ -844,7 +864,6 @@ window.finalizeOrder = function() {
     if (!status.isOpen) { alert("Store Closed!\n" + status.msg); return; }
 
     const name = document.getElementById('c-name').value.trim();
-    
     // --- PHONE FIX START ---
     // Get raw value and strip out everything that isn't a number
     let rawPhone = document.getElementById('c-phone').value.trim();
@@ -857,7 +876,7 @@ window.finalizeOrder = function() {
 
     // Validate length (10-12 digits allowed)
     if (phone.length < 10 || phone.length > 12) { 
-        alert("Please enter a valid 10-digit mobile number."); 
+        alert("Please enter a valid 10-digit mobile number.");
         return;
     }
     // --- PHONE FIX END ---
@@ -866,22 +885,22 @@ window.finalizeOrder = function() {
     const address = document.getElementById('c-address').value.trim();
     const time = document.getElementById('c-time').value;
     const instruction = document.getElementById('c-instruction').value.trim();
-
-    if(!name || !time) { alert("Please fill in Name and Preferred Time."); return; }
+    if(!name || !time) { alert("Please fill in Name and Preferred Time."); return;
+    }
     
     // --- EMAIL MESSAGE FIX ---
     if (!email || !email.includes('@')) { 
-        alert("Please enter a valid email to receive your Loyalty Points & Receipt!"); 
+        alert("Please enter a valid email to receive your Loyalty Points & Receipt!");
         return;
     }
 
-    if(type === 'Delivery' && !address) { alert("Please fill in the Delivery Address."); return; }
+    if(type === 'Delivery' && !address) { alert("Please fill in the Delivery Address."); return;
+    }
 
     // 2. Setup Order Details
     const orderId = Math.floor(100000 + Math.random() * 900000);
     const now = new Date();
     const timeString = now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
-
     // 3. Calculate Totals
     let subTotal = 0;
     let packingTotal = 0;
@@ -898,10 +917,8 @@ window.finalizeOrder = function() {
         let chargePerItem = 10;
         if (item.category === 'ADD-ON') chargePerItem = key.startsWith("Hummus") ? 7 : 5;
         else if (fiveRsCats.includes(item.category)) chargePerItem = 5;
-        
         packingTotal += (chargePerItem * item.qty);
         if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
-
         // Check for Active Offer on this specific item
         let isOfferItem = false;
         if (activeCoupon) {
@@ -923,7 +940,7 @@ window.finalizeOrder = function() {
             price: item.price,
             type: item.type,
             isOffer: isOfferItem
-        });
+         });
     }
     
     // Discount Calculation
@@ -938,14 +955,12 @@ window.finalizeOrder = function() {
     }
 
     let grandTotal = (subTotal - discountVal) + packingTotal;
-
     // Add Coupon to Note
     let finalNote = instruction || "";
     if (activeCoupon) {
         finalNote += ` [COUPON: ${activeCoupon} OFF ₹${discountVal}]`;
     }
     if (finalNote === "") finalNote = "-";
-
     // 5. Send to Firebase
     const kitchenOrderData = {
         orderId: orderId,
@@ -968,11 +983,9 @@ window.finalizeOrder = function() {
         },
         globalNote: finalNote
     };
-
     push(ref(db, 'orders'), kitchenOrderData)
         .then(() => { console.log("Sent to Kitchen"); })
         .catch((error) => { console.error("Firebase Error:", error); });
-
     // 6. Build WhatsApp Message & Redirect
     let msg = `*New Order @ Café Cloud Club*\n`;
     msg += `*Type:* ${type.toUpperCase()}\n*Time:* ${timeString}\n*Order ID:* ${orderId}\n---------------------------\n`;
@@ -980,7 +993,6 @@ window.finalizeOrder = function() {
     if(type === 'Delivery') msg += `*Address:* ${address}\n`;
     if(finalNote !== "-") msg += `*Note:* ${finalNote}\n`;
     msg += `---------------------------\n*ITEMS:*\n`;
-    
     for(let key in cart) {
         let item = cart[key];
         let lineTotal = item.price * item.qty;
@@ -994,7 +1006,6 @@ window.finalizeOrder = function() {
     
     const encodedMsg = encodeURIComponent(msg);
     const finalUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
-
     if (Object.keys(cart).length > 0) {
         localStorage.setItem('ccc_last_order', JSON.stringify(cart));
         lastOrder = cart;
@@ -1006,7 +1017,6 @@ window.finalizeOrder = function() {
     document.getElementById('main-dashboard').style.display = 'none';
     document.getElementById('checkout-modal').style.display = 'none';
     document.getElementById('success-view').style.display = 'flex';
-
     if (typeof gtag === 'function') {
         gtag('event', 'purchase', { transaction_id: orderId, value: grandTotal, currency: "INR" });
     }
@@ -1128,7 +1138,7 @@ window.triggerFlyAnimation = function(category) {
         "Toasty Treats": "🥪", "Warm Whispers": "🥣", "Nibbles & Bits": "🍟",
         "Icy Sips": "🥤", "Mojito Magic": "🍹", "Nature's Nectar": "🧃",
         "Whipped Wonders": "🥤", "Frosted Leaf": "🥃", "ADD-ON": "🍞"
-    };
+     };
     const emoji = emojiMap[category] || "😋";
     let cartBtn;
     if (window.innerWidth <= 1000) {
@@ -1202,21 +1212,20 @@ function renderCart() {
                     <span class="cart-name">${key}</span>
                     <span class="cart-price">${rupeeSign}${item.price}</span>
                 </div>
-                <div class="qty-wrapper">
+                 <div class="qty-wrapper">
                     <button class="qty-btn" onclick="updateQty('${key}', -1)">−</button>
                     <span>${item.qty}</span>
                     <button class="qty-btn" onclick="updateQty('${key}', 1)">+</button>
                 </div>
-            </div>
+             </div>
         `;
     }
 
     if(!hasItems) list.innerHTML = `<div style="text-align: center; color: #ccc; margin-top: 50px;">Cart is empty</div>`;
-
     // --- DISCOUNT CALCULATIONS ---
     let discountVal = 0;
     let discountText = "";
-if(activeCoupon === 'MONBURGER') {
+    if(activeCoupon === 'MONBURGER') {
         let chickenItem = null;
         let friesItem = null;
         let beefItem = null;
@@ -1246,7 +1255,7 @@ if(activeCoupon === 'MONBURGER') {
             }
             discountText = "Mon: Chicken+Fries @ 222";
             if(msgBox) { 
-                msgBox.innerText = "Meat-Up Monday: Combo Applied!"; 
+                msgBox.innerText = "Meat-Up Monday: Combo Applied!";
                 msgBox.className = "coupon-msg success";
             }
         } 
@@ -1254,7 +1263,7 @@ if(activeCoupon === 'MONBURGER') {
             discountVal = 20;
             discountText = "Mon: ₹20 OFF Beef";
             if(msgBox) { 
-                msgBox.innerText = "Meat-Up Monday: Beef Offer Applied!"; 
+                msgBox.innerText = "Meat-Up Monday: Beef Offer Applied!";
                 msgBox.className = "coupon-msg success";
             }
         }
@@ -1275,7 +1284,7 @@ if(activeCoupon === 'MONBURGER') {
             const lowerName = key.toLowerCase();
 
             if(item.category === 'Italian Indulgence' && lowerName.includes('penne') && !pastaDiscountApplied) {
-                const isEligibleFlavor = lowerName.includes('alfredo') ||
+                const isEligibleFlavor = lowerName.includes('alfredo') || 
                                          lowerName.includes('pesto') || 
                                          lowerName.includes('arabiata') || 
                                          lowerName.includes('cloud special');
@@ -1306,7 +1315,7 @@ if(activeCoupon === 'MONBURGER') {
             let item = cart[key];
             if(item.category === "Butcher's Best") {
                 steakItem = item;
-            break;
+                break;
             }
         }
 
@@ -1327,7 +1336,7 @@ if(activeCoupon === 'MONBURGER') {
             let item = cart[key];
             if(item.category === "Whipped Wonders" && !key.toLowerCase().includes("vanilla")) {
                 shakeItem = item;
-            break;
+                break;
             }
         }
 
