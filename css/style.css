@@ -1,4 +1,4 @@
-/* --- PRELOADER STYLES (Video Replication + Dark Mode Support) --- */
+/* --- PRELOADER STYLES --- */
 #preloader {
     position: fixed;
     top: 0;
@@ -48,9 +48,9 @@
     transform: scale(0.5);
 }
 
-.icon-1 { animation: cycleIcon1 2s infinite; } /* Burger */
-.icon-2 { animation: cycleIcon2 2s infinite; } /* Drink */
-.icon-3 { animation: cycleIcon3 2s infinite; } /* Pasta */
+.icon-1 { animation: cycleIcon1 2s infinite; }
+.icon-2 { animation: cycleIcon2 2s infinite; }
+.icon-3 { animation: cycleIcon3 2s infinite; }
 
 /* The Satellite Dot */
 .loader-satellite {
@@ -291,7 +291,7 @@ body {
     margin-top: 8px; border-top: 1px dashed #eee; padding-top: 8px; }
 .mobile-info-row a { color: var(--secondary); text-decoration: none; font-weight: 600; }
 
-/* --- UPDATED HEADER BAR (STICKY) --- */
+/* --- HEADER BAR (STICKY) --- */
 .header-bar { 
     display: flex; 
     justify-content: space-between; 
@@ -305,12 +305,16 @@ body {
     z-index: 100;
     background-color: var(--bg);
     
-    /* Negative margin to pull it flush to the edges (counteracting container padding) */
+    /* Negative margin to pull it flush to the edges */
     margin: -20px -30px 20px -30px;
     padding: 20px 30px 15px 30px;
     
-    /* Subtle shadow to separate from content when scrolling */
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+/* --- FIX: HIDE MOBILE MENU BUTTON ON DESKTOP --- */
+.mobile-menu-btn {
+    display: none; /* Default hidden */
 }
 
 .search-box { background: var(--white);
@@ -958,8 +962,9 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
     }
     .sidebar-overlay.active { display: block; }
 
+    /* --- SHOW BUTTON ON MOBILE --- */
     .mobile-menu-btn {
-        display: flex;
+        display: flex; /* Show it here! */
         align-items: center;
         justify-content: center;
         background: var(--white);
