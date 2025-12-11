@@ -181,8 +181,7 @@ body {
 /* --- 1. LEFT SIDEBAR (CATEGORIES) --- */
 .left-sidebar {
     background: var(--white);
-    border-right: 1px solid #e5e7eb;
-    /* Slightly darker border */
+    border-right: 1px solid #e5e7eb; /* Slightly darker border */
     padding: 20px;
     display: flex;
     flex-direction: column;
@@ -556,7 +555,8 @@ body {
 .offers-view .back-btn:hover { background: rgba(0,0,0,0.05); }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(20px);
+    opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
 /* --- FILTERS --- */
 .advanced-filters { display: flex; flex-wrap: wrap;
@@ -651,7 +651,8 @@ body {
 .summary-total { color: var(--secondary); font-weight: 700;
     font-size: 1.2rem; margin-top: 10px; margin-bottom: 20px; color: var(--primary); }
 .checkout-btn { background: var(--primary); color: white; width: 100%; padding: 14px; border: none;
-    border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 10px rgba(255, 69, 0, 0.2); transition: 0.3s; }
+    border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 10px rgba(255, 69, 0, 0.2); transition: 0.3s;
+}
 .checkout-btn:disabled { background: var(--disabled); cursor: not-allowed; box-shadow: none; }
 
 /* --- MODAL --- */
@@ -837,7 +838,7 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
     100% { transform: scale(1); opacity: 1; } 
 }
 
-/* Responsive Breakpoints - AMENDED FOR MOBILE BUTTON FIX */
+/* Responsive Breakpoints - AMENDED FOR MOBILE SIDE DRAWER */
 @media (max-width: 1000px) {
     /* 1. Reset Layout for Mobile */
     .dashboard { 
@@ -847,75 +848,74 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
         flex-direction: column; 
     }
 
-    /* 2. Transform Sidebar into Top Menu Scroll */
-    .left-sidebar { 
-        grid-row: 1;
-        width: 100%; 
-        border-right: none; 
-        border-bottom: 1px solid #eee;
-        padding: 10px 15px;
-        /* Tighter padding */
-        display: flex;
-        /* Force flex */
-        flex-direction: row; 
-        overflow-x: auto;
-        /* Enable scroll */
-        align-items: center; 
-        gap: 0;
-        /* Reset gap, handle in filter-list */
-        height: auto; 
-        flex-shrink: 0;
+    /* 2. Transform Sidebar into a Hidden Drawer */
+    .left-sidebar {
+        position: fixed;
+        top: 0;
+        left: -280px; /* Hide off-screen by default */
+        width: 260px;
+        height: 100%;
         background: var(--white);
+        z-index: 5000; /* On top of everything */
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+        overflow-y: auto; /* Scroll vertically inside drawer */
+        border-right: 1px solid #eee;
+        /* Reset any desktop layout overrides */
+        height: 100%;
+        flex-shrink: 0;
     }
 
-    /* 3. Hide Desktop Elements */
+    /* Class to open the drawer */
+    .left-sidebar.active {
+        left: 0; /* Slide in */
+    }
+
+    /* 3. Re-enable Brand Info inside Drawer */
     .left-sidebar .brand-title, 
     .brand-subtitle, 
     .brand-est, 
     .store-timings-box, 
     .store-address-box,
     .sidebar-credit { 
-        display: none !important;
+        display: block !important; 
     }
+    .left-sidebar .brand-title { font-size: 1.2rem; margin-top: 0; }
 
     /* 4. Show Mobile Elements */
     .mobile-bottom-credit { display: block !important; }
     .mobile-info-card { display: block; }
 
-    /* 5. FIX: Compact Buttons & Horizontal Scroll */
-    .filter-list { 
+    /* 5. Restore Vertical List for Filter Items */
+    .filter-list {
         display: flex;
-        flex-direction: row; 
+        flex-direction: column; /* Vertical stack */
         width: 100%;
-        gap: 8px; /* Consistent spacing */
-        overflow-x: auto;
-        padding-bottom: 0;
-        align-items: center;
-        scrollbar-width: none; /* Hide scrollbar Firefox */
+        gap: 10px;
+        padding-bottom: 20px;
+        overflow-x: hidden;
     }
-    .filter-list::-webkit-scrollbar { display: none; } /* Hide scrollbar Chrome */
 
-    /* Universal Button Fix for Menu Bar */
+    /* Reset button styles to look like list items again */
     .filter-item, 
     .offers-link-btn,
     .reorder-btn {
-        white-space: nowrap !important;
-        padding: 6px 14px !important;
-        border-radius: 50px !important;
-        font-size: 0.75rem !important;
-        height: 36px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        width: auto !important; /* Forces button to shrink to text size */
-        margin: 0 !important;
-        flex-shrink: 0 !important; /* Prevents squishing */
+        width: 100% !important;
+        margin-bottom: 5px !important;
+        justify-content: flex-start !important; /* Align text left */
+        border-radius: 8px !important;
+        padding: 12px 15px !important;
+        height: auto !important;
+        white-space: normal !important; /* Allow text wrapping */
+        flex-shrink: 1 !important;
     }
     
-    /* Specific tweaks for Reorder Button Area */
     .reorder-btn-area {
-        margin: 0 !important;
-        width: auto !important;
+        margin: 0 0 10px 0 !important;
+        width: 100% !important;
         display: block !important;
     }
 
@@ -954,6 +954,36 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
         right: 20px; 
         z-index: 1500; 
         transition: transform 0.2s ease;
+    }
+
+    /* 8. Overlay Background (Darken screen when menu is open) */
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 4999; /* Just behind sidebar */
+        backdrop-filter: blur(2px);
+    }
+    .sidebar-overlay.active { display: block; }
+
+    /* 9. Menu Toggle Button (Visible only on mobile) */
+    .mobile-menu-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--white);
+        border: 1px solid #ddd;
+        color: var(--primary);
+        width: 42px;
+        height: 42px;
+        border-radius: 8px;
+        font-size: 1.2rem;
+        cursor: pointer;
+        flex-shrink: 0; /* Don't squish */
     }
 }
 
@@ -1074,9 +1104,10 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
     
     .left-sidebar, .order-sidebar, .cart-item, .radio-group, .cart-summary, .options-area, .coupon-input, .cart-header-mobile, .store-timings-box, .store-address-box, .mobile-info-card, .tnc-section { border-color: #333 !important; }
     
-    .search-box, .input-field, .filter-item, .note-input, .adv-select, .toggle-chip, .mobile-info-row.small-text { border-color: #444 !important; }
+    .search-box, .input-field, .filter-item, .note-input, .adv-select, .toggle-chip, .mobile-info-row.small-text, .mobile-menu-btn { border-color: #444 !important; }
     
-    .search-box, .input-field, .qty-wrapper, .note-input, .adv-select, .toggle-chip, .coupon-input { background-color: #2d3436 !important; color: var(--secondary) !important; }
+    .search-box, .input-field, .qty-wrapper, .note-input, .adv-select, .toggle-chip, .coupon-input, .mobile-menu-btn { background-color: #2d3436 !important;
+    color: var(--secondary) !important; }
     
     .toggle-chip.active { background: var(--secondary) !important; color: var(--white) !important; }
     .add-btn-mini { background: #2d3436; color: #fff; }
@@ -1142,7 +1173,8 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
     width: 100%;
     height: 100%;
     z-index: 0; /* Sit behind everything */
-    pointer-events: none; /* CRITICAL: Ensures clicks pass through to the buttons */
+    pointer-events: none;
+    /* CRITICAL: Ensures clicks pass through to the buttons */
     overflow: hidden;
 }
 
@@ -1151,7 +1183,8 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
     position: absolute;
     border-radius: 50%;
     opacity: 0.06; /* KEEP THIS LOW. If you go higher, you ruin readability. */
-    filter: blur(60px); /* Softens the edges */
+    filter: blur(60px);
+    /* Softens the edges */
     animation: floatAround 20s infinite linear;
 }
 
@@ -1197,10 +1230,13 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
 /* --- FLYING ANIMATION --- */
 .flying-food {
     position: fixed;
-    z-index: 10000; /* Above everything, even modals */
+    z-index: 10000;
+    /* Above everything, even modals */
     font-size: 2rem;
-    pointer-events: none; /* Let clicks pass through */
-    transition: all 0.8s cubic-bezier(0.19, 1, 0.22, 1); /* Smooth "ease-out" flight */
+    pointer-events: none;
+    /* Let clicks pass through */
+    transition: all 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+    /* Smooth "ease-out" flight */
     opacity: 1;
 }
 
