@@ -87,7 +87,7 @@ onValue(menuRef, (snapshot) => {
         Object.keys(data).forEach(key => {
             const item = data[key];
             
-            [cite_start]// 2. Filter: Logic to check stockStatus AND legacy inStock [cite: 836]
+            // 2. Filter: Logic to check stockStatus AND legacy inStock
             let isAvailable = true;
 
             // Check New Logic (Admin Panel uses this)
@@ -111,7 +111,7 @@ onValue(menuRef, (snapshot) => {
             }
         });
 
-        [cite_start]// 3. Sort: Keep the menu organized by Category, then by Name [cite: 838]
+        // 3. Sort: Keep the menu organized by Category, then by Name
         menuData.sort((a, b) => {
             return a.category.localeCompare(b.category) || a.name.localeCompare(b.name);
         });
