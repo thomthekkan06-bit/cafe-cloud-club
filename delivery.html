@@ -8,11 +8,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { 
-            font-family: 'Inter', sans-serif; 
+            font-family: 'Inter', sans-serif;
             background: #121212; 
             color: #fff; 
             margin: 0; 
-            /* Remove padding here to let header touch edges */
         }
         
         /* --- STICKY HEADER SECTION --- */
@@ -27,14 +26,14 @@
         }
 
         .header-top { 
-            display: flex; 
+            display: flex;
             justify-content: space-between; 
             align-items: center; 
             margin-bottom: 15px; 
         }
 
         .logo { 
-            font-weight: 800; 
+            font-weight: 800;
             color: #FF4500; 
             font-size: 1.2rem; 
             display: flex;
@@ -103,12 +102,12 @@
         /* INFO SECTION */
         .info-body { padding: 15px; }
         .customer-row { display: flex; gap: 10px; margin-bottom: 15px; align-items: flex-start; }
-        .icon { color: #888; width: 25px; text-align: center; margin-top: 2px; }
-        .address-text { font-size: 1.1rem; line-height: 1.4; color: #e0e0e0; font-weight: 500; }
+        .icon { color: #888; width: 25px; text-align: center; margin-top: 2px; flex-shrink: 0; }
+        .address-text { font-size: 1.1rem; line-height: 1.4; color: #e0e0e0; font-weight: 500; white-space: pre-line; }
         
         /* DELIVERY CHARGE INPUT */
         .charge-input-row { 
-            background: #2a2a2a; 
+            background: #2a2a2a;
             padding: 10px 15px; 
             margin-top: 10px; 
             border-radius: 8px; 
@@ -118,7 +117,7 @@
             border: 1px dashed #555;
         }
         .charge-input {
-            width: 70px; 
+            width: 70px;
             padding: 5px; 
             background: #111; 
             border: 1px solid #444; 
@@ -161,277 +160,287 @@
         <input type="tel" id="pin-input" class="pin-input-main" placeholder="****" maxlength="4">
         <button class="unlock-btn" onclick="unlockApp()">GO</button>
         <p style="color:#444; margin-top:20px; font-size:0.8rem;">Enter 2024 to Start</p>
-
         <div style="margin-top: 40px; font-size: 0.7rem; color: #666; font-family: sans-serif; letter-spacing: 0.5px;">
             System by <span style="color: #FF4500; font-weight: bold;">Thomsons Networks</span>
         </div>
-        </div>
+</div>
 
-    <div class="sticky-wrapper">
-        <div class="header-top">
-            <div class="logo"><i class="fas fa-motorcycle"></i> Cloud Delivery</div>
-            <div class="live-clock" id="clock-display">00:00 PM</div>
+<div class="sticky-wrapper">
+    <div class="header-top">
+        <div class="logo"><i class="fas fa-motorcycle"></i> Cloud Delivery</div>
+        <div class="live-clock" id="clock-display">00:00 PM</div>
+    </div>
+    
+    <div class="stats-row">
+        <div class="stat-card stat-pickup">
+            <div class="stat-val" id="count-pickup">0</div>
+            <div class="stat-label">To Pickup</div>
         </div>
-        
-        <div class="stats-row">
-            <div class="stat-card stat-pickup">
-                <div class="stat-val" id="count-pickup">0</div>
-                <div class="stat-label">To Pickup</div>
-            </div>
-            <div class="stat-card stat-delivered">
-                <div class="stat-val" id="count-delivered">0</div>
-                <div class="stat-label">Delivered</div>
-            </div>
+        <div class="stat-card stat-delivered">
+            <div class="stat-val" id="count-delivered">0</div>
+            <div class="stat-label">Delivered</div>
         </div>
     </div>
+</div>
 
-    <div id="orders-container">
-        <div style="text-align:center; color:#555; margin-top:100px;">
-            <i class="fas fa-spinner fa-spin" style="font-size:2rem; margin-bottom:20px;"></i>
-            <p>Connecting...</p>
-        </div>
+<div id="orders-container">
+    <div style="text-align:center; color:#555; margin-top:100px;">
+        <i class="fas fa-spinner fa-spin" style="font-size:2rem; margin-bottom:20px;"></i>
+        <p>Connecting...</p>
     </div>
+</div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue, update, get, set, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, onValue, update, get, set, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
-            authDomain: "cafe-orders-1afa1.firebaseapp.com",
-            databaseURL: "https://cafe-orders-1afa1-default-rtdb.firebaseio.com",
-            projectId: "cafe-orders-1afa1",
-            storageBucket: "cafe-orders-1afa1.firebasestorage.app",
-            messagingSenderId: "274410745480",
-            appId: "1:274410745480:web:9964c3914d512aed8d793d"
-        };
+    const firebaseConfig = {
+        apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
+        authDomain: "cafe-orders-1afa1.firebaseapp.com",
+        databaseURL: "https://cafe-orders-1afa1-default-rtdb.firebaseio.com",
+        projectId: "cafe-orders-1afa1",
+        storageBucket: "cafe-orders-1afa1.firebasestorage.app",
+        messagingSenderId: "274410745480",
+        appId: "1:274410745480:web:9964c3914d512aed8d793d"
+    };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        
-        // --- CONFIG ---
-        const DRIVER_PIN = "2024"; 
-        const alertSound = new Audio('bell.mp3');
-        alertSound.loop = true; 
-        
-        let knownOrders = new Set();
-        let isFirstLoad = true;
-        let isRinging = false;
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    
+    // --- CONFIG ---
+    const DRIVER_PIN = "2024"; 
+    const alertSound = new Audio('bell.mp3');
+    alertSound.loop = true; 
+    
+    let knownOrders = new Set();
+    let isFirstLoad = true;
+    let isRinging = false;
 
-        // --- CLOCK & LOCAL STORAGE FOR STATS ---
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('clock-display').innerText = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    // --- CLOCK & LOCAL STORAGE FOR STATS ---
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('clock-display').innerText = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    }
+    setInterval(updateClock, 1000);
+
+    function getDeliveredCount() {
+        const today = new Date().toDateString(); // e.g., "Tue Dec 09 2025"
+        const storedDate = localStorage.getItem('ccc_delivery_date');
+        if (storedDate !== today) {
+            // New day, reset count
+            localStorage.setItem('ccc_delivery_date', today);
+            localStorage.setItem('ccc_delivered_count', '0');
+            return 0;
         }
-        setInterval(updateClock, 1000);
+        return parseInt(localStorage.getItem('ccc_delivered_count')) || 0;
+    }
 
-        // Get delivered count from LocalStorage (resets daily logic included)
-        function getDeliveredCount() {
-            const today = new Date().toDateString(); // e.g., "Tue Dec 09 2025"
-            const storedDate = localStorage.getItem('ccc_delivery_date');
+    function incrementDeliveredCount() {
+        let count = getDeliveredCount();
+        count++;
+        localStorage.setItem('ccc_delivered_count', count.toString());
+        renderStats();
+    }
+
+    function renderStats(pickupCount = null) {
+        document.getElementById('count-delivered').innerText = getDeliveredCount();
+        if (pickupCount !== null) {
+            document.getElementById('count-pickup').innerText = pickupCount;
+        }
+    }
+
+    // --- PIN UNLOCK ---
+    window.unlockApp = async function() {
+        const input = document.getElementById('pin-input');
+        if(input.value === DRIVER_PIN) {
+            alertSound.play().then(() => {
+                alertSound.pause();
+                alertSound.currentTime = 0;
+            }).catch(e => console.log("Audio waiting for interaction"));
+            try {
+                if ('wakeLock' in navigator) await navigator.wakeLock.request('screen');
+            } catch(err) { console.log("Wake Lock ignored"); }
+
+            document.getElementById('pin-overlay').style.display = 'none';
+            renderStats(0); // Init stats
+            initOrders();
+        } else { 
+            alert("Wrong PIN");
+            input.value = "";
+        }
+    }
+
+    // --- ORDER LISTENER ---
+    function initOrders() {
+        const ordersRef = ref(db, 'orders');
+        onValue(ordersRef, (snapshot) => {
+            const data = snapshot.val();
+            const container = document.getElementById('orders-container');
+            container.innerHTML = "";
             
-            if (storedDate !== today) {
-                // New day, reset count
-                localStorage.setItem('ccc_delivery_date', today);
-                localStorage.setItem('ccc_delivered_count', '0');
-                return 0;
-            }
-            return parseInt(localStorage.getItem('ccc_delivered_count')) || 0;
-        }
+            let activeDeliveryCount = 0; // Total active orders
+            let pickupCount = 0;         // Only those waiting for pickup
+            const currentVisibleIds = new Set();
+            let hasNewOrder = false;
 
-        function incrementDeliveredCount() {
-            let count = getDeliveredCount();
-            count++;
-            localStorage.setItem('ccc_delivered_count', count.toString());
-            renderStats();
-        }
+            if (data) {
+                Object.entries(data).forEach(([key, order]) => {
+                    if (order.orderType === 'Delivery' && (order.status === 'cooking' || order.status === 'done' || order.status === 'out_for_delivery')) {
+                        
+                        activeDeliveryCount++;
+                        currentVisibleIds.add(key);
+                        
+                        // Check for New Order
+                        if (!isFirstLoad && !knownOrders.has(key)) hasNewOrder = true;
 
-        function renderStats(pickupCount = null) {
-            document.getElementById('count-delivered').innerText = getDeliveredCount();
-            if (pickupCount !== null) {
-                document.getElementById('count-pickup').innerText = pickupCount;
-            }
-        }
+                        const isOut = order.status === 'out_for_delivery';
+                        
+                        // Count Stats
+                        if (!isOut) pickupCount++;
 
-        // --- PIN UNLOCK ---
-        window.unlockApp = async function() {
-            const input = document.getElementById('pin-input');
-            if(input.value === DRIVER_PIN) {
-                alertSound.play().then(() => {
-                    alertSound.pause();
-                    alertSound.currentTime = 0;
-                }).catch(e => console.log("Audio waiting for interaction"));
+                        const btnText = isOut ? "MARK DELIVERED" : "PICK UP ORDER";
+                        const btnClass = isOut ? "complete" : "pickup";
+                        const actionFunction = isOut ? `completeDelivery('${key}')` : `markPickedUp('${key}')`;
+                        
+                        // --- ADDRESS & MAP LOGIC START ---
+                        let displayAddress = order.customer.address || "No Address Found";
+                        let mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(displayAddress)}`;
+                        
+                        // Check if the address contains a precise pin (from the new system)
+                        if (displayAddress.includes("📍 Pin:")) {
+                            const parts = displayAddress.split("📍 Pin:");
+                            displayAddress = parts[0].trim(); // The readable text
+                            const extractedLink = parts[1].trim(); // The exact link
+                            if(extractedLink.startsWith("http")) {
+                                mapLink = extractedLink;
+                            }
+                        }
+                        
+                        // Convert newlines to breaks for display
+                        const displayHtml = displayAddress.replace(/\n/g, '<br>');
+                        // --- ADDRESS & MAP LOGIC END ---
 
-                try {
-                    if ('wakeLock' in navigator) await navigator.wakeLock.request('screen');
-                } catch(err) { console.log("Wake Lock ignored"); }
+                        const fins = order.financials || { grandTotal: 0 };
+                        const delCharge = fins.deliveryFee || 0;
+                        const totalToCollect = fins.grandTotal;
 
-                document.getElementById('pin-overlay').style.display = 'none';
-                renderStats(0); // Init stats
-                initOrders();
-            } else { 
-                alert("Wrong PIN");
-                input.value = "";
-            }
-        }
-
-        // --- ORDER LISTENER ---
-        function initOrders() {
-            const ordersRef = ref(db, 'orders');
-            onValue(ordersRef, (snapshot) => {
-                const data = snapshot.val();
-                const container = document.getElementById('orders-container');
-                container.innerHTML = "";
-                
-                let activeDeliveryCount = 0; // Total active orders (Pickup + Out)
-                let pickupCount = 0;         // Only those waiting for pickup
-                const currentVisibleIds = new Set();
-                let hasNewOrder = false;
-
-                if (data) {
-                    Object.entries(data).forEach(([key, order]) => {
-                        if (order.orderType === 'Delivery' && (order.status === 'cooking' || order.status === 'done' || order.status === 'out_for_delivery')) {
-                            
-                            activeDeliveryCount++;
-                            currentVisibleIds.add(key);
-                            
-                            // Check for New Order
-                            if (!isFirstLoad && !knownOrders.has(key)) hasNewOrder = true;
-
-                            const isOut = order.status === 'out_for_delivery';
-                            
-                            // Count Stats
-                            if (!isOut) pickupCount++; 
-
-                            const btnText = isOut ? "MARK DELIVERED" : "PICK UP ORDER";
-                            const btnClass = isOut ? "complete" : "pickup";
-                            const actionFunction = isOut ? `completeDelivery('${key}')` : `markPickedUp('${key}')`;
-                            const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.customer.address)}`;
-
-                            // Financials
-                            const fins = order.financials || { grandTotal: 0 };
-                            const delCharge = fins.deliveryFee || 0;
-                            const totalToCollect = fins.grandTotal;
-
-                            const html = `
-                                <div class="delivery-card">
-                                    <div class="card-header">
-                                        <span class="order-id">#${order.orderId}</span>
-                                        <span class="status-badge">${order.status.replace(/_/g, ' ')}</span>
+                        const html = `
+                            <div class="delivery-card">
+                                <div class="card-header">
+                                    <span class="order-id">#${order.orderId}</span>
+                                    <span class="status-badge">${order.status.replace(/_/g, ' ')}</span>
+                                </div>
+                                <div class="info-body">
+                                    <div class="customer-row">
+                                        <div class="icon"><i class="fas fa-user"></i></div>
+                                        <div style="font-weight:bold;">${order.customer.name}</div>
                                     </div>
-                                    <div class="info-body">
-                                        <div class="customer-row">
-                                            <div class="icon"><i class="fas fa-user"></i></div>
-                                            <div style="font-weight:bold;">${order.customer.name}</div>
-                                        </div>
-                                        <div class="customer-row">
-                                            <div class="icon"><i class="fas fa-map-marker-alt" style="color:#e74c3c;"></i></div>
-                                            <div class="address-text">${order.customer.address}</div>
-                                        </div>
-                                        
-                                        <div class="charge-input-row">
-                                            <span style="color:#aaa; font-size:0.9rem;">Delivery Charge:</span>
-                                            <input type="number" class="charge-input" 
-                                                   value="${delCharge}" 
-                                                   onchange="updateDeliveryFee('${key}', this.value, ${fins.subTotal}, ${fins.discountVal || 0}, ${fins.packingTotal || 0})" 
-                                                   placeholder="0">
-                                        </div>
+                                    <div class="customer-row">
+                                        <div class="icon"><i class="fas fa-map-marker-alt" style="color:#e74c3c;"></i></div>
+                                        <div class="address-text">${displayHtml}</div>
+                                    </div>
+                                    
+                                    <div class="charge-input-row">
+                                        <span style="color:#aaa; font-size:0.9rem;">Delivery Charge:</span>
+                                        <input type="number" class="charge-input" 
+                                               value="${delCharge}" 
+                                               onchange="updateDeliveryFee('${key}', this.value, ${fins.subTotal}, ${fins.discountVal || 0}, ${fins.packingTotal || 0})" 
+                                               placeholder="0">
+                                    </div>
 
-                                        <div style="margin-top:15px; font-size:1.1rem; text-align:right;">
-                                            Cash to Collect: <span style="color:#27ae60; font-weight:900; font-size:1.4rem;">₹${totalToCollect}</span>
-                                        </div>
-                                    </div>
-                                    <div class="action-grid">
-                                        <a href="${mapLink}" target="_blank" style="text-decoration:none;">
-                                            <button class="btn btn-map"><i class="fas fa-location-arrow"></i> Navigate</button>
-                                        </a>
-                                        <a href="tel:${order.customer.phone}" style="text-decoration:none;">
-                                            <button class="btn btn-call"><i class="fas fa-phone"></i> Call</button>
-                                        </a>
-                                    </div>
-                                    <div class="status-area">
-                                        <button class="btn btn-status ${btnClass}" onclick="${actionFunction}">
-                                            ${btnText}
-                                        </button>
+                                    <div style="margin-top:15px; font-size:1.1rem; text-align:right;">
+                                        Cash to Collect: <span style="color:#27ae60; font-weight:900; font-size:1.4rem;">₹${totalToCollect}</span>
                                     </div>
                                 </div>
-                            `;
-                            container.innerHTML += html;
-                        }
-                    });
-                }
-                
-                // Update Dashboard Stats
-                renderStats(pickupCount);
-
-                if (hasNewOrder) playAlarm();
-
-                if(activeDeliveryCount === 0) {
-                     container.innerHTML = `<div style="text-align:center; color:#555; margin-top:50px;"><i class="fas fa-check-circle" style="font-size:3rem; margin-bottom:20px;"></i><p>No active deliveries</p><p style="font-size:0.8rem;">Waiting for orders...</p></div>`;
-                     stopAlarm(); 
-                }
-
-                knownOrders = currentVisibleIds;
-                isFirstLoad = false;
-            });
-        }
-
-        // --- ALARM LOGIC ---
-        function playAlarm() {
-            if(isRinging) return;
-            isRinging = true;
-            alertSound.currentTime = 0;
-            alertSound.play().catch(e => console.log("Sound blocked"));
-            if ("vibrate" in navigator) navigator.vibrate([1000, 1000, 1000, 1000, 1000]);
-        }
-
-        function stopAlarm() {
-            isRinging = false;
-            alertSound.pause();
-            alertSound.currentTime = 0;
-            if ("vibrate" in navigator) navigator.vibrate(0);
-        }
-
-        // --- ACTIONS ---
-        
-        // 1. Update Fee
-        window.updateDeliveryFee = (key, val, sub, disc, pack) => {
-            const fee = parseInt(val) || 0;
-            const newTotal = (sub - disc) + pack + fee;
+                                <div class="action-grid">
+                                    <a href="${mapLink}" target="_blank" style="text-decoration:none;">
+                                        <button class="btn btn-map"><i class="fas fa-location-arrow"></i> Navigate</button>
+                                    </a>
+                                    <a href="tel:${order.customer.phone}" style="text-decoration:none;">
+                                        <button class="btn btn-call"><i class="fas fa-phone"></i> Call</button>
+                                    </a>
+                                </div>
+                                <div class="status-area">
+                                    <button class="btn btn-status ${btnClass}" onclick="${actionFunction}">
+                                        ${btnText}
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        container.innerHTML += html;
+                    }
+                });
+            }
             
-            update(ref(db, 'orders/' + key + '/financials'), { 
-                deliveryFee: fee,
-                grandTotal: newTotal 
-            });
-        }
+            // Update Dashboard Stats
+            renderStats(pickupCount);
+            if (hasNewOrder) playAlarm();
 
-        // 2. Pick Up
-        window.markPickedUp = (key) => {
-            stopAlarm();
-            update(ref(db, 'orders/' + key), { status: 'out_for_delivery' });
-        }
+            if(activeDeliveryCount === 0) {
+                 container.innerHTML = `<div style="text-align:center; color:#555; margin-top:50px;"><i class="fas fa-check-circle" style="font-size:3rem; margin-bottom:20px;"></i><p>No active deliveries</p><p style="font-size:0.8rem;">Waiting for orders...</p></div>`;
+                 stopAlarm(); 
+            }
 
-        // 3. Complete (and increment stats)
-        window.completeDelivery = (key) => {
-            stopAlarm();
-            if(!confirm("Confirm CASH Collected & Delivered?")) return;
+            knownOrders = currentVisibleIds;
+            isFirstLoad = false;
+        });
+    }
 
-            const orderRef = ref(db, 'orders/' + key);
-            get(orderRef).then((snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    data.completedAt = Date.now(); 
-                    data.status = 'delivered'; 
+    // --- ALARM LOGIC ---
+    function playAlarm() {
+        if(isRinging) return;
+        isRinging = true;
+        alertSound.currentTime = 0;
+        alertSound.play().catch(e => console.log("Sound blocked"));
+        if ("vibrate" in navigator) navigator.vibrate([1000, 1000, 1000, 1000, 1000]);
+    }
 
-                    set(ref(db, 'history/' + key), data)
-                        .then(() => { 
-                            remove(orderRef);
-                            incrementDeliveredCount(); // Update the top counter
-                        })
-                        .catch((err) => alert("Error completing: " + err));
-                }
-            });
-        }
-    </script>
+    function stopAlarm() {
+        isRinging = false;
+        alertSound.pause();
+        alertSound.currentTime = 0;
+        if ("vibrate" in navigator) navigator.vibrate(0);
+    }
+
+    // --- ACTIONS ---
+    
+    // 1. Update Fee
+    window.updateDeliveryFee = (key, val, sub, disc, pack) => {
+        const fee = parseInt(val) || 0;
+        const newTotal = (sub - disc) + pack + fee;
+        update(ref(db, 'orders/' + key + '/financials'), { 
+            deliveryFee: fee,
+            grandTotal: newTotal 
+        });
+    }
+
+    // 2. Pick Up
+    window.markPickedUp = (key) => {
+        stopAlarm();
+        update(ref(db, 'orders/' + key), { status: 'out_for_delivery' });
+    }
+
+    // 3. Complete (and increment stats)
+    window.completeDelivery = (key) => {
+        stopAlarm();
+        if(!confirm("Confirm CASH Collected & Delivered?")) return;
+
+        const orderRef = ref(db, 'orders/' + key);
+        get(orderRef).then((snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                data.completedAt = Date.now(); 
+                data.status = 'delivered'; 
+
+                set(ref(db, 'history/' + key), data)
+                    .then(() => { 
+                        remove(orderRef);
+                        incrementDeliveredCount(); 
+                    })
+                    .catch((err) => alert("Error completing: " + err));
+            }
+        });
+    }
+</script>
 </body>
 </html>
