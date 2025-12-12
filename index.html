@@ -578,57 +578,72 @@
         </div>
         
 <div class="input-group" id="address-group">
-            <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
-                <label>Delivery Address Details</label>
-                <span style="font-size:0.65rem; color:#e74c3c; font-weight:600;">(Max 20km from Muringoor)</span>
-            </div>
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
+        <label>Delivery Address Details</label>
+        <span style="font-size:0.65rem; color:#e74c3c; font-weight:600;">(Max 15km Radius)</span>
+    </div>
 
-            <input type="text" class="input-field" id="addr-house" 
-                   placeholder="House Name / Flat No (Required)" 
-                   style="margin-bottom: 8px; border-left: 3px solid #FF4500;">
+    <input type="text" class="input-field" id="addr-house" 
+           placeholder="House Name / Flat No (Required)" 
+           style="margin-bottom: 8px; border-left: 3px solid #FF4500;">
 
-            <select class="input-field" id="addr-street" style="margin-bottom: 8px; appearance: none; background-color: white;">
-                <option value="" disabled selected>Select Your Area (Required)</option>
-                <option value="Muringoor">Muringoor</option>
-                <option value="Divine Nagar">Divine Nagar</option>
-                <option value="Chalakudy Town">Chalakudy Town</option>
-                <option value="Potta">Potta</option>
-                <option value="Koratty">Koratty</option>
-                <option value="Kodakara">Kodakara</option>
-                <option value="Nellayi">Nellayi</option>
-                <option value="Pudukkad">Pudukkad</option>
-                <option value="Karukutty">Karukutty</option>
-                <option value="Angamaly">Angamaly</option>
-                <option value="Mookkannoor">Mookkannoor</option>
-                <option value="Mala">Mala</option>
-                <option value="Ashtamichira">Ashtamichira</option>
-                <option value="Aloor">Aloor</option>
-                <option value="Irinjalakuda">Irinjalakuda</option>
-                <option value="Meloor">Meloor</option>
-                <option value="Pariyaram">Pariyaram</option>
-                <option value="Vettilappara">Vettilappara</option>
-                <option value="Other">Other (Type in Instructions)</option>
+    <select class="input-field" id="addr-street" onchange="updateSubLocations()" 
+            style="margin-bottom: 8px; appearance: none; background-color: white; font-weight:600;">
+        <option value="" disabled selected>Select Main Town...</option>
+        
+        <optgroup label="1. Immediate Vicinity (0-6km)">
+            <option value="Muringoor">Muringoor</option>
+            <option value="Divine Nagar">Divine Nagar</option>
+            <option value="Chalakudy">Chalakudy Town</option>
+            <option value="Potta">Potta</option>
+            <option value="Koratty">Koratty</option>
+            <option value="Meloor">Meloor</option>
+        </optgroup>
+
+        <optgroup label="2. North (Towards Thrissur)">
+            <option value="Kodakara">Kodakara</option>
+            <option value="Nellayi">Nellayi</option>
+        </optgroup>
+
+        <optgroup label="3. South (Towards Ernakulam)">
+            <option value="Karukutty">Karukutty</option>
+            <option value="Angamaly">Angamaly</option>
+        </optgroup>
+
+        <optgroup label="4. West (Towards Mala/Irinjalakuda)">
+            <option value="Aloor">Aloor</option>
+            <option value="Kuzhur">Kuzhur</option>
+        </optgroup>
+
+        <optgroup label="5. East (Towards Athirappilly)">
+            <option value="Pariyaram">Pariyaram</option>
+            <option value="Adichilappilly">Adichilappilly</option>
+        </optgroup>
+
+        <option value="Other">Other (Type in Instructions)</option>
+    </select>
+
+    <div id="sub-location-wrapper" style="display:none; animation: fadeIn 0.3s ease;">
+        <select class="input-field" id="addr-sub-street" style="margin-bottom: 8px; border-color: #27ae60; background: #f9fff9;">
             </select>
+    </div>
 
-            <input type="text" class="input-field" id="addr-landmark" 
-                   placeholder="Nearby Landmark (Required)"
-                   style="border-left: 3px solid #27ae60;">
+    <input type="text" class="input-field" id="addr-landmark" 
+           placeholder="Nearby Landmark (Required)"
+           style="border-left: 3px solid #27ae60;">
 
-            <div style="margin-top: 15px;">
-                <label style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                    <span>Pin Exact Location (Required)</span>
-                    <button type="button" onclick="locateUser()" style="background:#27ae60; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.7rem;">
-                        <i class="fas fa-crosshairs"></i> Locate Me
-                    </button>
-                </label>
-                <div id="delivery-map" style="height: 200px; width: 100%; border-radius: 8px; border: 1px solid #ccc; z-index: 1;"></div>
-                <p style="font-size: 0.75rem; color: #666; margin-top: 5px; text-align: center;">
-                    Drag the blue pin to your exact doorstep.
-                </p>
-                <input type="hidden" id="geo-lat">
-                <input type="hidden" id="geo-lng">
-            </div>
-        </div>
+    <div style="margin-top: 15px;">
+        <label style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+            <span>Pin Exact Location (Required)</span>
+            <button type="button" onclick="locateUser()" style="background:#27ae60; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.7rem;">
+                <i class="fas fa-crosshairs"></i> Locate Me
+            </button>
+        </label>
+        <div id="delivery-map" style="height: 200px; width: 100%; border-radius: 8px; border: 1px solid #ccc; z-index: 1;"></div>
+        <p style="font-size: 0.75rem; color: #666; margin-top: 5px; text-align: center;">Drag pin to your exact location.</p>
+        <input type="hidden" id="geo-lat"><input type="hidden" id="geo-lng">
+    </div>
+</div>
 
         <div class="input-group">
             <label>Special Instructions (Optional)</label>
