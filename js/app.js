@@ -16,7 +16,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-/* --- MAP & LOCATION LOGIC (NEW) --- */
+/* --- MAP & LOCATION LOGIC --- */
 let map = null;
 let marker = null;
 const CAFE_LAT = 10.286; 
@@ -57,6 +57,65 @@ window.locateUser = function() {
         document.getElementById('geo-lat').value = lat.toFixed(6);
         document.getElementById('geo-lng').value = lng.toFixed(6);
     }, () => alert("Could not fetch location. Please drag pin manually."));
+}
+
+/* --- SUB-LOCATION MASTER LIST (SMART ADDRESS) --- */
+const subPlaces = {
+    "Muringoor": ["Muringoor Junction", "Vadakkummuri", "Thekkummuri", "Sanjo Nagar", "Annallur", "Viyyoor Padam"],
+    "Divine Nagar": ["Divine Retreat Centre", "Railway Station Area", "Muringoor Bridge Area", "Chalakudy River Side"],
+    "Chalakudy": ["South Junction", "North Junction", "Market Road", "Koodapuzha", "Anamala Junction", "Vettukadavu", "Railway Station Road", "Tramway Lane"],
+    "Potta": ["Potta Junction", "Panampilly College Area", "Potta Ashram Area"],
+    "Koratty": ["Koratty Junction", "Nalukettu", "Kinfra Park", "Chirangara", "Pongam", "Mangalam", "Konoor"],
+    "Meloor": ["Meloor Junction", "Poolany", "Pushpagiri", "Kunnappilly", "Nadaturuthu", "Mampra", "Vynthala"],
+    "Kodakara": ["Kodakara Junction", "Koprakalam", "Perambra", "Manakulangara"],
+    "Nellayi": ["Nellayi Junction", "Pongotra", "Railway Station Area"],
+    "Karukutty": ["Karukutty Junction", "Edakkunnu", "Adlux Convention Center Area", "Cable Nagar"],
+    "Angamaly": ["Angamaly Town", "KSRTC Stand", "LF Hospital Area", "Telk Junction", "Bank Junction"],
+    "Aloor": ["Aloor Junction", "Kallettumkara", "Vellanchira", "Thazhekad"],
+    "Kuzhur": ["Kuzhur Junction", "Kakkulissery", "Eravathur"],
+    "Pariyaram": ["Pariyaram Junction", "Kanjirappilly"],
+    "Adichilappilly": ["Adichilappilly Main", "River Side"]
+};
+
+// Function to update the second dropdown
+window.updateSubLocations = function() {
+    const mainSelect = document.getElementById('addr-street');
+    const subWrapper = document.getElementById('sub-location-wrapper');
+    const subSelect = document.getElementById('addr-sub-street');
+    const selectedTown = mainSelect.value;
+
+    // Clear previous options
+    subSelect.innerHTML = "";
+
+    if (subPlaces[selectedTown]) {
+        // Show the box
+        subWrapper.style.display = 'block';
+        
+        // Add default option
+        const defaultOpt = document.createElement('option');
+        defaultOpt.text = `Select Area in ${selectedTown}...`;
+        defaultOpt.disabled = true;
+        defaultOpt.selected = true;
+        subSelect.add(defaultOpt);
+
+        // Add specific sub-places
+        subPlaces[selectedTown].forEach(place => {
+            const opt = document.createElement('option');
+            opt.value = place;
+            opt.text = place;
+            subSelect.add(opt);
+        });
+
+        // Add "Other" option for every town
+        const otherOpt = document.createElement('option');
+        otherOpt.value = "Other";
+        otherOpt.text = "Other / Not Listed";
+        subSelect.add(otherOpt);
+    } else {
+        // If "Other" or a town with no data is selected, hide the box
+        subWrapper.style.display = 'none';
+        subSelect.value = ""; // Clear value
+    }
 }
 
 /* --- PRELOADER SCRIPT --- */
@@ -629,17 +688,28 @@ window.finalizeOrder = function() {
     if(!name || !time) { alert("Please fill in Name and Preferred Time."); return; }
     if (!email || !email.includes('@')) { alert("Please enter a valid email!"); return; }
 
-    // --- NEW ADDRESS LOGIC (Map + Dropdown) ---
+    // --- NEW ADDRESS LOGIC (Map + Dropdown + Sub-Locations) ---
     let address = "";
     if (type === 'Delivery') {
         const house = document.getElementById('addr-house').value.trim();
-        const street = document.getElementById('addr-street').value; 
+        let street = document.getElementById('addr-street').value; 
+        const subStreet = document.getElementById('addr-sub-street').value;
         const landmark = document.getElementById('addr-landmark').value.trim();
         const lat = document.getElementById('geo-lat').value;
         const lng = document.getElementById('geo-lng').value;
 
         if (!house) { alert("Please enter House Name/Flat No."); return; }
-        if (!street) { alert("Please select your Area from the dropdown."); return; }
+        if (!street) { alert("Please select your Main Town."); return; }
+        
+        // Smart Combination logic
+        if (subStreet && subStreet !== "") {
+            street = `${street} (${subStreet})`;
+        } else if (subPlaces[street]) {
+            // If sub-places exist but user selected nothing
+            alert("Please select the specific area/junction in " + street);
+            return;
+        }
+
         if (!landmark) { alert("Please enter a nearby Landmark."); return; }
         if (street === "Other") {
             if (instruction.length < 5) {
