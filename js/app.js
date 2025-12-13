@@ -819,7 +819,7 @@ window.finalizeOrder = function() {
                 return;
             }
         }
-        const mapLink = `http://googleusercontent.com/maps.google.com/?q=${lat},${lng}`;
+        const mapLink = `https://www.google.com/maps?q=${lat},${lng}`;
         address = `${house}, ${street}\n(Landmark: ${landmark})\n📍 Pin: ${mapLink}`;
     }
 
