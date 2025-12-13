@@ -895,6 +895,20 @@ window.finalizeOrder = function() {
         localStorage.setItem('ccc_last_order', JSON.stringify(cart));
         lastOrder = cart;
     }
+// --- SAVE ORDER ID TO HISTORY LIST ---
+    let pastOrders = JSON.parse(localStorage.getItem('ccc_customer_history')) || [];
+    // Add new order to top of list
+    pastOrders.unshift({
+        id: orderId,
+        date: timeString,
+        total: grandTotal,
+        items: Object.keys(cart).join(", "),
+        key: trackingKey // The firebase key we generated earlier
+    });
+    // Keep only last 20 orders to save space
+    if(pastOrders.length > 20) pastOrders = pastOrders.slice(0, 20);
+    localStorage.setItem('ccc_customer_history', JSON.stringify(pastOrders));
+    // -------------------------------------
     cart = {};
     localStorage.removeItem('ccc_cart_v1'); 
     renderCart();
