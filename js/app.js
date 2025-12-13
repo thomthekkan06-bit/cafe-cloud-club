@@ -19,20 +19,39 @@ const db = getDatabase(app);
 /* --- MAP & LOCATION LOGIC --- */
 let map = null;
 let marker = null;
-const CAFE_LAT = 10.286; 
+const CAFE_LAT = 10.286;
 const CAFE_LNG = 76.368;
 
+// --- UPDATED SMART MAP FUNCTION ---
 window.initDeliveryMap = function() {
+    // 1. Get current values (either Default Cafe or Saved User Location from loadUserDetails)
+    let latVal = parseFloat(document.getElementById('geo-lat').value);
+    let lngVal = parseFloat(document.getElementById('geo-lng').value);
+
+    // Safety fallback: If inputs are empty/invalid, use Cafe location
+    if (isNaN(latVal) || latVal === 0) latVal = CAFE_LAT;
+    if (isNaN(lngVal) || lngVal === 0) lngVal = CAFE_LNG;
+
+    // 2. If map exists, just move the pin (Don't re-initialize)
     if (map !== null) { 
-        setTimeout(() => map.invalidateSize(), 200); 
+        setTimeout(() => {
+            map.invalidateSize();
+            const newLatLng = new L.LatLng(latVal, lngVal);
+            marker.setLatLng(newLatLng);
+            map.setView(newLatLng, 16); // Zoom in on the user's location
+        }, 200);
         return; 
     }
-    // Initialize Leaflet Map
-    map = L.map('delivery-map').setView([CAFE_LAT, CAFE_LNG], 13);
+
+    // 3. Initialize Map (First time)
+    map = L.map('delivery-map').setView([latVal, lngVal], 16);
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap'
     }).addTo(map);
-    marker = L.marker([CAFE_LAT, CAFE_LNG], {draggable: true}).addTo(map);
+
+    // Create marker at the detected location
+    marker = L.marker([latVal, lngVal], {draggable: true}).addTo(map);
     
     // Save coords on drag
     marker.on('dragend', function(e) {
@@ -40,10 +59,10 @@ window.initDeliveryMap = function() {
         document.getElementById('geo-lat').value = pos.lat.toFixed(6);
         document.getElementById('geo-lng').value = pos.lng.toFixed(6);
     });
-    
-    // Default coords
-    document.getElementById('geo-lat').value = CAFE_LAT;
-    document.getElementById('geo-lng').value = CAFE_LNG;
+
+    // Ensure inputs are populated
+    document.getElementById('geo-lat').value = latVal;
+    document.getElementById('geo-lng').value = lngVal;
 }
 
 window.locateUser = function() {
@@ -90,14 +109,13 @@ window.updateSubLocations = function() {
     if (subPlaces[selectedTown]) {
         // Show the box
         subWrapper.style.display = 'block';
-        
         // Add default option
         const defaultOpt = document.createElement('option');
         defaultOpt.text = `Select Area in ${selectedTown}...`;
         defaultOpt.disabled = true;
         defaultOpt.selected = true;
         subSelect.add(defaultOpt);
-
+        
         // Add specific sub-places
         subPlaces[selectedTown].forEach(place => {
             const opt = document.createElement('option');
@@ -105,7 +123,7 @@ window.updateSubLocations = function() {
             opt.text = place;
             subSelect.add(opt);
         });
-
+        
         // Add "Other" option for every town
         const otherOpt = document.createElement('option');
         otherOpt.value = "Other";
@@ -279,7 +297,6 @@ let currentSort = 'default';
 let currentType = 'all';
 let currentIngredient = 'all';
 let isUnder200 = false;
-
 window.setCategoryFilter = function(cat, btn) {
     document.querySelectorAll('.filter-item').forEach(b => b.classList.remove('active'));
     if(btn) btn.classList.add('active');
@@ -343,6 +360,7 @@ function renderMenu() {
         if (currentType === 'veg' && item.type !== 'veg') return false;
         if (currentType === 'non-veg' && item.type !== 'non-veg') return false;
         if (isUnder200 && item.price >= 200) return false;
+   
         if (currentIngredient !== 'all') {
             const nameLower = item.name.toLowerCase();
             const ingLower = currentIngredient.toLowerCase();
@@ -351,10 +369,8 @@ function renderMenu() {
         }
         return true;
     });
-
     if (currentSort === 'low-high') filteredItems.sort((a, b) => a.price - b.price);
     else if (currentSort === 'high-low') filteredItems.sort((a, b) => b.price - a.price);
-
     if (filteredItems.length === 0) {
         root.innerHTML = '<div style="grid-column: 1/-1; text-align:center; color:#999; padding: 20px;">No items found matching your filters.</div>';
         return;
@@ -369,6 +385,7 @@ function renderMenu() {
         const isFav = favorites.includes(item.name);
         const favClass = isFav ? 'active' : '';
         const uniqueId = item.name.replace(/[^a-zA-Z0-9]/g, '-');
+   
         const emojiStr = item.type === 'veg' ? vegIcon : nonVegIcon;
         
         card.innerHTML = `
@@ -405,7 +422,6 @@ window.openOptionModal = function(index) {
     let availableOptions = [];
     const cheeseCats = ["Bun-Tastic Burgers", "Italian Indulgence", "Freshly Folded", "Toasty Treats"];
     if (cheeseCats.includes(item.category)) availableOptions.push({ name: "Extra Cheese", price: 15 });
-
     if (item.category === "Bun-Tastic Burgers") {
         const friedEggEligible = [
             "Chicken Slider Burger - Pesto", "Chicken Slider Burger - Tandoori", "Cloud Special Chicken Burger",
@@ -436,7 +452,6 @@ window.openOptionModal = function(index) {
     }
     
     if (item.category === "Whipped Wonders") availableOptions.push({ name: "Extra Ice Cream (Thick Shake)", price: 30 });
-
     if (availableOptions.length === 0 && item.category === "ADD-ON") {
         addToCart(item.name, item.price, item.price, item.type, item.category);
         return;
@@ -452,7 +467,7 @@ window.openOptionModal = function(index) {
                 <label class="custom-option-label">
                     <input type="checkbox" class="modal-opt-checkbox" data-name="${opt.name}" data-price="${opt.price}" onchange="updateModalTotal()"> 
                     ${opt.name}
-                </label>
+                 </label>
                 <span class="custom-option-price">+${rupeeSign}${opt.price}</span>
             </div>
         `;
@@ -532,7 +547,6 @@ window.updateQty = function(name, change) {
 
 function checkComboRequirements(codeToCheck) {
     let counts = { burger: 0, fries: 0, drink: 0, steak: 0, whipped: 0, wrap: 0, side: 0, main: 0, loaded: 0 };
-    
     for (let key in cart) {
         const item = cart[key];
         const qty = item.qty;
@@ -570,57 +584,69 @@ window.applyCoupon = function() {
     const code = codeInput.value.trim().toUpperCase();
     const todayIndex = new Date().getDay();
 
-    const setMsg = (text, type) => { msgBox.innerText = text; msgBox.className = `coupon-msg ${type}`; if(type==='success') renderCart(); else activeCoupon=null; };
+    const setMsg = (text, type) => { msgBox.innerText = text; msgBox.className = `coupon-msg ${type}`;
+    if(type==='success') renderCart(); else activeCoupon=null; };
 
     if (code === 'MONBURGER') {
-        if(todayIndex !== 1) { setMsg("Only valid on Mondays!", 'error'); return; }
+        if(todayIndex !== 1) { setMsg("Only valid on Mondays!", 'error');
+        return; }
         activeCoupon = 'MONBURGER'; setMsg("Meat-Up Monday Applied!", 'success'); return;
     }
     if (code === 'TUEPASTA') {
-        if(todayIndex !== 2) { setMsg("Only valid on Tuesdays!", 'error'); return; }
+        if(todayIndex !== 2) { setMsg("Only valid on Tuesdays!", 'error');
+        return; }
         activeCoupon = 'TUEPASTA'; setMsg("Twisted Tuesday Applied!", 'success'); return;
     }
     if (code === 'WEDSTEAK') {
-        if(todayIndex !== 3) { setMsg("Wednesday Only!", 'error'); return; }
+        if(todayIndex !== 3) { setMsg("Wednesday Only!", 'error');
+        return; }
         let hasSteak = Object.values(cart).some(i => i.category === "Butcher's Best");
         if(hasSteak) { activeCoupon = 'WEDSTEAK'; setMsg("Steak Offer Applied!", 'success'); }
         else setMsg("Add a Steak to apply.", 'error');
         return;
     }
     if (code === 'WEDSHAKE') {
-        if(todayIndex !== 3) { setMsg("Wednesday Only!", 'error'); return; }
+        if(todayIndex !== 3) { setMsg("Wednesday Only!", 'error');
+        return; }
         let hasShake = Object.entries(cart).some(([k,v]) => v.category === "Whipped Wonders" && !k.toLowerCase().includes("vanilla"));
         if(hasShake) { activeCoupon = 'WEDSHAKE'; setMsg("Shake Offer Applied!", 'success'); }
         else setMsg("Add a Premium Shake (No Vanilla).", 'error');
         return;
     }
     if (code === 'THUSAND') {
-        if(todayIndex !== 4) { setMsg("Only valid on Thursdays!", 'error'); return; }
+        if(todayIndex !== 4) { setMsg("Only valid on Thursdays!", 'error');
+        return; }
         let hasSand = Object.values(cart).some(i => i.category === 'Toasty Treats');
         let hasChill = Object.values(cart).some(i => i.category === 'Icy Sips');
-        if(hasSand && hasChill) { activeCoupon = 'THUSAND'; setMsg("Thursday Club Applied!", 'success'); }
+        if(hasSand && hasChill) { activeCoupon = 'THUSAND'; setMsg("Thursday Club Applied!", 'success');
+        }
         else setMsg("Add 1 Sandwich & 1 Chiller!", 'error');
         return;
     }
     if (code === 'FRIFRIES') {
-        if(todayIndex !== 5) { setMsg("Only valid on Fridays!", 'error'); return; }
+        if(todayIndex !== 5) { setMsg("Only valid on Fridays!", 'error');
+        return; }
         activeCoupon = 'FRIFRIES'; setMsg("Fri-Yay Fry-Day Applied!", 'success'); return;
     }
     if (code === 'SATROLL') {
-        if(todayIndex !== 6) { setMsg("Only valid on Saturdays!", 'error'); return; }
+        if(todayIndex !== 6) { setMsg("Only valid on Saturdays!", 'error');
+        return; }
         activeCoupon = 'SATROLL'; setMsg("Rock n' Roll Saturday Applied!", 'success'); return;
     }
     if (code === 'SUNFEAST') {
-        if(todayIndex !== 0) { setMsg("Only valid on Sundays!", 'error'); return; }
+        if(todayIndex !== 0) { setMsg("Only valid on Sundays!", 'error');
+        return; }
         let hasPasta = Object.entries(cart).some(([k,v]) => v.category === 'Italian Indulgence' && isSundayPasta(k));
         let hasSlider = Object.keys(cart).some(k => cart[k].category === 'Bun-Tastic Burgers' && k.includes("Slider"));
         let hasShake = Object.values(cart).some(v => v.category === 'Whipped Wonders');
-        if(hasPasta && hasSlider && hasShake) { activeCoupon = 'SUNFEAST'; setMsg("Sunday Feast Applied!", 'success'); }
+        if(hasPasta && hasSlider && hasShake) { activeCoupon = 'SUNFEAST'; setMsg("Sunday Feast Applied!", 'success');
+        }
         else setMsg("Need 1 Penne + 1 Slider + 1 Shake", 'error');
         return;
     }
     if (['CLOUD15', 'STEAK13', 'QUICK20', 'FEAST14'].includes(code)) {
-        if(checkComboRequirements(code)) { activeCoupon = code; setMsg("Combo Offer Applied!", 'success'); }
+        if(checkComboRequirements(code)) { activeCoupon = code;
+        setMsg("Combo Offer Applied!", 'success'); }
         else setMsg("Combo requirements not met. Check Menu.", 'error');
         return;
     }
@@ -629,11 +655,55 @@ window.applyCoupon = function() {
 
 window.toggleCartPage = function() { document.getElementById('cart-sidebar').classList.toggle('active'); }
 
-// Updated to trigger map load
-const _originalOpenCheckout = window.openCheckoutModal;
+// --- NEW FUNCTION: LOAD SAVED DETAILS ---
+function loadUserDetails() {
+    const saved = localStorage.getItem('ccc_user_details_v2'); 
+    if (!saved) return;
+
+    try {
+        const data = JSON.parse(saved);
+
+        // 1. Fill Text Fields
+        if(data.name) document.getElementById('c-name').value = data.name;
+        if(data.phone) document.getElementById('c-phone').value = data.phone;
+        if(data.email) document.getElementById('c-email').value = data.email;
+        if(data.house) document.getElementById('addr-house').value = data.house;
+        if(data.landmark) document.getElementById('addr-landmark').value = data.landmark;
+
+        // 2. Handle the Dropdowns
+        if(data.street) {
+            const mainSelect = document.getElementById('addr-street');
+            mainSelect.value = data.street;
+            
+            // Trigger update to populate sub-street
+            updateSubLocations(); 
+            
+            if(data.subStreet) {
+                const subSelect = document.getElementById('addr-sub-street');
+                if(subSelect) subSelect.value = data.subStreet;
+            }
+        }
+
+        // 3. Set the Coordinates for map init
+        if(data.lat && data.lng) {
+            document.getElementById('geo-lat').value = data.lat;
+            document.getElementById('geo-lng').value = data.lng;
+        }
+    } catch (e) {
+        console.error("Error loading saved details", e);
+    }
+}
+// ----------------------------------------
+
+// --- UPDATED CHECKOUT OPEN ---
 window.openCheckoutModal = function() { 
-    document.getElementById('checkout-modal').style.display = 'flex'; 
+    // 1. Load details first
+    loadUserDetails();
+
+    // 2. Show Modal
+    document.getElementById('checkout-modal').style.display = 'flex';
     toggleOrderFields();
+
     const checkbox = document.getElementById('tnc-confirm');
     const btn = document.getElementById('final-submit-btn');
     if(checkbox && btn) {
@@ -652,8 +722,10 @@ window.toggleOrderFields = function() {
     const type = document.querySelector('input[name="orderType"]:checked').value;
     const addrGroup = document.getElementById('address-group');
     const timeLabel = document.getElementById('time-label');
-    if(type === 'Pickup') { addrGroup.style.display = 'none'; timeLabel.innerText = "Preferred Pickup Time"; } 
-    else { addrGroup.style.display = 'block'; timeLabel.innerText = "Preferred Delivery Time"; }
+    if(type === 'Pickup') { addrGroup.style.display = 'none'; timeLabel.innerText = "Preferred Pickup Time";
+    } 
+    else { addrGroup.style.display = 'block'; timeLabel.innerText = "Preferred Delivery Time";
+    }
 }
 
 function checkStoreStatus(orderType) {
@@ -678,28 +750,31 @@ window.finalizeOrder = function() {
     const name = document.getElementById('c-name').value.trim();
     let rawPhone = document.getElementById('c-phone').value.trim();
     let phone = rawPhone.replace(/\D/g, ''); 
-    if (phone.length > 10 && phone.startsWith('91')) { phone = phone.substring(2); }
-    if (phone.length < 10 || phone.length > 12) { alert("Please enter a valid 10-digit mobile number."); return; }
+    if (phone.length > 10 && phone.startsWith('91')) { phone = phone.substring(2);
+    }
+    if (phone.length < 10 || phone.length > 12) { alert("Please enter a valid 10-digit mobile number.");
+    return; }
 
     const email = document.getElementById('c-email').value.trim();
     const time = document.getElementById('c-time').value;
     const instruction = document.getElementById('c-instruction').value.trim();
-
-    if(!name || !time) { alert("Please fill in Name and Preferred Time."); return; }
-    if (!email || !email.includes('@')) { alert("Please enter a valid email!"); return; }
+    if(!name || !time) { alert("Please fill in Name and Preferred Time."); return;
+    }
+    if (!email || !email.includes('@')) { alert("Please enter a valid email!"); return;
+    }
 
     // --- NEW ADDRESS LOGIC (Map + Dropdown + Sub-Locations) ---
     let address = "";
     if (type === 'Delivery') {
         const house = document.getElementById('addr-house').value.trim();
-        let street = document.getElementById('addr-street').value; 
+        let street = document.getElementById('addr-street').value;
         const subStreet = document.getElementById('addr-sub-street').value;
         const landmark = document.getElementById('addr-landmark').value.trim();
         const lat = document.getElementById('geo-lat').value;
         const lng = document.getElementById('geo-lng').value;
-
         if (!house) { alert("Please enter House Name/Flat No."); return; }
-        if (!street) { alert("Please select your Main Town."); return; }
+        if (!street) { alert("Please select your Main Town.");
+        return; }
         
         // Smart Combination logic
         if (subStreet && subStreet !== "") {
@@ -710,7 +785,8 @@ window.finalizeOrder = function() {
             return;
         }
 
-        if (!landmark) { alert("Please enter a nearby Landmark."); return; }
+        if (!landmark) { alert("Please enter a nearby Landmark."); return;
+        }
         if (street === "Other") {
             if (instruction.length < 5) {
                 alert("You selected 'Other'. Please type your exact location name in 'Special Instructions'.");
@@ -721,6 +797,21 @@ window.finalizeOrder = function() {
         const mapLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
         address = `${house}, ${street}\n(Landmark: ${landmark})\n📍 Pin: ${mapLink}`;
     }
+
+    // --- SAVE USER DETAILS FOR NEXT TIME (GUEST MODE) ---
+    const userDetails = {
+        name: name,
+        phone: rawPhone, 
+        email: email,
+        house: document.getElementById('addr-house').value,
+        street: document.getElementById('addr-street').value,
+        subStreet: document.getElementById('addr-sub-street').value,
+        landmark: document.getElementById('addr-landmark').value,
+        lat: document.getElementById('geo-lat').value,
+        lng: document.getElementById('geo-lng').value
+    };
+    localStorage.setItem('ccc_user_details_v2', JSON.stringify(userDetails));
+    // ----------------------------------------------------
 
     const orderId = Math.floor(100000 + Math.random() * 900000);
     const now = new Date();
@@ -740,7 +831,6 @@ window.finalizeOrder = function() {
         else if (fiveRsCats.includes(item.category)) chargePerItem = 5;
         packingTotal += (chargePerItem * item.qty);
         if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
-
         let isOfferItem = false;
         if (activeCoupon) {
             if (activeCoupon === 'MONBURGER' && (item.category === 'Bun-Tastic Burgers' || key.includes('Fries'))) isOfferItem = true;
@@ -792,11 +882,9 @@ window.finalizeOrder = function() {
         },
         globalNote: finalNote
     };
-
     push(ref(db, 'orders'), kitchenOrderData)
         .then(() => { console.log("Sent to Kitchen"); })
         .catch((error) => { console.error("Firebase Error:", error); });
-
     let msg = `*New Order @ Café Cloud Club*\n`;
     msg += `*Type:* ${type.toUpperCase()}\n*Time:* ${timeString}\n*Order ID:* ${orderId}\n---------------------------\n`;
     msg += `*Name:* ${name}\n*Phone:* ${phone}\n*Email:* ${email}\n*Time:* ${time}\n`;
@@ -816,7 +904,6 @@ window.finalizeOrder = function() {
     
     const encodedMsg = encodeURIComponent(msg);
     const finalUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
-
     if (Object.keys(cart).length > 0) {
         localStorage.setItem('ccc_last_order', JSON.stringify(cart));
         lastOrder = cart;
@@ -828,7 +915,6 @@ window.finalizeOrder = function() {
     document.getElementById('main-dashboard').style.display = 'none';
     document.getElementById('checkout-modal').style.display = 'none';
     document.getElementById('success-view').style.display = 'flex';
-
     if (typeof gtag === 'function') {
         gtag('event', 'purchase', { transaction_id: orderId, value: grandTotal, currency: "INR" });
     }
@@ -960,12 +1046,14 @@ function renderCart() {
         subTotal += itemTotal;
         totalCount += item.qty;
         let chargePerItem = 0;
-        if (item.category === 'ADD-ON') { chargePerItem = key.startsWith("Hummus") ? 7 : 5; } 
-        else if (fiveRsCats.includes(item.category)) { chargePerItem = 5; } 
-        else { chargePerItem = 10; }
+        if (item.category === 'ADD-ON') { chargePerItem = key.startsWith("Hummus") ? 7 : 5;
+        } 
+        else if (fiveRsCats.includes(item.category)) { chargePerItem = 5;
+        } 
+        else { chargePerItem = 10;
+        }
         packingTotal += (chargePerItem * item.qty);
         if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
-
         list.innerHTML += `
             <div class="cart-item">
                 <div class="cart-details">
@@ -1001,7 +1089,8 @@ function renderCart() {
             discountVal = 20;
             discountText = "Mon: ₹20 OFF Beef";
         } else {
-            discountVal = 0; discountText = "Requirements not met";
+            discountVal = 0;
+            discountText = "Requirements not met";
         }
     }
     else if(activeCoupon === 'TUEPASTA') {
@@ -1011,20 +1100,25 @@ function renderCart() {
             const lowerName = key.toLowerCase();
             if(item.category === 'Italian Indulgence' && lowerName.includes('penne') && !pastaDiscountApplied) {
                 const isEligibleFlavor = lowerName.includes('alfredo') || lowerName.includes('pesto') || lowerName.includes('arabiata') || lowerName.includes('cloud special');
-                if (isEligibleFlavor && item.basePrice > 179) { discountVal += (item.basePrice - 179); pastaDiscountApplied = true; }
+                if (isEligibleFlavor && item.basePrice > 179) { discountVal += (item.basePrice - 179);
+                pastaDiscountApplied = true; }
             }
         }
         discountText = pastaDiscountApplied ? "Twisted Tuesday (Flat ₹179)" : "Add Eligible Penne Pasta";
     }
     else if(activeCoupon === 'WEDSTEAK') {
         let steakItem = Object.values(cart).find(i => i.category === "Butcher's Best");
-        if (steakItem && steakItem.basePrice > 300) { discountVal = steakItem.basePrice - 300; discountText = "Wed: Flat ₹300 Steak"; }
-        else { discountVal = 0; discountText = "Item Removed"; }
+        if (steakItem && steakItem.basePrice > 300) { discountVal = steakItem.basePrice - 300; discountText = "Wed: Flat ₹300 Steak";
+        }
+        else { discountVal = 0; discountText = "Item Removed";
+        }
     }
     else if(activeCoupon === 'WEDSHAKE') {
         let shakeItem = Object.entries(cart).find(([k,v]) => v.category === "Whipped Wonders" && !k.toLowerCase().includes("vanilla"));
-        if (shakeItem && shakeItem[1].basePrice > 120) { discountVal = shakeItem[1].basePrice - 120; discountText = "Wed: Flat ₹120 Shake"; }
-        else { discountVal = 0; discountText = "Item Removed"; }
+        if (shakeItem && shakeItem[1].basePrice > 120) { discountVal = shakeItem[1].basePrice - 120; discountText = "Wed: Flat ₹120 Shake";
+        }
+        else { discountVal = 0; discountText = "Item Removed";
+        }
     }
     else if(activeCoupon === 'THUSAND') {
         let sandItem = Object.values(cart).find(i => i.category === 'Toasty Treats');
@@ -1038,8 +1132,10 @@ function renderCart() {
     else if(activeCoupon === 'FRIFRIES') {
         for (let key in cart) {
             let item = cart[key];
-            if (key === "Veg - Loaded Fries") { discountVal += (item.basePrice - 119); break; } 
-            else if (key === "Chicken Loaded Fries" || key === "Beef Loaded Fries") { discountVal += (item.basePrice - 179); break; }
+            if (key === "Veg - Loaded Fries") { discountVal += (item.basePrice - 119); break;
+            } 
+            else if (key === "Chicken Loaded Fries" || key === "Beef Loaded Fries") { discountVal += (item.basePrice - 179);
+            break; }
         }
         discountText = "Fri-Yay Fries (Max 1)";
     }
@@ -1054,9 +1150,12 @@ function renderCart() {
              let comboBaseTotal = 0;
              let foundPasta=false, foundSlider=false, foundShake=false;
              for(let key in cart) {
-                 if(!foundPasta && cart[key].category==='Italian Indulgence' && isSundayPasta(key)) { comboBaseTotal+=cart[key].basePrice; foundPasta=true;}
-                 else if(!foundSlider && cart[key].category==='Bun-Tastic Burgers' && key.includes('Slider')) { comboBaseTotal+=cart[key].basePrice; foundSlider=true;}
-                 else if(!foundShake && cart[key].category==='Whipped Wonders') { comboBaseTotal+=cart[key].basePrice; foundShake=true;}
+                 if(!foundPasta && cart[key].category==='Italian Indulgence' && isSundayPasta(key)) { comboBaseTotal+=cart[key].basePrice;
+                 foundPasta=true;}
+                 else if(!foundSlider && cart[key].category==='Bun-Tastic Burgers' && key.includes('Slider')) { comboBaseTotal+=cart[key].basePrice;
+                 foundSlider=true;}
+                 else if(!foundShake && cart[key].category==='Whipped Wonders') { comboBaseTotal+=cart[key].basePrice;
+                 foundShake=true;}
              }
              if(comboBaseTotal > 399) discountVal = comboBaseTotal - 399;
              discountText = "Sunday Feast (Combo @ 399)";
@@ -1072,10 +1171,14 @@ function renderCart() {
             if(activeCoupon === 'QUICK20' && (item.category === "Freshly Folded" || key.includes("French Fries") || key === "Chicken Nuggets")) qualifyingTotal += lineTotal;
             if(activeCoupon === 'FEAST14' && (item.category === "Bun-Tastic Burgers" || item.category === "Italian Indulgence" || item.category === "Rice Harmony" || key.includes("Loaded Fries") || item.category === "Nature's Nectar")) qualifyingTotal += lineTotal;
         }
-        if(activeCoupon === 'CLOUD15') { discountVal = Math.round(qualifyingTotal * 0.15); discountText = "Coupon (15% OFF Combo)"; }
-        if(activeCoupon === 'STEAK13') { discountVal = Math.round(qualifyingTotal * 0.13); discountText = "Steak & Sip (13% OFF Combo)"; }
-        if(activeCoupon === 'QUICK20') { discountVal = Math.round(qualifyingTotal * 0.20); discountText = "Quick Bite (20% OFF Combo)"; }
-        if(activeCoupon === 'FEAST14') { discountVal = Math.round(qualifyingTotal * 0.14); discountText = "Cloud Feast (14% OFF Combo)"; }
+        if(activeCoupon === 'CLOUD15') { discountVal = Math.round(qualifyingTotal * 0.15);
+        discountText = "Coupon (15% OFF Combo)"; }
+        if(activeCoupon === 'STEAK13') { discountVal = Math.round(qualifyingTotal * 0.13);
+        discountText = "Steak & Sip (13% OFF Combo)"; }
+        if(activeCoupon === 'QUICK20') { discountVal = Math.round(qualifyingTotal * 0.20);
+        discountText = "Quick Bite (20% OFF Combo)"; }
+        if(activeCoupon === 'FEAST14') { discountVal = Math.round(qualifyingTotal * 0.14);
+        discountText = "Cloud Feast (14% OFF Combo)"; }
     }
 
     const discountRow = document.getElementById('discount-row');
@@ -1096,53 +1199,19 @@ function renderCart() {
 
     const checkoutBtn = document.getElementById('main-checkout-btn');
     if(!hasItems) { checkoutBtn.innerText = "Cart Empty"; checkoutBtn.disabled = true; } 
-    else if (grandTotal < MIN_ORDER_VAL) { checkoutBtn.innerText = `Min Order ${rupeeSign}${MIN_ORDER_VAL}`; checkoutBtn.disabled = true; } 
-    else { checkoutBtn.innerText = "Confirm Order"; checkoutBtn.disabled = false; }
+    else if (grandTotal < MIN_ORDER_VAL) { checkoutBtn.innerText = `Min Order ${rupeeSign}${MIN_ORDER_VAL}`;
+    checkoutBtn.disabled = true; } 
+    else { checkoutBtn.innerText = "Confirm Order"; checkoutBtn.disabled = false;
+    }
 }
 
 window.toggleFinalButton = function() {
     const checkbox = document.getElementById('tnc-confirm');
     const btn = document.getElementById('final-submit-btn');
     if (checkbox && btn) {
-        if (checkbox.checked) { btn.disabled = false; btn.style.opacity = "1"; btn.style.cursor = "pointer"; } 
-        else { btn.disabled = true; btn.style.opacity = "0.5"; btn.style.cursor = "not-allowed"; }
-    }
-}
-/* --- AUTO-FILL LOGIC --- */
-function loadUserDetails() {
-    const saved = localStorage.getItem('ccc_user_details_v2'); // Changed version to force fresh save
-    if (!saved) return;
-
-    try {
-        const data = JSON.parse(saved);
-
-        // 1. Fill Text Fields
-        if(data.name) document.getElementById('c-name').value = data.name;
-        if(data.phone) document.getElementById('c-phone').value = data.phone;
-        if(data.email) document.getElementById('c-email').value = data.email;
-        if(data.house) document.getElementById('addr-house').value = data.house;
-        if(data.landmark) document.getElementById('addr-landmark').value = data.landmark;
-
-        // 2. Handle the Dropdowns (Tricky part)
-        if(data.street) {
-            const mainSelect = document.getElementById('addr-street');
-            mainSelect.value = data.street;
-            
-            // We MUST trigger this manually to generate the sub-street options
-            updateSubLocations(); 
-            
-            if(data.subStreet) {
-                const subSelect = document.getElementById('addr-sub-street');
-                if(subSelect) subSelect.value = data.subStreet;
-            }
-        }
-
-        // 3. Set the Coordinates (Crucial for the Map)
-        if(data.lat && data.lng) {
-            document.getElementById('geo-lat').value = data.lat;
-            document.getElementById('geo-lng').value = data.lng;
-        }
-    } catch (e) {
-        console.error("Error loading saved details", e);
+        if (checkbox.checked) { btn.disabled = false;
+        btn.style.opacity = "1"; btn.style.cursor = "pointer"; } 
+        else { btn.disabled = true;
+        btn.style.opacity = "0.5"; btn.style.cursor = "not-allowed"; }
     }
 }
