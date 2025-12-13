@@ -45,14 +45,13 @@ window.initDeliveryMap = function() {
 
     // 3. Initialize Map
     map = L.map('delivery-map').setView([latVal, lngVal], 16);
-
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap'
     }).addTo(map);
 
     // Create marker at the detected location
     marker = L.marker([latVal, lngVal], {draggable: true}).addTo(map);
-    
+
     // Save coords on drag
     marker.on('dragend', function(e) {
         const pos = marker.getLatLng();
@@ -96,11 +95,45 @@ const subPlaces = {
     "Adichilappilly": ["Adichilappilly Main", "River Side"]
 };
 
+/* --- COORDINATES FOR LOCATIONS (ADDED) --- */
+const locationCoords = {
+    "Muringoor": [10.2743, 76.3688],
+    "Divine Nagar": [10.2800, 76.3700],
+    "Chalakudy": [10.3070, 76.3330],
+    "Potta": [10.2900, 76.3500],
+    "Koratty": [10.2340, 76.3670],
+    "Meloor": [10.2600, 76.3800],
+    "Kodakara": [10.3550, 76.3100],
+    "Nellayi": [10.3800, 76.3000],
+    "Karukutty": [10.2100, 76.3800],
+    "Angamaly": [10.1960, 76.3860],
+    "Aloor": [10.3000, 76.3000],
+    "Kuzhur": [10.2500, 76.2800],
+    "Pariyaram": [10.2900, 76.4000],
+    "Adichilappilly": [10.3000, 76.4100]
+};
+
+/* --- UPDATED SUB-LOCATION FUNCTION WITH AUTO-MAP MOVE --- */
 window.updateSubLocations = function() {
     const mainSelect = document.getElementById('addr-street');
     const subWrapper = document.getElementById('sub-location-wrapper');
     const subSelect = document.getElementById('addr-sub-street');
     const selectedTown = mainSelect.value;
+
+    // --- AUTO-MOVE MAP PIN ---
+    if (locationCoords[selectedTown] && map && marker) {
+        const [newLat, newLng] = locationCoords[selectedTown];
+        const newLatLng = new L.LatLng(newLat, newLng);
+        
+        // Move the marker and map view
+        marker.setLatLng(newLatLng);
+        map.setView(newLatLng, 16);
+        
+        // Update the hidden inputs so the driver gets the right link
+        document.getElementById('geo-lat').value = newLat.toFixed(6);
+        document.getElementById('geo-lng').value = newLng.toFixed(6);
+    }
+    // -----------------------------
 
     subSelect.innerHTML = "";
 
@@ -125,7 +158,7 @@ window.updateSubLocations = function() {
         subSelect.add(otherOpt);
     } else {
         subWrapper.style.display = 'none';
-        subSelect.value = ""; 
+        subSelect.value = "";
     }
 }
 
@@ -203,7 +236,6 @@ onValue(menuRef, (snapshot) => {
                 if (item.stockReturnTime && Date.now() < item.stockReturnTime) isAvailable = false;
             }
             if (item.inStock === false) isAvailable = false;
-
             if (isAvailable) menuData.push(item);
         });
 
@@ -237,7 +269,6 @@ window.toggleFavorite = function(itemName) {
     const index = favorites.indexOf(itemName);
     if (index === -1) favorites.push(itemName);
     else favorites.splice(index, 1);
-    
     localStorage.setItem('ccc_favorites', JSON.stringify(favorites));
     if (currentCategory === 'Favorites') renderMenu();
     else {
@@ -447,7 +478,7 @@ window.openOptionModal = function(index) {
                 <label class="custom-option-label">
                     <input type="checkbox" class="modal-opt-checkbox" data-name="${opt.name}" data-price="${opt.price}" onchange="updateModalTotal()"> 
                     ${opt.name}
-                 </label>
+                </label>
                 <span class="custom-option-price">+${rupeeSign}${opt.price}</span>
             </div>
         `;
@@ -633,23 +664,21 @@ window.applyCoupon = function() {
     setMsg("Invalid Coupon Code", 'error');
 }
 
-window.toggleCartPage = function() { document.getElementById('cart-sidebar').classList.toggle('active'); }
+window.toggleCartPage = function() { document.getElementById('cart-sidebar').classList.toggle('active');
+}
 
 // --- LOAD SAVED DETAILS ---
 function loadUserDetails() {
     const saved = localStorage.getItem('ccc_user_details_v2'); 
     if (!saved) return;
-
     try {
         const data = JSON.parse(saved);
-
         // 1. Fill Text Fields
         if(data.name) document.getElementById('c-name').value = data.name;
         if(data.phone) document.getElementById('c-phone').value = data.phone;
         if(data.email) document.getElementById('c-email').value = data.email;
         if(data.house) document.getElementById('addr-house').value = data.house;
         if(data.landmark) document.getElementById('addr-landmark').value = data.landmark;
-
         // 2. Handle the Dropdowns
         if(data.street) {
             const mainSelect = document.getElementById('addr-street');
@@ -675,7 +704,6 @@ function loadUserDetails() {
 window.openCheckoutModal = function() { 
     // 1. Load details first
     loadUserDetails();
-
     // 2. Show Modal
     document.getElementById('checkout-modal').style.display = 'flex';
     toggleOrderFields();
@@ -763,6 +791,27 @@ window.finalizeOrder = function() {
 
         if (!landmark) { alert("Please enter a nearby Landmark."); return;
         }
+
+        /* --- ADDED MAP CONFIRMATION PROMPT --- */
+        const pinConfirm = confirm(
+            "⚠ IMPORTANT: CHECK MAP PIN ⚠\n\n" +
+            "Is the RED PIN on the map pointing to your EXACT location?\n\n" +
+            "The driver navigates using this Pin. If it is wrong, they will get lost.\n\n" +
+            "Click OK if the Pin is correct.\n" +
+            "Click CANCEL to move the Pin."
+        );
+
+        if (!pinConfirm) {
+            // If they click Cancel, scroll them to the map and stop the function
+            document.getElementById('delivery-map').scrollIntoView({behavior: "smooth", block: "center"});
+            // Flash the map border to get attention
+            const mapContainer = document.getElementById('delivery-map');
+            mapContainer.style.border = "3px solid #FF4500";
+            setTimeout(() => mapContainer.style.border = "1px solid #ccc", 2000);
+            return; 
+        }
+        /* ------------------------------------- */
+
         if (street === "Other") {
             if (instruction.length < 5) {
                 alert("You selected 'Other'. Please type your exact location name in 'Special Instructions'.");
@@ -770,7 +819,7 @@ window.finalizeOrder = function() {
                 return;
             }
         }
-        const mapLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+        const mapLink = `http://googleusercontent.com/maps.google.com/?q=${lat},${lng}`;
         address = `${house}, ${street}\n(Landmark: ${landmark})\n📍 Pin: ${mapLink}`;
     }
 
@@ -787,7 +836,6 @@ window.finalizeOrder = function() {
         lng: document.getElementById('geo-lng').value
     };
     localStorage.setItem('ccc_user_details_v2', JSON.stringify(userDetails));
-
     const orderId = Math.floor(100000 + Math.random() * 900000);
     const now = new Date();
     const timeString = now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
@@ -857,7 +905,6 @@ window.finalizeOrder = function() {
         },
         globalNote: finalNote
     };
-
     // --- TRACKING LOGIC (UPDATED) ---
     const newOrderRef = push(ref(db, 'orders'));
     const trackingKey = newOrderRef.key;
@@ -867,7 +914,6 @@ window.finalizeOrder = function() {
     set(newOrderRef, kitchenOrderData)
         .then(() => { console.log("Sent to Kitchen"); })
         .catch((error) => { console.error("Firebase Error:", error); });
-    
     // --- WHATSAPP MSG GENERATION ---
     let msg = `*New Order @ Café Cloud Club*\n`;
     msg += `*Type:* ${type.toUpperCase()}\n*Time:* ${timeString}\n*Order ID:* ${orderId}\n---------------------------\n`;
@@ -1100,12 +1146,14 @@ function renderCart() {
             let item = cart[key];
             const lowerName = key.toLowerCase();
             if(item.category === 'Italian Indulgence' && lowerName.includes('penne') && !pastaDiscountApplied) {
-                const isEligibleFlavor = lowerName.includes('alfredo') || lowerName.includes('pesto') || lowerName.includes('arabiata') || lowerName.includes('cloud special');
+                const isEligibleFlavor = lowerName.includes('alfredo') ||
+                lowerName.includes('pesto') || lowerName.includes('arabiata') || lowerName.includes('cloud special');
                 if (isEligibleFlavor && item.basePrice > 179) { discountVal += (item.basePrice - 179);
                 pastaDiscountApplied = true; }
             }
         }
-        discountText = pastaDiscountApplied ? "Twisted Tuesday (Flat ₹179)" : "Add Eligible Penne Pasta";
+        discountText = pastaDiscountApplied ?
+        "Twisted Tuesday (Flat ₹179)" : "Add Eligible Penne Pasta";
     }
     else if(activeCoupon === 'WEDSTEAK') {
         let steakItem = Object.values(cart).find(i => i.category === "Butcher's Best");
