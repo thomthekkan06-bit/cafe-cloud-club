@@ -346,15 +346,18 @@
                 <i class="fas fa-gift"></i> All Offers & T&C
             </div>
 
-            <div class="reorder-btn-area">
-                <button class="reorder-btn" onclick="repeatLastOrder()">
-                    <i class="fas fa-history"></i> Repeat Last Order
-                </button>
-            </div>
+<div class="reorder-btn-area">
+    <button class="reorder-btn" onclick="repeatLastOrder()">
+        <i class="fas fa-history"></i> Repeat Last Order
+    </button>
+</div>
 
-            <div class="filter-item" onclick="setCategoryFilter('Favorites', this)">
-                <i class="fas fa-heart" style="margin-right:8px; color:#e74c3c;"></i> My Favorites
-            </div>
+<a href="my-orders.html" class="filter-item" style="text-decoration:none; color:inherit;">
+    <i class="fas fa-receipt" style="margin-right:8px; color:#3498db;"></i> Past Orders
+</a>
+<div class="filter-item" onclick="setCategoryFilter('Favorites', this)">
+    <i class="fas fa-heart" style="margin-right:8px; color:#e74c3c;"></i> My Favorites
+</div>
 
             <div class="filter-item active" onclick="setCategoryFilter('All', this)">All Items</div>
             <div class="filter-item" onclick="setCategoryFilter('Bun-Tastic Burgers', this)">Bun-Tastic Burgers</div>
