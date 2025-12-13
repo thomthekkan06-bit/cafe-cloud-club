@@ -1108,3 +1108,41 @@ window.toggleFinalButton = function() {
         else { btn.disabled = true; btn.style.opacity = "0.5"; btn.style.cursor = "not-allowed"; }
     }
 }
+/* --- AUTO-FILL LOGIC --- */
+function loadUserDetails() {
+    const saved = localStorage.getItem('ccc_user_details_v2'); // Changed version to force fresh save
+    if (!saved) return;
+
+    try {
+        const data = JSON.parse(saved);
+
+        // 1. Fill Text Fields
+        if(data.name) document.getElementById('c-name').value = data.name;
+        if(data.phone) document.getElementById('c-phone').value = data.phone;
+        if(data.email) document.getElementById('c-email').value = data.email;
+        if(data.house) document.getElementById('addr-house').value = data.house;
+        if(data.landmark) document.getElementById('addr-landmark').value = data.landmark;
+
+        // 2. Handle the Dropdowns (Tricky part)
+        if(data.street) {
+            const mainSelect = document.getElementById('addr-street');
+            mainSelect.value = data.street;
+            
+            // We MUST trigger this manually to generate the sub-street options
+            updateSubLocations(); 
+            
+            if(data.subStreet) {
+                const subSelect = document.getElementById('addr-sub-street');
+                if(subSelect) subSelect.value = data.subStreet;
+            }
+        }
+
+        // 3. Set the Coordinates (Crucial for the Map)
+        if(data.lat && data.lng) {
+            document.getElementById('geo-lat').value = data.lat;
+            document.getElementById('geo-lng').value = data.lng;
+        }
+    } catch (e) {
+        console.error("Error loading saved details", e);
+    }
+}
