@@ -792,10 +792,10 @@ window.finalizeOrder = function() {
         if (!landmark) { alert("Please enter a nearby Landmark."); return;
         }
 
-        /* --- ADDED MAP CONFIRMATION PROMPT --- */
+        /* --- ADDED MAP CONFIRMATION PROMPT (BLUE PIN) --- */
         const pinConfirm = confirm(
             "⚠ IMPORTANT: CHECK MAP PIN ⚠\n\n" +
-            "Is the RED PIN on the map pointing to your EXACT location?\n\n" +
+            "Is the BLUE PIN on the map pointing to your EXACT location?\n\n" +
             "The driver navigates using this Pin. If it is wrong, they will get lost.\n\n" +
             "Click OK if the Pin is correct.\n" +
             "Click CANCEL to move the Pin."
