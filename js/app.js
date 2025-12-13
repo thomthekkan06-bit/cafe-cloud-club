@@ -22,28 +22,28 @@ let marker = null;
 const CAFE_LAT = 10.286;
 const CAFE_LNG = 76.368;
 
-// --- UPDATED SMART MAP FUNCTION ---
+// --- SMART MAP INIT (READS SAVED LOCATION) ---
 window.initDeliveryMap = function() {
-    // 1. Get current values (either Default Cafe or Saved User Location from loadUserDetails)
+    // 1. Get current values (either Default Cafe or Saved User Location)
     let latVal = parseFloat(document.getElementById('geo-lat').value);
     let lngVal = parseFloat(document.getElementById('geo-lng').value);
 
-    // Safety fallback: If inputs are empty/invalid, use Cafe location
+    // Safety fallback
     if (isNaN(latVal) || latVal === 0) latVal = CAFE_LAT;
     if (isNaN(lngVal) || lngVal === 0) lngVal = CAFE_LNG;
 
-    // 2. If map exists, just move the pin (Don't re-initialize)
+    // 2. If map exists, just move the pin
     if (map !== null) { 
         setTimeout(() => {
             map.invalidateSize();
             const newLatLng = new L.LatLng(latVal, lngVal);
             marker.setLatLng(newLatLng);
-            map.setView(newLatLng, 16); // Zoom in on the user's location
+            map.setView(newLatLng, 16); 
         }, 200);
         return; 
     }
 
-    // 3. Initialize Map (First time)
+    // 3. Initialize Map
     map = L.map('delivery-map').setView([latVal, lngVal], 16);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -78,7 +78,7 @@ window.locateUser = function() {
     }, () => alert("Could not fetch location. Please drag pin manually."));
 }
 
-/* --- SUB-LOCATION MASTER LIST (SMART ADDRESS) --- */
+/* --- SUB-LOCATION MASTER LIST --- */
 const subPlaces = {
     "Muringoor": ["Muringoor Junction", "Vadakkummuri", "Thekkummuri", "Sanjo Nagar", "Annallur", "Viyyoor Padam"],
     "Divine Nagar": ["Divine Retreat Centre", "Railway Station Area", "Muringoor Bridge Area", "Chalakudy River Side"],
@@ -96,27 +96,22 @@ const subPlaces = {
     "Adichilappilly": ["Adichilappilly Main", "River Side"]
 };
 
-// Function to update the second dropdown
 window.updateSubLocations = function() {
     const mainSelect = document.getElementById('addr-street');
     const subWrapper = document.getElementById('sub-location-wrapper');
     const subSelect = document.getElementById('addr-sub-street');
     const selectedTown = mainSelect.value;
 
-    // Clear previous options
     subSelect.innerHTML = "";
 
     if (subPlaces[selectedTown]) {
-        // Show the box
         subWrapper.style.display = 'block';
-        // Add default option
         const defaultOpt = document.createElement('option');
         defaultOpt.text = `Select Area in ${selectedTown}...`;
         defaultOpt.disabled = true;
         defaultOpt.selected = true;
         subSelect.add(defaultOpt);
         
-        // Add specific sub-places
         subPlaces[selectedTown].forEach(place => {
             const opt = document.createElement('option');
             opt.value = place;
@@ -124,19 +119,17 @@ window.updateSubLocations = function() {
             subSelect.add(opt);
         });
         
-        // Add "Other" option for every town
         const otherOpt = document.createElement('option');
         otherOpt.value = "Other";
         otherOpt.text = "Other / Not Listed";
         subSelect.add(otherOpt);
     } else {
-        // If "Other" or a town with no data is selected, hide the box
         subWrapper.style.display = 'none';
-        subSelect.value = ""; // Clear value
+        subSelect.value = ""; 
     }
 }
 
-/* --- PRELOADER SCRIPT --- */
+/* --- PRELOADER --- */
 document.addEventListener('DOMContentLoaded', () => {
     const foodQuotes = {
         0: "Midnight munchies? A Burger fixes everything.",
@@ -205,21 +198,13 @@ onValue(menuRef, (snapshot) => {
             const item = data[key];
             let isAvailable = true;
 
-            if (item.stockStatus === 'MANUAL_OFF') {
-                isAvailable = false;
-            } 
+            if (item.stockStatus === 'MANUAL_OFF') isAvailable = false;
             else if (item.stockStatus === 'TEMP_OFF') {
-                if (item.stockReturnTime && Date.now() < item.stockReturnTime) {
-                    isAvailable = false;
-                }
+                if (item.stockReturnTime && Date.now() < item.stockReturnTime) isAvailable = false;
             }
-            if (item.inStock === false) {
-                isAvailable = false;
-            }
+            if (item.inStock === false) isAvailable = false;
 
-            if (isAvailable) {
-                menuData.push(item);
-            }
+            if (isAvailable) menuData.push(item);
         });
 
         menuData.sort((a, b) => {
@@ -250,15 +235,12 @@ function loadCart() {
 
 window.toggleFavorite = function(itemName) {
     const index = favorites.indexOf(itemName);
-    if (index === -1) {
-        favorites.push(itemName);
-    } else {
-        favorites.splice(index, 1);
-    }
+    if (index === -1) favorites.push(itemName);
+    else favorites.splice(index, 1);
+    
     localStorage.setItem('ccc_favorites', JSON.stringify(favorites));
-    if (currentCategory === 'Favorites') {
-        renderMenu();
-    } else {
+    if (currentCategory === 'Favorites') renderMenu();
+    else {
         const uniqueId = itemName.replace(/[^a-zA-Z0-9]/g, '-');
         const btn = document.getElementById(`fav-btn-${uniqueId}`);
         if(btn) btn.classList.toggle('active');
@@ -305,9 +287,7 @@ window.setCategoryFilter = function(cat, btn) {
     if(window.innerWidth <= 1000) {
         document.querySelector('.main-content').scrollTop = 0;
         const sidebar = document.querySelector('.left-sidebar');
-        if (sidebar && sidebar.classList.contains('active')) {
-            toggleSidebar();
-        }
+        if (sidebar && sidebar.classList.contains('active')) toggleSidebar();
     }
 }
 
@@ -655,7 +635,7 @@ window.applyCoupon = function() {
 
 window.toggleCartPage = function() { document.getElementById('cart-sidebar').classList.toggle('active'); }
 
-// --- NEW FUNCTION: LOAD SAVED DETAILS ---
+// --- LOAD SAVED DETAILS ---
 function loadUserDetails() {
     const saved = localStorage.getItem('ccc_user_details_v2'); 
     if (!saved) return;
@@ -674,17 +654,14 @@ function loadUserDetails() {
         if(data.street) {
             const mainSelect = document.getElementById('addr-street');
             mainSelect.value = data.street;
-            
-            // Trigger update to populate sub-street
             updateSubLocations(); 
-            
             if(data.subStreet) {
                 const subSelect = document.getElementById('addr-sub-street');
                 if(subSelect) subSelect.value = data.subStreet;
             }
         }
 
-        // 3. Set the Coordinates for map init
+        // 3. Set the Coordinates
         if(data.lat && data.lng) {
             document.getElementById('geo-lat').value = data.lat;
             document.getElementById('geo-lng').value = data.lng;
@@ -693,7 +670,6 @@ function loadUserDetails() {
         console.error("Error loading saved details", e);
     }
 }
-// ----------------------------------------
 
 // --- UPDATED CHECKOUT OPEN ---
 window.openCheckoutModal = function() { 
@@ -798,7 +774,7 @@ window.finalizeOrder = function() {
         address = `${house}, ${street}\n(Landmark: ${landmark})\n📍 Pin: ${mapLink}`;
     }
 
-    // --- SAVE USER DETAILS FOR NEXT TIME (GUEST MODE) ---
+    // --- SAVE USER DETAILS (GUEST MODE) ---
     const userDetails = {
         name: name,
         phone: rawPhone, 
@@ -811,7 +787,6 @@ window.finalizeOrder = function() {
         lng: document.getElementById('geo-lng').value
     };
     localStorage.setItem('ccc_user_details_v2', JSON.stringify(userDetails));
-    // ----------------------------------------------------
 
     const orderId = Math.floor(100000 + Math.random() * 900000);
     const now = new Date();
@@ -882,9 +857,18 @@ window.finalizeOrder = function() {
         },
         globalNote: finalNote
     };
-    push(ref(db, 'orders'), kitchenOrderData)
+
+    // --- TRACKING LOGIC (UPDATED) ---
+    const newOrderRef = push(ref(db, 'orders'));
+    const trackingKey = newOrderRef.key;
+    localStorage.setItem('ccc_tracking_key', trackingKey);
+    localStorage.setItem('ccc_tracking_id', orderId);
+
+    set(newOrderRef, kitchenOrderData)
         .then(() => { console.log("Sent to Kitchen"); })
         .catch((error) => { console.error("Firebase Error:", error); });
+    
+    // --- WHATSAPP MSG GENERATION ---
     let msg = `*New Order @ Café Cloud Club*\n`;
     msg += `*Type:* ${type.toUpperCase()}\n*Time:* ${timeString}\n*Order ID:* ${orderId}\n---------------------------\n`;
     msg += `*Name:* ${name}\n*Phone:* ${phone}\n*Email:* ${email}\n*Time:* ${time}\n`;
@@ -901,9 +885,12 @@ window.finalizeOrder = function() {
     if (discountVal > 0) msg += `*Coupon (${couponName}): -Rs. ${discountVal}*\n`;
     msg += `Packing: Rs. ${packingTotal}\n*TOTAL: Rs. ${grandTotal}*\n`;
     if(type === 'Delivery') msg += `\n_Delivery fee calculated by Delivery Agent._`;
-    
+    msg += `\n\nTrack Order: https://cafe-cloud-club.vercel.app/track.html`;
+
     const encodedMsg = encodeURIComponent(msg);
     const finalUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
+    
+    // Clear and Redirect
     if (Object.keys(cart).length > 0) {
         localStorage.setItem('ccc_last_order', JSON.stringify(cart));
         lastOrder = cart;
