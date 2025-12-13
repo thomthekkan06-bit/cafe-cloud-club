@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Order | Café Cloud Club</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: #121212;
+            color: #e0e0e0;
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .header {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        .back-btn {
+            color: #FF4500;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        /* TRACKING CARD */
+        .track-card {
+            background: #1e1e1e;
+            width: 100%;
+            max-width: 500px;
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid #333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        
+        .order-number {
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .big-status {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 30px;
+            background: -webkit-linear-gradient(#fff, #aaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* PROGRESS STEPS */
+        .steps-container {
+            position: relative;
+            margin: 20px 0 40px 0;
+            padding-left: 20px; 
+            border-left: 2px solid #333;
+            text-align: left;
+            margin-left: 20px;
+        }
+        
+        .step {
+            position: relative;
+            margin-bottom: 30px;
+            opacity: 0.3;
+            transition: all 0.5s ease;
+        }
+        .step:last-child { margin-bottom: 0; }
+
+        .step-dot {
+            position: absolute;
+            left: -27px; /* Align with border line */
+            top: 0;
+            width: 12px;
+            height: 12px;
+            background: #333;
+            border-radius: 50%;
+            border: 2px solid #1e1e1e;
+            transition: all 0.5s ease;
+        }
+        
+        .step-title { font-weight: 600; font-size: 1.1rem; margin-bottom: 2px; }
+        .step-desc { font-size: 0.8rem; color: #888; }
+
+        /* ACTIVE STATES */
+        .step.active { opacity: 1; }
+        .step.active .step-dot { 
+            background: #FF4500; 
+            box-shadow: 0 0 10px rgba(255, 69, 0, 0.5);
+            transform: scale(1.3);
+        }
+        .step.completed .step-dot { background: #27ae60; }
+        
+        /* PULSE ANIMATION FOR CURRENT STEP */
+        .step.active .step-title { color: #FF4500; }
+        .step.active .step-dot { animation: pulse 2s infinite; }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 69, 0, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 69, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 69, 0, 0); }
+        }
+
+        .actions {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+        }
+        .action-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+        .btn-call { background: #333; color: #fff; }
+        .btn-home { background: #FF4500; color: #fff; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i> Home</a>
+        <div style="font-weight:700; color:#FF4500;">LIVE TRACKING</div>
+    </div>
+
+    <div class="track-card">
+        <div class="order-number" id="disp-id">ORDER #...</div>
+        <div class="big-status" id="disp-status">Checking Status...</div>
+
+        <div class="steps-container">
+            
+            <div class="step" id="step-pending">
+                <div class="step-dot"></div>
+                <div class="step-title">Order Placed</div>
+                <div class="step-desc">Waiting for restaurant confirmation</div>
+            </div>
+
+            <div class="step" id="step-cooking">
+                <div class="step-dot"></div>
+                <div class="step-title">Preparing</div>
+                <div class="step-desc">Chef is working on your food</div>
+            </div>
+
+            <div class="step" id="step-out_for_delivery">
+                <div class="step-dot"></div>
+                <div class="step-title">Out for Delivery</div>
+                <div class="step-desc">Rider is on the way</div>
+            </div>
+
+            <div class="step" id="step-delivered">
+                <div class="step-dot"></div>
+                <div class="step-title">Delivered</div>
+                <div class="step-desc">Enjoy your meal!</div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <a href="tel:+917907660093" class="action-btn btn-call"><i class="fas fa-phone"></i> Call Shop</a>
+            <a href="index.html" class="action-btn btn-home">New Order</a>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // USE YOUR EXISTING CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
+            authDomain: "cafe-orders-1afa1.firebaseapp.com",
+            databaseURL: "https://cafe-orders-1afa1-default-rtdb.firebaseio.com",
+            projectId: "cafe-orders-1afa1",
+            storageBucket: "cafe-orders-1afa1.firebasestorage.app",
+            messagingSenderId: "274410745480",
+            appId: "1:274410745480:web:9964c3914d512aed8d793d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const trackKey = localStorage.getItem('ccc_tracking_key');
+        const trackId = localStorage.getItem('ccc_tracking_id');
+
+        // Initial UI Set
+        if(trackId) document.getElementById('disp-id').innerText = `ORDER #${trackId}`;
+        
+        if(!trackKey) {
+            document.getElementById('disp-status').innerText = "No Recent Order";
+            resetSteps();
+        } else {
+            // Listen to the specific order in real-time
+            const orderRef = ref(db, 'orders/' + trackKey);
+            
+            onValue(orderRef, (snapshot) => {
+                const data = snapshot.val();
+
+                if (!data) {
+                    // If data is null, it means the order was moved to 'history' (Completed) or deleted
+                    // We assume completed for user happiness
+                    updateUI('delivered'); 
+                    return;
+                }
+                
+                // If it's a Pickup order, change the text of Step 3
+                if(data.orderType === 'Pickup') {
+                    document.querySelector('#step-out_for_delivery .step-title').innerText = "Ready for Pickup";
+                    document.querySelector('#step-out_for_delivery .step-desc').innerText = "Please collect at counter";
+                }
+
+                // If status is 'done', map it to out_for_delivery visual for simplicity, 
+                // or keep it distinct. In your manager app, 'done' = Ready. 
+                // 'out_for_delivery' is set by the driver.
+                
+                let status = data.status;
+                if(status === 'done' && data.orderType === 'Delivery') status = 'cooking'; // Keep it in cooking until driver picks up? Or create a 'Ready' step. 
+                // Let's simpler: 'done' usually means Ready. 
+                
+                if (status === 'done') status = 'out_for_delivery'; // Visual mapping
+
+                updateUI(status);
+            });
+        }
+
+        function resetSteps() {
+            document.querySelectorAll('.step').forEach(el => {
+                el.classList.remove('active');
+                el.classList.remove('completed');
+            });
+        }
+
+        function updateUI(status) {
+            resetSteps();
+            
+            const steps = ['pending', 'cooking', 'out_for_delivery', 'delivered'];
+            let activeIndex = steps.indexOf(status);
+            
+            // Handle edge case if status isn't standard
+            if(activeIndex === -1) activeIndex = 0; 
+
+            // Text Updates
+            const statusTexts = {
+                'pending': "Order Placed...",
+                'cooking': "Chef is Cooking! 🔥",
+                'out_for_delivery': "On the Way! 🛵",
+                'delivered': "Delivered! 🎉"
+            };
+            document.getElementById('disp-status').innerText = statusTexts[status] || "Updating...";
+
+            // Visual Stepper Updates
+            steps.forEach((stepName, index) => {
+                const el = document.getElementById(`step-${stepName}`);
+                if(index < activeIndex) {
+                    el.classList.add('active'); // Keep previous lit up? Or just completed?
+                    el.classList.add('completed');
+                    el.style.opacity = "1";
+                } else if (index === activeIndex) {
+                    el.classList.add('active');
+                    el.style.opacity = "1";
+                }
+            });
+        }
+    </script>
+</body>
+</html>
