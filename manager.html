@@ -29,232 +29,124 @@
             padding: 20px;
         }
 
-        /* --- LOCK SCREEN --- */
-        #pin-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+        /* --- LOGIN OVERLAY (Replaces PIN) --- */
+        #login-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #000; z-index: 10000;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 0.5s ease;
-        }
-        .pin-box {
-            background: #1e1e1e;
-            padding: 40px; border-radius: 12px;
-            border: 1px solid #333; text-align: center; width: 300px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-        }
-        .pin-input {
-            width: 100%;
-            padding: 15px; margin: 20px 0;
-            background: #121212; border: 1px solid #333; color: white;
-            font-size: 1.5rem; text-align: center; letter-spacing: 5px;
-            border-radius: 8px; font-family: 'Roboto Mono', monospace;
-        }
-        .pin-btn {
-            width: 100%;
-            padding: 15px; background: var(--accent-blue);
-            color: white; border: none; font-weight: 800; font-size: 1rem;
-            border-radius: 8px; cursor: pointer; text-transform: uppercase;
-        }
-        .pin-error { color: var(--accent-red); margin-top: 10px; display: none; font-weight: bold; }
-        .shake { animation: shake 0.3s ease-in-out; }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
-
-        /* --- HEADER --- */
-        .header-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #1a1a1a;
-            padding: 15px 25px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            margin-bottom: 30px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            position: sticky; top: 0; z-index: 999;
         }
 
-        .live-clock { font-family: 'Roboto Mono', monospace; font-size: 1.2rem; font-weight: 700; color: var(--accent-yellow); }
-        .status-indicator { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 0.9rem; width: 150px; }
-        .status-dot { width: 12px; height: 12px; border-radius: 50%; background-color: #555; transition: all 0.3s ease; }
-        .status-online { color: #2ecc71; }
-        .status-online .status-dot { background-color: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
-        .status-offline { color: #e74c3c; }
-        .status-offline .status-dot { background-color: #e74c3c; }
-
-        /* --- GRID & CARDS --- */
-        #orders-grid {
+        /* --- LAYOUT --- */
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px;
+        }
+        h1 { margin: 0; font-size: 1.8rem; letter-spacing: -1px; }
+        
+        .orders-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 25px;
-            padding-top: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
         }
 
+        /* --- ORDER CARD --- */
         .order-card {
             background: var(--card-bg);
             border: 1px solid var(--border);
-            border-radius: 8px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex; flex-direction: column;
+            animation: slideIn 0.3s ease-out;
             position: relative;
-            animation: slideUp 0.3s ease-out;
-            border-top: 6px solid #555; 
-            transition: border-color 0.5s ease, box-shadow 0.5s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
+        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        /* --- STATUS BORDERS --- */
-        .order-card.status-pending { border-top-color: var(--accent-blue); }
-        .order-card.status-cooking { border-top-color: var(--accent-yellow); }
-        .order-card.status-done { border-top-color: var(--accent-green); }
-        .order-card.status-out_for_delivery { border-top-color: var(--accent-purple); box-shadow: 0 0 15px rgba(142, 68, 173, 0.3); }
-
-        /* Age Critical Animation */
-        .order-card.age-critical { animation: criticalPulse 1s infinite alternate; }
-
-        @keyframes criticalPulse {
-            from { box-shadow: 0 0 10px rgba(192, 57, 43, 0.2); }
-            to { box-shadow: 0 0 25px rgba(192, 57, 43, 0.9); }
-        }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-        /* --- CARD INTERNALS --- */
         .card-header {
-            background: rgba(255,255,255,0.05);
-            padding: 12px 15px;
-            display: flex; flex-direction: column; gap: 10px;
-            border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: flex-start;
+            margin-bottom: 15px; border-bottom: 1px dashed var(--border); padding-bottom: 10px;
         }
-        .header-top { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-        .header-bottom { display: flex; justify-content: space-between; align-items: center; width: 100%; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px; }
-
-        .order-id { font-family: 'Roboto Mono', monospace; font-size: 1.2rem; font-weight: 800; color: #fff; }
-        .order-type-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-        .type-delivery { background: rgba(52, 152, 219, 0.2); color: #3498db; border: 1px solid #3498db; }
-        .type-pickup { background: rgba(243, 156, 18, 0.2); color: #f39c12; border: 1px solid #f39c12; }
+        .order-id { font-family: 'Roboto Mono', monospace; font-size: 1.1rem; font-weight: 700; color: var(--accent-yellow); }
+        .order-time { font-size: 0.8rem; color: var(--text-muted); text-align: right; }
         
-        .time-stamp { font-size: 0.8rem; color: var(--text-muted); font-family: 'Roboto Mono', monospace; }
-        .time-ago { font-size: 0.85rem; font-weight: 700; color: var(--text-main); background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; }
+        .customer-info { font-size: 0.85rem; color: #888; margin-bottom: 15px; }
+        .customer-info span { color: #ccc; font-weight: 600; }
 
-        .customer-section { padding: 15px; border-bottom: 1px dashed var(--border); font-size: 0.9rem; }
-        .customer-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
-        .c-icon { width: 15px; color: var(--text-muted); text-align: center; }
-        .c-data { flex: 1; color: #fff; }
-        .c-address { color: var(--accent-yellow); font-weight: 500; }
-        .c-phone a { color: var(--accent-blue); text-decoration: none; }
+        .items-list { margin-bottom: 20px; flex-grow: 1; }
+        .order-item {
+            display: flex; justify-content: space-between;
+            margin-bottom: 8px; font-size: 0.95rem;
+            border-bottom: 1px solid #2a2a2a; padding-bottom: 5px;
+        }
+        .item-qty { color: var(--accent-green); font-weight: 800; margin-right: 10px; }
 
-        .items-section { padding: 0; flex-grow: 1; }
-        .item-row { padding: 12px 15px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: flex-start; }
-        .qty-box { background: #333; color: #fff; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-weight: 700; flex-shrink: 0; }
-        .item-details { flex: 1; }
-        .item-name { font-weight: 600; font-size: 1rem; color: #fff; line-height: 1.3; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
-        .item-mods { font-size: 0.85rem; color: var(--accent-yellow); margin-top: 4px; font-style: italic; display: block; width: 100%; }
-        .item-price { font-family: 'Roboto Mono', monospace; color: var(--text-muted); font-size: 0.9rem; font-weight: 600; align-self: center; }
+        /* --- ACTION BUTTONS --- */
+        .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: auto; }
+        button {
+            padding: 12px; border: none; border-radius: 6px;
+            font-weight: 700; cursor: pointer; color: white;
+            font-family: 'Inter', sans-serif; transition: 0.2s;
+        }
+        button:hover { opacity: 0.9; transform: scale(1.02); }
 
-        .diet-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
-        .dot-veg { background-color: #2ecc71; box-shadow: 0 0 4px #2ecc71; border: 1px solid #27ae60; }
-        .dot-non { background-color: #e74c3c; box-shadow: 0 0 4px #e74c3c; border: 1px solid #c0392b; }
+        .btn-accept { background: var(--accent-blue); grid-column: 1 / -1; }
+        .btn-ready { background: var(--accent-green); grid-column: 1 / -1; }
+        .btn-reject { background: transparent; border: 1px solid var(--accent-red); color: var(--accent-red); }
+        .btn-reject:hover { background: var(--accent-red); color: white; }
+        .btn-archive { background: #444; color: #aaa; }
 
-        .finance-section { background: rgba(0,0,0,0.2); padding: 15px; font-size: 0.9rem; border-top: 2px solid var(--border); }
-        .f-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
-        .f-label { color: var(--text-muted); }
-        .f-val { color: var(--text-main); font-family: 'Roboto Mono', monospace; }
-        .row-discount { color: var(--accent-red); }
-        .row-total { font-size: 1.2rem; font-weight: 800; color: var(--accent-green); margin-top: 10px; padding-top: 10px; border-top: 1px dashed #444; }
-
-        .notes-section { padding: 10px 15px; background: rgba(192, 57, 43, 0.1); color: #ff6b6b; font-size: 0.85rem; border-top: 1px solid #444; }
-
-        /* --- ACTION BUTTONS (NEW) --- */
-        .actions-section { padding: 15px; display: flex; gap: 10px; }
-        .btn-action { flex: 1; padding: 15px; border: none; border-radius: 6px; font-size: 1rem; font-weight: 800; text-transform: uppercase; cursor: pointer; transition: all 0.2s; color: white; }
-        
-        .btn-accept { background: var(--accent-green); }
-        .btn-accept:hover { background: #219150; }
-        
-        .btn-reject { background: var(--accent-red); }
-        .btn-reject:hover { background: #a93226; }
-        
-        .btn-cook { background: var(--accent-yellow); color: #000; }
-        .btn-archive { background: #333; color: #888; }
-        
-        /* Status Badge for Out for Delivery */
-        .out-badge { 
-            background: var(--accent-purple); color: white; 
-            padding: 15px; width: 100%; text-align: center; 
-            font-weight: 800; border-radius: 6px; 
-            display: flex; align-items: center; justify-content: center; gap: 10px;
+        /* STATUS BADGES */
+        .badge {
+            position: absolute; top: -10px; right: -10px;
+            background: var(--accent-purple); color: white;
+            padding: 5px 10px; font-size: 0.7rem; font-weight: 800;
+            border-radius: 20px; text-transform: uppercase;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
 
-        /* --- UTILITIES --- */
-        .text-center { text-align: center; }
-        .flex-1 { flex: 1; }
-        .no-decoration { text-decoration: none; }
-        .header-actions { display: flex; align-items: center; gap: 15px; }
-        .btn-history { background: #333; color: #fff; border: 1px solid #555; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 5px; transition: all 0.2s; font-family: inherit; }
-        .btn-history:hover { background: #444; }
+        /* --- UTILS --- */
+        .hidden { display: none; }
+        .blinking { animation: blink 1.5s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+        
+        /* LOGIN INPUTS */
+        .login-inp { padding: 12px; margin: 5px; width: 250px; background: #222; border: 1px solid #444; color: white; border-radius: 6px; }
 
-        .empty-state-container { grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; opacity: 0.5; }
-        .empty-icon { font-size: 4rem; margin-bottom: 20px; filter: grayscale(1); }
-        .empty-text { font-size: 1.2rem; font-weight: 600; color: #666; }
-        .text-accent-green { color: var(--accent-green); }
-        .text-danger { color: #e74c3c; }
-        .font-bold { font-weight: bold; }
-        .font-small { font-size: 0.75rem; }
-        .ml-5 { margin-left: 5px; }
-
-        @media (max-width: 600px) {
-            .header-bar { flex-wrap: wrap; padding: 12px; gap: 10px; }
-            .status-indicator { order: 1; font-size: 0.8rem; }
-            .header-actions { order: 2; margin-left: auto; gap: 10px; }
-            .header-bar h1 { order: 3; width: 100%; font-size: 1.3rem; margin-top: 5px; padding-top: 10px; border-top: 1px solid #333; }
-            .live-clock { font-size: 0.9rem; }
-            .btn-history { font-size: 0.8rem; padding: 6px 10px; }
-        }
     </style>
 </head>
 <body>
 
-    <div id="pin-overlay">
-        <div class="pin-box">
-            <h2 style="margin-top:0;">🔒 Kitchen Access</h2>
-            <p style="color:#aaa; font-size:0.9rem;">Enter PIN to unlock & enable sound</p>
-            <input type="password" id="pin-input" class="pin-input" placeholder="****" maxlength="4">
-            <button class="pin-btn" id="unlock-btn">Unlock System</button>
-            <div class="pin-error" id="pin-error">Incorrect PIN</div>
-            <div style="margin-top: 25px; border-top: 1px solid #333; padding-top: 15px; font-size: 0.75rem; color: #666; font-weight: 500;">
-    System by <span style="color: var(--accent-blue); font-weight: 700;">Thomsons Networks</span>
-</div>
-        </div>
+    <div id="login-overlay">
+        <h2 style="color: var(--accent-green);">Kitchen Access</h2>
+        <input type="email" id="k-email" class="login-inp" placeholder="Email">
+        <input type="password" id="k-pass" class="login-inp" placeholder="Password">
+        <button onclick="kitchenLogin()" style="margin-top: 15px; background: var(--accent-green); width: 200px;">OPEN KITCHEN</button>
+        <p id="login-msg" style="color: red; margin-top: 10px;"></p>
     </div>
 
-    <div class="header-bar">
-        <div class="status-indicator" id="conn-wrapper">
-            <span class="status-dot"></span>
-            <span id="conn-text">Connecting...</span>
-        </div>
-        
-        <h1 class="text-center flex-1">🔥 Kitchen Manager</h1>
+    <audio id="bell-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
 
-        <div class="header-actions">
-            <div class="live-clock" id="clock-display">00:00:00 PM</div>
-            <a href="history.html" class="no-decoration">
-                <button class="btn-history">
-                    📜 History
-                </button>
-            </a>
-        </div>
-    </div>
+    <div id="app" class="hidden">
+        <header>
+            <div>
+                <h1>👨‍🍳 Kitchen Manager</h1>
+                <div style="font-size: 0.9rem; color: #666; margin-top: 5px;">Live Orders Stream</div>
+            </div>
+            <div>
+                <button onclick="logout()" style="background: #333; font-size: 0.8rem;">Logout</button>
+            </div>
+        </header>
 
-    <div id="orders-grid">
-        <p class="empty-state-msg">Waiting for orders...</p>
+        <div id="orders-container" class="orders-grid">
+            </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue, update, remove, get, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, update, remove, onValue, set, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        // ADDED AUTH
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
             authDomain: "cafe-orders-1afa1.firebaseapp.com",
@@ -267,271 +159,153 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-
-        // --- SECURITY & AUDIO SETUP ---
-        const KITCHEN_PIN = "2024";
-        const bell = new Audio('bell.mp3');
-        bell.loop = true; 
-        let audioUnlocked = false;
-
-        const pinInput = document.getElementById('pin-input');
-        const unlockBtn = document.getElementById('unlock-btn');
-        const pinOverlay = document.getElementById('pin-overlay');
-        const pinError = document.getElementById('pin-error');
-
-        async function attemptUnlock() {
-            if (pinInput.value === KITCHEN_PIN) {
-                bell.play().then(() => {
-                    bell.pause();
-                    bell.currentTime = 0;
-                    audioUnlocked = true;
-                    pinOverlay.style.opacity = '0';
-                    setTimeout(() => pinOverlay.style.display = 'none', 500);
-                    checkAudioState(); 
-                }).catch(e => alert("Audio System Failed: " + e));
-                
-                try {
-                    if ('wakeLock' in navigator) {
-                        await navigator.wakeLock.request('screen');
-                        console.log('Screen Wake Lock Active');
-                    }
-                } catch (err) { console.log('Wake Lock not supported'); }
-            } else {
-                pinError.style.display = 'block';
-                pinInput.classList.add('shake');
-                setTimeout(() => pinInput.classList.remove('shake'), 300);
-                pinInput.value = "";
-            }
-        }
-
-        unlockBtn.addEventListener('click', attemptUnlock);
-        pinInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') attemptUnlock();
-        });
-
-        // --- CLOCK & TIMERS ---
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('clock-display').innerText = now.toLocaleTimeString('en-US', { 
-                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true 
-            });
-            updateOrderAges(); 
-        }
-
-        function updateOrderAges() {
-            const now = Date.now();
-            document.querySelectorAll('.order-card').forEach(card => {
-                const ts = parseInt(card.dataset.timestamp);
-                if (!ts) return;
-                const diffMins = Math.floor((now - ts) / 60000);
-                const timeAgoSpan = card.querySelector('.time-ago');
-                if (timeAgoSpan) {
-                    if (diffMins < 1) timeAgoSpan.innerText = "Just now";
-                    else timeAgoSpan.innerText = `${diffMins}m ago`;
-                }
-
-                if (!card.classList.contains('status-done') && !card.classList.contains('status-out_for_delivery')) {
-                    card.classList.remove('age-critical');
-                    if (diffMins > 35) card.classList.add('age-critical'); 
-                }
-            });
-        }
-        setInterval(updateClock, 1000);
-
-        // --- CONNECTION STATUS ---
-        const connectedRef = ref(db, ".info/connected");
-        onValue(connectedRef, (snap) => {
-            const wrapper = document.getElementById('conn-wrapper');
-            const text = document.getElementById('conn-text');
-            if (snap.val() === true) {
-                wrapper.className = "status-indicator status-online";
-                text.innerText = "ONLINE";
-            } else {
-                wrapper.className = "status-indicator status-offline";
-                text.innerText = "OFFLINE";
-            }
-        });
-
-        // --- ORDERS LOGIC ---
-        const formatMoney = (amount) => "₹" + amount;
-        const formatDate = (ts) => new Date(ts).toLocaleString('en-IN', { hour: '2-digit', minute:'2-digit', day:'2-digit', month:'short' });
+        const auth = getAuth(app);
+        const bell = document.getElementById('bell-sound');
         
+        // --- AUTH LOGIC ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                startOrderListener(); // Only start data stream after login
+            } else {
+                document.getElementById('login-overlay').style.display = 'flex';
+                document.getElementById('app').style.display = 'none';
+            }
+        });
+
+        window.kitchenLogin = () => {
+            const e = document.getElementById('k-email').value;
+            const p = document.getElementById('k-pass').value;
+            signInWithEmailAndPassword(auth, e, p)
+                .catch(err => document.getElementById('login-msg').innerText = "Access Denied");
+        };
+
+        window.logout = () => signOut(auth).then(()=>location.reload());
+
+        // --- ORDER LOGIC ---
         let activeOrders = [];
-        
-        onValue(ref(db, 'orders'), (snapshot) => {
-            const grid = document.getElementById('orders-grid');
-            const data = snapshot.val();
-            
-            grid.innerHTML = ""; 
 
-            if (!data) {
-                grid.innerHTML = `
-                    <div class="empty-state-container">
-                        <div class="empty-icon">🍳</div>
-                        <div class="empty-text">All Caught Up!</div>
-                        <div style="font-size:0.9rem; margin-top:10px; color:#444;">Ready for the next rush...</div>
-                    </div>
-                `;
-                activeOrders = [];
-                checkAudioState(); 
-                return;
-            }
-
-            const ordersArray = Object.entries(data).reverse();
-            activeOrders = ordersArray;
-            checkAudioState(); 
-
-            ordersArray.forEach(([key, order]) => {
-                const statusClass = `status-${order.status || 'pending'}`;
+        function startOrderListener() {
+            const ordersRef = ref(db, 'orders');
+            onValue(ordersRef, (snapshot) => {
+                const container = document.getElementById('orders-container');
+                container.innerHTML = "";
+                const data = snapshot.val();
                 
-                // Items Rendering
-                let itemsHtml = '';
-                if(Array.isArray(order.items)) {
-                    order.items.forEach(item => {
-                        let discountBadge = item.isOffer ? `<span class="text-accent-green font-bold font-small ml-5">(OFFER APPLIED)</span>` : "";
-                        let dotHtml = item.type === 'veg' ? `<span class="diet-dot dot-veg"></span>` : `<span class="diet-dot dot-non"></span>`;
-                        let nameDisplay = item.name.replace(/\[(.*?)\]/g, '<span class="item-mods">Add: $1</span>').replace(/\((Note:.*?)\)/g, '<span class="item-mods text-danger">$1</span>');
-                        const linePrice = item.price * item.qty;
-                        
-                        itemsHtml += `
-                            <div class="item-row">
-                                <div class="qty-box">${item.qty}</div>
-                                <div class="item-details"><div class="item-name">${dotHtml} ${nameDisplay} ${discountBadge}</div></div>
-                                <div class="item-price">${formatMoney(linePrice)}</div>
-                            </div>`;
-                    });
-                } else {
-                    itemsHtml = `<div class="item-row"><div class="item-details">${order.item || "Unknown Items"}</div></div>`;
+                if (!data) {
+                    container.innerHTML = `<div style="text-align:center; grid-column: 1/-1; color:#444; margin-top:50px;">
+                        <h3>No Active Orders</h3><p>Waiting for hungry customers...</p></div>`;
+                    return;
                 }
 
-                // Financials & Extras
-                const fins = order.financials || { subTotal:0, packingTotal:0, discountVal:0, grandTotal:order.price };
-                const couponDisplay = fins.couponCode && fins.couponCode !== "NONE" ? `(Code: ${fins.couponCode})` : "";
-                const noteHtml = order.globalNote && order.globalNote !== "-" ? `<div class="notes-section"><strong>⚠️ Note:</strong> ${order.globalNote}</div>` : "";
-                const addressHtml = order.orderType === 'Delivery' ? `<div class="customer-row"><div class="c-icon">📍</div><div class="c-data c-address">${order.customer.address}</div></div>` : "";
-
-                // ACTION BUTTON LOGIC
-                let actionButtonsHtml = '';
+                const arr = Object.entries(data).map(([key, val]) => ({...val, key}));
                 
-                if (order.status === 'pending') {
-                    actionButtonsHtml = `
-                        <button class="btn-action btn-reject" onclick="rejectOrder('${key}')">Reject ❌</button>
-                        <button class="btn-action btn-accept" onclick="acceptOrder('${key}')">Accept ✅</button>
-                    `;
-                } 
-                else if (order.status === 'cooking') {
-                    actionButtonsHtml = `
-                        <button class="btn-action btn-cook" onclick="markReady('${key}')">Mark Ready 🔔</button>
-                    `;
-                } 
-                else if (order.status === 'done') {
-                    // If Pickup: Manager completes. If Delivery: Manager waits for driver.
-                    if (order.orderType === 'Delivery') {
-                         actionButtonsHtml = `<button class="btn-action btn-archive" disabled>Waiting for Driver...</button>`;
-                    } else {
-                         actionButtonsHtml = `<button class="btn-action btn-archive" onclick="archiveOrder('${key}')">Complete Order ✅</button>`;
-                    }
-                }
-                else if (order.status === 'out_for_delivery') {
-                    actionButtonsHtml = `
-                        <div class="out-badge">
-                            <i class="fas fa-motorcycle"></i> OUT FOR DELIVERY
-                        </div>
-                    `;
-                }
-                // --- ADD THIS BLOCK TO KILL ZOMBIE ORDERS ---
-else {
-    actionButtonsHtml = `
-        <button class="btn-action btn-reject" onclick="rejectOrder('${key}')" style="background:purple;">
-            FORCE DELETE 🗑️
-        </button>
-    `;
-}
-// ---------------------------------------------
-
-                const card = document.createElement('div');
-                card.className = `order-card ${statusClass}`;
-                card.dataset.timestamp = order.timestamp; 
+                // Filter: Show only Pending or Cooking (Hide delivered/rejected)
+                const relevant = arr.filter(o => o.status === 'pending' || o.status === 'cooking' || o.status === 'done');
                 
-                card.innerHTML = `
-                    <div class="card-header">
-                        <div class="header-top">
-                            <span class="order-type-badge type-${order.orderType.toLowerCase()}">${order.orderType}</span>
-                            <div class="order-id">#${order.orderId}</div>
-                        </div>
-                        <div class="header-bottom">
-                            <span class="time-stamp">${formatDate(order.timestamp)}</span>
-                            <span class="time-ago">Just now</span>
-                        </div>
-                    </div>
-                    <div class="customer-section">
-                        <div class="customer-row"><div class="c-icon">👤</div><div class="c-data"><strong>${order.customer.name}</strong></div></div>
-                        <div class="customer-row"><div class="c-icon">📞</div><div class="c-data c-phone"><a href="tel:${order.customer.phone}">${order.customer.phone}</a></div></div>
-                        ${addressHtml}
-                    </div>
-                    <div class="items-section">${itemsHtml}</div>
-                    ${noteHtml}
-                    <div class="finance-section">
-                        <div class="f-row row-discount"><span class="f-label">Discount ${couponDisplay}</span><span class="f-val">-${formatMoney(fins.discountVal)}</span></div>
-                        <div class="f-row"><span class="f-label">Sub Total</span><span class="f-val">${formatMoney(fins.subTotal)}</span></div>
-                        <div class="f-row"><span class="f-label">Packing Charges</span><span class="f-val">+${formatMoney(fins.packingTotal)}</span></div>
-                        <div class="f-row row-total"><span class="f-label">GRAND TOTAL</span><span class="f-val">${formatMoney(fins.grandTotal)}</span></div>
-                    </div>
-                    <div class="actions-section">
-                        ${actionButtonsHtml}
-                    </div>
-                `;
-                grid.appendChild(card);
+                // Check for new orders to ring bell
+                if (relevant.length > activeOrders.length) {
+                    playBell();
+                }
+                activeOrders = relevant;
+
+                relevant.sort((a,b) => a.timestamp - b.timestamp).forEach(order => {
+                    renderOrder(order, container);
+                });
             });
-            updateOrderAges();
-        });
-
-        // --- AUDIO SYNC ---
-        function checkAudioState() {
-            if(!audioUnlocked) return;
-            // Only ring for 'pending' orders
-            const hasPending = activeOrders.some(([key, order]) => order.status === 'pending');
-            if (hasPending) {
-                if (bell.paused) bell.play().catch(e => console.log("Sound error", e));
-            } else {
-                bell.pause();
-                bell.currentTime = 0;
-            }
         }
 
-        // --- NEW BUTTON FUNCTIONS ---
+        function renderOrder(order, container) {
+            const card = document.createElement('div');
+            card.className = 'order-card';
+            
+            // Highlight new orders
+            if(order.status === 'pending') card.classList.add('blinking');
+            if(order.status === 'done') card.style.opacity = "0.7";
+
+            // Build Items HTML
+            let itemsHtml = "";
+            if(order.items) {
+                Object.values(order.items).forEach(item => {
+                    itemsHtml += `
+                        <div class="order-item">
+                            <span><span class="item-qty">${item.qty}x</span> ${item.name}</span>
+                        </div>
+                    `;
+                });
+            }
+
+            // Buttons based on Status
+            let actionBtns = "";
+            if(order.status === 'pending') {
+                actionBtns = `
+                    <button class="btn-accept" onclick="acceptOrder('${order.key}')">START COOKING 👨‍🍳</button>
+                    <button class="btn-reject" onclick="rejectOrder('${order.key}')">REJECT ❌</button>
+                `;
+            } else if (order.status === 'cooking') {
+                actionBtns = `
+                    <button class="btn-ready" onclick="markReady('${order.key}')">ORDER READY ✅</button>
+                `;
+            } else if (order.status === 'done') {
+                actionBtns = `
+                    <div style="grid-column:1/-1; text-align:center; color:#2ecc71; font-weight:bold; margin-bottom:10px;">
+                        WAITING FOR PICKUP
+                    </div>
+                    <button class="btn-archive" onclick="archiveOrder('${order.key}')">Clear from Screen</button>
+                `;
+            }
+
+            card.innerHTML = `
+                ${order.status === 'cooking' ? '<div class="badge">COOKING</div>' : ''}
+                <div class="card-header">
+                    <div class="order-id">#${order.orderId}</div>
+                    <div class="order-time">${new Date(order.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                </div>
+                <div class="customer-info">
+                    <span>${order.customer?.name || 'Guest'}</span> • ${order.orderType || 'Delivery'}
+                    ${order.notes ? `<br><small style="color:#e67e22">Note: ${order.notes}</small>` : ''}
+                </div>
+                <div class="items-list">${itemsHtml}</div>
+                <div class="actions">${actionBtns}</div>
+            `;
+            container.appendChild(card);
+        }
+
+        function playBell() {
+            bell.play().catch(e => console.log("Sound autoplay blocked - interact first"));
+        }
+
+        // --- BUTTON ACTIONS ---
         
-        // 1. Accept: Moves to Cooking
         window.acceptOrder = (key) => {
             update(ref(db, 'orders/' + key), { status: 'cooking' });
         };
 
-        // 2. Reject: Deletes completely (Vanishes from everywhere)
+        // FIXED: REJECT NOW SOFT-DELETES (UPDATES STATUS) INSTEAD OF REMOVING DATA
         window.rejectOrder = (key) => {
-            if(confirm("REJECT this order? It will be deleted permanently.")) {
-                remove(ref(db, 'orders/' + key));
+            if(confirm("REJECT this order? This cannot be undone.")) {
+                update(ref(db, 'orders/' + key), { status: 'rejected' });
             }
         };
 
-        // 3. Mark Ready: Moves to Done
         window.markReady = (key) => {
              update(ref(db, 'orders/' + key), { status: 'done' });
         };
 
-        // 4. Archive: Moves to History (For Pickup/Dine-In mostly)
         window.archiveOrder = (key) => {
+            // For now, we just remove it from the "Active Orders" view by setting it to 'archived' or moving to history
+            // Your old code moved it to /history node. Let's keep that logic but safe.
             const orderRef = ref(db, 'orders/' + key);
-            if(confirm("Archive this order to history?")) {
-                get(orderRef).then((snapshot) => {
-                    if (snapshot.exists()) {
-                        const data = snapshot.val();
-                        data.completedAt = Date.now(); 
-                        set(ref(db, 'history/' + key), data)
-                            .then(() => { remove(orderRef); })
-                            .catch((err) => alert("Error archiving: " + err));
-                    }
-                });
-            }
+            get(orderRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    data.completedAt = Date.now(); 
+                    set(ref(db, 'history/' + key), data)
+                        .then(() => { remove(orderRef); }) // Remove from active ONLY after saving to history
+                        .catch((err) => alert("Error archiving: " + err));
+                }
+            });
         };
 
     </script>
