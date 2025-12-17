@@ -120,7 +120,7 @@
         <h2 style="color: var(--accent-green);">Kitchen Access</h2>
         <input type="email" id="k-email" class="login-inp" placeholder="Email">
         <input type="password" id="k-pass" class="login-inp" placeholder="Password">
-        <button onclick="kitchenLogin()" style="margin-top: 15px; background: var(--accent-green); width: 200px;">OPEN KITCHEN</button>
+        <button onclick="kitchenLogin()" style="margin-top: 15px; background: var(--accent-green); width: 200px; padding: 10px; border: none; color: white; font-weight: bold; cursor: pointer;">OPEN KITCHEN</button>
         <p id="login-msg" style="color: red; margin-top: 10px;"></p>
     </div>
 
@@ -178,7 +178,7 @@
             const e = document.getElementById('k-email').value;
             const p = document.getElementById('k-pass').value;
             signInWithEmailAndPassword(auth, e, p)
-                .catch(err => document.getElementById('login-msg').innerText = "Access Denied");
+                .catch(err => document.getElementById('login-msg').innerText = "Access Denied: " + err.message);
         };
 
         window.logout = () => signOut(auth).then(()=>location.reload());
@@ -201,7 +201,8 @@
 
                 const arr = Object.entries(data).map(([key, val]) => ({...val, key}));
                 
-                // Filter: Show only Pending or Cooking (Hide delivered/rejected)
+                // Filter: Show only Pending or Cooking (Hide delivered/rejected from active view)
+                // You can adjust this if you want to see rejected items briefly
                 const relevant = arr.filter(o => o.status === 'pending' || o.status === 'cooking' || o.status === 'done');
                 
                 // Check for new orders to ring bell
@@ -259,7 +260,7 @@
             card.innerHTML = `
                 ${order.status === 'cooking' ? '<div class="badge">COOKING</div>' : ''}
                 <div class="card-header">
-                    <div class="order-id">#${order.orderId}</div>
+                    <div class="order-id">#${order.orderId || order.key.substring(1,5)}</div>
                     <div class="order-time">${new Date(order.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
                 </div>
                 <div class="customer-info">
@@ -284,7 +285,7 @@
 
         // FIXED: REJECT NOW SOFT-DELETES (UPDATES STATUS) INSTEAD OF REMOVING DATA
         window.rejectOrder = (key) => {
-            if(confirm("REJECT this order? This cannot be undone.")) {
+            if(confirm("REJECT this order?")) {
                 update(ref(db, 'orders/' + key), { status: 'rejected' });
             }
         };
@@ -294,8 +295,7 @@
         };
 
         window.archiveOrder = (key) => {
-            // For now, we just remove it from the "Active Orders" view by setting it to 'archived' or moving to history
-            // Your old code moved it to /history node. Let's keep that logic but safe.
+            // Move completed orders to history
             const orderRef = ref(db, 'orders/' + key);
             get(orderRef).then((snapshot) => {
                 if (snapshot.exists()) {
