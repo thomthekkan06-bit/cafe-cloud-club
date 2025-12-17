@@ -35,9 +35,24 @@
         .stat-label { font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
 
         /* --- TABLE --- */
-        .table-container { overflow-x: auto; }
+        .table-container { overflow-x: auto; max-height: 70vh; /* Limits height so scroll works */ }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; min-width: 800px; }
-        th { text-align: left; color: #888; padding: 12px; border-bottom: 1px solid #333; font-weight: 600; text-transform: uppercase; font-size: 0.8rem; }
+        
+        /* FIXED: Added Sticky Header Styles */
+        th { 
+            text-align: left; 
+            color: #888; 
+            padding: 12px; 
+            border-bottom: 1px solid #333; 
+            font-weight: 600; 
+            text-transform: uppercase; 
+            font-size: 0.8rem;
+            position: sticky; /* THE FIX */
+            top: 0;           /* THE FIX */
+            background-color: var(--bg); /* THE FIX (Prevents see-through) */
+            z-index: 10;
+        }
+        
         td { padding: 15px 12px; border-bottom: 1px solid #222; vertical-align: top; }
         
         .status-badge { padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; display: inline-block; }
@@ -86,7 +101,7 @@
     <div class="stats-grid">
         <div class="stat-card"><div class="stat-label">Total Orders</div><div class="stat-val" id="total-orders">0</div></div>
         <div class="stat-card"><div class="stat-label">Kitchen Rev</div><div class="stat-val" style="color:#27ae60;" id="total-kitchen">₹0</div></div>
-        <div class="stat-card"><div class="stat-label">Fees Collected</div><div class="stat-val" style="color:#f39c12;" id="total-fees">₹0</div></div>
+        <div class="stat-card"><div class="stat-label">Packing/Fees</div><div class="stat-val" style="color:#f39c12;" id="total-fees">₹0</div></div>
         <div class="stat-card"><div class="stat-label">Net Collected</div><div class="stat-val" style="color:#fff;" id="total-collected">₹0</div></div>
     </div>
 
@@ -155,7 +170,7 @@
             const pin = document.getElementById('delete-pin').value;
             if(pin === "2021") {
                 if(itemToDelete) {
-                    remove(ref(db, 'history/' + itemToDelete));
+                    remove(ref(db, 'orders/' + itemToDelete)); // FIXED: Changed 'history/' to 'orders/' to match where app saves data
                     closeDeleteModal();
                 }
             } else {
@@ -166,7 +181,8 @@
 
         // --- 3. LOAD DATA ---
         function loadHistory() {
-            onValue(ref(db, 'history'), (snapshot) => {
+            // FIXED: Pointing to 'orders' because that is where app.txt pushes data
+            onValue(ref(db, 'orders'), (snapshot) => {
                 const tbody = document.getElementById('history-body');
                 tbody.innerHTML = "";
                 let count = 0, sumKitchen = 0, sumFees = 0, sumCollected = 0;
@@ -174,7 +190,6 @@
                 const data = snapshot.val();
                 if(!data) {
                     tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; padding:30px; color:#666;'>No history records found.</td></tr>";
-                    // Update Stats to 0
                     document.getElementById('total-orders').innerText = "0";
                     document.getElementById('total-kitchen').innerText = "₹0";
                     document.getElementById('total-fees').innerText = "₹0";
@@ -182,25 +197,53 @@
                     return;
                 }
 
-                // Sort: Newest First
-                const entries = Object.entries(data).sort((a,b) => b[1].createdAt - a[1].createdAt);
+                // Sort: Newest First (Using 'timestamp' instead of 'createdAt')
+                const entries = Object.entries(data).sort((a,b) => b[1].timestamp - a[1].timestamp);
 
                 entries.forEach(([key, order]) => {
                     count++;
-                    const fins = order.financials || { grandTotal:0, deliveryFee:0 };
-                    const kitchenVal = (fins.grandTotal) - (fins.deliveryFee);
+                    
+                    // --- DATA SANITIZATION FIXES ---
+                    const fins = order.financials || {};
+                    
+                    // 1. Safe Number Parsing (Fixes NaN)
+                    const grandTotal = parseFloat(fins.grandTotal) || 0;
+                    // Check 'deliveryFee' OR 'packingTotal' since app.txt saves packing
+                    const feeVal = parseFloat(fins.deliveryFee) || parseFloat(fins.packingTotal) || 0;
+                    
+                    // 2. Calculate Kitchen Revenue
+                    const kitchenVal = grandTotal - feeVal;
                     
                     sumKitchen += kitchenVal;
-                    sumFees += (fins.deliveryFee);
-                    sumCollected += (fins.grandTotal);
+                    sumFees += feeVal;
+                    sumCollected += grandTotal;
 
-                    const dateObj = new Date(order.createdAt);
+                    // 3. Date Fix (Handles Firestore objects AND timestamps)
+                    let dateObj;
+                    let rawTime = order.timestamp || order.createdAt; // Check both
+                    
+                    if (rawTime) {
+                        if (typeof rawTime.toDate === 'function') {
+                            dateObj = rawTime.toDate(); // Firestore format
+                        } else {
+                            dateObj = new Date(rawTime); // Standard/Int format
+                        }
+                    } else {
+                        dateObj = new Date(); // Fallback
+                    }
+
                     const dateStr = dateObj.toLocaleDateString('en-IN', { day:'numeric', month:'short' });
                     const timeStr = dateObj.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
 
                     // Item Summary
                     let itemsHtml = "";
-                    if(order.items) {
+                    // FIXED: app.txt saves items as an Array, not Object
+                    if(order.items && Array.isArray(order.items)) {
+                        itemsHtml = order.items.map(i => 
+                            `<div style='color:#bbb; font-size:0.85rem'>${i.qty}x ${i.name}</div>`
+                        ).join('');
+                    } else if (order.items && typeof order.items === 'object') {
+                        // Fallback for object format
                         itemsHtml = Object.values(order.items).map(i => 
                             `<div style='color:#bbb; font-size:0.85rem'>${i.qty}x ${i.name}</div>`
                         ).join('');
@@ -224,8 +267,8 @@
                             </td>
                             <td>
                                 <div style="color:#888; font-size:0.8rem">Food: ₹${kitchenVal}</div>
-                                <div style="color:#f39c12; font-size:0.8rem">Fee: ₹${fins.deliveryFee}</div>
-                                <div style="font-weight:700; color:#fff; font-size:1rem; margin-top:4px;">₹${fins.grandTotal}</div>
+                                <div style="color:#f39c12; font-size:0.8rem">Fee/Pack: ₹${feeVal}</div>
+                                <div style="font-weight:700; color:#fff; font-size:1rem; margin-top:4px;">₹${grandTotal}</div>
                             </td>
                             <td>
                                 <button class="btn-trash" onclick="requestDelete('${key}')" title="Delete Record">
