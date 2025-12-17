@@ -9,12 +9,9 @@
         :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --accent: #FF4500; --border: #333; --sidebar-w: 240px; }
         body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 0; height: 100vh; overflow: hidden; display: flex; }
         
-        /* LOGIN OVERLAY (Replaces PIN) */
-        #login-overlay { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #000; z-index: 9999; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-        }
+        /* PIN LOCK */
+        #pin-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .pin-input { font-size: 2rem; background: #111; border: 1px solid #333; color: white; text-align: center; padding: 10px; border-radius: 8px; margin-bottom: 20px; letter-spacing: 5px; }
 
         /* --- LAYOUT STRUCTURE --- */
         .sidebar { width: var(--sidebar-w); background: #0a0a0a; border-right: 1px solid var(--border); overflow-y: auto; display: flex; flex-direction: column; padding: 20px 0; flex-shrink: 0; transition: transform 0.3s ease; }
@@ -47,9 +44,27 @@
         .cat-stock-btn { font-size: 0.7rem; background: #222; border: 1px solid #444; color: #ccc; padding: 6px 10px; border-radius: 4px; cursor: pointer; text-transform: uppercase; font-weight: 700; }
         .cat-stock-btn:hover { background: #333; border-color: #666; color: white; }
 
-        /* ITEMS GRID */
-        .items-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
-        .item-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 15px; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s, border-color 0.2s; height: 100%; box-sizing: border-box; }
+        /* --- UPDATED: GRID LAYOUT FOR ITEMS --- */
+        .items-grid {
+            display: grid;
+            /* 4 items per row on desktop */
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 15px;
+        }
+
+        /* --- UPDATED: CARD STYLE ITEM --- */
+        .item-card { 
+            background: var(--card); 
+            border: 1px solid var(--border); 
+            border-radius: 8px; 
+            padding: 15px; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between;
+            transition: transform 0.2s, border-color 0.2s; 
+            height: 100%; /* Force equal height in grid */
+            box-sizing: border-box;
+        }
         .item-card:hover { transform: translateY(-3px); border-color: #555; }
         
         .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 10px; }
@@ -60,6 +75,7 @@
         .type-non { color: #e74c3c; border-color: #e74c3c; background: rgba(231, 76, 60, 0.1); }
 
         .card-price { font-family: monospace; font-size: 1.1rem; color: var(--accent); font-weight: 700; margin-bottom: 15px; }
+        
         .card-actions { margin-top: auto; }
         
         .status-badge { font-size: 0.75rem; padding: 6px; border-radius: 4px; font-weight: 800; cursor: pointer; text-transform: uppercase; border: 1px solid transparent; width: 100%; text-align: center; display: block; box-sizing: border-box; }
@@ -99,27 +115,33 @@
             body { flex-direction: column; overflow: hidden; }
             #app { display: flex !important; flex-direction: column; height: 100%; overflow: hidden; }
             .main-content { width: 100%; height: 100%; overflow: hidden; }
+            
+            /* Sidebar Drawer */
             .sidebar { position: fixed; top: 0; left: -280px; width: 260px; height: 100%; z-index: 5000; background: #0a0a0a; border-right: 1px solid #333; box-shadow: 5px 0 15px rgba(0,0,0,0.5); padding-top: 60px; }
             .sidebar.open { transform: translateX(280px); }
             .menu-toggle-btn { display: block; }
+            
             .content-scroll { padding: 15px; }
+            
+            /* Change grid to 2 columns on mobile for better readability */
             .items-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            
+            /* If you STRICTLY want 4 columns on mobile (Warning: Will be tiny), change above to: 
+               .items-grid { grid-template-columns: repeat(4, 1fr); gap: 5px; } */
         }
     </style>
 </head>
 <body>
 
-    <div id="login-overlay">
-        <h2 style="color: var(--accent);">Admin Access</h2>
-        <input type="email" id="login-email" placeholder="Email" style="padding: 10px; margin: 5px; width: 250px; background: #222; border: 1px solid #444; color: white;">
-        <input type="password" id="login-pass" placeholder="Password" style="padding: 10px; margin: 5px; width: 250px; background: #222; border: 1px solid #444; color: white;">
-        <button onclick="adminLogin()" class="btn btn-blue" style="margin-top: 15px; padding: 10px 30px;">LOGIN</button>
-        <p id="login-error" style="color: red; margin-top: 10px;"></p>
-        
-        <div style="margin-top: 40px; font-size: 0.7rem; color: #666; font-family: sans-serif;">
+<div id="pin-overlay">
+        <h2>🛠️ Menu Admin</h2>
+        <input type="tel" id="pin" class="pin-input" maxlength="4" placeholder="****">
+        <button onclick="checkPin()" class="btn btn-blue">UNLOCK</button>
+
+        <div style="margin-top: 40px; font-size: 0.7rem; color: #666; font-family: sans-serif; letter-spacing: 0.5px;">
             Admin Console by <span style="color: var(--accent); font-weight: bold;">Thomsons Networks</span>
         </div>
-    </div>
+        </div>
     
     <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
 
@@ -128,7 +150,6 @@
         <div class="sidebar" id="main-sidebar">
             <div class="nav-header">Select Category</div>
             <div id="nav-list"></div>
-            <button onclick="logout()" style="background:none; border:none; color:#666; padding:20px; cursor:pointer; text-align:left; font-size:0.8rem; margin-top:auto;">← Logout</button>
         </div>
 
         <div class="main-content">
@@ -141,10 +162,12 @@
             </div>
 
             <div class="content-scroll" id="scroll-area">
+                
                 <div id="stock-watch" class="stock-watch">
                     <h3>⚠️ Currently Unavailable Items</h3>
                     <div id="stock-watch-list" class="alert-grid"></div>
                 </div>
+
                 <div id="menu-root"></div>
             </div>
         </div>
@@ -202,8 +225,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-        // ADDED AUTH MODULES
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
@@ -216,39 +237,14 @@
         };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const auth = getAuth(app); // Init Auth
 
-        // --- AUTH LOGIC (REPLACES PIN) ---
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // LOGGED IN
-                document.getElementById('login-overlay').style.display = 'none';
-                document.getElementById('app').style.display = 'flex';
-                loadMenu(); // Only load data if allowed
-            } else {
-                // LOGGED OUT
-                document.getElementById('login-overlay').style.display = 'flex';
-                document.getElementById('app').style.display = 'none';
-            }
-        });
-
-        window.adminLogin = () => {
-            const email = document.getElementById('login-email').value;
-            const pass = document.getElementById('login-pass').value;
-            const errorMsg = document.getElementById('login-error');
-            errorMsg.innerText = "Verifying...";
-
-            signInWithEmailAndPassword(auth, email, pass)
-                .catch((error) => {
-                    console.error(error);
-                    errorMsg.innerText = "Access Denied: " + error.message;
-                });
-        }
-
-        window.logout = () => {
-            if(confirm("Logout from Admin Console?")) {
-                signOut(auth).then(() => location.reload());
-            }
+        // --- AUTH ---
+        window.checkPin = () => {
+            if(document.getElementById('pin').value === "2021") {
+                document.getElementById('pin-overlay').style.display = 'none';
+                document.getElementById('app').style.display = 'flex'; 
+                loadMenu();
+            } else alert("Wrong PIN");
         }
 
         // --- SIDEBAR LOGIC ---
@@ -311,6 +307,7 @@
                             <button class="cat-stock-btn" onclick="openBatchModal('${cat}')">Category Options</button>
                         </div>
                     `;
+                    
                     // Create Grid Container
                     const grid = document.createElement('div');
                     grid.className = 'items-grid';
@@ -344,6 +341,7 @@
 
                         // Color Logic
                         const typeClass = (item.type === 'veg') ? 'type-veg' : 'type-non';
+                        const typeLabel = item.type.toUpperCase().substring(0,1); // Just V or N for space
 
                         const card = document.createElement('div');
                         card.className = 'item-card';
