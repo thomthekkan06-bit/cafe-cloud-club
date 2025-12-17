@@ -91,7 +91,7 @@
         </div>
         <div class="stat-card">
             <div class="stat-val" id="total-orders">0</div>
-            <div class="stat-label">Total Orders</div>
+            <div class="stat-label">Total Orders (Last 50)</div>
         </div>
     </div>
 
@@ -116,8 +116,9 @@
     </div>
 
     <script type="module">
+        // FIXED: Added 'query' and 'limitToLast' to imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue, remove, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
@@ -131,9 +132,10 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+
+        // PIN LOGIC - FIXED: Standardized to 2025
+        const KITCHEN_PIN = "2025";
         
-        // PIN LOGIC
-        const KITCHEN_PIN = "2024";
         document.getElementById('unlock-btn').addEventListener('click', () => {
             if(document.getElementById('pin-input').value === KITCHEN_PIN) {
                 document.getElementById('pin-overlay').style.display = 'none';
@@ -145,7 +147,8 @@
 
         window.deleteHistoryItem = function(key) {
             const password = prompt("⚠ DELETE CONFIRMATION ⚠\nEnter Admin Password to permanently delete this record:");
-            if (password === "2021") {
+            // FIXED: Standardized to 2025
+            if (password === "2025") {
                 if(confirm("Are you sure? This cannot be undone.")) {
                     remove(ref(db, 'history/' + key))
                         .then(() => alert("Record deleted."))
@@ -157,7 +160,10 @@
         }
 
         function loadHistory() {
-            onValue(ref(db, 'history'), (snapshot) => {
+            // FIXED: Added Query to limit to last 50 items to prevent crashing
+            const historyQuery = query(ref(db, 'history'), limitToLast(50));
+            
+            onValue(historyQuery, (snapshot) => {
                 const data = snapshot.val();
                 const tbody = document.getElementById('table-body');
                 tbody.innerHTML = "";
@@ -176,8 +182,9 @@
                 let sumCollected = 0;
                 let count = 0;
                 
+                // Sort by completedAt descending (Newest first)
                 const orders = Object.entries(data).sort((a,b) => b[1].completedAt - a[1].completedAt);
-
+                
                 orders.forEach(([key, order]) => {
                     count++;
                     const fins = order.financials || { grandTotal: 0, deliveryFee: 0 };
