@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sales Analytics | Cafe Cloud Club</title>
     <link rel="icon" type="image/png" href="icon.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -19,7 +19,7 @@
             --text-muted: #9ca3af;
         }
 
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         /* --- DASHBOARD LAYOUT (FIXED HEADER, SCROLLING TABLE) --- */
         body { 
@@ -185,8 +185,14 @@
         <div class="pin-box">
             <h3 style="margin-top:0;">🔒 Admin Access</h3>
             <p style="color:var(--text-muted); font-size:0.9rem;">Enter security PIN to view financials</p>
-            <input type="password" id="pin-input" class="pin-input" placeholder="••••" maxlength="4">
+            
+            <input type="password" id="pin-input" class="pin-input" placeholder="••••" maxlength="4" inputmode="numeric" pattern="[0-9]*">
+            
             <button class="btn-primary" id="unlock-btn">UNLOCK DASHBOARD</button>
+
+            <div style="margin-top: 25px; border-top: 1px solid var(--border); padding-top: 15px; font-size: 0.75rem; color: var(--text-muted);">
+                System by <span style="color: var(--primary); font-weight: 700;">Thomsons Networks</span>
+            </div>
         </div>
     </div>
 
