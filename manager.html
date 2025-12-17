@@ -170,7 +170,9 @@
         <div class="pin-box">
             <h2 style="margin-top:0;">🔒 Kitchen Access</h2>
             <p style="color:var(--text-muted); margin-bottom:20px;">Enter PIN to unlock sound</p>
-            <input type="password" id="pin-input" class="pin-input" placeholder="••••" maxlength="4">
+            
+            <input type="password" id="pin-input" class="pin-input" placeholder="••••" maxlength="4" inputmode="numeric" pattern="[0-9]*">
+            
             <button class="btn-unlock" id="unlock-btn">UNLOCK SYSTEM</button>
             <p id="pin-error" style="color:var(--danger); display:none; margin-top:10px;">Incorrect PIN</p>
             
