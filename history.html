@@ -1,128 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sales History | Cafe Cloud Club</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --accent: #27ae60; --red: #e74c3c; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 20px; margin: 0; }
-        
-        /* --- SECURE PIN MODALS --- */
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .hidden { display: none !important; }
-        
-        .pin-box { background: #1a1a1a; padding: 30px; border-radius: 12px; border: 1px solid #333; text-align: center; width: 90%; max-width: 320px; }
-        .pin-input { font-size: 2rem; background: #111; border: 1px solid #444; color: white; text-align: center; padding: 10px; border-radius: 8px; margin-bottom: 20px; width: 100%; letter-spacing: 5px; box-sizing: border-box; outline: none;}
-        .pin-input:focus { border-color: var(--accent); }
-
-        .btn { padding: 12px 25px; border: none; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 1rem; width: 100%; margin-top: 10px; }
-        .btn-green { background: var(--accent); color: white; }
-        .btn-red { background: var(--red); color: white; }
-        .btn-cancel { background: #333; color: white; }
-
-        /* --- HEADER --- */
-        .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid #333; padding-bottom: 15px; }
-        .back-link { text-decoration: none; color: #FF4500; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; font-weight: 600; }
-        .page-title { margin: 0; font-size: 1.5rem; letter-spacing: -1px; }
-
-        /* --- DASHBOARD STATS --- */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 30px; }
-        .stat-card { background: var(--card); padding: 15px; border-radius: 8px; border: 1px solid #333; }
-        .stat-val { font-size: 1.5rem; font-weight: 800; font-family: 'Roboto Mono', monospace; margin-top: 5px; }
-        .stat-label { font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-
-        /* --- TABLE --- */
-        .table-container { overflow-x: auto; max-height: 70vh; /* Limits height so scroll works */ }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; min-width: 800px; }
-        
-        /* FIXED: Added Sticky Header Styles */
-        th { 
-            text-align: left; 
-            color: #888; 
-            padding: 12px; 
-            border-bottom: 1px solid #333; 
-            font-weight: 600; 
-            text-transform: uppercase; 
-            font-size: 0.8rem;
-            position: sticky; /* THE FIX */
-            top: 0;           /* THE FIX */
-            background-color: var(--bg); /* THE FIX (Prevents see-through) */
-            z-index: 10;
-        }
-        
-        td { padding: 15px 12px; border-bottom: 1px solid #222; vertical-align: top; }
-        
-        .status-badge { padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; display: inline-block; }
-        .st-delivered { background: rgba(39, 174, 96, 0.2); color: #27ae60; }
-        .st-rejected { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
-        .st-done { background: rgba(41, 128, 185, 0.2); color: #3498db; }
-        
-        .btn-trash { background: none; border: none; font-size: 1.2rem; cursor: pointer; opacity: 0.5; transition: 0.2s; color: #666; }
-        .btn-trash:hover { opacity: 1; transform: scale(1.1); color: var(--red); }
-    </style>
-</head>
-<body>
-
-    <div id="access-overlay" class="overlay">
-        <div class="pin-box">
-            <h2 style="margin-top:0">Restricted Access</h2>
-            <p style="color:#888; margin-bottom: 20px;">Owner History Log</p>
-            <input type="password" id="access-pin" class="pin-input" placeholder="••••" maxlength="4">
-            <button class="btn btn-green" onclick="checkAccess()">UNLOCK</button>
-            <p id="access-err" style="color:var(--red); display:none; margin-top:10px;">Access Denied</p>
-        </div>
-    </div>
-
-    <div id="delete-overlay" class="overlay hidden" style="background: rgba(0,0,0,0.9);">
-        <div class="pin-box" style="border-color: var(--red);">
-            <h2 style="margin-top:0; color: var(--red);">DANGER</h2>
-            <p style="color:#ccc; margin-bottom: 20px;">Enter Admin PIN to permanently delete.</p>
-            <input type="password" id="delete-pin" class="pin-input" placeholder="••••" maxlength="4">
-            <button class="btn btn-red" onclick="confirmDelete()">CONFIRM DELETE</button>
-            <button class="btn btn-cancel" onclick="closeDeleteModal()">CANCEL</button>
-            <p id="delete-err" style="color:var(--red); display:none; margin-top:10px;">Wrong PIN</p>
-        </div>
-    </div>
-
-    <div class="header-bar">
-        <div style="display:flex; align-items:center; gap:15px;">
-            <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Order</a>
-            <h1 class="page-title">Sales History</h1>
-        </div>
-        <div style="text-align:right;">
-            <div style="font-size:0.75rem; color:#888;">LOGGED IN</div>
-            <div style="font-weight:700; color:#27ae60; font-size:0.9rem;">OWNER</div>
-        </div>
-    </div>
-
-    <div class="stats-grid">
-        <div class="stat-card"><div class="stat-label">Total Orders</div><div class="stat-val" id="total-orders">0</div></div>
-        <div class="stat-card"><div class="stat-label">Kitchen Rev</div><div class="stat-val" style="color:#27ae60;" id="total-kitchen">₹0</div></div>
-        <div class="stat-card"><div class="stat-label">Packing/Fees</div><div class="stat-val" style="color:#f39c12;" id="total-fees">₹0</div></div>
-        <div class="stat-card"><div class="stat-label">Net Collected</div><div class="stat-val" style="color:#fff;" id="total-collected">₹0</div></div>
-    </div>
-
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>Date & Time</th>
-                    <th>Status</th>
-                    <th>Customer</th>
-                    <th>Order Details</th>
-                    <th>Financials</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="history-body">
-                </tbody>
-        </table>
-    </div>
-
-    <script type="module">
+<script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
@@ -138,12 +14,16 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // --- GLOBAL DATA STORE ---
+        // We use a Map to merge 'history' and 'orders' without duplicates
+        let allOrdersMap = new Map();
+
         // --- 1. ACCESS CONTROL ---
         window.checkAccess = () => {
             const pin = document.getElementById('access-pin').value;
             if(pin === "2024") {
                 document.getElementById('access-overlay').classList.add('hidden');
-                loadHistory(); 
+                initListeners(); 
             } else {
                 document.getElementById('access-err').style.display = 'block';
                 document.getElementById('access-pin').value = '';
@@ -151,17 +31,20 @@
         }
 
         // --- 2. DELETE LOGIC ---
-        let itemToDelete = null;
+        let itemToDeleteKey = null;
+        let itemToDeleteSource = null; // We need to know WHICH folder to delete from
 
-        window.requestDelete = (key) => {
-            itemToDelete = key;
+        window.requestDelete = (key, source) => {
+            itemToDeleteKey = key;
+            itemToDeleteSource = source;
             document.getElementById('delete-overlay').classList.remove('hidden');
             document.getElementById('delete-pin').value = ""; 
             document.getElementById('delete-pin').focus();
         }
 
         window.closeDeleteModal = () => {
-            itemToDelete = null;
+            itemToDeleteKey = null;
+            itemToDeleteSource = null;
             document.getElementById('delete-overlay').classList.add('hidden');
             document.getElementById('delete-err').style.display = 'none';
         }
@@ -169,8 +52,9 @@
         window.confirmDelete = () => {
             const pin = document.getElementById('delete-pin').value;
             if(pin === "2021") {
-                if(itemToDelete) {
-                    remove(ref(db, 'orders/' + itemToDelete)); // FIXED: Changed 'history/' to 'orders/' to match where app saves data
+                if(itemToDeleteKey && itemToDeleteSource) {
+                    // Delete from the correct source folder
+                    remove(ref(db, itemToDeleteSource + '/' + itemToDeleteKey));
                     closeDeleteModal();
                 }
             } else {
@@ -179,114 +63,152 @@
             }
         }
 
-        // --- 3. LOAD DATA ---
-        function loadHistory() {
-            // FIXED: Pointing to 'orders' because that is where app.txt pushes data
+        // --- 3. DUAL DATA LOADING ---
+        function initListeners() {
+            // Listener A: The Old 'history' folder
+            onValue(ref(db, 'history'), (snapshot) => {
+                processSnapshot(snapshot, 'history');
+            });
+
+            // Listener B: The New 'orders' folder
             onValue(ref(db, 'orders'), (snapshot) => {
-                const tbody = document.getElementById('history-body');
-                tbody.innerHTML = "";
-                let count = 0, sumKitchen = 0, sumFees = 0, sumCollected = 0;
-
-                const data = snapshot.val();
-                if(!data) {
-                    tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; padding:30px; color:#666;'>No history records found.</td></tr>";
-                    document.getElementById('total-orders').innerText = "0";
-                    document.getElementById('total-kitchen').innerText = "₹0";
-                    document.getElementById('total-fees').innerText = "₹0";
-                    document.getElementById('total-collected').innerText = "₹0";
-                    return;
-                }
-
-                // Sort: Newest First (Using 'timestamp' instead of 'createdAt')
-                const entries = Object.entries(data).sort((a,b) => b[1].timestamp - a[1].timestamp);
-
-                entries.forEach(([key, order]) => {
-                    count++;
-                    
-                    // --- DATA SANITIZATION FIXES ---
-                    const fins = order.financials || {};
-                    
-                    // 1. Safe Number Parsing (Fixes NaN)
-                    const grandTotal = parseFloat(fins.grandTotal) || 0;
-                    // Check 'deliveryFee' OR 'packingTotal' since app.txt saves packing
-                    const feeVal = parseFloat(fins.deliveryFee) || parseFloat(fins.packingTotal) || 0;
-                    
-                    // 2. Calculate Kitchen Revenue
-                    const kitchenVal = grandTotal - feeVal;
-                    
-                    sumKitchen += kitchenVal;
-                    sumFees += feeVal;
-                    sumCollected += grandTotal;
-
-                    // 3. Date Fix (Handles Firestore objects AND timestamps)
-                    let dateObj;
-                    let rawTime = order.timestamp || order.createdAt; // Check both
-                    
-                    if (rawTime) {
-                        if (typeof rawTime.toDate === 'function') {
-                            dateObj = rawTime.toDate(); // Firestore format
-                        } else {
-                            dateObj = new Date(rawTime); // Standard/Int format
-                        }
-                    } else {
-                        dateObj = new Date(); // Fallback
-                    }
-
-                    const dateStr = dateObj.toLocaleDateString('en-IN', { day:'numeric', month:'short' });
-                    const timeStr = dateObj.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
-
-                    // Item Summary
-                    let itemsHtml = "";
-                    // FIXED: app.txt saves items as an Array, not Object
-                    if(order.items && Array.isArray(order.items)) {
-                        itemsHtml = order.items.map(i => 
-                            `<div style='color:#bbb; font-size:0.85rem'>${i.qty}x ${i.name}</div>`
-                        ).join('');
-                    } else if (order.items && typeof order.items === 'object') {
-                        // Fallback for object format
-                        itemsHtml = Object.values(order.items).map(i => 
-                            `<div style='color:#bbb; font-size:0.85rem'>${i.qty}x ${i.name}</div>`
-                        ).join('');
-                    }
-
-                    const row = `
-                        <tr>
-                            <td>
-                                <div style="font-weight:700; color:#fff;">${dateStr}</div>
-                                <div style="font-size:0.8rem; color:#666;">${timeStr}</div>
-                            </td>
-                            <td>
-                                <span class="status-badge st-${order.status || 'delivered'}">${order.status || 'DONE'}</span>
-                            </td>
-                            <td>
-                                <div style="font-weight:600; font-size:0.9rem">${order.customer?.name || 'Unknown'}</div>
-                                <div style="font-size:0.8rem; margin-top:2px; color:#888;">${order.customer?.phone || ''}</div>
-                            </td>
-                            <td>
-                                ${itemsHtml}
-                            </td>
-                            <td>
-                                <div style="color:#888; font-size:0.8rem">Food: ₹${kitchenVal}</div>
-                                <div style="color:#f39c12; font-size:0.8rem">Fee/Pack: ₹${feeVal}</div>
-                                <div style="font-weight:700; color:#fff; font-size:1rem; margin-top:4px;">₹${grandTotal}</div>
-                            </td>
-                            <td>
-                                <button class="btn-trash" onclick="requestDelete('${key}')" title="Delete Record">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                    tbody.innerHTML += row;
-                });
-
-                // Update Stats
-                document.getElementById('total-orders').innerText = count;
-                document.getElementById('total-kitchen').innerText = "₹" + sumKitchen.toLocaleString('en-IN');
-                document.getElementById('total-fees').innerText = "₹" + sumFees.toLocaleString('en-IN');
-                document.getElementById('total-collected').innerText = "₹" + sumCollected.toLocaleString('en-IN');
+                processSnapshot(snapshot, 'orders');
             });
         }
+
+        function processSnapshot(snapshot, sourceName) {
+            const data = snapshot.val();
+            
+            // If data is null/empty, we must clear entries belonging to this source
+            // to handle deletions correctly.
+            if (!data) {
+                // Remove all entries from this source in our local map
+                for (const [key, val] of allOrdersMap) {
+                    if (val.source === sourceName) allOrdersMap.delete(key);
+                }
+            } else {
+                Object.entries(data).forEach(([key, order]) => {
+                    // Tag the order with its source so we know where to delete it from later
+                    order._source = sourceName; 
+                    order._key = key;
+                    allOrdersMap.set(key, order);
+                });
+            }
+            
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('history-body');
+            tbody.innerHTML = "";
+            let count = 0, sumKitchen = 0, sumFees = 0, sumCollected = 0;
+
+            if (allOrdersMap.size === 0) {
+                tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; padding:30px; color:#666;'>No history records found.</td></tr>";
+                updateStats(0,0,0,0);
+                return;
+            }
+
+            // Convert Map to Array and Sort by Date (Newest First)
+            const sortedOrders = Array.from(allOrdersMap.values()).sort((a, b) => {
+                const timeA = a.timestamp || a.createdAt || 0;
+                const timeB = b.timestamp || b.createdAt || 0;
+                // Handle complex date objects if necessary
+                const dateA = (typeof timeA.toDate === 'function') ? timeA.toDate() : new Date(timeA);
+                const dateB = (typeof timeB.toDate === 'function') ? timeB.toDate() : new Date(timeB);
+                return dateB - dateA;
+            });
+
+            sortedOrders.forEach((order) => {
+                count++;
+                
+                // --- FINANCIAL MATH ---
+                const fins = order.financials || {};
+                const grandTotal = parseFloat(fins.grandTotal) || 0;
+                // Try to find fee in deliveryFee OR packingTotal
+                const feeVal = parseFloat(fins.deliveryFee) || parseFloat(fins.packingTotal) || 0;
+                const kitchenVal = grandTotal - feeVal;
+                
+                sumKitchen += kitchenVal;
+                sumFees += feeVal;
+                sumCollected += grandTotal;
+
+                // --- DATE PARSING ---
+                let dateObj;
+                let rawTime = order.timestamp || order.createdAt;
+                
+                if (rawTime) {
+                    if (typeof rawTime.toDate === 'function') {
+                        dateObj = rawTime.toDate(); 
+                    } else {
+                        dateObj = new Date(rawTime);
+                    }
+                } else {
+                    dateObj = new Date();
+                }
+
+                // Check for Invalid Date
+                let dateStr = "Unknown Date";
+                let timeStr = "--:--";
+                if (!isNaN(dateObj.getTime())) {
+                    dateStr = dateObj.toLocaleDateString('en-IN', { day:'numeric', month:'short' });
+                    timeStr = dateObj.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+                }
+
+                // --- ITEMS PARSING ---
+                let itemsHtml = "";
+                if(order.items) {
+                    const itemList = Array.isArray(order.items) ? order.items : Object.values(order.items);
+                    itemsHtml = itemList.map(i => 
+                        `<div style='color:#bbb; font-size:0.85rem'>${i.qty}x ${i.name}</div>`
+                    ).join('');
+                } else {
+                    itemsHtml = "<span style='color:#555'>No items data</span>";
+                }
+
+                // --- CUSTOMER PARSING ---
+                const custName = order.customer?.name || "Unknown";
+                const custPhone = order.customer?.phone || "";
+
+                const row = `
+                    <tr>
+                        <td>
+                            <div style="font-weight:700; color:#fff;">${dateStr}</div>
+                            <div style="font-size:0.8rem; color:#666;">${timeStr}</div>
+                            <div style="font-size:0.7rem; color:#444; margin-top:4px;">${order._source.toUpperCase()}</div>
+                        </td>
+                        <td>
+                            <span class="status-badge st-${order.status || 'delivered'}">${order.status || 'DONE'}</span>
+                        </td>
+                        <td>
+                            <div style="font-weight:600; font-size:0.9rem">${custName}</div>
+                            <div style="font-size:0.8rem; margin-top:2px; color:#888;">${custPhone}</div>
+                        </td>
+                        <td>
+                            ${itemsHtml}
+                        </td>
+                        <td>
+                            <div style="color:#888; font-size:0.8rem">Food: ₹${kitchenVal}</div>
+                            <div style="color:#f39c12; font-size:0.8rem">Fee/Pack: ₹${feeVal}</div>
+                            <div style="font-weight:700; color:#fff; font-size:1rem; margin-top:4px;">₹${grandTotal}</div>
+                        </td>
+                        <td>
+                            <button class="btn-trash" onclick="requestDelete('${order._key}', '${order._source}')" title="Delete Record">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+
+            updateStats(count, sumKitchen, sumFees, sumCollected);
+        }
+
+        function updateStats(count, kitchen, fees, collected) {
+            document.getElementById('total-orders').innerText = count;
+            document.getElementById('total-kitchen').innerText = "₹" + kitchen.toLocaleString('en-IN');
+            document.getElementById('total-fees').innerText = "₹" + fees.toLocaleString('en-IN');
+            document.getElementById('total-collected').innerText = "₹" + collected.toLocaleString('en-IN');
+        }
     </script>
-</body>
-</html>
