@@ -1,6 +1,129 @@
-<script type="module">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales History | Cafe Cloud Club</title>
+    <link rel="icon" type="image/png" href="icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #121212;
+            --card-bg: #1e1e1e;
+            --text-main: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --border: #333;
+            --accent-green: #27ae60;
+            --accent-blue: #2980b9;
+            --accent-orange: #e67e22;
+            --accent-red: #e74c3c;
+        }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); padding: 20px; }
+        
+        /* PIN LOCK STYLES */
+        #pin-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .pin-box { background: #1e1e1e; padding: 40px; border-radius: 12px; border: 1px solid #333; text-align: center; width: 300px; }
+        .pin-input { width: 100%; padding: 15px; margin: 20px 0; background: #121212; border: 1px solid #333; color: white; font-size: 1.5rem; text-align: center; letter-spacing: 5px; border-radius: 8px; }
+        .pin-btn { width: 100%; padding: 15px; background: var(--accent-blue); color: white; border: none; font-weight: 800; border-radius: 8px; cursor: pointer; }
+
+        /* HEADER */
+        .header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px;
+            position: sticky; top: 0; background: var(--bg); z-index: 100; padding-top: 10px;
+        }
+        
+        /* STATS CARDS */
+        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 40px; }
+        .stat-card { background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border); }
+        .stat-val { font-size: 1.8rem; font-weight: 800; color: #fff; font-family: 'Roboto Mono', monospace; }
+        .stat-label { color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; }
+
+        /* TABLE */
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { text-align: left; color: var(--text-muted); padding: 10px; border-bottom: 1px solid var(--border); font-size: 0.8rem; text-transform: uppercase; white-space: nowrap; }
+        td { padding: 15px 10px; border-bottom: 1px solid #222; vertical-align: middle; }
+        tr:hover { background: #1a1a1a; }
+        
+        .mono { font-family: 'Roboto Mono', monospace; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
+        .del { background: rgba(52, 152, 219, 0.2); color: #3498db; }
+        .pick { background: rgba(243, 156, 18, 0.2); color: #f39c12; }
+        .rej { background: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid #e74c3c; } /* REJECT STYLE */
+        
+        .money-kitchen { color: var(--accent-green); font-weight: bold; }
+        .money-fee { color: var(--text-muted); font-size: 0.85rem; }
+        .money-total { color: #fff; font-weight: bold; }
+
+        .btn-trash {
+            background: rgba(231, 76, 60, 0.1); color: #e74c3c;
+            border: 1px solid #e74c3c; padding: 6px 10px; border-radius: 6px;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .btn-trash:hover { background: #e74c3c; color: white; }
+        
+        /* REJECTED ROW STYLE */
+        tr.rejected-row td { opacity: 0.5; text-decoration: line-through; }
+        tr.rejected-row td:nth-child(2) { text-decoration: none; opacity: 1; } /* Keep badge visible */
+    </style>
+</head>
+<body>
+
+    <div id="pin-overlay">
+        <div class="pin-box">
+            <h2>📊 Report Access</h2>
+            <input type="password" id="pin-input" class="pin-input" placeholder="****" maxlength="4">
+            <button class="pin-btn" id="unlock-btn">View Reports</button>
+        </div>
+    </div>
+
+    <div class="header">
+        <h1>📜 Sales History</h1>
+        <div><a href="manager.html" style="color:#aaa; text-decoration:none;">&larr; Back to Kitchen</a></div>
+    </div>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-val" id="total-kitchen" style="color: #27ae60;">₹0</div>
+            <div class="stat-label">Kitchen Revenue</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-val" id="total-fees" style="color: #e67e22;">₹0</div>
+            <div class="stat-label">Delivery Fees</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-val" id="total-collected">₹0</div>
+            <div class="stat-label">Total Cash</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-val" id="total-orders">0</div>
+            <div class="stat-label">Successful Orders</div>
+        </div>
+    </div>
+
+    <div style="overflow-x:auto;">
+        <table id="history-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>ID / Type</th>
+                    <th>Customer</th>
+                    <th>Items</th>
+                    <th>Kitchen Rev</th>
+                    <th>Del. Fee</th>
+                    <th>Total Cash</th>
+                    <th>Action</th> 
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                <tr><td colspan="8" style="text-align:center; padding:30px; color:#555;">Loading records...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue, remove, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
@@ -11,204 +134,127 @@
             messagingSenderId: "274410745480",
             appId: "1:274410745480:web:9964c3914d512aed8d793d"
         };
+
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- GLOBAL DATA STORE ---
-        // We use a Map to merge 'history' and 'orders' without duplicates
-        let allOrdersMap = new Map();
+        // --- USER SET PINS ---
+        const ACCESS_PIN = "2024";
+        const DELETE_PIN = "2021";
 
-        // --- 1. ACCESS CONTROL ---
-        window.checkAccess = () => {
-            const pin = document.getElementById('access-pin').value;
-            if(pin === "2024") {
-                document.getElementById('access-overlay').classList.add('hidden');
-                initListeners(); 
+        document.getElementById('unlock-btn').addEventListener('click', () => {
+            if(document.getElementById('pin-input').value === ACCESS_PIN) {
+                document.getElementById('pin-overlay').style.display = 'none';
+                loadHistory();
             } else {
-                document.getElementById('access-err').style.display = 'block';
-                document.getElementById('access-pin').value = '';
+                alert("Wrong PIN");
             }
-        }
+        });
 
-        // --- 2. DELETE LOGIC ---
-        let itemToDeleteKey = null;
-        let itemToDeleteSource = null; // We need to know WHICH folder to delete from
-
-        window.requestDelete = (key, source) => {
-            itemToDeleteKey = key;
-            itemToDeleteSource = source;
-            document.getElementById('delete-overlay').classList.remove('hidden');
-            document.getElementById('delete-pin').value = ""; 
-            document.getElementById('delete-pin').focus();
-        }
-
-        window.closeDeleteModal = () => {
-            itemToDeleteKey = null;
-            itemToDeleteSource = null;
-            document.getElementById('delete-overlay').classList.add('hidden');
-            document.getElementById('delete-err').style.display = 'none';
-        }
-
-        window.confirmDelete = () => {
-            const pin = document.getElementById('delete-pin').value;
-            if(pin === "2021") {
-                if(itemToDeleteKey && itemToDeleteSource) {
-                    // Delete from the correct source folder
-                    remove(ref(db, itemToDeleteSource + '/' + itemToDeleteKey));
-                    closeDeleteModal();
+        window.deleteHistoryItem = function(key) {
+            const password = prompt("⚠ DELETE CONFIRMATION ⚠\nEnter Admin Password (2021):");
+            if (password === DELETE_PIN) {
+                if(confirm("Are you sure? This cannot be undone.")) {
+                    remove(ref(db, 'history/' + key))
+                        .then(() => alert("Record deleted."))
+                        .catch(err => alert("Error: " + err));
                 }
-            } else {
-                document.getElementById('delete-err').style.display = 'block';
-                document.getElementById('delete-pin').value = '';
+            } else if (password !== null) {
+                alert("❌ WRONG PASSWORD. Access Denied.");
             }
         }
 
-        // --- 3. DUAL DATA LOADING ---
-        function initListeners() {
-            // Listener A: The Old 'history' folder
-            onValue(ref(db, 'history'), (snapshot) => {
-                processSnapshot(snapshot, 'history');
-            });
-
-            // Listener B: The New 'orders' folder
-            onValue(ref(db, 'orders'), (snapshot) => {
-                processSnapshot(snapshot, 'orders');
-            });
-        }
-
-        function processSnapshot(snapshot, sourceName) {
-            const data = snapshot.val();
+        function loadHistory() {
+            const historyQuery = query(ref(db, 'history'), limitToLast(50));
             
-            // If data is null/empty, we must clear entries belonging to this source
-            // to handle deletions correctly.
-            if (!data) {
-                // Remove all entries from this source in our local map
-                for (const [key, val] of allOrdersMap) {
-                    if (val.source === sourceName) allOrdersMap.delete(key);
+            onValue(historyQuery, (snapshot) => {
+                const data = snapshot.val();
+                const tbody = document.getElementById('table-body');
+                tbody.innerHTML = "";
+                
+                if (!data) {
+                    tbody.innerHTML = "<tr><td colspan='8' style='text-align:center; padding:30px;'>No history found.</td></tr>";
+                    return;
                 }
-            } else {
-                Object.entries(data).forEach(([key, order]) => {
-                    // Tag the order with its source so we know where to delete it from later
-                    order._source = sourceName; 
-                    order._key = key;
-                    allOrdersMap.set(key, order);
-                });
-            }
-            
-            renderTable();
-        }
 
-        function renderTable() {
-            const tbody = document.getElementById('history-body');
-            tbody.innerHTML = "";
-            let count = 0, sumKitchen = 0, sumFees = 0, sumCollected = 0;
-
-            if (allOrdersMap.size === 0) {
-                tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; padding:30px; color:#666;'>No history records found.</td></tr>";
-                updateStats(0,0,0,0);
-                return;
-            }
-
-            // Convert Map to Array and Sort by Date (Newest First)
-            const sortedOrders = Array.from(allOrdersMap.values()).sort((a, b) => {
-                const timeA = a.timestamp || a.createdAt || 0;
-                const timeB = b.timestamp || b.createdAt || 0;
-                // Handle complex date objects if necessary
-                const dateA = (typeof timeA.toDate === 'function') ? timeA.toDate() : new Date(timeA);
-                const dateB = (typeof timeB.toDate === 'function') ? timeB.toDate() : new Date(timeB);
-                return dateB - dateA;
-            });
-
-            sortedOrders.forEach((order) => {
-                count++;
+                let sumKitchen = 0;
+                let sumFees = 0;
+                let sumCollected = 0;
+                let count = 0;
                 
-                // --- FINANCIAL MATH ---
-                const fins = order.financials || {};
-                const grandTotal = parseFloat(fins.grandTotal) || 0;
-                // Try to find fee in deliveryFee OR packingTotal
-                const feeVal = parseFloat(fins.deliveryFee) || parseFloat(fins.packingTotal) || 0;
-                const kitchenVal = grandTotal - feeVal;
+                const orders = Object.entries(data).sort((a,b) => b[1].completedAt - a[1].completedAt);
                 
-                sumKitchen += kitchenVal;
-                sumFees += feeVal;
-                sumCollected += grandTotal;
-
-                // --- DATE PARSING ---
-                let dateObj;
-                let rawTime = order.timestamp || order.createdAt;
-                
-                if (rawTime) {
-                    if (typeof rawTime.toDate === 'function') {
-                        dateObj = rawTime.toDate(); 
-                    } else {
-                        dateObj = new Date(rawTime);
+                orders.forEach(([key, order]) => {
+                    // CHECK REJECTED STATUS
+                    const isRejected = (order.status === 'rejected');
+                    
+                    // ONLY CALCULATE MONEY IF NOT REJECTED
+                    if (!isRejected) {
+                        count++;
+                        const fins = order.financials || { grandTotal: 0, deliveryFee: 0 };
+                        const totalCash = fins.grandTotal || 0;
+                        const fee = fins.deliveryFee || 0;
+                        const kitchenRev = totalCash - fee;
+                        sumKitchen += kitchenRev;
+                        sumFees += fee;
+                        sumCollected += totalCash;
                     }
-                } else {
-                    dateObj = new Date();
-                }
 
-                // Check for Invalid Date
-                let dateStr = "Unknown Date";
-                let timeStr = "--:--";
-                if (!isNaN(dateObj.getTime())) {
-                    dateStr = dateObj.toLocaleDateString('en-IN', { day:'numeric', month:'short' });
-                    timeStr = dateObj.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
-                }
+                    const fins = order.financials || { grandTotal: 0, deliveryFee: 0 };
+                    const dateObj = new Date(order.completedAt || order.timestamp);
+                    const dateStr = dateObj.toLocaleDateString();
+                    const timeStr = dateObj.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                    
+                    let itemsSummary = "Unknown";
+                    if(Array.isArray(order.items)) {
+                        itemsSummary = order.items.map(i => `${i.qty}x ${i.name}`).join(", ");
+                    }
 
-                // --- ITEMS PARSING ---
-                let itemsHtml = "";
-                if(order.items) {
-                    const itemList = Array.isArray(order.items) ? order.items : Object.values(order.items);
-                    itemsHtml = itemList.map(i => 
-                        `<div style='color:#bbb; font-size:0.85rem'>${i.qty}x ${i.name}</div>`
-                    ).join('');
-                } else {
-                    itemsHtml = "<span style='color:#555'>No items data</span>";
-                }
+                    // Badge Logic
+                    let typeClass = order.orderType === 'Delivery' ? 'del' : 'pick';
+                    let typeLabel = order.orderType;
+                    
+                    if (isRejected) {
+                        typeClass = 'rej';
+                        typeLabel = 'REJECTED';
+                    }
 
-                // --- CUSTOMER PARSING ---
-                const custName = order.customer?.name || "Unknown";
-                const custPhone = order.customer?.phone || "";
+                    const displayFee = fins.deliveryFee > 0 ? `+₹${fins.deliveryFee}` : '-';
+                    const rowClass = isRejected ? 'rejected-row' : '';
 
-                const row = `
-                    <tr>
-                        <td>
-                            <div style="font-weight:700; color:#fff;">${dateStr}</div>
-                            <div style="font-size:0.8rem; color:#666;">${timeStr}</div>
-                            <div style="font-size:0.7rem; color:#444; margin-top:4px;">${order._source.toUpperCase()}</div>
-                        </td>
-                        <td>
-                            <span class="status-badge st-${order.status || 'delivered'}">${order.status || 'DONE'}</span>
-                        </td>
-                        <td>
-                            <div style="font-weight:600; font-size:0.9rem">${custName}</div>
-                            <div style="font-size:0.8rem; margin-top:2px; color:#888;">${custPhone}</div>
-                        </td>
-                        <td>
-                            ${itemsHtml}
-                        </td>
-                        <td>
-                            <div style="color:#888; font-size:0.8rem">Food: ₹${kitchenVal}</div>
-                            <div style="color:#f39c12; font-size:0.8rem">Fee/Pack: ₹${feeVal}</div>
-                            <div style="font-weight:700; color:#fff; font-size:1rem; margin-top:4px;">₹${grandTotal}</div>
-                        </td>
-                        <td>
-                            <button class="btn-trash" onclick="requestDelete('${order._key}', '${order._source}')" title="Delete Record">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-                tbody.innerHTML += row;
+                    const row = `
+                        <tr class="${rowClass}">
+                            <td class="mono" style="color:#aaa; font-size:0.8rem;">
+                                ${dateStr}<br>${timeStr}
+                            </td>
+                            <td>
+                                <div class="mono">#${order.orderId}</div>
+                                <span class="badge ${typeClass}" style="margin-top:4px; display:inline-block;">${typeLabel}</span>
+                            </td>
+                            <td>
+                                <strong>${order.customer.name}</strong><br>
+                                <span style="font-size:0.8rem; color:#666;">${order.customer.phone}</span>
+                            </td>
+                            <td style="max-width:250px; color:#ccc; font-size:0.85rem;">${itemsSummary}</td>
+                            
+                            <td class="mono money-kitchen">₹${fins.grandTotal - (fins.deliveryFee||0)}</td>
+                            <td class="mono money-fee">${displayFee}</td>
+                            <td class="mono money-total">₹${fins.grandTotal}</td>
+                            
+                            <td>
+                                <button class="btn-trash" onclick="deleteHistoryItem('${key}')">🗑️</button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+
+                document.getElementById('total-kitchen').innerText = "₹" + sumKitchen.toLocaleString();
+                document.getElementById('total-fees').innerText = "₹" + sumFees.toLocaleString();
+                document.getElementById('total-collected').innerText = "₹" + sumCollected.toLocaleString();
+                document.getElementById('total-orders').innerText = count;
             });
-
-            updateStats(count, sumKitchen, sumFees, sumCollected);
-        }
-
-        function updateStats(count, kitchen, fees, collected) {
-            document.getElementById('total-orders').innerText = count;
-            document.getElementById('total-kitchen').innerText = "₹" + kitchen.toLocaleString('en-IN');
-            document.getElementById('total-fees').innerText = "₹" + fees.toLocaleString('en-IN');
-            document.getElementById('total-collected').innerText = "₹" + collected.toLocaleString('en-IN');
         }
     </script>
+</body>
+</html>
