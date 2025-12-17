@@ -32,8 +32,6 @@
         .mono { font-family: 'JetBrains Mono', monospace; }
         .flex { display: flex; align-items: center; }
         .justify-between { justify-content: space-between; }
-        .gap-2 { gap: 10px; }
-        .gap-4 { gap: 20px; }
 
         /* --- PIN LOCK --- */
         #pin-overlay { 
@@ -86,9 +84,7 @@
             background: var(--surface); padding: 20px; border-radius: 12px;
             border: 1px solid var(--border); position: relative; overflow: hidden;
         }
-        .stat-card::after {
-            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
-        }
+        .stat-card::after { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; }
         .stat-card.green::after { background: var(--success); }
         .stat-card.blue::after { background: var(--primary); }
         .stat-card.orange::after { background: #f59e0b; }
@@ -110,10 +106,7 @@
         tr:last-child td { border-bottom: none; }
         tr:hover { background: var(--surface-hover); }
 
-        .status-badge {
-            padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700;
-            text-transform: uppercase;
-        }
+        .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
         .badge-del { background: rgba(59, 130, 246, 0.15); color: var(--primary); }
         .badge-pick { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
         .badge-rej { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
@@ -127,29 +120,61 @@
         .btn-trash { color: var(--danger); opacity: 0.7; }
         .btn-trash:hover { background: rgba(239, 68, 68, 0.1); opacity: 1; }
 
-        /* --- MODAL --- */
+        /* --- MODAL (NEW LAYOUT) --- */
         .modal-backdrop {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.8); z-index: 500; justify-content: center; align-items: center;
         }
         .modal-content {
             background: var(--surface); width: 500px; max-width: 90%;
-            border-radius: 16px; border: 1px solid var(--border); padding: 30px;
+            border-radius: 16px; border: 1px solid var(--border); 
             position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            /* NEW: Flexbox for scrolling logic */
+            display: flex; flex-direction: column;
+            max-height: 85vh; /* Locks height to 85% of screen */
+            overflow: hidden;
+            padding: 0; /* Clear padding */
         }
-        .modal-header { 
-            display: flex; 
-            justify-content: space-between; 
-            margin-bottom: 20px; 
-            border-bottom: 1px solid var(--border); 
-            padding-bottom: 15px; 
-            /* Added padding-right to stop text from hitting the X button */
-            padding-right: 40px; 
+
+        /* 1. FIXED HEADER SECTION */
+        .modal-top-section {
+            padding: 25px 30px 0 30px;
+            flex-shrink: 0; /* Never scrolls */
         }
+        .modal-header-row {
+            display: flex; justify-content: space-between; margin-bottom: 20px;
+            padding-right: 30px; /* Space for Close Button */
+        }
+        .customer-info-box {
+            background: #121212; padding: 15px; border-radius: 8px;
+            margin-bottom: 15px; flex-shrink: 0;
+        }
+
+        /* 2. SCROLLABLE ITEMS SECTION */
+        .modal-scroll-area {
+            padding: 0 30px;
+            overflow-y: auto; /* Activates scroll */
+            flex-grow: 1; /* Fills available space */
+            min-height: 100px;
+        }
+
+        /* 3. FIXED FOOTER SECTION */
+        .modal-bottom-section {
+            padding: 20px 30px 30px 30px;
+            border-top: 1px solid var(--border);
+            background: var(--surface);
+            flex-shrink: 0; /* Never scrolls */
+            z-index: 5;
+        }
+
         .receipt-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; }
-        .receipt-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #333; }
+        .receipt-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #333; }
         .total-row { font-size: 1.2rem; font-weight: 800; border-top: 2px dashed var(--border); padding-top: 15px; margin-top: 15px; }
-        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); }
+        
+        .close-modal { 
+            position: absolute; top: 20px; right: 25px; 
+            font-size: 1.5rem; cursor: pointer; color: var(--text-muted); z-index: 20;
+        }
 
     </style>
 </head>
@@ -167,37 +192,42 @@
     <div class="modal-backdrop" id="details-modal">
         <div class="modal-content">
             <span class="close-modal" onclick="closeModal()">&times;</span>
-            <div class="modal-header">
-                <div>
-                    <h2 style="margin:0;">Receipt</h2>
-                    <span class="mono" style="color:var(--text-muted)" id="m-order-id">#000000</span>
-                </div>
-                <div style="text-align:right;">
-                    <div id="m-date">Date</div>
-                    <div id="m-time" style="color:var(--text-muted); font-size:0.8rem;">Time</div>
-                </div>
-            </div>
             
-            <div style="background:#121212; padding:15px; border-radius:8px; margin-bottom:20px;">
-                <div style="color:var(--text-muted); font-size:0.8rem; margin-bottom:5px;">CUSTOMER</div>
-                <strong id="m-customer" style="font-size:1.1rem;">Name</strong><br>
-                <span class="mono" id="m-phone">Phone</span>
+            <div class="modal-top-section">
+                <div class="modal-header-row">
+                    <div>
+                        <h2 style="margin:0;">Receipt</h2>
+                        <span class="mono" style="color:var(--text-muted)" id="m-order-id">#000000</span>
+                    </div>
+                    <div style="text-align:right;">
+                        <div id="m-date">Date</div>
+                        <div id="m-time" style="color:var(--text-muted); font-size:0.8rem;">Time</div>
+                    </div>
+                </div>
+                
+                <div class="customer-info-box">
+                    <div style="color:var(--text-muted); font-size:0.8rem; margin-bottom:5px;">CUSTOMER</div>
+                    <strong id="m-customer" style="font-size:1.1rem;">Name</strong><br>
+                    <span class="mono" id="m-phone">Phone</span>
+                </div>
             </div>
 
-            <div id="m-items-list" style="margin-bottom:20px; max-height: 200px; overflow-y: auto;">
+            <div id="m-items-list" class="modal-scroll-area">
                 </div>
 
-            <div class="receipt-row">
-                <span>Subtotal (Kitchen)</span>
-                <span class="mono" id="m-kitchen">₹0</span>
-            </div>
-            <div class="receipt-row">
-                <span>Delivery Fee</span>
-                <span class="mono" id="m-fee">₹0</span>
-            </div>
-            <div class="receipt-row total-row">
-                <span>TOTAL PAID</span>
-                <span class="mono" style="color:var(--success);" id="m-total">₹0</span>
+            <div class="modal-bottom-section">
+                <div class="receipt-row">
+                    <span>Subtotal (Kitchen)</span>
+                    <span class="mono" id="m-kitchen">₹0</span>
+                </div>
+                <div class="receipt-row">
+                    <span>Delivery Fee</span>
+                    <span class="mono" id="m-fee">₹0</span>
+                </div>
+                <div class="receipt-row total-row">
+                    <span>TOTAL PAID</span>
+                    <span class="mono" style="color:var(--success);" id="m-total">₹0</span>
+                </div>
             </div>
         </div>
     </div>
@@ -286,14 +316,14 @@
         const DELETE_PIN = "2021";
         
         // STATE
-        let allOrders = []; // Store all fetched orders here locally for filtering
+        let allOrders = [];
 
         // AUTH
         document.getElementById('unlock-btn').addEventListener('click', () => {
             const input = document.getElementById('pin-input');
             if(input.value === ACCESS_PIN) {
                 document.getElementById('pin-overlay').style.display = 'none';
-                loadHistory(); // Load data only after unlock
+                loadHistory(); 
             } else {
                 alert("❌ Access Denied");
                 input.value = '';
@@ -301,12 +331,8 @@
         });
 
         // --- CORE FUNCTIONS ---
-
         function loadHistory() {
             document.getElementById('table-body').innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px;">Loading full history...</td></tr>`;
-            
-            // Increased limit to 500 for better history context. 
-            // NOTE: Loading "all" orders without server-side pagination can crash browser if you have 5000+ orders.
             const historyQuery = query(ref(db, 'history'), limitToLast(500));
 
             onValue(historyQuery, (snapshot) => {
@@ -315,14 +341,11 @@
                     renderTable([]);
                     return;
                 }
-
-                // Convert Object to Array & Sort Newest First
                 allOrders = Object.entries(data).map(([key, val]) => ({
                     key: key,
                     ...val
                 })).sort((a,b) => (b.completedAt || b.timestamp) - (a.completedAt || a.timestamp));
 
-                // Initial Render
                 renderTable(allOrders);
             });
         }
@@ -330,11 +353,7 @@
         window.renderTable = function(ordersData) {
             const tbody = document.getElementById('table-body');
             tbody.innerHTML = "";
-            
-            let sumKitchen = 0;
-            let sumFees = 0;
-            let sumTotal = 0;
-            let count = 0;
+            let sumKitchen = 0; let sumFees = 0; let sumTotal = 0; let count = 0;
 
             if (ordersData.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:40px; color:var(--text-muted);">No records found matching filters.</td></tr>`;
@@ -344,27 +363,19 @@
 
             ordersData.forEach(order => {
                 const isRejected = order.status === 'rejected';
-                
-                // Financials
                 const fins = order.financials || { grandTotal: 0, deliveryFee: 0 };
                 const total = fins.grandTotal || 0;
                 const fee = fins.deliveryFee || 0;
                 const kitchen = total - fee;
 
-                // Update Stats (Exclude Rejected)
                 if(!isRejected) {
-                    sumKitchen += kitchen;
-                    sumFees += fee;
-                    sumTotal += total;
-                    count++;
+                    sumKitchen += kitchen; sumFees += fee; sumTotal += total; count++;
                 }
 
-                // Date Formatting
                 const dateObj = new Date(order.completedAt || order.timestamp);
                 const dateStr = dateObj.toLocaleDateString('en-IN');
                 const timeStr = dateObj.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
 
-                // Classes
                 const rowClass = isRejected ? 'opacity:0.5; text-decoration:line-through;' : '';
                 const typeBadge = order.orderType === 'Delivery' ? 'badge-del' : 'badge-pick';
                 const typeLabel = isRejected ? 'REJECTED' : order.orderType;
@@ -391,7 +402,6 @@
                 `;
                 tbody.innerHTML += row;
             });
-
             updateStats(sumKitchen, sumFees, sumTotal, count);
         }
 
@@ -402,33 +412,25 @@
             document.getElementById('stat-count').innerText = c;
         }
 
-        // --- FILTERING ---
         window.applyFilters = function() {
             const search = document.getElementById('search-input').value.toLowerCase();
             const start = document.getElementById('date-start').valueAsDate;
             const end = document.getElementById('date-end').valueAsDate;
-            
-            // Adjust end date to cover the full day
             if(end) end.setHours(23,59,59);
 
             const filtered = allOrders.filter(o => {
                 const oDate = new Date(o.completedAt || o.timestamp);
-                
-                // 1. Date Check
                 let dateMatch = true;
                 if(start && oDate < start) dateMatch = false;
                 if(end && oDate > end) dateMatch = false;
-
-                // 2. Search Check
+                
                 let searchMatch = true;
                 if(search) {
                     const str = `${o.orderId} ${o.customer.name} ${o.customer.phone}`.toLowerCase();
                     if(!str.includes(search)) searchMatch = false;
                 }
-
                 return dateMatch && searchMatch;
             });
-
             renderTable(filtered);
         }
 
@@ -439,23 +441,17 @@
             renderTable(allOrders);
         }
 
-        // --- ACTIONS ---
-        
-        // Make viewDetails globally accessible
         window.viewDetails = function(key) {
             const order = allOrders.find(o => o.key === key);
             if(!order) return;
 
-            // Populate Modal
             document.getElementById('m-order-id').innerText = "#" + order.orderId;
             const d = new Date(order.completedAt || order.timestamp);
             document.getElementById('m-date').innerText = d.toLocaleDateString();
             document.getElementById('m-time').innerText = d.toLocaleTimeString();
-            
             document.getElementById('m-customer').innerText = order.customer.name;
             document.getElementById('m-phone').innerText = order.customer.phone;
 
-            // Items
             const itemsContainer = document.getElementById('m-items-list');
             itemsContainer.innerHTML = "";
             if(order.items) {
@@ -469,13 +465,11 @@
                 });
             }
 
-            // Money
             const fins = order.financials || {grandTotal:0, deliveryFee:0};
             document.getElementById('m-kitchen').innerText = "₹" + (fins.grandTotal - (fins.deliveryFee||0));
             document.getElementById('m-fee').innerText = "₹" + (fins.deliveryFee||0);
             document.getElementById('m-total').innerText = "₹" + fins.grandTotal;
 
-            // Show
             document.getElementById('details-modal').style.display = 'flex';
         }
 
@@ -483,7 +477,6 @@
             document.getElementById('details-modal').style.display = 'none';
         }
 
-        // Close modal on outside click
         window.onclick = function(event) {
             const modal = document.getElementById('details-modal');
             if (event.target == modal) {
@@ -492,9 +485,7 @@
         }
 
         window.deleteOrder = function(key) {
-            // FIXED: Removed the (2021) hint from the prompt
             const password = prompt("⚠ DELETE CONFIRMATION ⚠\nEnter Admin Password:");
-            
             if (password === DELETE_PIN) {
                 if(confirm("Are you sure? This cannot be undone.")) {
                     remove(ref(db, 'history/' + key))
@@ -508,33 +499,18 @@
 
         window.exportToCSV = function() {
             if(allOrders.length === 0) return alert("No data to export.");
-            
             let csvContent = "data:text/csv;charset=utf-8,";
             csvContent += "Date,Time,OrderID,Customer,Phone,Type,KitchenRevenue,DeliveryFee,TotalAmount\n";
-
-            // Use the currently displayed (filtered) data if you want, or allOrders.
-            // Let's use filtered data from the table (best UX)
-            // But for simplicity, we export allOrders here unless we refactor to store filtered state separately.
-            // Using allOrders for now.
-            
             allOrders.forEach(o => {
                 const d = new Date(o.completedAt || o.timestamp);
                 const fins = o.financials || {grandTotal:0, deliveryFee:0};
-                
                 const row = [
-                    d.toLocaleDateString(),
-                    d.toLocaleTimeString(),
-                    o.orderId,
-                    o.customer.name,
-                    o.customer.phone,
-                    o.orderType,
-                    (fins.grandTotal - (fins.deliveryFee||0)),
-                    (fins.deliveryFee||0),
-                    fins.grandTotal
+                    d.toLocaleDateString(), d.toLocaleTimeString(), o.orderId,
+                    o.customer.name, o.customer.phone, o.orderType,
+                    (fins.grandTotal - (fins.deliveryFee||0)), (fins.deliveryFee||0), fins.grandTotal
                 ].join(",");
                 csvContent += row + "\n";
             });
-
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
@@ -542,7 +518,6 @@
             document.body.appendChild(link);
             link.click();
         }
-
     </script>
 </body>
 </html>
