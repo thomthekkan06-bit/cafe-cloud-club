@@ -162,7 +162,7 @@
         /* --- MOBILE OPTIMIZATION (THE FIX) --- */
         @media (max-width: 768px) {
             /* 1. Unlock scrolling so page isn't stuck */
-            body { height: auto; overflow-y: auto; display: block; padding: 15px; }
+            body { height: auto; overflow-y: auto; display: block; padding: 15px; padding-bottom: 30px; }
             
             /* 2. Compact Stats Grid: 2 columns instead of 1 */
             .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -170,8 +170,14 @@
             .stat-value { font-size: 1.5rem; }
             .stat-label { font-size: 0.7rem; }
 
-            /* 3. Adjust Table container */
-            .table-container { height: auto; overflow: visible; margin-bottom: 50px; }
+            /* 3. FIX: Restore horizontal scrolling for table */
+            .table-container { 
+                height: auto; 
+                overflow-x: auto; /* ALLOW SWIPING */
+                margin-bottom: 50px; 
+                border: 1px solid var(--border);
+                display: block; 
+            }
             
             /* 4. Controls layout */
             .search-box { min-width: 100%; }
