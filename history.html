@@ -152,7 +152,7 @@
         });
 
         window.deleteHistoryItem = function(key) {
-            const password = prompt("⚠ DELETE CONFIRMATION ⚠\nEnter Admin Password (2021):");
+            const password = prompt("⚠ DELETE CONFIRMATION ⚠\nEnter Admin Password:");
             if (password === DELETE_PIN) {
                 if(confirm("Are you sure? This cannot be undone.")) {
                     remove(ref(db, 'history/' + key))
