@@ -28,7 +28,7 @@
             background: var(--bg); 
             color: var(--text-main); 
             margin: 0; padding: 15px;
-            padding-bottom: 40px; /* Space for mobile scroll */
+            padding-bottom: 40px;
         }
 
         /* --- PIN LOCK --- */
@@ -56,9 +56,7 @@
             border: 1px solid var(--border); margin-bottom: 20px; gap: 10px;
         }
         .header-left, .header-right { display: flex; align-items: center; gap: 15px; }
-
         .app-title { margin: 0; font-size: 1.5rem; white-space: nowrap; }
-
         .status-badge {
             display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600;
             padding: 6px 12px; border-radius: 20px; background: rgba(0,0,0,0.3); border: 1px solid var(--border);
@@ -66,84 +64,80 @@
         .dot { width: 8px; height: 8px; border-radius: 50%; }
         .dot.online { background: var(--success); box-shadow: 0 0 8px var(--success); }
         .dot.offline { background: var(--danger); }
-
         .clock { font-family: 'JetBrains Mono'; font-size: 1.2rem; font-weight: 700; color: var(--text-main); }
-        
         .btn-history {
             background: var(--surface-hover); color: var(--text-muted); border: 1px solid var(--border);
             padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; text-decoration: none; transition: 0.2s; white-space: nowrap;
         }
         .btn-history:hover { color: white; border-color: white; }
 
-        /* --- GRID LAYOUT --- */
+        /* --- GRID --- */
         #orders-grid {
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); 
             gap: 20px;
         }
 
-        /* --- ORDER CARD --- */
+        /* --- CARD STYLES --- */
         .order-card {
             background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
             overflow: hidden; display: flex; flex-direction: column; position: relative;
             animation: slideUp 0.3s ease-out; transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2); border-left: 5px solid var(--border);
         }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        /* Status Borders (Left Side) */
-        .order-card { border-left: 5px solid var(--border); }
         .order-card.status-pending { border-left-color: var(--primary); }
         .order-card.status-cooking { border-left-color: var(--warning); }
         .order-card.status-done { border-left-color: var(--success); }
         .order-card.status-out_for_delivery { border-left-color: var(--purple); }
 
-        /* Critical Animation */
         .age-critical { animation: pulseRed 2s infinite; border-color: var(--danger); }
         @keyframes pulseRed { 0% { box-shadow: 0 0 0 rgba(239, 68, 68, 0); } 50% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.3); } 100% { box-shadow: 0 0 0 rgba(239, 68, 68, 0); } }
 
-        /* Card Header */
+        /* Header */
         .card-header { padding: 15px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; }
         .order-id { font-family: 'JetBrains Mono'; font-size: 1.1rem; font-weight: 800; color: white; }
-        .order-meta { text-align: right; }
-        .timer-badge { 
-            font-size: 0.75rem; font-weight: 700; padding: 4px 8px; border-radius: 4px; 
-            background: var(--surface-hover); color: var(--text-muted); display: inline-block; margin-top: 5px;
-        }
-        
-        /* Order Type Badge */
+        .timer-badge { font-size: 0.75rem; font-weight: 700; padding: 4px 8px; border-radius: 4px; background: var(--surface-hover); color: var(--text-muted); display: inline-block; margin-top: 5px; }
         .type-badge { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; padding: 3px 6px; border-radius: 4px; margin-left: 8px; vertical-align: middle; }
         .type-del { background: rgba(59, 130, 246, 0.2); color: var(--primary); }
         .type-pick { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
 
-        /* Customer Info */
+        /* Customer */
         .customer-box { padding: 12px 15px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: center; }
         .avatar { width: 32px; height: 32px; background: var(--surface-hover); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; }
         .cust-details { font-size: 0.9rem; line-height: 1.3; overflow: hidden; }
         .cust-phone { color: var(--primary); text-decoration: none; font-size: 0.8rem; display: block; margin-top: 2px; }
 
-        /* Items List */
+        /* Items */
         .items-list { padding: 0; flex: 1; }
-        .item-row { padding: 12px 15px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; }
+        .item-row { padding: 12px 15px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; justify-content: space-between; }
         .qty-badge { 
             background: var(--surface-hover); border: 1px solid var(--border); color: white; 
             width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; 
             border-radius: 6px; font-weight: 700; font-family: 'JetBrains Mono'; flex-shrink: 0;
         }
-        .item-text { font-size: 0.95rem; line-height: 1.4; color: var(--text-main); }
+        .item-content { flex: 1; font-size: 0.95rem; line-height: 1.4; color: var(--text-main); }
         .modifiers { display: block; font-size: 0.8rem; color: var(--warning); margin-top: 2px; font-style: italic; }
-        
         .diet-icon { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
         .veg { background: var(--success); box-shadow: 0 0 5px var(--success); }
         .non { background: var(--danger); box-shadow: 0 0 5px var(--danger); }
+        .item-price { font-family: 'JetBrains Mono'; font-weight: 600; color: var(--text-muted); font-size: 0.9rem; margin-left: 10px; }
 
-        /* Note Section */
+        /* Note */
         .note-box { background: rgba(239, 68, 68, 0.1); color: #ff8a8a; padding: 10px 15px; font-size: 0.85rem; border-bottom: 1px solid var(--border); }
 
-        /* Footer & Actions */
-        .card-footer { padding: 15px; background: var(--surface); margin-top: auto; }
-        .total-row { display: flex; justify-content: space-between; font-weight: 700; color: var(--success); margin-bottom: 15px; font-family: 'JetBrains Mono'; }
-        
+        /* Financial Breakdown (NEW) */
+        .finance-box { background: rgba(0,0,0,0.2); padding: 12px 15px; font-size: 0.85rem; border-top: 2px solid var(--border); }
+        .fin-row { display: flex; justify-content: space-between; margin-bottom: 4px; color: var(--text-muted); }
+        .fin-row span:last-child { font-family: 'JetBrains Mono'; color: var(--text-main); }
+        .fin-row.discount { color: var(--danger); }
+        .fin-row.discount span:last-child { color: var(--danger); }
+        .fin-row.grand-total { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); font-weight: 800; font-size: 1rem; color: var(--success); }
+        .fin-row.grand-total span:last-child { color: var(--success); }
+
+        /* Actions */
+        .card-footer { padding: 15px; background: var(--surface); margin-top: auto; border-top: 1px solid var(--border); }
         .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .btn-act { 
             border: none; padding: 14px; border-radius: 8px; font-weight: 800; cursor: pointer; 
@@ -154,35 +148,20 @@
         .btn-cook { background: var(--warning); color: #000; grid-column: 1 / -1; }
         .btn-complete { background: var(--bg); border: 1px solid var(--success); color: var(--success); grid-column: 1 / -1; }
         .btn-complete:hover { background: var(--success); color: white; }
-
-        .out-delivery-box { 
-            background: rgba(139, 92, 246, 0.1); border: 1px solid var(--purple); color: var(--purple);
-            padding: 12px; text-align: center; border-radius: 8px; font-weight: 700; grid-column: 1 / -1;
-        }
-
-        /* Empty State */
+        .out-delivery-box { background: rgba(139, 92, 246, 0.1); border: 1px solid var(--purple); color: var(--purple); padding: 12px; text-align: center; border-radius: 8px; font-weight: 700; grid-column: 1 / -1; }
         .empty-state { grid-column: 1 / -1; text-align: center; padding: 60px; color: var(--text-muted); }
         .empty-icon { font-size: 3rem; margin-bottom: 15px; opacity: 0.5; }
 
-        /* --- MOBILE RESPONSIVENESS --- */
         @media (max-width: 600px) {
             body { padding: 10px; padding-bottom: 30px; }
-            
             .top-bar { padding: 10px; margin-bottom: 15px; }
             .app-title { font-size: 1.2rem; }
             .clock { font-size: 0.9rem; }
-            
-            /* Hide status text on mobile, keep dot */
             #status-text { display: none; }
-            .status-badge { padding: 6px; border-radius: 50%; } /* Circle for just dot */
-            
-            /* Full width cards on mobile */
+            .status-badge { padding: 6px; border-radius: 50%; }
             #orders-grid { grid-template-columns: 1fr; }
-            
-            /* Adjust button sizing */
             .btn-history { padding: 6px 10px; font-size: 0.8rem; }
         }
-
     </style>
 </head>
 <body>
@@ -205,7 +184,6 @@
                 <span id="status-text">Connecting...</span>
             </div>
         </div>
-        
         <div class="header-right">
             <div class="clock" id="clock">00:00</div>
             <a href="history.html" class="btn-history">History</a>
@@ -240,41 +218,33 @@
         // CONFIG
         const ACCESS_PIN = "2024";
         const bell = new Audio('bell.mp3');
-        bell.loop = true; // --- CONTINUOUS RINGING ENABLED ---
+        bell.loop = true; 
         let audioEnabled = false;
 
-        // --- AUTH & SOUND ---
         document.getElementById('unlock-btn').addEventListener('click', attemptUnlock);
         
         async function attemptUnlock() {
             const input = document.getElementById('pin-input');
             if (input.value === ACCESS_PIN) {
-                // Initialize Audio Context on user interaction
                 bell.play().then(() => {
                     bell.pause();
                     bell.currentTime = 0;
                     audioEnabled = true;
                 }).catch(e => console.log("Audio permission needed: " + e));
-
                 document.getElementById('pin-overlay').style.display = 'none';
-                
-                // Wake Lock (Prevent Screen Sleep)
                 try { if ('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch(e){}
-
             } else {
                 document.getElementById('pin-error').style.display = 'block';
                 input.value = '';
             }
         }
 
-        // --- CLOCK ---
         setInterval(() => {
             const now = new Date();
             document.getElementById('clock').innerText = now.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
             updateTimers();
         }, 1000);
 
-        // --- CONNECTION ---
         onValue(ref(db, ".info/connected"), (snap) => {
             const dot = document.getElementById('status-dot');
             const txt = document.getElementById('status-text');
@@ -285,7 +255,6 @@
             }
         });
 
-        // --- ORDERS LOGIC ---
         let activeOrders = [];
 
         onValue(ref(db, 'orders'), (snapshot) => {
@@ -302,7 +271,7 @@
                         <p>Waiting for new orders...</p>
                     </div>`;
                 activeOrders = [];
-                checkSound([]); // Ensure sound stops
+                checkSound([]); 
                 return;
             }
 
@@ -315,36 +284,54 @@
                 const typeBadgeClass = order.orderType === 'Delivery' ? 'type-del' : 'type-pick';
                 const timeStr = new Date(order.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 
-                // Financials
-                const fins = order.financials || {grandTotal: order.price};
+                // Financials Logic
+                const fins = order.financials || {grandTotal: order.price, subTotal: order.price, packingTotal: 0, discountVal: 0};
+                const subTotal = fins.subTotal || 0;
+                const packing = fins.packingTotal || 0;
+                const discount = fins.discountVal || 0;
+                const total = fins.grandTotal || 0;
+
+                // Build Financial Breakdown HTML
+                let financeHtml = `<div class="finance-box">`;
+                financeHtml += `<div class="fin-row"><span>Subtotal</span> <span>₹${subTotal}</span></div>`;
+                
+                if (packing > 0) {
+                    financeHtml += `<div class="fin-row"><span>Packing</span> <span>+₹${packing}</span></div>`;
+                }
+                if (discount > 0) {
+                    financeHtml += `<div class="fin-row discount"><span>Discount</span> <span>-₹${discount}</span></div>`;
+                }
+                financeHtml += `<div class="fin-row grand-total"><span>GRAND TOTAL</span> <span>₹${total}</span></div>`;
+                financeHtml += `</div>`;
 
                 // Items HTML
                 let itemsHtml = '';
                 if(order.items) {
                     order.items.forEach(item => {
                         const dietClass = item.type === 'veg' ? 'veg' : 'non';
-                        // Clean modifiers
                         let name = item.name.replace(/\[(.*?)\]/g, '<span class="modifiers">Add: $1</span>');
+                        const itemTotal = item.price * item.qty;
                         
                         itemsHtml += `
                             <div class="item-row">
-                                <div class="qty-badge">${item.qty}</div>
-                                <div style="flex:1;">
-                                    <div class="item-text">
-                                        <span class="diet-icon ${dietClass}"></span>
-                                        ${name}
+                                <div style="display:flex; gap:10px; align-items:flex-start; flex:1;">
+                                    <div class="qty-badge">${item.qty}</div>
+                                    <div class="item-content">
+                                        <div style="display:flex; align-items:center;">
+                                            <span class="diet-icon ${dietClass}"></span>
+                                            ${name}
+                                        </div>
                                     </div>
                                 </div>
+                                <div class="item-price">₹${itemTotal}</div>
                             </div>
                         `;
                     });
                 }
 
-                // Note HTML
                 const noteHtml = (order.globalNote && order.globalNote !== '-') 
                     ? `<div class="note-box">⚠️ Note: ${order.globalNote}</div>` : '';
 
-                // Buttons Logic
                 let buttonsHtml = '';
                 if (status === 'pending') {
                     buttonsHtml = `
@@ -364,11 +351,9 @@
                 } else if (status === 'out_for_delivery') {
                     buttonsHtml = `<div class="out-delivery-box">🛵 Out for Delivery</div>`;
                 } else {
-                    // Fallback
                     buttonsHtml = `<button class="btn-act btn-reject" onclick="rejectOrder('${key}')">Force Clear 🗑️</button>`;
                 }
 
-                // Customer Address logic
                 const addressHtml = order.orderType === 'Delivery' 
                     ? `<div style="font-size:0.8rem; color:var(--text-muted); margin-top:5px;">📍 ${order.customer.address}</div>` : '';
 
@@ -399,12 +384,9 @@
                         ${itemsHtml}
                     </div>
                     ${noteHtml}
+                    ${financeHtml}
 
                     <div class="card-footer">
-                        <div class="total-row">
-                            <span>TOTAL</span>
-                            <span>₹${fins.grandTotal}</span>
-                        </div>
                         <div class="action-grid">
                             ${buttonsHtml}
                         </div>
@@ -415,18 +397,14 @@
             updateTimers();
         });
 
-        // --- HELPERS ---
         function updateTimers() {
             const now = Date.now();
             document.querySelectorAll('.order-card').forEach(card => {
                 const ts = parseInt(card.dataset.ts);
-                const diff = Math.floor((now - ts) / 60000); // minutes
+                const diff = Math.floor((now - ts) / 60000); 
                 const badge = card.querySelector('.timer-badge');
-                
                 if(diff < 1) badge.innerText = "Just now";
                 else badge.innerText = `${diff}m ago`;
-
-                // Color Coding
                 if(diff > 30) {
                     badge.style.background = "var(--danger)"; badge.style.color = "white";
                     if(!card.classList.contains('status-done')) card.classList.add('age-critical');
@@ -438,23 +416,15 @@
 
         function checkSound(orders) {
             if(!audioEnabled) return;
-            
-            // Check if there are ANY pending orders
             const hasPending = orders.some(([k, o]) => o.status === 'pending');
-            
             if(hasPending) {
-                // Play sound (looping is enabled in setup)
-                if(bell.paused) {
-                    bell.play().catch(e=>console.log("Audio Error:", e));
-                }
+                if(bell.paused) bell.play().catch(e=>console.log("Audio Error:", e));
             } else {
-                // Stop sound immediately if no orders are pending
                 bell.pause();
                 bell.currentTime = 0;
             }
         }
 
-        // --- ACTIONS ---
         window.updateStatus = (key, status) => {
             update(ref(db, 'orders/' + key), { status: status });
         };
@@ -483,7 +453,6 @@
                 }
             });
         };
-
     </script>
 </body>
 </html>
