@@ -506,12 +506,23 @@ else {
             update(ref(db, 'orders/' + key), { status: 'cooking' });
         };
 
-        // 2. Reject: Deletes completely (Vanishes from everywhere)
-        window.rejectOrder = (key) => {
-            if(confirm("REJECT this order? It will be deleted permanently.")) {
-                remove(ref(db, 'orders/' + key));
+// REPLACEMENT CODE FOR rejectOrder
+window.rejectOrder = (key) => {
+    if(confirm("REJECT this order? It will be moved to history as REJECTED.")) {
+        const orderRef = ref(db, 'orders/' + key);
+        get(orderRef).then((snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                data.status = 'rejected';
+                data.rejectedAt = Date.now();
+                // Move to history, THEN delete from active orders
+                set(ref(db, 'history/' + key), data)
+                    .then(() => { remove(orderRef); })
+                    .catch((err) => alert("Error moving to history: " + err));
             }
-        };
+        });
+    }
+};
 
         // 3. Mark Ready: Moves to Done
         window.markReady = (key) => {
