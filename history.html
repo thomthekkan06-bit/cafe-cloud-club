@@ -16,6 +16,7 @@
             --accent-green: #27ae60;
             --accent-blue: #2980b9;
             --accent-orange: #e67e22;
+            --accent-red: #e74c3c;
         }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); padding: 20px; }
         
@@ -48,6 +49,7 @@
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
         .del { background: rgba(52, 152, 219, 0.2); color: #3498db; }
         .pick { background: rgba(243, 156, 18, 0.2); color: #f39c12; }
+        .rej { background: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid #e74c3c; } /* REJECT STYLE */
         
         .money-kitchen { color: var(--accent-green); font-weight: bold; }
         .money-fee { color: var(--text-muted); font-size: 0.85rem; }
@@ -59,6 +61,10 @@
             cursor: pointer; transition: all 0.2s;
         }
         .btn-trash:hover { background: #e74c3c; color: white; }
+        
+        /* REJECTED ROW STYLE */
+        tr.rejected-row td { opacity: 0.5; text-decoration: line-through; }
+        tr.rejected-row td:nth-child(2) { text-decoration: none; opacity: 1; } /* Keep badge visible */
     </style>
 </head>
 <body>
@@ -79,19 +85,19 @@
     <div class="stats-row">
         <div class="stat-card">
             <div class="stat-val" id="total-kitchen" style="color: #27ae60;">₹0</div>
-            <div class="stat-label">Kitchen Revenue (Food Only)</div>
+            <div class="stat-label">Kitchen Revenue</div>
         </div>
         <div class="stat-card">
             <div class="stat-val" id="total-fees" style="color: #e67e22;">₹0</div>
-            <div class="stat-label">Delivery Fees Collected</div>
+            <div class="stat-label">Delivery Fees</div>
         </div>
         <div class="stat-card">
             <div class="stat-val" id="total-collected">₹0</div>
-            <div class="stat-label">Total Cash Handled</div>
+            <div class="stat-label">Total Cash</div>
         </div>
         <div class="stat-card">
             <div class="stat-val" id="total-orders">0</div>
-            <div class="stat-label">Total Orders (Last 50)</div>
+            <div class="stat-label">Successful Orders</div>
         </div>
     </div>
 
@@ -116,7 +122,6 @@
     </div>
 
     <script type="module">
-        // FIXED: Added 'query' and 'limitToLast' to imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue, remove, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
@@ -133,11 +138,12 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // PIN LOGIC - FIXED: Standardized to 2025
-        const KITCHEN_PIN = "2025";
-        
+        // --- USER SET PINS ---
+        const ACCESS_PIN = "2024";
+        const DELETE_PIN = "2021";
+
         document.getElementById('unlock-btn').addEventListener('click', () => {
-            if(document.getElementById('pin-input').value === KITCHEN_PIN) {
+            if(document.getElementById('pin-input').value === ACCESS_PIN) {
                 document.getElementById('pin-overlay').style.display = 'none';
                 loadHistory();
             } else {
@@ -146,9 +152,8 @@
         });
 
         window.deleteHistoryItem = function(key) {
-            const password = prompt("⚠ DELETE CONFIRMATION ⚠\nEnter Admin Password to permanently delete this record:");
-            // FIXED: Standardized to 2025
-            if (password === "2025") {
+            const password = prompt("⚠ DELETE CONFIRMATION ⚠\nEnter Admin Password (2021):");
+            if (password === DELETE_PIN) {
                 if(confirm("Are you sure? This cannot be undone.")) {
                     remove(ref(db, 'history/' + key))
                         .then(() => alert("Record deleted."))
@@ -160,7 +165,6 @@
         }
 
         function loadHistory() {
-            // FIXED: Added Query to limit to last 50 items to prevent crashing
             const historyQuery = query(ref(db, 'history'), limitToLast(50));
             
             onValue(historyQuery, (snapshot) => {
@@ -170,10 +174,6 @@
                 
                 if (!data) {
                     tbody.innerHTML = "<tr><td colspan='8' style='text-align:center; padding:30px;'>No history found.</td></tr>";
-                    document.getElementById('total-kitchen').innerText = "₹0";
-                    document.getElementById('total-fees').innerText = "₹0";
-                    document.getElementById('total-collected').innerText = "₹0";
-                    document.getElementById('total-orders').innerText = "0";
                     return;
                 }
 
@@ -182,21 +182,25 @@
                 let sumCollected = 0;
                 let count = 0;
                 
-                // Sort by completedAt descending (Newest first)
                 const orders = Object.entries(data).sort((a,b) => b[1].completedAt - a[1].completedAt);
                 
                 orders.forEach(([key, order]) => {
-                    count++;
-                    const fins = order.financials || { grandTotal: 0, deliveryFee: 0 };
+                    // CHECK REJECTED STATUS
+                    const isRejected = (order.status === 'rejected');
                     
-                    const totalCash = fins.grandTotal || 0;
-                    const fee = fins.deliveryFee || 0;
-                    const kitchenRev = totalCash - fee;
+                    // ONLY CALCULATE MONEY IF NOT REJECTED
+                    if (!isRejected) {
+                        count++;
+                        const fins = order.financials || { grandTotal: 0, deliveryFee: 0 };
+                        const totalCash = fins.grandTotal || 0;
+                        const fee = fins.deliveryFee || 0;
+                        const kitchenRev = totalCash - fee;
+                        sumKitchen += kitchenRev;
+                        sumFees += fee;
+                        sumCollected += totalCash;
+                    }
 
-                    sumKitchen += kitchenRev;
-                    sumFees += fee;
-                    sumCollected += totalCash;
-
+                    const fins = order.financials || { grandTotal: 0, deliveryFee: 0 };
                     const dateObj = new Date(order.completedAt || order.timestamp);
                     const dateStr = dateObj.toLocaleDateString();
                     const timeStr = dateObj.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
@@ -206,17 +210,26 @@
                         itemsSummary = order.items.map(i => `${i.qty}x ${i.name}`).join(", ");
                     }
 
-                    const typeClass = order.orderType === 'Delivery' ? 'del' : 'pick';
-                    const displayFee = fee > 0 ? `+₹${fee}` : '-';
+                    // Badge Logic
+                    let typeClass = order.orderType === 'Delivery' ? 'del' : 'pick';
+                    let typeLabel = order.orderType;
+                    
+                    if (isRejected) {
+                        typeClass = 'rej';
+                        typeLabel = 'REJECTED';
+                    }
+
+                    const displayFee = fins.deliveryFee > 0 ? `+₹${fins.deliveryFee}` : '-';
+                    const rowClass = isRejected ? 'rejected-row' : '';
 
                     const row = `
-                        <tr>
+                        <tr class="${rowClass}">
                             <td class="mono" style="color:#aaa; font-size:0.8rem;">
                                 ${dateStr}<br>${timeStr}
                             </td>
                             <td>
                                 <div class="mono">#${order.orderId}</div>
-                                <span class="badge ${typeClass}" style="margin-top:4px; display:inline-block;">${order.orderType}</span>
+                                <span class="badge ${typeClass}" style="margin-top:4px; display:inline-block;">${typeLabel}</span>
                             </td>
                             <td>
                                 <strong>${order.customer.name}</strong><br>
@@ -224,9 +237,9 @@
                             </td>
                             <td style="max-width:250px; color:#ccc; font-size:0.85rem;">${itemsSummary}</td>
                             
-                            <td class="mono money-kitchen">₹${kitchenRev}</td>
+                            <td class="mono money-kitchen">₹${fins.grandTotal - (fins.deliveryFee||0)}</td>
                             <td class="mono money-fee">${displayFee}</td>
-                            <td class="mono money-total">₹${totalCash}</td>
+                            <td class="mono money-total">₹${fins.grandTotal}</td>
                             
                             <td>
                                 <button class="btn-trash" onclick="deleteHistoryItem('${key}')">🗑️</button>
