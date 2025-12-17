@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Menu Admin | Cafe Cloud Club</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <style>
@@ -20,7 +20,7 @@
             --sidebar-w: 260px;
         }
 
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         body { 
             background: var(--bg); color: var(--text-main); 
@@ -211,7 +211,7 @@
             .menu-toggle { display: block; margin-right: 15px; }
             .top-bar { padding: 10px 20px; }
             .content-scroll { padding: 20px; }
-            .search-wrapper { width: 100%; display: none; } /* Hide search on super small screens or make separate row */
+            .search-wrapper { width: 100%; display: none; }
         }
     </style>
 </head>
@@ -221,8 +221,14 @@
         <div class="pin-box">
             <h2 style="margin-top:0;">🛠️ Admin Console</h2>
             <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:20px;">Enter access PIN to continue</p>
-            <input type="password" id="pin" class="pin-input" maxlength="4" placeholder="••••">
+            
+            <input type="password" id="pin" class="pin-input" maxlength="4" placeholder="••••" inputmode="numeric" pattern="[0-9]*">
+            
             <button onclick="checkPin()" class="btn-unlock">UNLOCK</button>
+
+            <div style="margin-top: 25px; border-top: 1px solid var(--border); padding-top: 15px; font-size: 0.75rem; color: var(--text-muted);">
+                System by <span style="color: var(--primary); font-weight: 700;">Thomsons Networks</span>
+            </div>
         </div>
     </div>
 
