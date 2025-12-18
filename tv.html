@@ -300,7 +300,7 @@
         document.getElementById('daily-offer-text').innerHTML = `<strong>📲 ONLINE EXCLUSIVE (Delivery & Pickup):</strong> ${todayOffer} | Order @ cafe-cloud-club.vercel.app`;
 
 
-        // --- FIREBASE ORDER LISTENER (SAFETY PATCHED) ---
+        // --- FIREBASE ORDER LISTENER (STRICT MODE) ---
         const ordersRef = ref(db, 'orders');
 
         onValue(ordersRef, (snapshot) => {
@@ -319,22 +319,17 @@
 
             orders.forEach(order => {
                 try {
-                    // --- SAFETY CHECK START ---
-                    // If order is broken or has no status, SKIP IT.
+                    // --- STRICT FILTER START ---
+                    // If any crucial data is missing, vanish the card completely.
                     if (!order || !order.status) return;
+                    if (!order.orderId) return; // Must have ID
+                    if (!order.customer || !order.customer.name) return; // Must have name
+                    // --- STRICT FILTER END ---
 
                     const status = order.status;
-                    const orderId = order.orderId || "???";
-                    
-                    // SAFE NAME EXTRACTION:
-                    // If customer data is missing, fallback to "Guest"
-                    let customerName = "Guest";
-                    if (order.customer && order.customer.name) {
-                        customerName = order.customer.name.split(' ')[0];
-                    }
-
+                    const orderId = order.orderId;
+                    const customerName = order.customer.name.split(' ')[0];
                     const type = order.orderType || "Order"; 
-                    // --- SAFETY CHECK END ---
 
                     // CREATE CARD HTML
                     const cardHtml = `
@@ -355,7 +350,6 @@
                         }
                     }
                 } catch (err) {
-                    // This catches any other weird errors and prints them without crashing the screen
                     console.warn("Skipped a bad order:", err);
                 }
             });
