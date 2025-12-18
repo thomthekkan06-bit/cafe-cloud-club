@@ -1,6 +1,6 @@
 {
-  "name": "Cloud Club TV",
-  "short_name": "Queue TV",
+  "name": "Queue Display System",
+  "short_name": "QDS",
   "start_url": "/tv.html",
   "display": "standalone",
   "orientation": "landscape",
