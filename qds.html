@@ -3,71 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Café Cloud - Guest Display</title>
+    <title>Café Cloud - TV Display</title>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: 'Verdana', sans-serif; height: 100vh; display: flex; overflow: hidden; }
-        .col { flex: 1; padding: 0; border-right: 6px solid #222; display: flex; flex-direction: column; }
-        .col:last-child { border: none; }
+        /* TV OPTIMIZED CSS */
+        body { 
+            margin: 0; background: #111; color: #fff; 
+            font-family: 'Segoe UI', sans-serif; height: 100vh; 
+            display: flex; overflow: hidden; 
+        }
+        
+        /* COLUMNS */
+        .column { flex: 1; padding: 0; display: flex; flex-direction: column; }
+        .column:first-child { border-right: 4px solid #333; }
         
         /* HEADERS */
         .header { 
-            padding: 30px; text-align: center; font-size: 4vw; 
-            font-weight: 900; text-transform: uppercase; letter-spacing: 2px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 10;
+            padding: 25px; text-align: center; 
+            font-size: 3.5vw; font-weight: 800; text-transform: uppercase; 
+            background: #1a1a1a; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+        
+        /* ORDER LIST */
+        .order-list { 
+            padding: 30px; flex: 1; overflow: hidden; 
+            display: grid; grid-template-columns: 1fr 1fr; /* 2 numbers per row */
+            gap: 25px; align-content: start; 
         }
 
-        /* GRID LAYOUT */
-        .list-container {
-            padding: 30px; flex: 1; overflow: hidden;
-            display: grid; grid-template-columns: repeat(2, 1fr); /* 2 columns for numbers */
-            gap: 25px; align-content: start;
+        /* CARD DESIGN */
+        .order-card {
+            font-size: 7vw; font-weight: 900; 
+            text-align: center; padding: 15px 0;
+            border-radius: 12px; background: #222;
+            animation: popIn 0.3s ease-out;
         }
 
-        /* CARD STYLES */
-        .card {
-            background: #1a1a1a; color: #fff;
-            font-size: 8vh; font-weight: bold;
-            display: flex; align-items: center; justify-content: center;
-            border-radius: 16px; padding: 20px;
-            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
+        /* PREPARING COLORS (Yellow) */
+        .preparing .header { color: #facc15; border-bottom: 4px solid #facc15; }
+        .preparing .order-card { color: #facc15; border: 2px solid #facc15; }
 
-        /* PREPARING COLUMN (Yellow) */
-        #prep-col .header { background: #1a1a1a; color: #facc15; border-bottom: 4px solid #facc15; }
-        #prep-col .card { border: 3px solid #facc15; color: #facc15; background: rgba(250, 204, 21, 0.05); }
-
-        /* READY COLUMN (Green) */
-        #ready-col .header { background: #1a1a1a; color: #4ade80; border-bottom: 4px solid #4ade80; }
-        #ready-col .card { 
-            background: #4ade80; color: #000; border: none;
-            box-shadow: 0 0 40px rgba(74, 222, 128, 0.4);
+        /* READY COLORS (Green) */
+        .ready .header { color: #4ade80; border-bottom: 4px solid #4ade80; }
+        .ready .order-card { 
+            background: #4ade80; color: #000; 
+            box-shadow: 0 0 30px rgba(74, 222, 128, 0.3);
             animation: pulse 2s infinite;
         }
 
-        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.85; } 100% { opacity: 1; } }
-        
-        /* Empty State */
-        .empty-msg { grid-column: 1 / -1; text-align: center; color: #444; font-size: 3vh; margin-top: 50px; }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <div class="col" id="prep-col">
+    <div class="column preparing">
         <div class="header">Preparing</div>
-        <div class="list-container" id="prep-list"></div>
+        <div class="order-list" id="prep-list"></div>
     </div>
 
-    <div class="col" id="ready-col">
-        <div class="header">Ready</div>
-        <div class="list-container" id="ready-list"></div>
+    <div class="column ready">
+        <div class="header">Ready to Collect</div>
+        <div class="order-list" id="ready-list"></div>
     </div>
+
+    <audio id="bell" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // YOUR NEW KEYS (Pre-filled)
+        // --- REPLACE THIS WITH YOUR NEW KEYS ---
         const firebaseConfig = {
             apiKey: "AIzaSyBEdTFc2eMatP-7c1uqX5CD5dMW6jYLu84",
             authDomain: "cafe-cloud-qds.firebaseapp.com",
@@ -77,11 +83,13 @@
             messagingSenderId: "277516157848",
             appId: "1:277516157848:web:1c5220480ac47cb4e961ed"
         };
+        // --------------------------------------
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        const bell = document.getElementById('bell');
+        let knownReadyOrders = new Set(); // Track orders to play sound only once
 
-        // Listen for changes
         onValue(ref(db, 'orders'), (snapshot) => {
             const prepList = document.getElementById('prep-list');
             const readyList = document.getElementById('ready-list');
@@ -90,30 +98,31 @@
             readyList.innerHTML = '';
             
             const data = snapshot.val();
-            
-            if (data) {
-                // Convert object to array
-                Object.values(data).forEach(order => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.innerText = `#${order.orderId}`; // Using the Manager's ID format
-                    
-                    // STATUS MAPPING LOGIC
-                    // Manager 'cooking' -> TV 'Preparing'
-                    if (order.status === 'cooking') {
-                        prepList.appendChild(card);
-                    } 
-                    // Manager 'done' -> TV 'Ready'
-                    else if (order.status === 'done') {
-                        readyList.appendChild(card);
-                    }
-                    // 'pending' (New) and 'out_for_delivery' are HIDDEN from TV
-                });
-            }
+            if (!data) return;
 
-            if(prepList.children.length === 0) prepList.innerHTML = '<div class="empty-msg">No orders preparing</div>';
-            if(readyList.children.length === 0) readyList.innerHTML = '<div class="empty-msg">No orders ready</div>';
+            Object.values(data).forEach(order => {
+                const card = document.createElement('div');
+                card.className = 'order-card';
+                card.innerText = `#${order.orderId}`; // Specific var from your files
+                
+                // LOGIC MATCHING YOUR UPLOADED FILES
+                if (order.status === 'cooking') {
+                    prepList.appendChild(card);
+                } 
+                else if (order.status === 'done') {
+                    readyList.appendChild(card);
+                    
+                    // Play sound if this is a NEW ready order
+                    if (!knownReadyOrders.has(order.orderId)) {
+                        bell.play().catch(() => {}); // Catch error if user hasn't interacted yet
+                        knownReadyOrders.add(order.orderId);
+                    }
+                }
+            });
         });
+        
+        // Quick interaction to enable audio on TV
+        document.body.addEventListener('click', () => { bell.play(); });
     </script>
 </body>
 </html>
