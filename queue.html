@@ -6,9 +6,8 @@
     <title>Queue Display | Cafe Cloud Club</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@700;900&display=swap" rel="stylesheet">
     <style>
-        /* --- THEME VARIABLES --- */
+        /* --- MODERN THEME --- */
         :root {
-            /* Light/Blue Theme Default */
             --bg-color: #f3f4f6;
             --bg-gradient: radial-gradient(circle at 10% 20%, rgb(240, 242, 245) 0%, rgb(220, 225, 230) 90%);
             --card-bg: rgba(255, 255, 255, 0.75);
@@ -20,7 +19,7 @@
             --ready-color: #10b981; /* Green */
             --ready-glow: rgba(16, 185, 129, 0.4);
             
-            --sidebar-bg: #111827;
+            --sidebar-bg: #111827; /* Dark Sidebar */
             --sidebar-text: #ffffff;
         }
 
@@ -62,7 +61,7 @@
         .brand span { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-sub); display: block; margin-top: -5px; }
         .clock { font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 700; opacity: 0.8; }
 
-        /* --- LAYOUT --- */
+        /* --- LAYOUT (70% Left, 30% Right) --- */
         .main-layout {
             display: grid;
             grid-template-columns: 70% 30%;
@@ -160,6 +159,8 @@
 
         /* UTILS */
         .empty-msg { margin-top: 50px; font-size: 1.5rem; opacity: 0.3; font-weight: 700; text-transform: uppercase; }
+        
+        /* VERSION TAG: This helps you know if the file updated! */
         .version-tag { position: fixed; bottom: 5px; right: 5px; font-size: 10px; opacity: 0.2; color: var(--text-main); }
         
         @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -213,6 +214,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+        // CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
             authDomain: "cafe-orders-1afa1.firebaseapp.com",
@@ -226,7 +228,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- ADS LOGIC ---
+        // --- ADS LOGIC (You can change text here) ---
         const ads = [
             { title: "Today's Special", text: "Get the <b>Fam-Jam Feast</b> for just ₹399!" },
             { title: "Thirsty?", text: "Add a Shake to your meal for 20% OFF." },
