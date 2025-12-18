@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Queue Display | Café Cloud Club</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f1115;
+            --surface: #181b21;
+            --border: #2f3542;
+            --primary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* HEADER */
+        .tv-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+            background: var(--surface);
+            border-bottom: 2px solid var(--border);
+            height: 100px;
+        }
+
+        .brand-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            margin: 0;
+        }
+
+        .clock {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2rem;
+            color: var(--primary);
+        }
+
+        /* MAIN CONTENT - SPLIT SCREEN */
+        .queue-container {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            height: calc(100vh - 200px); /* Space for header and footer */
+        }
+
+        .column {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-right: 1px solid var(--border);
+        }
+
+        .column:last-child { border-right: none; }
+
+        .col-header {
+            font-size: 2rem;
+            text-transform: uppercase;
+            font-weight: 900;
+            margin-bottom: 30px;
+            padding: 10px 40px;
+            border-radius: 50px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .col-preparing .col-header {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+            border: 2px solid var(--warning);
+        }
+
+        .col-ready .col-header {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            border: 2px solid var(--success);
+        }
+
+        /* NUMBER GRID */
+        .numbers-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            width: 100%;
+            align-content: start;
+        }
+
+        .order-ticket {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .order-ticket h2 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 3rem;
+            margin: 0;
+            color: var(--text-main);
+        }
+
+        .order-ticket span {
+            display: block;
+            font-size: 1rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        /* STATUS SPECIFIC STYLES */
+        .col-ready .order-ticket {
+            border-color: var(--success);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+        }
+        
+        .col-ready .order-ticket h2 {
+            color: var(--success);
+        }
+
+        .blink-me {
+            animation: blinker 2s linear infinite;
+        }
+
+        @keyframes blinker {
+            50% { opacity: 0.5; border-color: white; }
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        /* FOOTER / TICKER */
+        .tv-footer {
+            height: 100px;
+            background: #000;
+            border-top: 2px solid var(--primary);
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .ticker-wrap {
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .ticker {
+            display: inline-block;
+            padding-left: 100%;
+            animation: ticker 30s linear infinite;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .ticker strong { color: var(--warning); }
+
+        @keyframes ticker {
+            0% { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(-100%, 0, 0); }
+        }
+
+        .brand-tag {
+            position: absolute;
+            bottom: 10px;
+            right: 20px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            opacity: 0.6;
+        }
+
+        /* Sound Button Overlay */
+        #sound-overlay {
+            position: fixed;
+            top: 20px; right: 20px;
+            background: var(--primary);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 1000;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <header class="tv-header">
+        <h1 class="brand-title">☁️ Café Cloud Club</h1>
+        <div class="clock" id="clock">00:00</div>
+    </header>
+
+    <div id="sound-overlay" onclick="enableAudio()">🔇 Click to Enable Sound</div>
+
+    <div class="queue-container">
+        
+        <div class="column col-preparing">
+            <div class="col-header">Preparing</div>
+            <div id="grid-preparing" class="numbers-grid">
+                </div>
+        </div>
+
+        <div class="column col-ready">
+            <div class="col-header">Ready for Pickup</div>
+            <div id="grid-ready" class="numbers-grid">
+                </div>
+        </div>
+
+    </div>
+
+    <footer class="tv-footer">
+        <div class="ticker-wrap">
+            <div class="ticker" id="daily-offer-text">
+                Loading Daily Offers...
+            </div>
+        </div>
+        <div class="brand-tag">Powered by Thomsons Networks</div>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
+            authDomain: "cafe-orders-1afa1.firebaseapp.com",
+            databaseURL: "https://cafe-orders-1afa1-default-rtdb.firebaseio.com",
+            projectId: "cafe-orders-1afa1",
+            storageBucket: "cafe-orders-1afa1.firebasestorage.app",
+            messagingSenderId: "274410745480",
+            appId: "1:274410745480:web:9964c3914d512aed8d793d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // --- CLOCK ---
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString('en-US', {
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true
+            });
+        }, 1000);
+
+        // --- AUDIO SYSTEM ---
+        const bell = new Audio('bell.mp3'); 
+        let audioEnabled = false;
+        let knownReadyIds = new Set(); // To track what we've already pinged
+
+        window.enableAudio = function() {
+            bell.play().then(() => {
+                bell.pause();
+                bell.currentTime = 0;
+                audioEnabled = true;
+                document.getElementById('sound-overlay').style.display = 'none';
+            }).catch(e => console.error("Audio blocked", e));
+        };
+
+        // --- DAILY OFFERS LOGIC (From app.txt) ---
+        const dailyOfferTexts = [
+            "SUNDAY SPECIAL: Fam-Jam Feast! 1 Pasta + 1 Slider + 1 Shake = ₹399. Use Code: SUNFEAST",
+            "MEAT-UP MONDAY: Burger + Fries = ₹222. Strictly 1 Beef Burger gets ₹20 OFF. Use Code: MONBURGER",
+            "TWISTED TUESDAY: Any Penne Pasta (Alfredo/Pesto/Arabiata/Cloud) Flat @ ₹179. Use Code: TUEPASTA",
+            "WICKED WEDNESDAY: Steak @ ₹300 (Code: WEDSTEAK) OR Premium Shake @ ₹120 (Code: WEDSHAKE)",
+            "THURSDAY CLUB: Any Sandwich + Any Chiller = ₹189. Use Code: THUSAND",
+            "FRI-YAY FRY-DAY: Veg Loaded Fries ₹119 | Chicken Loaded Fries ₹179. Use Code: FRIFRIES",
+            "ROCK N' ROLL SATURDAY: Any Roll (Tandoori, Pesto, Chipotle) for ₹129. Use Code: SATROLL"
+        ];
+        
+        const dayIndex = new Date().getDay();
+        const todayOffer = dailyOfferTexts[dayIndex];
+        
+        // --- Updated Disclaimer per User Request ---
+        document.getElementById('daily-offer-text').innerHTML = `<strong>📲 ONLINE EXCLUSIVE (Delivery & Pickup):</strong> ${todayOffer} | Order @ cafe-cloud-club.vercel.app`;
+
+
+        // --- FIREBASE ORDER LISTENER ---
+        const ordersRef = ref(db, 'orders');
+
+        onValue(ordersRef, (snapshot) => {
+            const data = snapshot.val();
+            const prepContainer = document.getElementById('grid-preparing');
+            const readyContainer = document.getElementById('grid-ready');
+            
+            prepContainer.innerHTML = "";
+            readyContainer.innerHTML = "";
+
+            if (!data) return;
+
+            // Convert to array and sort by time (Oldest first for Queue)
+            const orders = Object.values(data).sort((a, b) => a.timestamp - b.timestamp);
+            
+            let newReadyCount = 0;
+
+            orders.forEach(order => {
+                const status = order.status;
+                const orderId = order.orderId;
+                const customerName = order.customer.name.split(' ')[0]; // First name only
+                const type = order.orderType; // Pickup / Delivery / Dine-in
+
+                // CREATE CARD HTML
+                const cardHtml = `
+                    <div class="order-ticket ${status === 'done' ? 'blink-me' : ''}">
+                        <h2>${orderId}</h2>
+                        <span>${customerName} (${type})</span>
+                    </div>
+                `;
+
+                // SORT INTO COLUMNS
+                if (status === 'cooking') {
+                    prepContainer.innerHTML += cardHtml;
+                } else if (status === 'done') {
+                    readyContainer.innerHTML += cardHtml;
+                    
+                    // Audio Trigger Logic
+                    if (!knownReadyIds.has(orderId)) {
+                        newReadyCount++;
+                        knownReadyIds.add(orderId);
+                    }
+                }
+            });
+
+            // Play sound if new ready items appeared
+            if (newReadyCount > 0 && audioEnabled) {
+                bell.play().catch(e => console.log(e));
+            }
+        });
+
+    </script>
+</body>
+</html>
