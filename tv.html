@@ -266,16 +266,14 @@
         setInterval(() => {
             const now = new Date();
             document.getElementById('clock').innerText = now.toLocaleTimeString('en-US', {
-                hour: '2-digit', 
-                minute: '2-digit',
-                hour12: true
+                hour: '2-digit', minute: '2-digit', hour12: true
             });
         }, 1000);
 
         // --- AUDIO SYSTEM ---
         const bell = new Audio('bell.mp3'); 
         let audioEnabled = false;
-        let knownReadyIds = new Set(); // To track what we've already pinged
+        let knownReadyIds = new Set(); 
 
         window.enableAudio = function() {
             bell.play().then(() => {
@@ -286,7 +284,7 @@
             }).catch(e => console.error("Audio blocked", e));
         };
 
-        // --- DAILY OFFERS LOGIC (From app.txt) ---
+        // --- DAILY OFFERS LOGIC ---
         const dailyOfferTexts = [
             "SUNDAY SPECIAL: Fam-Jam Feast! 1 Pasta + 1 Slider + 1 Shake = ₹399. Use Code: SUNFEAST",
             "MEAT-UP MONDAY: Burger + Fries = ₹222. Strictly 1 Beef Burger gets ₹20 OFF. Use Code: MONBURGER",
@@ -299,12 +297,10 @@
         
         const dayIndex = new Date().getDay();
         const todayOffer = dailyOfferTexts[dayIndex];
-        
-        // --- Updated Disclaimer per User Request ---
         document.getElementById('daily-offer-text').innerHTML = `<strong>📲 ONLINE EXCLUSIVE (Delivery & Pickup):</strong> ${todayOffer} | Order @ cafe-cloud-club.vercel.app`;
 
 
-        // --- FIREBASE ORDER LISTENER ---
+        // --- FIREBASE ORDER LISTENER (SAFETY PATCHED) ---
         const ordersRef = ref(db, 'orders');
 
         onValue(ordersRef, (snapshot) => {
@@ -317,45 +313,57 @@
 
             if (!data) return;
 
-            // Convert to array and sort by time (Oldest first for Queue)
+            // Convert to array and sort by time
             const orders = Object.values(data).sort((a, b) => a.timestamp - b.timestamp);
-            
             let newReadyCount = 0;
 
             orders.forEach(order => {
-                const status = order.status;
-                const orderId = order.orderId;
-                const customerName = order.customer.name.split(' ')[0]; // First name only
-                const type = order.orderType; // Pickup / Delivery / Dine-in
+                try {
+                    // --- SAFETY CHECK START ---
+                    // If order is broken or has no status, SKIP IT.
+                    if (!order || !order.status) return;
 
-                // CREATE CARD HTML
-                const cardHtml = `
-                    <div class="order-ticket ${status === 'done' ? 'blink-me' : ''}">
-                        <h2>${orderId}</h2>
-                        <span>${customerName} (${type})</span>
-                    </div>
-                `;
-
-                // SORT INTO COLUMNS
-                if (status === 'cooking') {
-                    prepContainer.innerHTML += cardHtml;
-                } else if (status === 'done') {
-                    readyContainer.innerHTML += cardHtml;
+                    const status = order.status;
+                    const orderId = order.orderId || "???";
                     
-                    // Audio Trigger Logic
-                    if (!knownReadyIds.has(orderId)) {
-                        newReadyCount++;
-                        knownReadyIds.add(orderId);
+                    // SAFE NAME EXTRACTION:
+                    // If customer data is missing, fallback to "Guest"
+                    let customerName = "Guest";
+                    if (order.customer && order.customer.name) {
+                        customerName = order.customer.name.split(' ')[0];
                     }
+
+                    const type = order.orderType || "Order"; 
+                    // --- SAFETY CHECK END ---
+
+                    // CREATE CARD HTML
+                    const cardHtml = `
+                        <div class="order-ticket ${status === 'done' ? 'blink-me' : ''}">
+                            <h2>${orderId}</h2>
+                            <span>${customerName} (${type})</span>
+                        </div>
+                    `;
+
+                    // SORT INTO COLUMNS
+                    if (status === 'cooking') {
+                        prepContainer.innerHTML += cardHtml;
+                    } else if (status === 'done') {
+                        readyContainer.innerHTML += cardHtml;
+                        if (!knownReadyIds.has(orderId)) {
+                            newReadyCount++;
+                            knownReadyIds.add(orderId);
+                        }
+                    }
+                } catch (err) {
+                    // This catches any other weird errors and prints them without crashing the screen
+                    console.warn("Skipped a bad order:", err);
                 }
             });
 
-            // Play sound if new ready items appeared
             if (newReadyCount > 0 && audioEnabled) {
                 bell.play().catch(e => console.log(e));
             }
         });
-
     </script>
 </body>
 </html>
