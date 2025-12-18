@@ -3,72 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TV Display</title>
+    <title>Café Cloud - Guest Display</title>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; height: 100vh; display: flex; overflow: hidden; }
-        .col { flex: 1; padding: 20px; border-right: 4px solid #333; display: flex; flex-direction: column; }
-        h1 { text-align: center; font-size: 5vh; text-transform: uppercase; margin-bottom: 30px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-content: start; }
-        .card { font-size: 8vh; font-weight: bold; text-align: center; padding: 20px; border-radius: 10px; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Verdana', sans-serif; height: 100vh; display: flex; overflow: hidden; }
+        .col { flex: 1; padding: 0; border-right: 6px solid #222; display: flex; flex-direction: column; }
+        .col:last-child { border: none; }
         
-        /* PREPARING STYLE */
-        #prep-col h1 { color: #facc15; }
-        #prep-col .card { border: 4px solid #facc15; color: #facc15; }
+        /* HEADERS */
+        .header { 
+            padding: 30px; text-align: center; font-size: 4vw; 
+            font-weight: 900; text-transform: uppercase; letter-spacing: 2px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 10;
+        }
+
+        /* GRID LAYOUT */
+        .list-container {
+            padding: 30px; flex: 1; overflow: hidden;
+            display: grid; grid-template-columns: repeat(2, 1fr); /* 2 columns for numbers */
+            gap: 25px; align-content: start;
+        }
+
+        /* CARD STYLES */
+        .card {
+            background: #1a1a1a; color: #fff;
+            font-size: 8vh; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 16px; padding: 20px;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* PREPARING COLUMN (Yellow) */
+        #prep-col .header { background: #1a1a1a; color: #facc15; border-bottom: 4px solid #facc15; }
+        #prep-col .card { border: 3px solid #facc15; color: #facc15; background: rgba(250, 204, 21, 0.05); }
+
+        /* READY COLUMN (Green) */
+        #ready-col .header { background: #1a1a1a; color: #4ade80; border-bottom: 4px solid #4ade80; }
+        #ready-col .card { 
+            background: #4ade80; color: #000; border: none;
+            box-shadow: 0 0 40px rgba(74, 222, 128, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.85; } 100% { opacity: 1; } }
         
-        /* READY STYLE */
-        #ready-col h1 { color: #4ade80; }
-        #ready-col .card { background: #4ade80; color: #000; animation: flash 2s infinite; }
-        
-        @keyframes flash { 50% { opacity: 0.6; } }
+        /* Empty State */
+        .empty-msg { grid-column: 1 / -1; text-align: center; color: #444; font-size: 3vh; margin-top: 50px; }
     </style>
 </head>
 <body>
+
     <div class="col" id="prep-col">
-        <h1>Preparing</h1>
-        <div class="grid" id="prep-list"></div>
+        <div class="header">Preparing</div>
+        <div class="list-container" id="prep-list"></div>
     </div>
+
     <div class="col" id="ready-col">
-        <h1>Ready to Collect</h1>
-        <div class="grid" id="ready-list"></div>
+        <div class="header">Ready</div>
+        <div class="list-container" id="ready-list"></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // YOUR KEYS ARE PRE-FILLED HERE:
+        // YOUR NEW KEYS (Pre-filled)
         const firebaseConfig = {
-          apiKey: "AIzaSyBEdTFc2eMatP-7c1uqX5CD5dMW6jYLu84",
-          authDomain: "cafe-cloud-qds.firebaseapp.com",
-          databaseURL: "https://cafe-cloud-qds-default-rtdb.asia-southeast1.firebasedatabase.app",
-          projectId: "cafe-cloud-qds",
-          storageBucket: "cafe-cloud-qds.firebasestorage.app",
-          messagingSenderId: "277516157848",
-          appId: "1:277516157848:web:1c5220480ac47cb4e961ed"
+            apiKey: "AIzaSyBEdTFc2eMatP-7c1uqX5CD5dMW6jYLu84",
+            authDomain: "cafe-cloud-qds.firebaseapp.com",
+            databaseURL: "https://cafe-cloud-qds-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "cafe-cloud-qds",
+            storageBucket: "cafe-cloud-qds.firebasestorage.app",
+            messagingSenderId: "277516157848",
+            appId: "1:277516157848:web:1c5220480ac47cb4e961ed"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // Listen for changes
         onValue(ref(db, 'orders'), (snapshot) => {
-            document.getElementById('prep-list').innerHTML = '';
-            document.getElementById('ready-list').innerHTML = '';
+            const prepList = document.getElementById('prep-list');
+            const readyList = document.getElementById('ready-list');
+            
+            prepList.innerHTML = '';
+            readyList.innerHTML = '';
+            
             const data = snapshot.val();
             
             if (data) {
-                Object.keys(data).forEach(key => {
-                    const order = data[key];
-                    const div = document.createElement('div');
-                    div.className = 'card';
-                    div.innerText = `#${order.num}`;
+                // Convert object to array
+                Object.values(data).forEach(order => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerText = `#${order.orderId}`; // Using the Manager's ID format
                     
-                    if (order.status === 'preparing') {
-                        document.getElementById('prep-list').appendChild(div);
-                    } else if (order.status === 'ready') {
-                        document.getElementById('ready-list').appendChild(div);
+                    // STATUS MAPPING LOGIC
+                    // Manager 'cooking' -> TV 'Preparing'
+                    if (order.status === 'cooking') {
+                        prepList.appendChild(card);
+                    } 
+                    // Manager 'done' -> TV 'Ready'
+                    else if (order.status === 'done') {
+                        readyList.appendChild(card);
                     }
+                    // 'pending' (New) and 'out_for_delivery' are HIDDEN from TV
                 });
             }
+
+            if(prepList.children.length === 0) prepList.innerHTML = '<div class="empty-msg">No orders preparing</div>';
+            if(readyList.children.length === 0) readyList.innerHTML = '<div class="empty-msg">No orders ready</div>';
         });
     </script>
 </body>
