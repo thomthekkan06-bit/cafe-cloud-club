@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Queue & Offers | Cafe Cloud Club</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        /* --- THEME VARIABLES --- */
+        :root {
+            --bg-color: #f3f4f6;
+            --bg-gradient: radial-gradient(circle at 10% 20%, rgb(240, 242, 245) 0%, rgb(220, 225, 230) 90%);
+            --card-bg: rgba(255, 255, 255, 0.6);
+            --card-border: rgba(255, 255, 255, 0.8);
+            --text-main: #1f2937;
+            --text-sub: #6b7280;
+            --accent: #FF4500;
+            
+            /* Status Colors */
+            --prep-color: #f59e0b; 
+            --ready-color: #10b981; 
+            --ready-glow: rgba(16, 185, 129, 0.4);
+            
+            /* Offer Colors */
+            --offer-bg: rgba(31, 41, 55, 0.95);
+            --offer-text: #fff;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #0f1115;
+                --bg-gradient: radial-gradient(circle at 50% 50%, #1a1d26 0%, #0f1115 100%);
+                --card-bg: rgba(30, 35, 45, 0.6);
+                --card-border: rgba(255, 255, 255, 0.08);
+                --text-main: #ffffff;
+                --text-sub: #9ca3af;
+                --offer-bg: rgba(0, 0, 0, 0.4);
+            }
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0; padding: 0;
+            background: var(--bg-color); background-image: var(--bg-gradient);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+
+        /* --- HEADER --- */
+        header {
+            height: 70px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 30px;
+            background: rgba(0,0,0,0.05);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .brand-block h1 { margin: 0; font-family: 'Outfit', sans-serif; font-size: 1.5rem; letter-spacing: -0.5px; }
+        .brand-block p { margin: 0; font-size: 0.75rem; color: var(--text-sub); letter-spacing: 1px; text-transform: uppercase; font-weight: 600; }
+        .clock { font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 700; }
+
+        /* --- LAYOUT GRID --- */
+        .layout {
+            display: grid;
+            grid-template-columns: 70% 30%; /* 70% Queue, 30% Ads */
+            height: calc(100vh - 70px);
+        }
+
+        /* --- LEFT: QUEUE SYSTEM --- */
+        .queue-section {
+            display: flex;
+            position: relative;
+        }
+
+        .queue-col {
+            flex: 1;
+            padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+            border-right: 1px solid var(--card-border);
+        }
+
+        .q-title {
+            font-family: 'Outfit', sans-serif; text-transform: uppercase;
+            letter-spacing: 2px; font-size: 1.5rem; margin-bottom: 20px; opacity: 0.8;
+        }
+        .q-title.ready { color: var(--ready-color); text-shadow: 0 0 15px var(--ready-glow); }
+
+        .cards-container {
+            width: 100%; display: flex; flex-wrap: wrap; gap: 15px;
+            align-content: flex-start; justify-content: center; overflow-y: auto;
+        }
+
+        .order-card {
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 12px; width: 45%; padding: 15px; text-align: center;
+            animation: popUp 0.4s ease backwards; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        
+        .order-card.ready {
+            background: rgba(16, 185, 129, 0.1); border-color: var(--ready-color);
+            box-shadow: 0 0 20px var(--ready-glow); animation: pulse 2s infinite;
+        }
+
+        .num { font-family: 'Outfit', sans-serif; font-size: 2.5rem; font-weight: 900; line-height: 1; }
+        .name { font-size: 0.9rem; margin-top: 5px; opacity: 0.8; text-transform: uppercase; font-weight: 600; }
+
+        /* --- RIGHT: OFFERS SIDEBAR --- */
+        .offers-section {
+            background: var(--offer-bg);
+            color: var(--offer-text);
+            padding: 30px;
+            display: flex; flex-direction: column; gap: 30px;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .offer-box {
+            flex: 1;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex; flex-direction: column; justify-content: center; text-align: center;
+        }
+
+        .offer-label {
+            position: absolute; top: 15px; left: 0; width: 100%;
+            text-align: center; font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; opacity: 0.7;
+        }
+
+        /* SLIDESHOW STYLES */
+        .slide {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0; transition: opacity 1s ease-in-out; padding: 20px;
+        }
+        .slide.active { opacity: 1; }
+
+        .slide-title { font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; line-height: 1.1; margin-bottom: 10px; color: #FFD700; }
+        .slide-desc { font-size: 1rem; line-height: 1.4; opacity: 0.9; }
+        .slide-code { margin-top: 15px; background: #fff; color: #000; padding: 5px 15px; border-radius: 4px; font-weight: 700; font-family: monospace; }
+
+        /* Branding Footer in Sidebar */
+        .sidebar-footer {
+            text-align: center; font-size: 0.7rem; opacity: 0.4; margin-top: auto;
+        }
+
+        /* ANIMATIONS */
+        @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+
+        .empty-state { opacity: 0.3; margin-top: 50px; font-weight: 600; text-transform: uppercase; }
+
+        /* Sound Btn */
+        #sound-btn { position: fixed; bottom: 20px; left: 20px; width: 40px; height: 40px; border-radius: 50%; border:none; background: rgba(0,0,0,0.2); color:white; cursor:pointer; z-index:99; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand-block">
+            <h1>CAFÉ CLOUD CLUB</h1>
+            <p>Order Status Display</p>
+        </div>
+        <div class="clock" id="clock">00:00</div>
+    </header>
+
+    <div class="layout">
+        
+        <div class="queue-section">
+            <div class="queue-col">
+                <div class="q-title">Preparing</div>
+                <div id="prep-grid" class="cards-container">
+                    </div>
+            </div>
+            
+            <div class="queue-col" style="border-right: none;">
+                <div class="q-title ready">Ready to Collect</div>
+                <div id="ready-grid" class="cards-container">
+                    </div>
+            </div>
+        </div>
+
+        <div class="offers-section">
+            
+            <div class="offer-box" id="daily-carousel">
+                <div class="offer-label">Today's Special</div>
+                </div>
+
+            <div class="offer-box" id="combo-carousel">
+                <div class="offer-label">All Day Combos</div>
+                </div>
+
+            <div class="sidebar-footer">
+                Powered by<br>
+                <strong style="font-size:0.9rem; opacity:1;">Thomsons Networks</strong>
+            </div>
+        </div>
+
+    </div>
+
+    <button id="sound-btn">🔇</button>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // FIREBASE CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
+            authDomain: "cafe-orders-1afa1.firebaseapp.com",
+            databaseURL: "https://cafe-orders-1afa1-default-rtdb.firebaseio.com",
+            projectId: "cafe-orders-1afa1",
+            storageBucket: "cafe-orders-1afa1.firebasestorage.app",
+            messagingSenderId: "274410745480",
+            appId: "1:274410745480:web:9964c3914d512aed8d793d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // --- DATA: OFFERS ---
+        const dailySpecials = [
+            { day: 0, title: "Fam-Jam Feast", desc: "1 Pasta + 1 Slider + 1 Shake = ₹399", code: "SUNFEAST" },
+            { day: 1, title: "Meat-Up Monday", desc: "Beef Burger + Fries = ₹222", code: "MONBURGER" },
+            { day: 2, title: "Twisted Tuesday", desc: "Any Penne Pasta Flat @ ₹179", code: "TUEPASTA" },
+            { day: 3, title: "Wicked Wednesday", desc: "Steak @ ₹300 or Shake @ ₹120", code: "WEDSTEAK" },
+            { day: 4, title: "Thursday Club", desc: "Sandwich + Chiller = ₹189", code: "THUSAND" },
+            { day: 5, title: "Fri-Yay Fry-Day", desc: "Loaded Fries starting @ ₹119", code: "FRIFRIES" },
+            { day: 6, title: "Rock n' Roll Sat", desc: "Any Roll (Chicken/Veg) @ ₹129", code: "SATROLL" }
+        ];
+
+        const comboOffers = [
+            { title: "Combo Saver", desc: "Get 15% OFF on Burger + Fries + Drink", code: "CLOUD15" },
+            { title: "Steak & Sip", desc: "Steak + Thick Shake = 13% OFF", code: "STEAK13" },
+            { title: "Quick Bite", desc: "Wrap + Nuggets = 20% OFF", code: "QUICK20" },
+            { title: "Cloud Feast", desc: "Big Order? Get 14% OFF Total", code: "FEAST14" }
+        ];
+
+        // --- LOGIC: CAROUSELS ---
+        function startCarousels() {
+            // 1. Setup Daily Special (Show Today's + Next Day's maybe? Or just today's highlight)
+            const today = new Date().getDay();
+            const todayOffer = dailySpecials.find(o => o.day === today);
+            
+            const dailyContainer = document.getElementById('daily-carousel');
+            // We only show TODAY's special in the top box to keep it relevant
+            dailyContainer.innerHTML += `
+                <div class="slide active">
+                    <div class="slide-title">${todayOffer.title}</div>
+                    <div class="slide-desc">${todayOffer.desc}</div>
+                    <div class="slide-code">Use: ${todayOffer.code}</div>
+                </div>
+            `;
+
+            // 2. Setup Combo Carousel (Rotate all general combos)
+            const comboContainer = document.getElementById('combo-carousel');
+            comboOffers.forEach((offer, index) => {
+                comboContainer.innerHTML += `
+                    <div class="slide ${index === 0 ? 'active' : ''}">
+                        <div class="slide-title">${offer.title}</div>
+                        <div class="slide-desc">${offer.desc}</div>
+                        <div class="slide-code">Code: ${offer.code}</div>
+                    </div>
+                `;
+            });
+
+            // Rotate Combos every 5 seconds
+            let currentCombo = 0;
+            const comboSlides = comboContainer.querySelectorAll('.slide');
+            setInterval(() => {
+                comboSlides[currentCombo].classList.remove('active');
+                currentCombo = (currentCombo + 1) % comboSlides.length;
+                comboSlides[currentCombo].classList.add('active');
+            }, 5000);
+        }
+
+        startCarousels();
+
+        // --- QUEUE LOGIC ---
+        const ding = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        let audioEnabled = false;
+        let lastReadyCount = 0;
+
+        document.getElementById('sound-btn').addEventListener('click', (e) => {
+            audioEnabled = !audioEnabled;
+            e.target.innerText = audioEnabled ? "🔊" : "🔇";
+            if(audioEnabled) ding.play().catch(()=>{});
+        });
+
+        // Clock
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+        }, 1000);
+
+        // Database
+        onValue(ref(db, 'orders'), (snapshot) => {
+            const data = snapshot.val();
+            const prepGrid = document.getElementById('prep-grid');
+            const readyGrid = document.getElementById('ready-grid');
+            prepGrid.innerHTML = ''; readyGrid.innerHTML = '';
+
+            let currentReadyCount = 0;
+
+            if (data) {
+                const orders = Object.values(data).sort((a,b) => a.timestamp - b.timestamp);
+                
+                orders.forEach(order => {
+                    const status = order.status || 'pending';
+                    
+                    // Filter: Hide Delivery if it's already out
+                    if (order.orderType === 'Delivery' && status === 'out_for_delivery') return;
+
+                    const card = document.createElement('div');
+                    card.className = `order-card ${status === 'done' ? 'ready' : ''}`;
+                    const name = order.customer.name.split(' ')[0].substring(0, 8);
+                    
+                    card.innerHTML = `<div class="num">${order.orderId}</div><div class="name">${name}</div>`;
+
+                    if(status === 'pending' || status === 'cooking') {
+                        prepGrid.appendChild(card);
+                    } else if (status === 'done') {
+                        readyGrid.appendChild(card);
+                        currentReadyCount++;
+                    }
+                });
+            }
+
+            if(audioEnabled && currentReadyCount > lastReadyCount) {
+                ding.currentTime = 0; ding.play().catch(e => console.log(e));
+            }
+            lastReadyCount = currentReadyCount;
+
+            if(prepGrid.innerHTML === '') prepGrid.innerHTML = '<div class="empty-state">Empty</div>';
+            if(readyGrid.innerHTML === '') readyGrid.innerHTML = '<div class="empty-state">Empty</div>';
+        });
+
+    </script>
+</body>
+</html>
