@@ -3,141 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Queue & Offers | Cafe Cloud Club</title>
+    <title>DEBUG MODE | Cafe Cloud Club</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@700;900&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-color: #f3f4f6;
-            --bg-gradient: radial-gradient(circle at 10% 20%, rgb(240, 242, 245) 0%, rgb(220, 225, 230) 90%);
-            --card-bg: rgba(255, 255, 255, 0.6);
-            --card-border: rgba(255, 255, 255, 0.8);
-            --text-main: #1f2937;
-            --text-sub: #6b7280;
-            --prep-color: #f59e0b; 
-            --ready-color: #10b981; 
-            --ready-glow: rgba(16, 185, 129, 0.4);
-            --offer-bg: rgba(31, 41, 55, 0.95);
-            --offer-text: #fff;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg-color: #0f1115;
-                --bg-gradient: radial-gradient(circle at 50% 50%, #1a1d26 0%, #0f1115 100%);
-                --card-bg: rgba(30, 35, 45, 0.6);
-                --card-border: rgba(255, 255, 255, 0.08);
-                --text-main: #ffffff;
-                --text-sub: #9ca3af;
-                --offer-bg: rgba(0, 0, 0, 0.4);
-            }
-        }
-
-        * { box-sizing: border-box; }
-        body { margin: 0; padding: 0; background: var(--bg-color); background-image: var(--bg-gradient); color: var(--text-main); font-family: 'Inter', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-
-        header { height: 70px; display: flex; justify-content: space-between; align-items: center; padding: 0 30px; background: rgba(0,0,0,0.05); backdrop-filter: blur(10px); border-bottom: 1px solid var(--card-border); }
-        .brand-block h1 { margin: 0; font-family: 'Outfit', sans-serif; font-size: 1.5rem; letter-spacing: -0.5px; }
-        .brand-block p { margin: 0; font-size: 0.75rem; color: var(--text-sub); letter-spacing: 1px; text-transform: uppercase; font-weight: 600; }
-        .clock { font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 700; }
-
-        .layout { display: grid; grid-template-columns: 70% 30%; height: calc(100vh - 70px); }
+        body { background: #000; color: #fff; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; padding: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+        .col { border: 1px solid #333; padding: 20px; border-radius: 10px; }
+        .card { background: #222; margin-bottom: 10px; padding: 15px; border-radius: 8px; border-left: 5px solid #555; }
+        .card h2 { margin: 0; font-family: 'Outfit', sans-serif; }
+        .card p { margin: 5px 0 0 0; color: #aaa; font-size: 0.9rem; }
         
-        .queue-section { display: flex; position: relative; }
-        .queue-col { flex: 1; padding: 20px; display: flex; flex-direction: column; align-items: center; border-right: 1px solid var(--card-border); }
-        .q-title { font-family: 'Outfit', sans-serif; text-transform: uppercase; letter-spacing: 2px; font-size: 1.5rem; margin-bottom: 20px; opacity: 0.8; }
-        .q-title.ready { color: var(--ready-color); text-shadow: 0 0 15px var(--ready-glow); }
-
-        .cards-container { width: 100%; display: flex; flex-wrap: wrap; gap: 15px; align-content: flex-start; justify-content: center; overflow-y: auto; }
-        .order-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; width: 45%; padding: 15px; text-align: center; animation: popUp 0.4s ease backwards; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .order-card.ready { background: rgba(16, 185, 129, 0.1); border-color: var(--ready-color); box-shadow: 0 0 20px var(--ready-glow); animation: pulse 2s infinite; }
-        .num { font-family: 'Outfit', sans-serif; font-size: 2.5rem; font-weight: 900; line-height: 1; }
-        .name { font-size: 0.9rem; margin-top: 5px; opacity: 0.8; text-transform: uppercase; font-weight: 600; }
-
-        .offers-section { background: var(--offer-bg); color: var(--offer-text); padding: 30px; display: flex; flex-direction: column; gap: 30px; box-shadow: -10px 0 30px rgba(0,0,0,0.2); position: relative; overflow: hidden; }
-        .offer-box { flex: 1; background: rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; justify-content: center; text-align: center; }
-        .offer-label { position: absolute; top: 15px; left: 0; width: 100%; text-align: center; font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; opacity: 0.7; }
-        .slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; transition: opacity 1s ease-in-out; padding: 20px; }
-        .slide.active { opacity: 1; }
-        .slide-title { font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; line-height: 1.1; margin-bottom: 10px; color: #FFD700; }
-        .slide-desc { font-size: 1rem; line-height: 1.4; opacity: 0.9; }
-        .slide-code { margin-top: 15px; background: #fff; color: #000; padding: 5px 15px; border-radius: 4px; font-weight: 700; font-family: monospace; }
-        .sidebar-footer { text-align: center; font-size: 0.7rem; opacity: 0.4; margin-top: auto; }
-
-        @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
-        .empty-state { opacity: 0.3; margin-top: 50px; font-weight: 600; text-transform: uppercase; }
-        #sound-btn { position: fixed; bottom: 20px; left: 20px; width: 40px; height: 40px; border-radius: 50%; border:none; background: rgba(0,0,0,0.2); color:white; cursor:pointer; z-index:99; }
-
-        /* DEBUG CONSOLE STYLES */
-        #debug-console {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 70%;
-            background: rgba(0,0,0,0.85);
-            color: #00ff00;
-            font-family: monospace;
-            font-size: 12px;
-            padding: 10px;
-            z-index: 9999;
-            height: 150px;
-            overflow-y: auto;
-            border-top: 2px solid #00ff00;
-            display: block; /* Visible by default for troubleshooting */
+        /* DEBUG BOX */
+        #debug-box {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 200px;
+            background: #002200; color: #00ff00; font-family: monospace;
+            padding: 20px; overflow-y: scroll; border-top: 2px solid #00ff00;
+            z-index: 9999; font-size: 14px;
         }
     </style>
 </head>
 <body>
 
-    <div id="debug-console">Initializing Debugger...<br></div>
+    <h1>🚨 DEBUG MODE: RAW DATA VIEW 🚨</h1>
+    <p>This screen ignores all rules. If this is empty, your database connection is broken.</p>
 
-    <header>
-        <div class="brand-block">
-            <h1>CAFÉ CLOUD CLUB</h1>
-            <p>Order Status Display</p>
+    <div class="grid">
+        <div class="col">
+            <h3>PREPARING SIDE</h3>
+            <div id="prep-grid"></div>
         </div>
-        <div class="clock" id="clock">00:00</div>
-    </header>
-
-    <div class="layout">
-        <div class="queue-section">
-            <div class="queue-col">
-                <div class="q-title">Preparing</div>
-                <div id="prep-grid" class="cards-container"></div>
-            </div>
-            <div class="queue-col" style="border-right: none;">
-                <div class="q-title ready">Ready to Collect</div>
-                <div id="ready-grid" class="cards-container"></div>
-            </div>
-        </div>
-
-        <div class="offers-section">
-            <div class="offer-box" id="daily-carousel">
-                <div class="offer-label">Today's Special</div>
-            </div>
-            <div class="offer-box" id="combo-carousel">
-                <div class="offer-label">All Day Combos</div>
-            </div>
-            <div class="sidebar-footer">Powered by<br><strong style="font-size:0.9rem; opacity:1;">Thomsons Networks</strong></div>
+        <div class="col">
+            <h3>READY SIDE</h3>
+            <div id="ready-grid"></div>
         </div>
     </div>
 
-    <button id="sound-btn">🔇</button>
+    <div id="debug-box">Waiting for Firebase...<br></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // DEBUG LOGGER
-        const debugBox = document.getElementById('debug-console');
+        // LOGGING TOOL
+        const box = document.getElementById('debug-box');
         function log(msg) {
-            const time = new Date().toLocaleTimeString();
-            debugBox.innerHTML += `[${time}] ${msg}<br>`;
-            debugBox.scrollTop = debugBox.scrollHeight;
-            console.log(msg);
+            box.innerHTML += `> ${msg}<br>`;
+            box.scrollTop = box.scrollHeight;
         }
-
-        log("1. Starting Firebase Init...");
 
         const firebaseConfig = {
             apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
@@ -150,142 +62,52 @@
         };
 
         try {
+            log("Initializing Firebase...");
             const app = initializeApp(firebaseConfig);
             const db = getDatabase(app);
-            log("2. Firebase App Initialized.");
+            log("Firebase Initialized. Connecting to Database...");
 
-            // DATA (Specials & Combos)
-            const dailySpecials = [
-                { day: 0, title: "Fam-Jam Feast", desc: "1 Pasta + 1 Slider + 1 Shake = ₹399", code: "SUNFEAST" },
-                { day: 1, title: "Meat-Up Monday", desc: "Beef Burger + Fries = ₹222", code: "MONBURGER" },
-                { day: 2, title: "Twisted Tuesday", desc: "Any Penne Pasta Flat @ ₹179", code: "TUEPASTA" },
-                { day: 3, title: "Wicked Wednesday", desc: "Steak @ ₹300 or Shake @ ₹120", code: "WEDSTEAK" },
-                { day: 4, title: "Thursday Club", desc: "Sandwich + Chiller = ₹189", code: "THUSAND" },
-                { day: 5, title: "Fri-Yay Fry-Day", desc: "Loaded Fries starting @ ₹119", code: "FRIFRIES" },
-                { day: 6, title: "Rock n' Roll Sat", desc: "Any Roll (Chicken/Veg) @ ₹129", code: "SATROLL" }
-            ];
-            const comboOffers = [
-                { title: "Combo Saver", desc: "Get 15% OFF on Burger + Fries + Drink", code: "CLOUD15" },
-                { title: "Steak & Sip", desc: "Steak + Thick Shake = 13% OFF", code: "STEAK13" },
-                { title: "Quick Bite", desc: "Wrap + Nuggets = 20% OFF", code: "QUICK20" },
-                { title: "Cloud Feast", desc: "Big Order? Get 14% OFF Total", code: "FEAST14" }
-            ];
-
-            function startCarousels() {
-                const today = new Date().getDay();
-                const todayOffer = dailySpecials.find(o => o.day === today);
-                document.getElementById('daily-carousel').innerHTML += `
-                    <div class="slide active">
-                        <div class="slide-title">${todayOffer.title}</div>
-                        <div class="slide-desc">${todayOffer.desc}</div>
-                        <div class="slide-code">Use: ${todayOffer.code}</div>
-                    </div>`;
-
-                const comboContainer = document.getElementById('combo-carousel');
-                comboOffers.forEach((offer, index) => {
-                    comboContainer.innerHTML += `
-                        <div class="slide ${index === 0 ? 'active' : ''}">
-                            <div class="slide-title">${offer.title}</div>
-                            <div class="slide-desc">${offer.desc}</div>
-                            <div class="slide-code">Code: ${offer.code}</div>
-                        </div>`;
-                });
-
-                let currentCombo = 0;
-                const comboSlides = comboContainer.querySelectorAll('.slide');
-                setInterval(() => {
-                    comboSlides[currentCombo].classList.remove('active');
-                    currentCombo = (currentCombo + 1) % comboSlides.length;
-                    comboSlides[currentCombo].classList.add('active');
-                }, 5000);
-            }
-            startCarousels();
-
-            // CLOCK
-            setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'}); }, 1000);
-
-            // AUDIO
-            const ding = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-            let audioEnabled = false;
-            let lastReadyCount = 0;
-            document.getElementById('sound-btn').addEventListener('click', (e) => {
-                audioEnabled = !audioEnabled;
-                e.target.innerText = audioEnabled ? "🔊" : "🔇";
-                if(audioEnabled) ding.play().catch(()=>{});
-            });
-
-            // ORDER LOGIC
-            log("3. Attempting to fetch orders...");
             const ordersRef = ref(db, 'orders');
 
             onValue(ordersRef, (snapshot) => {
-                log("4. Data received callback triggered.");
+                log("🟢 CONNECTION SUCCESSFUL. Callback triggered.");
+                
                 const data = snapshot.val();
                 const prepGrid = document.getElementById('prep-grid');
                 const readyGrid = document.getElementById('ready-grid');
                 prepGrid.innerHTML = ''; readyGrid.innerHTML = '';
 
-                let currentReadyCount = 0;
-                let rawCount = 0;
-                let displayedCount = 0;
-
-                if (data) {
-                    const orders = Object.values(data).sort((a,b) => a.timestamp - b.timestamp);
-                    rawCount = orders.length;
-                    log(`5. Found ${rawCount} raw orders in DB.`);
-
-                    orders.forEach(order => {
-                        const status = order.status || 'pending';
-                        log(`-- Order #${order.orderId}: Status=${status}, Type=${order.orderType}`);
-
-                        // FILTER LOGIC
-                        // 1. Skip Rejected/Completed
-                        if (status === 'rejected' || status === 'completed') {
-                             log(`   -> SKIPPING (Rejected/Completed)`);
-                             return;
-                        }
-
-                        // 2. Skip "Out for Delivery"
-                        if (status === 'out_for_delivery') {
-                            log(`   -> SKIPPING (Out for Delivery)`);
-                            return;
-                        }
-
-                        const card = document.createElement('div');
-                        card.className = `order-card ${status === 'done' ? 'ready' : ''}`;
-                        const name = order.customer.name.split(' ')[0].substring(0, 8);
-                        card.innerHTML = `<div class="num">${order.orderId}</div><div class="name">${name}</div>`;
-
-                        if(status === 'pending' || status === 'cooking') {
-                            prepGrid.appendChild(card);
-                            displayedCount++;
-                        } else if (status === 'done') {
-                            readyGrid.appendChild(card);
-                            currentReadyCount++;
-                            displayedCount++;
-                        }
-                    });
-                } else {
-                    log("5. Data is NULL (Database is empty or permission denied).");
+                if (!data) {
+                    log("🔴 DATA IS NULL. The 'orders' folder in your database is completely empty.");
+                    log("Are your orders in 'history' instead? Kitchen Manager moves them to history when completed.");
+                    return;
                 }
 
-                log(`6. Displaying ${displayedCount} orders on screen.`);
+                const orders = Object.values(data);
+                log(`🟢 Found ${orders.length} orders. Rendering ALL of them...`);
 
-                if(audioEnabled && currentReadyCount > lastReadyCount) {
-                    ding.currentTime = 0; ding.play().catch(e => console.log(e));
-                }
-                lastReadyCount = currentReadyCount;
+                orders.forEach(order => {
+                    log(`-- ID: ${order.orderId} | Status: ${order.status} | Type: ${order.orderType}`);
 
-                if(prepGrid.innerHTML === '') prepGrid.innerHTML = '<div class="empty-state">No Prep</div>';
-                if(readyGrid.innerHTML === '') readyGrid.innerHTML = '<div class="empty-state">No Ready</div>';
+                    const div = document.createElement('div');
+                    div.className = 'card';
+                    div.innerHTML = `<h2>#${order.orderId}</h2><p>Status: <strong>${order.status}</strong></p><p>Type: ${order.orderType}</p>`;
+
+                    // FOR DEBUGGING: Put everything in Prep except 'done'
+                    if (order.status === 'done') {
+                        readyGrid.appendChild(div);
+                    } else {
+                        prepGrid.appendChild(div);
+                    }
+                });
 
             }, (error) => {
-                log("!!! FIREBASE ERROR: " + error.message);
-                log("ACTION REQUIRED: Go to Firebase Console > Database > Rules and set .read to true.");
+                log(`🔴 PERMISSION ERROR: ${error.message}`);
+                log(`🔴 ACTION: Go to Firebase Console > Realtime Database > Rules. Set .read to true.`);
             });
 
         } catch (e) {
-            log("!!! CRITICAL APP ERROR: " + e.message);
+            log(`CRITICAL ERROR: ${e.message}`);
         }
     </script>
 </body>
