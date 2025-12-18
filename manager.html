@@ -3,89 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manager Control</title>
+    <title>Café Cloud - Guest Display</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #222; color: white; max-width: 600px; margin: 0 auto; }
-        input { width: 70%; padding: 15px; font-size: 20px; }
-        button { padding: 15px; font-size: 20px; cursor: pointer; }
-        .add-btn { background: #3b82f6; color: white; border: none; width: 25%; }
-        .item { background: #333; margin: 10px 0; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .ready-btn { background: #4ade80; border: none; padding: 10px; border-radius: 5px; margin-right: 5px;}
-        .del-btn { background: #ef4444; color: white; border: none; padding: 10px; border-radius: 5px; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Verdana', sans-serif; height: 100vh; display: flex; overflow: hidden; }
+        .col { flex: 1; padding: 0; border-right: 6px solid #222; display: flex; flex-direction: column; }
+        .col:last-child { border: none; }
+        
+        /* HEADERS */
+        .header { 
+            padding: 30px; text-align: center; font-size: 4vw; 
+            font-weight: 900; text-transform: uppercase; letter-spacing: 2px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 10;
+        }
+
+        /* GRID LAYOUT */
+        .list-container {
+            padding: 30px; flex: 1; overflow: hidden;
+            display: grid; grid-template-columns: repeat(2, 1fr); /* 2 columns for numbers */
+            gap: 25px; align-content: start;
+        }
+
+        /* CARD STYLES */
+        .card {
+            background: #1a1a1a; color: #fff;
+            font-size: 8vh; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 16px; padding: 20px;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* PREPARING COLUMN (Yellow) */
+        #prep-col .header { background: #1a1a1a; color: #facc15; border-bottom: 4px solid #facc15; }
+        #prep-col .card { border: 3px solid #facc15; color: #facc15; background: rgba(250, 204, 21, 0.05); }
+
+        /* READY COLUMN (Green) */
+        #ready-col .header { background: #1a1a1a; color: #4ade80; border-bottom: 4px solid #4ade80; }
+        #ready-col .card { 
+            background: #4ade80; color: #000; border: none;
+            box-shadow: 0 0 40px rgba(74, 222, 128, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.85; } 100% { opacity: 1; } }
+        
+        /* Empty State */
+        .empty-msg { grid-column: 1 / -1; text-align: center; color: #444; font-size: 3vh; margin-top: 50px; }
     </style>
 </head>
 <body>
-    <h2>Manager Control Panel</h2>
-    
-    <div>
-        <input type="number" id="numInput" placeholder="Order #">
-        <button class="add-btn" onclick="addOrder()">Add</button>
+
+    <div class="col" id="prep-col">
+        <div class="header">Preparing</div>
+        <div class="list-container" id="prep-list"></div>
     </div>
 
-    <div id="list"></div>
+    <div class="col" id="ready-col">
+        <div class="header">Ready</div>
+        <div class="list-container" id="ready-list"></div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, remove, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // YOUR KEYS ARE PRE-FILLED HERE:
+        // YOUR NEW KEYS (Pre-filled)
         const firebaseConfig = {
-          apiKey: "AIzaSyBEdTFc2eMatP-7c1uqX5CD5dMW6jYLu84",
-          authDomain: "cafe-cloud-qds.firebaseapp.com",
-          databaseURL: "https://cafe-cloud-qds-default-rtdb.asia-southeast1.firebasedatabase.app",
-          projectId: "cafe-cloud-qds",
-          storageBucket: "cafe-cloud-qds.firebasestorage.app",
-          messagingSenderId: "277516157848",
-          appId: "1:277516157848:web:1c5220480ac47cb4e961ed"
+            apiKey: "AIzaSyBEdTFc2eMatP-7c1uqX5CD5dMW6jYLu84",
+            authDomain: "cafe-cloud-qds.firebaseapp.com",
+            databaseURL: "https://cafe-cloud-qds-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "cafe-cloud-qds",
+            storageBucket: "cafe-cloud-qds.firebasestorage.app",
+            messagingSenderId: "277516157848",
+            appId: "1:277516157848:web:1c5220480ac47cb4e961ed"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // 1. ADD ORDER (Manager "Accepts")
-        window.addOrder = function() {
-            const num = document.getElementById('numInput').value;
-            if (!num) return;
-            
-            // We use the Order Number as the ID to make it easy
-            set(ref(db, 'orders/' + num), {
-                num: num,
-                status: 'preparing'
-            });
-            document.getElementById('numInput').value = '';
-        }
-
-        // 2. MARK READY (Kitchen is done)
-        window.markReady = function(num) {
-            update(ref(db, 'orders/' + num), { status: 'ready' });
-        }
-
-        // 3. DELETE (Driver Picked Up)
-        window.deleteOrder = function(num) {
-            remove(ref(db, 'orders/' + num));
-        }
-
-        // SHOW LIST
+        // Listen for changes
         onValue(ref(db, 'orders'), (snapshot) => {
-            const list = document.getElementById('list');
-            list.innerHTML = '';
+            const prepList = document.getElementById('prep-list');
+            const readyList = document.getElementById('ready-list');
+            
+            prepList.innerHTML = '';
+            readyList.innerHTML = '';
+            
             const data = snapshot.val();
             
             if (data) {
-                Object.keys(data).forEach(key => {
-                    const order = data[key];
-                    const div = document.createElement('div');
-                    div.className = 'item';
-                    div.innerHTML = `
-                        <span>#${order.num} (${order.status})</span>
-                        <div>
-                            ${order.status === 'preparing' ? `<button class="ready-btn" onclick="markReady('${order.num}')">Ready</button>` : ''}
-                            <button class="del-btn" onclick="deleteOrder('${order.num}')">Picked Up</button>
-                        </div>
-                    `;
-                    list.appendChild(div);
+                // Convert object to array
+                Object.values(data).forEach(order => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerText = `#${order.orderId}`; // Using the Manager's ID format
+                    
+                    // STATUS MAPPING LOGIC
+                    // Manager 'cooking' -> TV 'Preparing'
+                    if (order.status === 'cooking') {
+                        prepList.appendChild(card);
+                    } 
+                    // Manager 'done' -> TV 'Ready'
+                    else if (order.status === 'done') {
+                        readyList.appendChild(card);
+                    }
+                    // 'pending' (New) and 'out_for_delivery' are HIDDEN from TV
                 });
             }
+
+            if(prepList.children.length === 0) prepList.innerHTML = '<div class="empty-msg">No orders preparing</div>';
+            if(readyList.children.length === 0) readyList.innerHTML = '<div class="empty-msg">No orders ready</div>';
         });
     </script>
 </body>
