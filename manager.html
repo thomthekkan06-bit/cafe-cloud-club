@@ -460,5 +460,52 @@
             });
         };
     </script>
+    <script type="module">
+    // 1. IMPORT FIREBASE
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    // 2. CONFIG (MUST MATCH YOUR TV PAGE EXACTLY)
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        databaseURL: "YOUR_DATABASE_URL",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    // 3. START APP
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // 4. EXPOSE FUNCTIONS TO WINDOW (So your buttons can see them)
+    
+    // FUNCTION A: Manager Clicks "Accept Order" -> Sends to TV "Preparing"
+    window.sendToTV_Preparing = function(orderNum) {
+        // We use orderNum as the ID to keep it simple
+        set(ref(db, 'qds_orders/' + orderNum), {
+            orderNumber: orderNum,
+            status: 'preparing',
+            timestamp: Date.now()
+        });
+        console.log(`Order ${orderNum} sent to TV.`);
+    }
+
+    // FUNCTION B: Kitchen Clicks "Food Ready" -> Updates TV to "Ready"
+    window.sendToTV_Ready = function(orderNum) {
+        update(ref(db, 'qds_orders/' + orderNum), {
+            status: 'ready'
+        });
+        console.log(`Order ${orderNum} is Ready.`);
+    }
+
+    // FUNCTION C: Driver Clicks "Pickup" -> Removes from TV
+    window.removeFromTV = function(orderNum) {
+        remove(ref(db, 'qds_orders/' + orderNum));
+        console.log(`Order ${orderNum} removed.`);
+    }
+</script>
 </body>
 </html>
