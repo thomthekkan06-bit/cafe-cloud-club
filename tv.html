@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Queue Display | Cafe Cloud Club</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        /* --- MODERN THEME --- */
+        :root {
+            --bg-color: #f3f4f6;
+            --bg-gradient: radial-gradient(circle at 10% 20%, rgb(240, 242, 245) 0%, rgb(220, 225, 230) 90%);
+            --card-bg: rgba(255, 255, 255, 0.75);
+            --card-border: rgba(255, 255, 255, 0.9);
+            --text-main: #1f2937;
+            --text-sub: #6b7280;
+            
+            --prep-color: #f59e0b; /* Orange */
+            --ready-color: #10b981; /* Green */
+            --ready-glow: rgba(16, 185, 129, 0.4);
+            
+            --sidebar-bg: #111827; /* Dark Sidebar */
+            --sidebar-text: #ffffff;
+        }
+
+        /* Dark Mode Support */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #0f1115;
+                --bg-gradient: radial-gradient(circle at 50% 50%, #1a1d26 0%, #0f1115 100%);
+                --card-bg: rgba(30, 35, 45, 0.7);
+                --card-border: rgba(255, 255, 255, 0.1);
+                --text-main: #ffffff;
+                --text-sub: #9ca3af;
+                --sidebar-bg: rgba(0, 0, 0, 0.5);
+            }
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0; padding: 0;
+            background: var(--bg-color); background-image: var(--bg-gradient);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+
+        /* --- HEADER --- */
+        header {
+            height: 80px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 40px;
+            background: rgba(0,0,0,0.02);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .brand h1 { margin: 0; font-family: 'Outfit', sans-serif; font-size: 1.8rem; letter-spacing: -1px; }
+        .brand span { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-sub); display: block; margin-top: -5px; }
+        .clock { font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 700; opacity: 0.8; }
+
+        /* --- LAYOUT (70% Left, 30% Right) --- */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 70% 30%;
+            height: calc(100vh - 80px);
+        }
+
+        /* LEFT SIDE: QUEUE */
+        .queue-container {
+            display: flex;
+            position: relative;
+        }
+        
+        .column {
+            flex: 1;
+            padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+            border-right: 1px solid var(--card-border);
+        }
+
+        .col-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            opacity: 0.6;
+        }
+        .col-title.ready { color: var(--ready-color); opacity: 1; text-shadow: 0 0 20px var(--ready-glow); }
+
+        .grid-area {
+            display: flex; flex-wrap: wrap; gap: 20px; 
+            justify-content: center; align-content: flex-start; 
+            width: 100%; overflow-y: auto;
+        }
+
+        /* CARDS */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            width: 200px;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .card-num { font-family: 'Outfit', sans-serif; font-size: 3.5rem; font-weight: 900; line-height: 1; color: var(--text-main); }
+        .card-name { font-size: 1rem; text-transform: uppercase; margin-top: 5px; color: var(--text-sub); font-weight: 600; }
+
+        /* Ready State */
+        .card.ready {
+            background: rgba(16, 185, 129, 0.15);
+            border: 2px solid var(--ready-color);
+            box-shadow: 0 0 30px var(--ready-glow);
+            transform: scale(1.05);
+            animation: pulse 2s infinite;
+        }
+        .card.ready .card-num { color: var(--ready-color); }
+
+        /* RIGHT SIDE: OFFERS */
+        .sidebar {
+            background: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            padding: 30px;
+            display: flex; flex-direction: column; gap: 20px;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+
+        .ad-box {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .slide {
+            padding: 20px;
+            animation: fade 1s ease;
+        }
+        .slide h2 { font-family: 'Outfit', sans-serif; font-size: 2rem; margin: 0 0 10px 0; color: #fbbf24; }
+        .slide p { font-size: 1.1rem; line-height: 1.4; opacity: 0.9; }
+
+        .footer-brand {
+            text-align: center;
+            font-size: 0.8rem;
+            opacity: 0.5;
+            margin-top: auto;
+        }
+
+        /* UTILS */
+        .empty-msg { margin-top: 50px; font-size: 1.5rem; opacity: 0.3; font-weight: 700; text-transform: uppercase; }
+        
+        /* VERSION TAG: This helps you know if the file updated! */
+        .version-tag { position: fixed; bottom: 5px; right: 5px; font-size: 10px; opacity: 0.2; color: var(--text-main); }
+        
+        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes pulse { 0% { transform: scale(1.05); } 50% { transform: scale(1.08); } 100% { transform: scale(1.05); } }
+        @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Sound Button */
+        #sound-btn { position: fixed; bottom: 20px; left: 20px; padding: 10px; background: rgba(0,0,0,0.2); border: none; border-radius: 50%; cursor: pointer; color: var(--text-main); font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">
+            <h1>CAFÉ CLOUD CLUB</h1>
+            <span>Order Status</span>
+        </div>
+        <div class="clock" id="clock">00:00</div>
+    </header>
+
+    <div class="main-layout">
+        
+        <div class="queue-container">
+            <div class="column">
+                <div class="col-title">Preparing</div>
+                <div id="prep-grid" class="grid-area"></div>
+            </div>
+            
+            <div class="column" style="border:none;">
+                <div class="col-title ready">Ready to Collect</div>
+                <div id="ready-grid" class="grid-area"></div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="ad-box" id="ad-space">
+                </div>
+            
+            <div class="footer-brand">
+                Powered by<br>
+                <strong style="color: #fff; opacity: 1;">Thomsons Networks</strong>
+            </div>
+        </div>
+
+    </div>
+
+    <button id="sound-btn">🔇</button>
+    <div class="version-tag">System v2.0 (Live)</div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
+            authDomain: "cafe-orders-1afa1.firebaseapp.com",
+            databaseURL: "https://cafe-orders-1afa1-default-rtdb.firebaseio.com",
+            projectId: "cafe-orders-1afa1",
+            storageBucket: "cafe-orders-1afa1.firebasestorage.app",
+            messagingSenderId: "274410745480",
+            appId: "1:274410745480:web:9964c3914d512aed8d793d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // --- ADS LOGIC (You can change text here) ---
+        const ads = [
+            { title: "Today's Special", text: "Get the <b>Fam-Jam Feast</b> for just ₹399!" },
+            { title: "Thirsty?", text: "Add a Shake to your meal for 20% OFF." },
+            { title: "Combo Deal", text: "Burger + Fries + Coke = Happiness." },
+            { title: "Need Help?", text: "Ask our staff about the Secret Menu!" }
+        ];
+        let adIndex = 0;
+        
+        function rotateAds() {
+            const container = document.getElementById('ad-space');
+            const ad = ads[adIndex];
+            container.innerHTML = `
+                <div class="slide">
+                    <h2>${ad.title}</h2>
+                    <p>${ad.text}</p>
+                </div>
+            `;
+            adIndex = (adIndex + 1) % ads.length;
+        }
+        rotateAds();
+        setInterval(rotateAds, 6000); // Change ad every 6 seconds
+
+        // --- CLOCK ---
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+        }, 1000);
+
+        // --- AUDIO ---
+        const ding = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        let audioEnabled = false;
+        let lastReadyCount = 0;
+        document.getElementById('sound-btn').addEventListener('click', (e) => {
+            audioEnabled = !audioEnabled;
+            e.target.innerText = audioEnabled ? "🔊" : "🔇";
+            if(audioEnabled) ding.play().catch(()=>{});
+        });
+
+        // --- CORE ORDER LOGIC ---
+        const ordersRef = ref(db, 'orders');
+
+        onValue(ordersRef, (snapshot) => {
+            const data = snapshot.val();
+            const prepGrid = document.getElementById('prep-grid');
+            const readyGrid = document.getElementById('ready-grid');
+            
+            prepGrid.innerHTML = ''; 
+            readyGrid.innerHTML = '';
+
+            let currentReadyCount = 0;
+
+            if (data) {
+                const orders = Object.values(data).sort((a,b) => a.timestamp - b.timestamp);
+                
+                orders.forEach(order => {
+                    const status = order.status || 'pending';
+
+                    // 1. FILTER: Ignore things that shouldn't be on screen
+                    if (status === 'rejected' || status === 'completed' || status === 'out_for_delivery') return;
+
+                    // 2. CREATE CARD
+                    const card = document.createElement('div');
+                    card.className = `card ${status === 'done' ? 'ready' : ''}`;
+                    
+                    const name = order.customer.name.split(' ')[0].substring(0, 9);
+                    card.innerHTML = `<div class="card-num">${order.orderId}</div><div class="card-name">${name}</div>`;
+
+                    // 3. PLACE CARD
+                    if (status === 'done') {
+                        readyGrid.appendChild(card);
+                        currentReadyCount++;
+                    } else {
+                        prepGrid.appendChild(card);
+                    }
+                });
+            }
+
+            // Sound Notification
+            if(audioEnabled && currentReadyCount > lastReadyCount) {
+                ding.currentTime = 0; ding.play().catch(e => console.log(e));
+            }
+            lastReadyCount = currentReadyCount;
+
+            // Empty States
+            if(prepGrid.innerHTML === '') prepGrid.innerHTML = '<div class="empty-msg">No Orders</div>';
+            if(readyGrid.innerHTML === '') readyGrid.innerHTML = '<div class="empty-msg">All Clear</div>';
+        });
+
+    </script>
+</body>
+</html>
