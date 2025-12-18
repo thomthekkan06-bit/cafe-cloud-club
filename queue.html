@@ -154,7 +154,7 @@
             const db = getDatabase(app);
             log("2. Firebase App Initialized.");
 
-            // DATA
+            // DATA (Specials & Combos)
             const dailySpecials = [
                 { day: 0, title: "Fam-Jam Feast", desc: "1 Pasta + 1 Slider + 1 Shake = ₹399", code: "SUNFEAST" },
                 { day: 1, title: "Meat-Up Monday", desc: "Beef Burger + Fries = ₹222", code: "MONBURGER" },
@@ -219,7 +219,7 @@
             const ordersRef = ref(db, 'orders');
 
             onValue(ordersRef, (snapshot) => {
-                log("4. Data received from Firebase!");
+                log("4. Data received callback triggered.");
                 const data = snapshot.val();
                 const prepGrid = document.getElementById('prep-grid');
                 const readyGrid = document.getElementById('ready-grid');
@@ -238,13 +238,14 @@
                         const status = order.status || 'pending';
                         log(`-- Order #${order.orderId}: Status=${status}, Type=${order.orderType}`);
 
-                        // IGNORE rejected or completed
+                        // FILTER LOGIC
+                        // 1. Skip Rejected/Completed
                         if (status === 'rejected' || status === 'completed') {
                              log(`   -> SKIPPING (Rejected/Completed)`);
                              return;
                         }
 
-                        // IGNORE delivery that is out
+                        // 2. Skip "Out for Delivery"
                         if (status === 'out_for_delivery') {
                             log(`   -> SKIPPING (Out for Delivery)`);
                             return;
@@ -280,11 +281,11 @@
 
             }, (error) => {
                 log("!!! FIREBASE ERROR: " + error.message);
-                log("CHECK YOUR DATABASE RULES.");
+                log("ACTION REQUIRED: Go to Firebase Console > Database > Rules and set .read to true.");
             });
 
         } catch (e) {
-            log("!!! CRITICAL ERROR: " + e.message);
+            log("!!! CRITICAL APP ERROR: " + e.message);
         }
     </script>
 </body>
