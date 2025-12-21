@@ -25,7 +25,7 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body { 
-            font-family: 'Inter', sans-serif; 
+            font-family: 'Inter', sans-serif;
             background: var(--bg); 
             color: var(--text-main); 
             margin: 0; padding: 0;
@@ -34,50 +34,62 @@
 
         /* --- PIN LOCK --- */
         #pin-overlay { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(15, 17, 21, 0.98); z-index: 10000; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
         }
         .pin-box { 
-            background: var(--surface); padding: 30px; border-radius: 16px; 
+            background: var(--surface);
+            padding: 30px; border-radius: 16px; 
             border: 1px solid var(--border); text-align: center; width: 85%; max-width: 320px;
         }
         .pin-input { 
-            background: var(--bg); border: 1px solid var(--border); color: white; 
+            background: var(--bg);
+            border: 1px solid var(--border); color: white; 
             font-size: 2rem; text-align: center; letter-spacing: 10px; padding: 10px; 
-            border-radius: 8px; width: 100%; margin: 20px 0; outline: none;
+            border-radius: 8px; width: 100%;
+            margin: 20px 0; outline: none;
             font-family: 'JetBrains Mono', monospace;
         }
         .btn-unlock { background: var(--primary); width: 100%; padding: 15px; border:none; border-radius:8px; color:white; font-weight:800; cursor:pointer; font-size: 1rem; }
 
         /* --- HEADER & TABS --- */
         .sticky-header {
-            position: sticky; top: 0; z-index: 100;
+            position: sticky;
+            top: 0; z-index: 100;
             background: rgba(15, 17, 21, 0.95);
             backdrop-filter: blur(10px);
             border-bottom: 1px solid var(--border);
         }
         
         .top-bar {
-            padding: 15px; display: flex; justify-content: space-between; align-items: center;
+            padding: 15px;
+            display: flex; justify-content: space-between; align-items: center;
         }
         .brand { font-weight: 800; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
         .clock-badge { 
-            background: var(--surface); border: 1px solid var(--border); 
+            background: var(--surface);
+            border: 1px solid var(--border); 
             padding: 5px 10px; border-radius: 6px; font-family: 'JetBrains Mono'; font-size: 0.85rem; color: var(--text-muted);
         }
 
         .tabs { display: grid; grid-template-columns: 1fr 1fr; padding: 0 15px 15px 15px; gap: 10px; }
         .tab-btn {
-            background: var(--surface); border: 1px solid var(--border); color: var(--text-muted);
+            background: var(--surface);
+            border: 1px solid var(--border); color: var(--text-muted);
             padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; text-align: center;
-            position: relative; transition: all 0.2s;
+            position: relative;
+            transition: all 0.2s;
         }
         .tab-btn.active {
-            background: var(--primary); color: white; border-color: var(--primary);
+            background: var(--primary);
+            color: white; border-color: var(--primary);
         }
         .tab-count {
-            background: var(--danger); color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px;
+            background: var(--danger);
+            color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px;
             position: absolute; top: -5px; right: -5px; display: none;
         }
 
@@ -85,18 +97,21 @@
         .orders-wrapper { padding: 15px; }
         
         .order-card {
-            background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+            background: var(--surface);
+            border: 1px solid var(--border); border-radius: 12px;
             margin-bottom: 20px; overflow: hidden; position: relative;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
         .card-top {
-            padding: 15px; border-bottom: 1px solid var(--border);
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
             display: flex; justify-content: space-between; align-items: flex-start;
         }
         .order-id { font-family: 'JetBrains Mono'; font-size: 1.1rem; font-weight: 800; }
         
         .status-badge { 
-            font-size: 0.7rem; font-weight: 800; text-transform: uppercase; 
+            font-size: 0.7rem;
+            font-weight: 800; text-transform: uppercase; 
             padding: 4px 8px; border-radius: 4px;
         }
         .st-cooking { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
@@ -111,7 +126,8 @@
 
         /* ITEMS TOGGLE */
         .items-toggle {
-            padding: 10px 15px; background: rgba(0,0,0,0.2); font-size: 0.85rem; 
+            padding: 10px 15px;
+            background: rgba(0,0,0,0.2); font-size: 0.85rem; 
             color: var(--text-muted); cursor: pointer; display: flex; justify-content: space-between;
             border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
         }
@@ -120,12 +136,14 @@
 
         /* MONEY SECTION */
         .money-box {
-            background: #111; padding: 15px; margin: 15px; border-radius: 8px; 
+            background: #111;
+            padding: 15px; margin: 15px; border-radius: 8px; 
             border: 1px dashed var(--border);
         }
         .fee-input-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .fee-input {
-            background: var(--surface); border: 1px solid var(--border); color: white;
+            background: var(--surface);
+            border: 1px solid var(--border); color: white;
             width: 80px; padding: 8px; border-radius: 6px; text-align: right; font-family: 'JetBrains Mono';
         }
         .total-row { display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem; font-weight: 800; }
@@ -133,19 +151,23 @@
 
         /* ACTIONS */
         .action-bar { 
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; 
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); gap: 8px; 
             padding: 0 15px 15px 15px;
         }
         .btn-icon {
-            background: var(--surface-hover); border: 1px solid var(--border); color: var(--text-main);
+            background: var(--surface-hover);
+            border: 1px solid var(--border); color: var(--text-main);
             height: 45px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
-            font-size: 1.2rem; cursor: pointer; text-decoration: none;
+            font-size: 1.2rem; cursor: pointer;
+            text-decoration: none;
         }
         .btn-icon.whatsapp { color: #25D366; border-color: rgba(37, 211, 102, 0.3); }
         .btn-icon.map { color: #3b82f6; border-color: rgba(59, 130, 246, 0.3); }
         
         .main-action-btn {
-            width: 100%; border: none; padding: 18px; font-weight: 800; font-size: 1rem;
+            width: 100%;
+            border: none; padding: 18px; font-weight: 800; font-size: 1rem;
             text-transform: uppercase; cursor: pointer;
         }
         .btn-pickup { background: var(--warning); color: #000; }
@@ -186,11 +208,8 @@
         </div>
     </div>
 
-    <div class="orders-wrapper" id="pickup-list">
-        </div>
-
-    <div class="orders-wrapper hidden" id="active-list">
-        </div>
+    <div class="orders-wrapper" id="pickup-list"></div>
+    <div class="orders-wrapper hidden" id="active-list"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -208,7 +227,7 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        
+
         // CONFIG
         const DRIVER_PIN = "2024"; 
         const alertSound = new Audio('bell.mp3');
@@ -289,7 +308,6 @@
 
                         // Render Card
                         const cardHtml = createOrderCard(key, order, isPickup);
-                        
                         if(isPickup) {
                             pickupContainer.innerHTML += cardHtml;
                             countPickup++;
@@ -310,7 +328,6 @@
                 
                 if(countPickup > 0) { pBadge.innerText = countPickup; pBadge.style.display = 'inline-block'; } 
                 else pBadge.style.display = 'none';
-
                 if(countActive > 0) { aBadge.innerText = countActive; aBadge.style.display = 'inline-block'; } 
                 else aBadge.style.display = 'none';
 
@@ -321,22 +338,31 @@
             });
         }
 
+        // --- CARD RENDERER (UPDATED MAP LOGIC) ---
         function createOrderCard(key, order, isPickup) {
             const fins = order.financials || { grandTotal: 0 };
             const delFee = fins.deliveryFee || 0;
             const total = fins.grandTotal;
-            
-            // Map Logic
+
+            // --- MAP LOGIC START ---
             let displayAddress = order.customer.address || "No Address";
+            
+            // 1. Default: Search Google Maps by text address
             let mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(displayAddress)}`;
             
+            // 2. Check for Pin (and filter out broken links)
             if (displayAddress.includes("📍 Pin:")) {
                 const parts = displayAddress.split("📍 Pin:");
                 displayAddress = parts[0].trim();
                 const linkPart = parts[1].trim();
-                if(linkPart.startsWith("http")) mapLink = linkPart;
+                
+                // FIX: Only use valid map links. Ignore the broken "googleusercontent" ones.
+                if(linkPart.startsWith("http") && !linkPart.includes("googleusercontent.com")) {
+                    mapLink = linkPart;
+                }
             }
             const cleanAddress = displayAddress.replace(/\n/g, '<br>');
+            // --- MAP LOGIC END ---
 
             // Status Badge
             let statusBadge = '';
@@ -466,7 +492,6 @@
         setInterval(() => {
             document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
         }, 1000);
-
     </script>
 </body>
 </html>
