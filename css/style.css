@@ -1,21 +1,21 @@
 /* --- CHRISTMAS LIGHTS ANIMATION --- */
 .christmas-lights-container {
     position: fixed;
-    top: -10px; /* Hide the wire slightly */
+    top: -5px; /* Wire position */
     left: 0;
     width: 100%;
-    height: 30px;
-    z-index: 9998; /* Below modal, above everything else */
+    height: 40px;
+    z-index: 10002; /* Highest layer, above snow and modals */
     display: flex;
-    justify-content: center;
-    gap: 20px;
+    justify-content: center; /* Centers the string */
+    gap: 25px; /* Spacing between bulbs */
     pointer-events: none;
     overflow: hidden;
-    padding: 0 20px;
+    padding: 0 10px;
 }
 
 .light-bulb {
-    width: 12px;
+    min-width: 12px; /* Ensure they don't squish */
     height: 18px;
     border-radius: 50%;
     background: #ccc;
@@ -105,7 +105,7 @@
     position: absolute;
     width: 25px;
     height: 25px;
-    background-color: var(--secondary); /* Green satellite for contrast */
+    background-color: var(--secondary);
     border-radius: 50%;
     z-index: 1;
     top: 0;
@@ -215,7 +215,8 @@ body {
     height: 100%;
     transition: opacity 0.3s ease;
     position: relative;
-    z-index: 5; /* Ensure dashboard sits above snow if snow is z-0 */
+    /* Dashboard stays below snow */
+    z-index: 1;
 }
 
 /* --- 1. LEFT SIDEBAR (CATEGORIES) --- */
@@ -227,9 +228,9 @@ body {
     flex-direction: column;
     overflow-y: auto;
     transition: background-color 0.3s ease, border-color 0.3s ease;
-    /* FIX: Force sidebar above snow layer */
     position: relative;
-    z-index: 10;
+    /* Ensure content is readable under snow */
+    z-index: 2;
 }
 
 .left-sidebar .brand-title {
@@ -301,7 +302,6 @@ body {
     background: #fff7ed; 
     font-weight: 700; 
     border-right: 3px solid var(--primary);
-    /* Gold Border Accent */
     border: 1px solid #FFD700;
     box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
 }
@@ -334,8 +334,7 @@ body {
     background: var(--bg);
     transition: background-color 0.3s ease;
     position: relative;
-    /* FIX: Main content needs z-index to manage children like snow */
-    z-index: 1;
+    z-index: 2;
     overflow-x: hidden;
 }
 
@@ -472,7 +471,7 @@ body {
     height: 100%;
     z-index: 9999;
     background: #ffffff; 
-    /* FIX: High opacity to see snow behind it */
+    /* See-through for snow visibility */
     background-color: rgba(255, 255, 255, 0.90);
     backdrop-filter: blur(4px);
     overflow-y: auto;
@@ -696,9 +695,8 @@ body {
     border-left: 1px solid #e5e7eb; 
     height: 100vh; 
     transition: background-color 0.3s ease, border-color 0.3s ease;
-    /* FIX: Force sidebar above snow layer */
     position: relative;
-    z-index: 10;
+    z-index: 2;
 }
 .cart-header-mobile { display: none; align-items: center;
     margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
@@ -1218,14 +1216,14 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
 }
 
 /* --- HOLIDAY SNOW ANIMATION --- */
+/* FIX: High Z-index to cover everything (modals, sidebars) */
 .menu-bg-animation {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    /* FIX: Keep this at 0, but ensure other content is >0 */
-    z-index: 0;
+    z-index: 10001; 
     pointer-events: none;
     overflow: hidden;
     background: linear-gradient(to bottom, var(--bg), transparent);
