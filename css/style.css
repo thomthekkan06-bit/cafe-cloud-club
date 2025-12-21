@@ -1,11 +1,11 @@
-/* --- CHRISTMAS LIGHTS ANIMATION --- */
+/* --- CHRISTMAS LIGHTS (Layer 11000) --- */
 .christmas-lights-container {
     position: fixed;
     top: -5px;
     left: 0;
     width: 100%;
     height: 40px;
-    z-index: 11000; /* Lights always on top */
+    z-index: 11000; 
     display: flex;
     justify-content: center;
     gap: 25px;
@@ -44,7 +44,40 @@
     50% { opacity: 1; transform: scale(1.1); box-shadow: 0 5px 20px currentColor; }
 }
 
-/* --- PRELOADER --- */
+/* --- SNOW ANIMATION (Layer 8888) --- */
+/* FIX: pointer-events: none allows clicks through it.
+   FIX: background: transparent removes the "fog". */
+.menu-bg-animation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 8888; /* High, but lower than Mobile Sidebar */
+    pointer-events: none;
+    overflow: hidden;
+    background: transparent !important; /* CRITICAL FIX */
+}
+
+.snowflake {
+    position: absolute;
+    top: -10px;
+    background: white;
+    border-radius: 50%;
+    opacity: 0.8;
+    animation: fall linear infinite;
+}
+
+.snowflake:nth-child(odd) { background: #E1E8ED; }
+.snowflake:nth-child(2n) { filter: blur(1px); }
+.snowflake:nth-child(3n) { filter: blur(2px); opacity: 0.5; }
+
+@keyframes fall {
+    0% { transform: translateY(-10vh) translateX(0); }
+    100% { transform: translateY(110vh) translateX(20px); }
+}
+
+/* --- PRELOADER (Layer 13000) --- */
 #preloader {
     position: fixed;
     top: 0;
@@ -52,7 +85,7 @@
     width: 100%;
     height: 100%;
     background-color: var(--bg);
-    z-index: 13000; /* Loader covers absolutely everything */
+    z-index: 13000;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -201,7 +234,7 @@ body {
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* --- LAYOUT --- */
+/* --- LAYOUT GRID --- */
 .dashboard {
     display: grid;
     grid-template-columns: 220px 1fr 320px; 
@@ -209,10 +242,11 @@ body {
     height: 100%;
     transition: opacity 0.3s ease;
     position: relative;
-    z-index: 5;
+    /* FIX: Removed z-index to break the trap! */
+    /* z-index: 5;  <-- REMOVED */
 }
 
-/* --- LEFT SIDEBAR --- */
+/* --- LEFT SIDEBAR (Layer 50 or 12000) --- */
 .left-sidebar {
     background: var(--white);
     border-right: 1px solid #e5e7eb;
@@ -222,7 +256,7 @@ body {
     overflow-y: auto;
     transition: background-color 0.3s ease, border-color 0.3s ease;
     position: relative;
-    z-index: 10;
+    z-index: 50;
 }
 
 .left-sidebar .brand-title {
@@ -284,22 +318,21 @@ body {
 .sidebar-credit { display: block; border-top: 1px solid #eee; }
 .mobile-bottom-credit { display: none; width: 100%; border-top: 1px dashed #eee; margin-bottom: 30px; }
 
-/* --- MAIN CONTENT --- */
+/* --- MAIN CONTENT (CENTER) --- */
 .main-content { 
     padding: 20px 30px;
     overflow-y: auto; 
     display: flex;
     flex-direction: column; 
-    /* FIX: Transparent background to see snow behind it */
-    background: transparent; 
+    background: transparent; /* See-through to body snow */
     transition: background-color 0.3s ease;
     position: relative;
-    z-index: 10; /* Content higher than snow (1) */
+    z-index: 10;
     overflow-x: hidden;
 }
 
 .header-bar, .news-ticker-area, .promo-section, .advanced-filters, .menu-grid, .mobile-info-card {
-    position: relative; z-index: 20; /* UI Elements clickable */
+    position: relative; z-index: 20; /* Keep elements clickable */
 }
 
 .mobile-info-card { display: none; background: var(--white);
@@ -345,10 +378,10 @@ body {
 .bg-gradient-3 { background: linear-gradient(135deg, #165B33, #38ef7d); }
 .bg-gradient-4 { background: linear-gradient(135deg, #eb3349, #f45c43); }
 
-/* --- OFFERS OVERLAY --- */
+/* --- OFFERS OVERLAY (Layer 12000) --- */
 .offers-view {
     display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    z-index: 12000; /* Above lights and menu */
+    z-index: 12000; /* Higher than lights and snow */
     background: #ffffff; background-color: rgba(255, 255, 255, 0.90); backdrop-filter: blur(4px);
     overflow-y: auto; padding: 20px; animation: fadeIn 0.3s ease; transition: background-color 0.3s ease;
 }
@@ -406,6 +439,7 @@ body {
 .add-btn-mini { background: #f1f2f6; color: var(--secondary); padding: 6px 15px; border-radius: 20px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 600; transition: 0.2s; gap: 5px; }
 .add-btn-mini:hover { background: var(--primary); color: white; }
 
+/* --- RIGHT SIDEBAR (CART) --- */
 .order-sidebar { 
     background: var(--white); padding: 25px; display: flex; flex-direction: column; border-left: 1px solid #e5e7eb; height: 100vh; transition: background-color 0.3s ease, border-color 0.3s ease;
     position: relative; z-index: 10;
@@ -436,6 +470,7 @@ body {
 .checkout-btn { background: var(--primary); color: white; width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 10px rgba(212, 36, 38, 0.2); transition: 0.3s; }
 .checkout-btn:disabled { background: var(--disabled); cursor: not-allowed; box-shadow: none; }
 
+/* --- MODAL (Layer 10000) --- */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(4px); }
 .modal-card { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; transition: background-color 0.3s ease; }
 .modal-card h3 { color: var(--secondary); }
@@ -468,10 +503,10 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
 @media (max-width: 1000px) {
     .dashboard { grid-template-columns: 1fr; grid-template-rows: auto 1fr; display: flex; flex-direction: column; }
     
-    /* FIX: High Z-index but sits OVER snow now */
+    /* FIX: Sidebar > Snow (12000 vs 8888) */
     .left-sidebar { 
         position: fixed; top: 0; left: -280px; width: 260px; height: 100%; background: var(--white);
-        z-index: 12000; /* Sidebar higher than snow (1) and content (10) */
+        z-index: 12000; 
         transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 2px 0 10px rgba(0,0,0,0.5);
         display: flex; flex-direction: column; padding: 20px; overflow-y: auto; border-right: 1px solid #eee; flex-shrink: 0;
     }
@@ -485,13 +520,12 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
     .reorder-btn-area { margin: 0 0 10px 0 !important; width: 100% !important; display: block !important; }
     .filter-item.active { border: 1px solid var(--primary); background: #fff0eb; }
     
-    /* Content wrapper is relative */
     .main-content { flex: 1; padding: 15px; }
     
     .header-bar { margin: -15px -15px 15px -15px !important; padding: 15px 15px 15px 15px !important; }
     .order-sidebar { 
         display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        z-index: 12000; /* Cart overlay higher than snow */
+        z-index: 12000; 
         background: var(--bg); padding: 20px; overflow-y: auto;
     }
     .order-sidebar.active { display: flex; }
@@ -560,38 +594,6 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
     .modal-header-row, .modal-item-base-price, .modal-footer-action { border-color: #333 !important; }
     .custom-option-row { border-color: #333; }
     .custom-option-label { color: var(--secondary); }
-}
-
-/* --- SNOW ANIMATION --- */
-/* FIX: Put snow in the background (z=1) so it doesn't block clicks */
-.menu-bg-animation {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1; /* Lowest level, behind content */
-    pointer-events: none;
-    overflow: hidden;
-    background: transparent !important;
-}
-
-.snowflake {
-    position: absolute;
-    top: -10px;
-    background: white;
-    border-radius: 50%;
-    opacity: 0.8;
-    animation: fall linear infinite;
-}
-
-.snowflake:nth-child(odd) { background: #E1E8ED; }
-.snowflake:nth-child(2n) { filter: blur(1px); }
-.snowflake:nth-child(3n) { filter: blur(2px); opacity: 0.5; }
-
-@keyframes fall {
-    0% { transform: translateY(-10vh) translateX(0); }
-    100% { transform: translateY(110vh) translateX(20px); }
 }
 
 /* --- FLYING ANIMATION --- */
