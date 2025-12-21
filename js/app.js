@@ -197,11 +197,8 @@ function renderOffersPage() {
     // B. Setup Offers Page Content
     const offersContainer = document.getElementById('offers-view');
     if(offersContainer) {
-        // Keep the header/close button, clear the content area
-        // We assume offers-view has a structure. If it's just a div, we build it all.
-        // Let's build a safe structure inside.
         let html = `
-            <div style="padding: 20px; max-width: 600px; margin: 0 auto; padding-top: 60px;">
+            <div style="padding: 20px; max-width: 600px; margin: 0 auto; padding-top: 60px; padding-bottom: 80px;">
                 <button class="back-btn" onclick="toggleOffersPage()" style="margin-bottom: 20px;">
                     <i class="fas fa-arrow-left"></i> Back to Menu
                 </button>
@@ -209,6 +206,7 @@ function renderOffersPage() {
                 <p style="color:#aaa; font-size:0.9rem; margin-bottom:30px;">Tap "Apply" to use the code instantly!</p>
         `;
 
+        // Render Cards
         OFFERS_DATA.forEach(offer => {
             const isToday = (offer.day === dayIndex);
             const activeClass = isToday ? 'border: 2px solid var(--success); background: rgba(16, 185, 129, 0.1);' : 'border: 1px solid #333; background: #1e1e1e;';
@@ -229,6 +227,22 @@ function renderOffersPage() {
                 </div>
             `;
         });
+
+        // --- NEW: TERMS AND CONDITIONS SECTION ---
+        html += `
+            <div class="tnc-section" style="margin-top: 40px; padding: 20px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                <h3 style="color: var(--text-muted); font-size: 1rem; text-transform: uppercase; margin-top: 0; margin-bottom: 15px;">📜 Rules of the Club</h3>
+                <ul style="color: var(--text-muted); font-size: 0.8rem; line-height: 1.6; padding-left: 20px; margin: 0;">
+                    <li>Offers are valid <strong>only on the specified days</strong> (e.g., Monday offers valid only on Mondays).</li>
+                    <li>Offers <strong>cannot be combined</strong>. Only one coupon code can be applied per order.</li>
+                    <li>Standard packing & delivery charges apply to all orders unless specified otherwise.</li>
+                    <li><strong>"Steak & Sip"</strong> and other combo offers require all items to be in the cart to qualify.</li>
+                    <li>Management reserves the right to modify or withdraw offers at any time without prior notice.</li>
+                    <li>Coupons have no cash redemption value.</li>
+                    <li>In case of disputes, the decision of Café Cloud Club management is final.</li>
+                </ul>
+            </div>
+        `;
         
         html += `</div>`; // Close container
         offersContainer.innerHTML = html;
@@ -945,7 +959,7 @@ function renderCart() {
                  if(!f && key.includes("Fries")) f=cart[key];
                  if(!b && cart[key].category==='Bun-Tastic Burgers' && key.toLowerCase().includes('beef')) b=cart[key];
              }
-             if(c && f) { if((c.basePrice+f.basePrice)>222) discountVal = (c.basePrice+f.basePrice)-222; discountText="Mon: Combo @ 222"; }
+             if(c && f) { if((c.basePrice+f.basePrice)>222) { discountVal = (c.basePrice+f.basePrice)-222; discountText="Mon: Combo @ 222"; } }
              else if(b) { discountVal=20; discountText="Mon: ₹20 OFF Beef"; }
         }
         else if(activeCoupon === 'TUEPASTA') {
