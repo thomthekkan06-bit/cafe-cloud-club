@@ -1,3 +1,51 @@
+/* --- CHRISTMAS LIGHTS ANIMATION --- */
+.christmas-lights-container {
+    position: fixed;
+    top: -10px; /* Hide the wire slightly */
+    left: 0;
+    width: 100%;
+    height: 30px;
+    z-index: 9998; /* Below modal, above everything else */
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    pointer-events: none;
+    overflow: hidden;
+    padding: 0 20px;
+}
+
+.light-bulb {
+    width: 12px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ccc;
+    position: relative;
+    animation: lightGlow 2s infinite ease-in-out;
+}
+
+/* The wire connecting them */
+.light-bulb::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 10px;
+    background: #222;
+}
+
+/* Alternating Colors */
+.light-bulb:nth-child(4n+1) { background: #ff3b3b; box-shadow: 0 0 10px #ff3b3b; animation-delay: 0s; } /* Red */
+.light-bulb:nth-child(4n+2) { background: #3bff3b; box-shadow: 0 0 10px #3bff3b; animation-delay: 0.5s; } /* Green */
+.light-bulb:nth-child(4n+3) { background: #3b83ff; box-shadow: 0 0 10px #3b83ff; animation-delay: 1s; } /* Blue */
+.light-bulb:nth-child(4n+4) { background: #ffdb3b; box-shadow: 0 0 10px #ffdb3b; animation-delay: 1.5s; } /* Gold */
+
+@keyframes lightGlow {
+    0%, 100% { opacity: 0.4; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.1); box-shadow: 0 5px 20px currentColor; }
+}
+
 /* --- PRELOADER STYLES --- */
 #preloader {
     position: fixed;
@@ -166,6 +214,8 @@ body {
     width: 100%;
     height: 100%;
     transition: opacity 0.3s ease;
+    position: relative;
+    z-index: 5; /* Ensure dashboard sits above snow if snow is z-0 */
 }
 
 /* --- 1. LEFT SIDEBAR (CATEGORIES) --- */
@@ -177,6 +227,9 @@ body {
     flex-direction: column;
     overflow-y: auto;
     transition: background-color 0.3s ease, border-color 0.3s ease;
+    /* FIX: Force sidebar above snow layer */
+    position: relative;
+    z-index: 10;
 }
 
 .left-sidebar .brand-title {
@@ -281,6 +334,7 @@ body {
     background: var(--bg);
     transition: background-color 0.3s ease;
     position: relative;
+    /* FIX: Main content needs z-index to manage children like snow */
     z-index: 1;
     overflow-x: hidden;
 }
@@ -408,7 +462,7 @@ body {
 .bg-gradient-3 { background: linear-gradient(135deg, #165B33, #38ef7d); }
 .bg-gradient-4 { background: linear-gradient(135deg, #eb3349, #f45c43); }
 
-/* --- OFFERS PAGE --- */
+/* --- OFFERS PAGE (UPDATED FOR SEE-THROUGH) --- */
 .offers-view {
     display: none;
     position: fixed;
@@ -418,8 +472,9 @@ body {
     height: 100%;
     z-index: 9999;
     background: #ffffff; 
-    background-color: rgba(255, 255, 255, 0.98);
-    backdrop-filter: blur(8px);
+    /* FIX: High opacity to see snow behind it */
+    background-color: rgba(255, 255, 255, 0.90);
+    backdrop-filter: blur(4px);
     overflow-y: auto;
     padding: 20px;
     animation: fadeIn 0.3s ease;
@@ -633,8 +688,18 @@ body {
 .add-btn-mini:hover { background: var(--primary); color: white; }
 
 /* --- 3. RIGHT SIDEBAR (CART) --- */
-.order-sidebar { background: var(--white); padding: 25px; display: flex; flex-direction: column;
-    border-left: 1px solid #e5e7eb; height: 100vh; transition: background-color 0.3s ease, border-color 0.3s ease; }
+.order-sidebar { 
+    background: var(--white); 
+    padding: 25px; 
+    display: flex; 
+    flex-direction: column;
+    border-left: 1px solid #e5e7eb; 
+    height: 100vh; 
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+    /* FIX: Force sidebar above snow layer */
+    position: relative;
+    z-index: 10;
+}
 .cart-header-mobile { display: none; align-items: center;
     margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
 .back-btn { background: transparent; border: none; font-size: 1.2rem; color: var(--primary); cursor: pointer;
@@ -1131,7 +1196,8 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
     ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
     .dev-credit { border-color: #333; color: #777; }
     
-    .offers-view { background-color: rgba(15, 23, 42, 0.98) !important; background: #0F172A; }
+    /* FIX: High opacity dark mode offers */
+    .offers-view { background-color: rgba(15, 23, 42, 0.90) !important; background: #0F172A; }
     .offers-page-header { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
     .offer-full-card { background: #1E293B; color: #ecf0f1; border-color: #333; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
     .offer-title { color: #fff; }
@@ -1158,6 +1224,7 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
     left: 0;
     width: 100%;
     height: 100%;
+    /* FIX: Keep this at 0, but ensure other content is >0 */
     z-index: 0;
     pointer-events: none;
     overflow: hidden;
