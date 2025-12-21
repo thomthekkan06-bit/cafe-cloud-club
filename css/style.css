@@ -1,21 +1,22 @@
 /* --- CHRISTMAS LIGHTS ANIMATION --- */
 .christmas-lights-container {
     position: fixed;
-    top: -5px; /* Wire position */
+    top: -5px;
     left: 0;
     width: 100%;
     height: 40px;
-    z-index: 10002; /* Highest layer, above snow and modals */
+    /* Highest layer: Lights always on top */
+    z-index: 11000; 
     display: flex;
-    justify-content: center; /* Centers the string */
-    gap: 25px; /* Spacing between bulbs */
+    justify-content: center;
+    gap: 25px;
     pointer-events: none;
     overflow: hidden;
     padding: 0 10px;
 }
 
 .light-bulb {
-    min-width: 12px; /* Ensure they don't squish */
+    min-width: 12px;
     height: 18px;
     border-radius: 50%;
     background: #ccc;
@@ -23,7 +24,6 @@
     animation: lightGlow 2s infinite ease-in-out;
 }
 
-/* The wire connecting them */
 .light-bulb::before {
     content: '';
     position: absolute;
@@ -35,18 +35,17 @@
     background: #222;
 }
 
-/* Alternating Colors */
-.light-bulb:nth-child(4n+1) { background: #ff3b3b; box-shadow: 0 0 10px #ff3b3b; animation-delay: 0s; } /* Red */
-.light-bulb:nth-child(4n+2) { background: #3bff3b; box-shadow: 0 0 10px #3bff3b; animation-delay: 0.5s; } /* Green */
-.light-bulb:nth-child(4n+3) { background: #3b83ff; box-shadow: 0 0 10px #3b83ff; animation-delay: 1s; } /* Blue */
-.light-bulb:nth-child(4n+4) { background: #ffdb3b; box-shadow: 0 0 10px #ffdb3b; animation-delay: 1.5s; } /* Gold */
+.light-bulb:nth-child(4n+1) { background: #ff3b3b; box-shadow: 0 0 10px #ff3b3b; animation-delay: 0s; }
+.light-bulb:nth-child(4n+2) { background: #3bff3b; box-shadow: 0 0 10px #3bff3b; animation-delay: 0.5s; }
+.light-bulb:nth-child(4n+3) { background: #3b83ff; box-shadow: 0 0 10px #3b83ff; animation-delay: 1s; }
+.light-bulb:nth-child(4n+4) { background: #ffdb3b; box-shadow: 0 0 10px #ffdb3b; animation-delay: 1.5s; }
 
 @keyframes lightGlow {
     0%, 100% { opacity: 0.4; transform: scale(0.9); }
     50% { opacity: 1; transform: scale(1.1); box-shadow: 0 5px 20px currentColor; }
 }
 
-/* --- PRELOADER STYLES --- */
+/* --- PRELOADER --- */
 #preloader {
     position: fixed;
     top: 0;
@@ -54,7 +53,7 @@
     width: 100%;
     height: 100%;
     background-color: var(--bg);
-    z-index: 10000;
+    z-index: 12000; /* Loader covers absolutely everything */
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -72,7 +71,6 @@
     margin-bottom: 20px;
 }
 
-/* The Main Center Circle */
 .loader-main-circle {
     width: 80px;
     height: 80px;
@@ -87,7 +85,6 @@
     animation: mainPulse 2s infinite ease-in-out;
 }
 
-/* The Icons inside */
 .loader-icon {
     font-size: 35px;
     color: white;
@@ -100,7 +97,6 @@
 .icon-2 { animation: cycleIcon2 2s infinite; }
 .icon-3 { animation: cycleIcon3 2s infinite; }
 
-/* The Satellite Dot */
 .loader-satellite {
     position: absolute;
     width: 25px;
@@ -133,7 +129,6 @@
     line-height: 1.4;
 }
 
-/* --- ANIMATION KEYFRAMES --- */
 @keyframes mainPulse {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(0.95); }
@@ -215,11 +210,10 @@ body {
     height: 100%;
     transition: opacity 0.3s ease;
     position: relative;
-    /* Dashboard stays below snow */
-    z-index: 1;
+    z-index: 5;
 }
 
-/* --- 1. LEFT SIDEBAR (CATEGORIES) --- */
+/* --- LEFT SIDEBAR (CATEGORIES) --- */
 .left-sidebar {
     background: var(--white);
     border-right: 1px solid #e5e7eb;
@@ -229,8 +223,8 @@ body {
     overflow-y: auto;
     transition: background-color 0.3s ease, border-color 0.3s ease;
     position: relative;
-    /* Ensure content is readable under snow */
-    z-index: 2;
+    /* FIX: Sidebar > Snow */
+    z-index: 50; 
 }
 
 .left-sidebar .brand-title {
@@ -238,7 +232,6 @@ body {
     margin-bottom: 2px; 
     font-weight: 700;
     line-height: 1.2;
-    /* Festive Gradient Title */
     background: linear-gradient(to right, #D42426, #165B33);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -325,7 +318,7 @@ body {
 .sidebar-credit { display: block; border-top: 1px solid #eee; }
 .mobile-bottom-credit { display: none; width: 100%; border-top: 1px dashed #eee; margin-bottom: 30px; }
 
-/* --- 2. MAIN CONTENT (CENTER) --- */
+/* --- MAIN CONTENT (CENTER) --- */
 .main-content { 
     padding: 20px 30px;
     overflow-y: auto; 
@@ -334,7 +327,8 @@ body {
     background: var(--bg);
     transition: background-color 0.3s ease;
     position: relative;
-    z-index: 2;
+    /* FIX: Main content > Snow */
+    z-index: 10;
     overflow-x: hidden;
 }
 
@@ -345,7 +339,7 @@ body {
 .menu-grid, 
 .mobile-info-card {
     position: relative;
-    z-index: 5;
+    z-index: 20; /* Ensure interactivity */
 }
 
 .mobile-info-card { display: none; background: var(--white);
@@ -361,7 +355,7 @@ body {
     margin-top: 8px; border-top: 1px dashed #eee; padding-top: 8px; }
 .mobile-info-row a { color: var(--secondary); text-decoration: none; font-weight: 600; }
 
-/* --- HEADER BAR (STICKY) --- */
+/* --- HEADER BAR --- */
 .header-bar { 
     display: flex;
     justify-content: space-between; 
@@ -370,7 +364,8 @@ body {
     flex-shrink: 0;
     position: sticky;
     top: 0;
-    z-index: 100;
+    /* FIX: Header > Snow and everything in main */
+    z-index: 500;
     background-color: var(--bg);
     margin: -20px -30px 20px -30px;
     padding: 20px 30px 15px 30px;
@@ -388,10 +383,10 @@ body {
     font-size: 0.9rem; background: transparent; color: inherit;
 }
 
-/* --- NEWS TICKER STYLES --- */
+/* --- NEWS TICKER --- */
 .news-ticker-area {
     width: 100%;
-    background: linear-gradient(90deg, #165B33 0%, #2d2d2d 100%); /* Green gradient */
+    background: linear-gradient(90deg, #165B33 0%, #2d2d2d 100%);
     color: #FFD700;
     overflow: hidden;
     white-space: nowrap;
@@ -445,7 +440,7 @@ body {
     height: 150px; border-radius: 15px; padding: 20px; color: white; display: flex; flex-direction: column;
     justify-content: center; position: relative; overflow: hidden;
     box-shadow: 0 5px 15px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s ease; flex-shrink: 0;
-    border: 1px solid rgba(255, 255, 255, 0.3); /* Frosty border */
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 .promo-card:hover { transform: translateY(-3px); }
 .promo-card h3 { margin: 0 0 5px 0; font-size: 1.4rem; font-weight: 700; }
@@ -461,7 +456,7 @@ body {
 .bg-gradient-3 { background: linear-gradient(135deg, #165B33, #38ef7d); }
 .bg-gradient-4 { background: linear-gradient(135deg, #eb3349, #f45c43); }
 
-/* --- OFFERS PAGE (UPDATED FOR SEE-THROUGH) --- */
+/* --- OFFERS PAGE --- */
 .offers-view {
     display: none;
     position: fixed;
@@ -469,9 +464,9 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 9999;
+    /* FIX: Above Lights and Sidebar */
+    z-index: 12000;
     background: #ffffff; 
-    /* See-through for snow visibility */
     background-color: rgba(255, 255, 255, 0.90);
     backdrop-filter: blur(4px);
     overflow-y: auto;
@@ -686,7 +681,7 @@ body {
     transition: 0.2s; gap: 5px; }
 .add-btn-mini:hover { background: var(--primary); color: white; }
 
-/* --- 3. RIGHT SIDEBAR (CART) --- */
+/* --- RIGHT SIDEBAR (CART) --- */
 .order-sidebar { 
     background: var(--white); 
     padding: 25px; 
@@ -695,8 +690,9 @@ body {
     border-left: 1px solid #e5e7eb; 
     height: 100vh; 
     transition: background-color 0.3s ease, border-color 0.3s ease;
+    /* FIX: Sidebar > Snow */
     position: relative;
-    z-index: 2;
+    z-index: 50; 
 }
 .cart-header-mobile { display: none; align-items: center;
     margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
@@ -737,7 +733,7 @@ body {
 
 /* --- MODAL --- */
 .modal-overlay { position: fixed; top: 0; left: 0;
-    width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 2000; backdrop-filter: blur(4px); }
+    width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(4px); }
 .modal-card { background: white;
     padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;
     transition: background-color 0.3s ease; }
@@ -764,7 +760,7 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
     width: 100%;
     height: 100%;
     background: var(--white);
-    z-index: 3000;
+    z-index: 13000;
     flex-direction: column;
     align-items: center;
     justify-content: center;
@@ -926,7 +922,8 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
         width: 260px;
         height: 100%;
         background: var(--white);
-        z-index: 5000; 
+        /* FIX: Mobile sidebar must be on top of snow */
+        z-index: 10050; 
         transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         box-shadow: 2px 0 10px rgba(0,0,0,0.5);
         display: flex;
@@ -1004,7 +1001,8 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
         left: 0; 
         width: 100%; 
         height: 100%;
-        z-index: 2000; 
+        /* FIX: Cart > Snow */
+        z-index: 10050; 
         background: var(--bg); 
         padding: 20px; 
         overflow-y: auto;
@@ -1030,7 +1028,7 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
         width: 100%;
         height: 100%;
         background: rgba(0,0,0,0.5);
-        z-index: 4999; 
+        z-index: 10040; 
         backdrop-filter: blur(2px);
     }
     .sidebar-overlay.active { display: block; }
@@ -1216,17 +1214,18 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
 }
 
 /* --- HOLIDAY SNOW ANIMATION --- */
-/* FIX: High Z-index to cover everything (modals, sidebars) */
+/* FIX: Removed background-gradient to kill the fog! */
 .menu-bg-animation {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
+    /* Snow > Body/Dashboard, but Sidebar > Snow */
     z-index: 10001; 
     pointer-events: none;
     overflow: hidden;
-    background: linear-gradient(to bottom, var(--bg), transparent);
+    /* Removed background gradient here */
 }
 
 .snowflake {
