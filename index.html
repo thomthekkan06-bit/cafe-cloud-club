@@ -25,7 +25,8 @@
 
     <meta name="description" content="Order the best Burgers, Steaks, Pastas, and Shakes from Café Cloud Club. Fast delivery in Chalakudy. Fresh ingredients, great taste!">
     <meta name="keywords" content="Cafe Cloud Club, Burger, Steak, Pasta, Chalakudy, Food Delivery, Restaurant">
-    <meta name="theme-color" content="#FF4500">
+    
+    <meta name="theme-color" content="#D42426">
 
     <meta property="og:title" content="Café Cloud Club | Order Online">
     <meta property="og:description" content="Craving a Burger or Steak? Order now for pickup or delivery!">
@@ -346,18 +347,18 @@
                 <i class="fas fa-gift"></i> All Offers & T&C
             </div>
 
-<div class="reorder-btn-area">
-    <button class="reorder-btn" onclick="repeatLastOrder()">
-        <i class="fas fa-history"></i> Repeat Last Order
-    </button>
-</div>
+            <div class="reorder-btn-area">
+                <button class="reorder-btn" onclick="repeatLastOrder()">
+                    <i class="fas fa-history"></i> Repeat Last Order
+                </button>
+            </div>
 
-<a href="my-orders.html" class="filter-item" style="text-decoration:none; color:inherit;">
-    <i class="fas fa-receipt" style="margin-right:8px; color:#3498db;"></i> Past Orders
-</a>
-<div class="filter-item" onclick="setCategoryFilter('Favorites', this)">
-    <i class="fas fa-heart" style="margin-right:8px; color:#e74c3c;"></i> My Favorites
-</div>
+            <a href="my-orders.html" class="filter-item" style="text-decoration:none; color:inherit;">
+                <i class="fas fa-receipt" style="margin-right:8px; color:#3498db;"></i> Past Orders
+            </a>
+            <div class="filter-item" onclick="setCategoryFilter('Favorites', this)">
+                <i class="fas fa-heart" style="margin-right:8px; color:#e74c3c;"></i> My Favorites
+            </div>
 
             <div class="filter-item active" onclick="setCategoryFilter('All', this)">All Items</div>
             <div class="filter-item" onclick="setCategoryFilter('Bun-Tastic Burgers', this)">Bun-Tastic Burgers</div>
@@ -384,11 +385,7 @@
     </div>
 
     <div class="main-content">
-        <div class="menu-bg-animation">
-            <div class="floating-shape shape-1"></div>
-            <div class="floating-shape shape-2"></div>
-            <div class="floating-shape shape-3"></div>
-        </div>
+        <div class="menu-bg-animation" id="snow-container"></div>
 
         <div class="mobile-info-card">
             <h2 class="mobile-brand-title">Café Cloud Club</h2>
@@ -708,6 +705,36 @@
         </div>
     </div>
 </div>
+
+<script>
+    // --- HOLIDAY SNOW SCRIPT ---
+    // Minimal script to generate snow without heavy libraries
+    document.addEventListener('DOMContentLoaded', () => {
+        const container = document.getElementById('snow-container');
+        if (!container) return; // safety check
+        
+        const snowflakeCount = 30; // Keep it low for mobile performance
+
+        for (let i = 0; i < snowflakeCount; i++) {
+            const flake = document.createElement('div');
+            flake.classList.add('snowflake');
+            
+            // Randomize position and animation properties
+            const left = Math.random() * 100;
+            const size = Math.random() * 5 + 3; // 3px to 8px
+            const duration = Math.random() * 10 + 10; // 10s to 20s fall time
+            const delay = Math.random() * 10;
+            
+            flake.style.left = `${left}%`;
+            flake.style.width = `${size}px`;
+            flake.style.height = `${size}px`;
+            flake.style.animationDuration = `${duration}s`;
+            flake.style.animationDelay = `-${delay}s`; // Negative delay starts them mid-air
+            
+            container.appendChild(flake);
+        }
+    });
+</script>
 
 <script type="module" src="js/app.js"></script>
 </body>
