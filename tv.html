@@ -334,6 +334,8 @@
         <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
         <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
         <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
     </div>
 
     <div class="menu-bg-animation" id="snow-container"></div>
@@ -395,12 +397,14 @@
             });
         }, 1000);
 
-        // --- AUDIO SYSTEM ---
+        // --- AUDIO SYSTEM & WAKE LOCK ---
         const bell = new Audio('bell.mp3');
         let audioEnabled = false;
         let knownReadyIds = new Set(); 
+        let wakeLock = null;
 
-        window.enableAudio = function() {
+        window.enableAudio = async function() {
+            // 1. Play Audio (User Interaction Required)
             bell.play().then(() => {
                 bell.pause();
                 bell.currentTime = 0;
@@ -410,6 +414,23 @@
                 document.getElementById('sound-status').style.color = "var(--success)";
                 document.getElementById('sound-status').style.borderColor = "var(--success)";
             }).catch(e => console.error("Audio blocked", e));
+
+            // 2. Request Wake Lock (Keep Screen On)
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Screen Wake Lock active');
+                    
+                    // Re-acquire if window loses and regains focus
+                    document.addEventListener('visibilitychange', async () => {
+                        if (wakeLock !== null && document.visibilityState === 'visible') {
+                            wakeLock = await navigator.wakeLock.request('screen');
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error(`Wake Lock failed: ${err.name}, ${err.message}`);
+            }
         };
 
         // --- DAILY OFFERS LOGIC ---
