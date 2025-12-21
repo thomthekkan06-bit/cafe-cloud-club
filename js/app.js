@@ -147,7 +147,19 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
 }
 function deg2rad(deg) { return deg * (Math.PI/180); }
 
+// --- DATA STRUCTURE FOR OFFERS ---
+const OFFERS_DATA = [
+    { day: 0, title: "SUNDAY SPECIAL", code: "SUNFEAST", desc: "Fam-Jam Feast! 1 Pasta + 1 Slider + 1 Shake = ₹399." },
+    { day: 1, title: "MEAT-UP MONDAY", code: "MONBURGER", desc: "Chicken Burger + Fries = ₹222 OR ₹20 OFF any Beef Burger." },
+    { day: 2, title: "TWISTED TUESDAY", code: "TUEPASTA", desc: "Any Penne Pasta (Alfredo/Pesto/Arabiata/Cloud) Flat @ ₹179." },
+    { day: 3, title: "WICKED WEDNESDAY", code: "WEDSTEAK", desc: "Steak @ ₹300 (Code: WEDSTEAK) OR Premium Shake @ ₹120 (Code: WEDSHAKE)." },
+    { day: 4, title: "THURSDAY CLUB", code: "THUSAND", desc: "Any Sandwich + Any Chiller = ₹189." },
+    { day: 5, title: "FRI-YAY FRY-DAY", code: "FRIFRIES", desc: "Veg Loaded Fries ₹119 | Chicken/Beef Loaded Fries ₹179." },
+    { day: 6, title: "ROCK N' ROLL SATURDAY", code: "SATROLL", desc: "Any Roll (Tandoori, Pesto, Chipotle) for ₹129." }
+];
+
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Food Quotes
     const foodQuotes = {
         0: "Midnight munchies? A Burger fixes everything.", 1: "Insomnia tastes better with a thick Milkshake.",
         2: "Last chance. Burgers before we sleep.", 3: "Kitchen closing. See you at 2 PM.", 4: "Kitchen closed. Dreaming of Burgers.",
@@ -164,9 +176,64 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentHour = new Date().getHours();
     const quoteElement = document.getElementById('dynamic-food-quote');
     if(quoteElement) { quoteElement.innerText = foodQuotes[currentHour]; }
+    
+    // 2. Hide Preloader
     const preloader = document.getElementById('preloader');
     if (preloader) { preloader.classList.add('preloader-hidden'); }
+    
+    // 3. Initialize Offers
+    renderOffersPage();
 });
+
+function renderOffersPage() {
+    // A. Setup Ticker
+    const dayIndex = new Date().getDay();
+    const todayOffer = OFFERS_DATA.find(o => o.day === dayIndex);
+    const tickerElement = document.getElementById('daily-ticker-text');
+    if(tickerElement && todayOffer) {
+        tickerElement.innerText = `${todayOffer.title}: ${todayOffer.desc} Use Code: ${todayOffer.code}`;
+    }
+
+    // B. Setup Offers Page Content
+    const offersContainer = document.getElementById('offers-view');
+    if(offersContainer) {
+        // Keep the header/close button, clear the content area
+        // We assume offers-view has a structure. If it's just a div, we build it all.
+        // Let's build a safe structure inside.
+        let html = `
+            <div style="padding: 20px; max-width: 600px; margin: 0 auto; padding-top: 60px;">
+                <button class="back-btn" onclick="toggleOffersPage()" style="margin-bottom: 20px;">
+                    <i class="fas fa-arrow-left"></i> Back to Menu
+                </button>
+                <h2 style="color:var(--primary); font-family:'Oswald',sans-serif; text-transform:uppercase; margin-bottom:10px;">Weekly Deals</h2>
+                <p style="color:#aaa; font-size:0.9rem; margin-bottom:30px;">Tap "Apply" to use the code instantly!</p>
+        `;
+
+        OFFERS_DATA.forEach(offer => {
+            const isToday = (offer.day === dayIndex);
+            const activeClass = isToday ? 'border: 2px solid var(--success); background: rgba(16, 185, 129, 0.1);' : 'border: 1px solid #333; background: #1e1e1e;';
+            const badge = isToday ? `<div style="background:var(--success); color:#000; font-weight:bold; padding:4px 8px; border-radius:4px; display:inline-block; font-size:0.75rem; margin-bottom:8px;">TODAY'S SPECIAL</div>` : '';
+            
+            html += `
+                <div style="padding: 15px; border-radius: 12px; margin-bottom: 15px; position: relative; ${activeClass}">
+                    ${badge}
+                    <h3 style="margin: 0 0 5px 0; font-size: 1.1rem; color: #fff;">${offer.title}</h3>
+                    <p style="color: #ccc; font-size: 0.9rem; margin-bottom: 15px; line-height: 1.4;">${offer.desc}</p>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px;">
+                        <code style="color: var(--warning); font-family: monospace; font-size: 1.1rem;">${offer.code}</code>
+                        <button onclick="copyCode('${offer.code}')" style="background: var(--primary); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem;">
+                            APPLY
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `</div>`; // Close container
+        offersContainer.innerHTML = html;
+    }
+}
 
 let lastClickX = 0; let lastClickY = 0;
 document.addEventListener('click', (e) => { lastClickX = e.clientX; lastClickY = e.clientY; });
@@ -275,11 +342,16 @@ window.toggleUnder200 = function(btn) {
 window.copyCode = function(code) {
     const couponInput = document.getElementById('coupon-input');
     const couponBtn = document.getElementById('coupon-apply-btn');
-    couponInput.value = code; couponBtn.disabled = false;
-    document.getElementById('offers-view').classList.remove('active');
-    document.getElementById('main-dashboard').style.display = 'grid';
-    if(window.innerWidth <= 1000) { toggleCartPage(); }
-    couponInput.scrollIntoView({behavior: "smooth"});
+    if(couponInput && couponBtn) {
+        couponInput.value = code; 
+        couponBtn.disabled = false;
+        document.getElementById('offers-view').classList.remove('active');
+        document.getElementById('main-dashboard').style.display = 'grid';
+        if(window.innerWidth <= 1000) { toggleCartPage(); }
+        couponInput.scrollIntoView({behavior: "smooth"});
+        couponInput.style.borderColor = "var(--primary)";
+        setTimeout(() => couponInput.style.borderColor = "#ddd", 500);
+    }
 }
 
 window.toggleOffersPage = function() {
@@ -832,12 +904,7 @@ function renderCart() {
     const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
     
     // --- DUPLICATE DISCOUNT CALC TO DISPLAY IN CART UI ---
-    // Note: Ideally we refactor this into one function, but for now copying logic is safer to ensure consistency
     let discountVal = 0; let discountText = "";
-    // Copy/Paste Logic from FinalizeOrder... simplified for UI
-    if(activeCoupon === 'MONBURGER') { discountText = "Mon: Chicken+Fries @ 222"; } // Calc handled in finalize usually
-    // Simplified display logic here. The REAL calc happens in FinalizeOrder now.
-    // WAIT. If we want "Live" total, we need calc here too.
     
     // RE-CALC FOR LIVE DISPLAY
     for(let key in cart) {
@@ -872,7 +939,6 @@ function renderCart() {
              }
         }
         else if(activeCoupon === 'MONBURGER') {
-             // ... (Repeat Monday logic for display)
              let c=null, f=null, b=null;
              for(let key in cart) {
                  if(!c && cart[key].category==='Bun-Tastic Burgers' && key.toLowerCase().includes('chicken')) c=cart[key];
@@ -893,7 +959,44 @@ function renderCart() {
                  }
              }
         }
-        // ... (Other coupons) ...
+        else if(activeCoupon === 'WEDSTEAK') {
+             let item = Object.values(cart).find(i=>i.category==="Butcher's Best");
+             if(item && item.basePrice > 300) { discountVal = item.basePrice - 300; discountText = "Wed: Flat ₹300 Steak"; }
+        }
+        else if(activeCoupon === 'WEDSHAKE') {
+             let item = Object.entries(cart).find(([k,v])=>v.category==="Whipped Wonders" && !k.toLowerCase().includes("vanilla"));
+             if(item && item[1].basePrice > 120) { discountVal = item[1].basePrice - 120; discountText = "Wed: Flat ₹120 Shake"; }
+        }
+        else if(activeCoupon === 'THUSAND') {
+             let sand = Object.values(cart).find(i=>i.category==='Toasty Treats');
+             let chill = Object.values(cart).find(i=>i.category==='Icy Sips');
+             if(sand && chill && (sand.basePrice+chill.basePrice)>189) { discountVal = (sand.basePrice+chill.basePrice) - 189; discountText = "Thursday Club"; }
+        }
+        else if(activeCoupon === 'FRIFRIES') {
+             for(let key in cart) {
+                 if(key === "Veg - Loaded Fries") { discountVal = cart[key].basePrice - 119; discountText = "Fri-Yay Fries"; break; }
+                 if(key.includes("Loaded Fries") && (key.toLowerCase().includes("chicken")||key.toLowerCase().includes("beef"))) { discountVal = cart[key].basePrice - 179; discountText = "Fri-Yay Fries"; break; }
+             }
+        }
+        else if(activeCoupon === 'SATROLL') {
+             let roll = Object.values(cart).find(i=>i.category==="Freshly Folded");
+             if(roll && roll.basePrice > 129) { discountVal = roll.basePrice - 129; discountText = "Sat Special"; }
+        }
+        else if(['CLOUD15','STEAK13','QUICK20','FEAST14'].includes(activeCoupon)) {
+            let qTotal = 0;
+             for(let key in cart) {
+                 let item = cart[key];
+                 let line = item.basePrice * item.qty;
+                 if(activeCoupon==='CLOUD15' && (item.category==='Bun-Tastic Burgers'||key.includes('Fries')||item.category==='Icy Sips')) qTotal+=line;
+                 if(activeCoupon==='STEAK13' && (item.category==="Butcher's Best"||item.category==="Whipped Wonders")) qTotal+=line;
+                 if(activeCoupon==='QUICK20' && (item.category==="Freshly Folded"||key.includes("Fries")||key.includes("Nuggets"))) qTotal+=line;
+                 if(activeCoupon==='FEAST14' && (item.category==="Bun-Tastic Burgers"||item.category==="Italian Indulgence"||item.category==="Rice Harmony"||key.includes("Loaded")||item.category==="Nature's Nectar")) qTotal+=line;
+             }
+             if(activeCoupon==='CLOUD15') { discountVal = Math.round(qTotal * 0.15); discountText = "Coupon (15% OFF)"; }
+             if(activeCoupon==='STEAK13') { discountVal = Math.round(qTotal * 0.13); discountText = "Steak & Sip (13% OFF)"; }
+             if(activeCoupon==='QUICK20') { discountVal = Math.round(qTotal * 0.20); discountText = "Quick Bite (20% OFF)"; }
+             if(activeCoupon==='FEAST14') { discountVal = Math.round(qTotal * 0.14); discountText = "Cloud Feast (14% OFF)"; }
+        }
     }
 
     const discountRow = document.getElementById('discount-row');
