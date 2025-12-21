@@ -672,6 +672,14 @@ function loadUserDetails() {
 window.openCheckoutModal = function() { 
     // 1. Load details first
     loadUserDetails();
+
+    // --- FIX: Close Mobile Cart Sidebar ---
+    // This ensures the cart gets out of the way so the user sees the form
+    const cartSidebar = document.getElementById('cart-sidebar');
+    if (cartSidebar && cartSidebar.classList.contains('active')) {
+        cartSidebar.classList.remove('active');
+    }
+
     // 2. Show Modal
     document.getElementById('checkout-modal').style.display = 'flex';
     toggleOrderFields();
