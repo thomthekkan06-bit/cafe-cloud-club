@@ -821,7 +821,7 @@ window.finalizeOrder = function() {
                 return;
             }
         }
-        const mapLink = `https://www.google.com/maps/search/?api=1&query=$${lat},${lng}`;
+        const mapLink = https://www.google.com/maps/search/?api=1&query=${lat},${lng};
         address = `${house}, ${street}\n(Landmark: ${landmark})\n📍 Pin: ${mapLink}`;
     }
 
