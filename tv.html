@@ -16,7 +16,8 @@
             --bg-gradient: linear-gradient(135deg, #0f1115 0%, #1a1d23 100%);
             --card-bg: rgba(255, 255, 255, 0.03);
             --card-border: rgba(255, 255, 255, 0.05);
-            --primary: #3b82f6;
+            /* CHRISTMAS RED UPDATE */
+            --primary: #D42426; 
             --success: #10b981;
             --warning: #f59e0b;
             --text-main: #ffffff;
@@ -34,11 +35,88 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            position: relative;
+        }
+
+        /* --- CHRISTMAS LIGHTS --- */
+        .christmas-lights-container {
+            position: fixed;
+            top: -5px;
+            left: 0;
+            width: 100%;
+            height: 40px;
+            z-index: 2000; /* Top most layer */
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            pointer-events: none;
+            overflow: hidden;
+            padding: 0 10px;
+        }
+
+        .light-bulb {
+            min-width: 12px;
+            height: 18px;
+            border-radius: 50%;
+            background: #ccc;
+            position: relative;
+            animation: lightGlow 2s infinite ease-in-out;
+        }
+
+        .light-bulb::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 10px;
+            background: #222;
+        }
+
+        .light-bulb:nth-child(4n+1) { background: #ff3b3b; box-shadow: 0 0 10px #ff3b3b; animation-delay: 0s; }
+        .light-bulb:nth-child(4n+2) { background: #3bff3b; box-shadow: 0 0 10px #3bff3b; animation-delay: 0.5s; }
+        .light-bulb:nth-child(4n+3) { background: #3b83ff; box-shadow: 0 0 10px #3b83ff; animation-delay: 1s; }
+        .light-bulb:nth-child(4n+4) { background: #ffdb3b; box-shadow: 0 0 10px #ffdb3b; animation-delay: 1.5s; }
+
+        @keyframes lightGlow {
+            0%, 100% { opacity: 0.4; transform: scale(0.9); }
+            50% { opacity: 1; transform: scale(1.1); box-shadow: 0 5px 20px currentColor; }
+        }
+
+        /* --- SNOW ANIMATION --- */
+        .menu-bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1; /* Behind content */
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .snowflake {
+            position: absolute;
+            top: -10px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.6; /* Slightly lower opacity for dark mode */
+            animation: fall linear infinite;
+        }
+
+        .snowflake:nth-child(odd) { background: #E1E8ED; }
+        .snowflake:nth-child(2n) { filter: blur(1px); }
+        .snowflake:nth-child(3n) { filter: blur(2px); opacity: 0.3; }
+
+        @keyframes fall {
+            0% { transform: translateY(-10vh) translateX(0); }
+            100% { transform: translateY(110vh) translateX(20px); }
         }
 
         /* --- HEADER --- */
         .tv-header {
-            position: relative; /* Key for centering clock */
+            position: relative;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -47,7 +125,7 @@
             background: rgba(0, 0, 0, 0.2);
             border-bottom: 1px solid var(--card-border);
             backdrop-filter: blur(10px);
-            z-index: 10;
+            z-index: 10; /* Above Snow */
         }
 
         .brand-title {
@@ -55,7 +133,8 @@
             font-weight: 800;
             letter-spacing: -0.5px;
             margin: 0;
-            background: linear-gradient(90deg, #fff, #a1a1aa);
+            /* Holiday Gradient */
+            background: linear-gradient(90deg, #D42426, #165B33);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -86,6 +165,8 @@
             grid-template-columns: 1fr 1fr;
             height: calc(100vh - 180px); /* Adjust for header/footer */
             gap: 2px;
+            position: relative;
+            z-index: 10; /* Above Snow */
         }
 
         .column {
@@ -205,6 +286,7 @@
             white-space: nowrap;
             position: relative;
             border-top: 1px solid var(--card-border);
+            z-index: 10; /* Above Snow */
         }
 
         .ticker-wrap { width: 100%; overflow: hidden; }
@@ -242,6 +324,19 @@
     </style>
 </head>
 <body>
+
+    <div class="christmas-lights-container">
+        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+    </div>
+
+    <div class="menu-bg-animation" id="snow-container"></div>
 
     <header class="tv-header">
         <h1 class="brand-title">☁️ Café Cloud Club</h1>
@@ -301,7 +396,7 @@
         }, 1000);
 
         // --- AUDIO SYSTEM ---
-        const bell = new Audio('bell.mp3'); 
+        const bell = new Audio('bell.mp3');
         let audioEnabled = false;
         let knownReadyIds = new Set(); 
 
@@ -330,14 +425,13 @@
         
         const dayIndex = new Date().getDay();
         const todayOffer = dailyOfferTexts[dayIndex];
-        
+
         // --- STRICT DISCLAIMER ---
         document.getElementById('daily-offer-text').innerHTML = `<strong>📲 ONLINE EXCLUSIVE (Delivery & Pickup):</strong> ${todayOffer} | Order @ cafe-cloud-club.vercel.app`;
 
 
         // --- FIREBASE ORDER LISTENER (STRICT SAFETY VERSION) ---
         const ordersRef = ref(db, 'orders');
-
         onValue(ordersRef, (snapshot) => {
             const data = snapshot.val();
             const prepContainer = document.getElementById('grid-preparing');
@@ -358,7 +452,7 @@
                     if (!order || !order.status) return;
                     if (!order.orderId) return; // Must have ID
                     if (!order.customer || !order.customer.name) return; // Must have name
-                    // ---------------------
+                    // ---------------------\
 
                     const status = order.status;
                     const orderId = order.orderId;
@@ -390,6 +484,32 @@
 
             if (newReadyCount > 0 && audioEnabled) {
                 bell.play().catch(e => console.log(e));
+            }
+        });
+
+        // --- HOLIDAY SNOW SCRIPT ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('snow-container');
+            if (!container) return;
+            
+            const snowflakeCount = 40; // More snow for big screen
+
+            for (let i = 0; i < snowflakeCount; i++) {
+                const flake = document.createElement('div');
+                flake.classList.add('snowflake');
+                
+                const left = Math.random() * 100;
+                const size = Math.random() * 5 + 3;
+                const duration = Math.random() * 10 + 10;
+                const delay = Math.random() * 10;
+                
+                flake.style.left = `${left}%`;
+                flake.style.width = `${size}px`;
+                flake.style.height = `${size}px`;
+                flake.style.animationDuration = `${duration}s`;
+                flake.style.animationDelay = `-${delay}s`;
+                
+                container.appendChild(flake);
             }
         });
     </script>
