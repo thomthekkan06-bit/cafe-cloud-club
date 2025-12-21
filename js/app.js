@@ -16,68 +16,94 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-/* --- MAP & LOCATION LOGIC --- */
+/* --- MAP & LOCATION LOGIC (UPDATED) --- */
 let map = null;
 let marker = null;
 const CAFE_LAT = 10.286;
 const CAFE_LNG = 76.368;
 
-// --- SMART MAP INIT (READS SAVED LOCATION) ---
+// APPROXIMATE COORDINATES FOR TOWNS
+const AREA_COORDS = {
+    "Muringoor": { lat: 10.2865, lng: 76.3685 },
+    "Divine Nagar": { lat: 10.2950, lng: 76.3650 },
+    "Chalakudy": { lat: 10.3070, lng: 76.3340 },
+    "Potta": { lat: 10.3150, lng: 76.3500 },
+    "Koratty": { lat: 10.2350, lng: 76.3750 },
+    "Meloor": { lat: 10.2700, lng: 76.3600 },
+    "Kodakara": { lat: 10.3550, lng: 76.3000 },
+    "Nellayi": { lat: 10.3700, lng: 76.2900 },
+    "Karukutty": { lat: 10.2100, lng: 76.3900 },
+    "Angamaly": { lat: 10.1960, lng: 76.3860 },
+    "Aloor": { lat: 10.3000, lng: 76.3100 },
+    "Kuzhur": { lat: 10.2500, lng: 76.2800 },
+    "Pariyaram": { lat: 10.2900, lng: 76.3900 },
+    "Adichilappilly": { lat: 10.2950, lng: 76.4000 }
+};
+
+// --- SMART MAP INIT ---
 window.initDeliveryMap = function() {
-    // 1. Get current values (either Default Cafe or Saved User Location)
     let latVal = parseFloat(document.getElementById('geo-lat').value);
     let lngVal = parseFloat(document.getElementById('geo-lng').value);
 
-    // Safety fallback
+    // Default to Cafe if empty
     if (isNaN(latVal) || latVal === 0) latVal = CAFE_LAT;
     if (isNaN(lngVal) || lngVal === 0) lngVal = CAFE_LNG;
 
-    // 2. If map exists, just move the pin
+    // IF MAP EXISTS, JUST REFRESH IT (Fixes the "Invisible Map" bug)
     if (map !== null) { 
         setTimeout(() => {
-            map.invalidateSize();
+            map.invalidateSize(); // CRITICAL FIX FOR VISIBILITY
             const newLatLng = new L.LatLng(latVal, lngVal);
             marker.setLatLng(newLatLng);
             map.setView(newLatLng, 16); 
-        }, 200);
+        }, 300);
         return; 
     }
 
-    // 3. Initialize Map
+    // CREATE MAP
     map = L.map('delivery-map').setView([latVal, lngVal], 16);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // Create marker at the detected location
     marker = L.marker([latVal, lngVal], {draggable: true}).addTo(map);
 
-    // Save coords on drag
+    // UPDATE INPUTS ON DRAG
     marker.on('dragend', function(e) {
         const pos = marker.getLatLng();
         document.getElementById('geo-lat').value = pos.lat.toFixed(6);
         document.getElementById('geo-lng').value = pos.lng.toFixed(6);
     });
 
-    // Ensure inputs are populated
-    document.getElementById('geo-lat').value = latVal;
-    document.getElementById('geo-lng').value = lngVal;
+    // FORCE RESIZE TO FIX GREY BOX
+    setTimeout(() => { map.invalidateSize(); }, 500);
 }
 
 window.locateUser = function() {
     if (!navigator.geolocation) { alert("Geolocation not supported"); return; }
     
+    // Show loading state
+    const btn = document.querySelector('button[onclick="locateUser()"]');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Locating...';
+
     navigator.geolocation.getCurrentPosition((pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
-        map.setView([lat, lng], 16);
+        
+        map.setView([lat, lng], 18);
         marker.setLatLng([lat, lng]);
         document.getElementById('geo-lat').value = lat.toFixed(6);
         document.getElementById('geo-lng').value = lng.toFixed(6);
-    }, () => alert("Could not fetch location. Please drag pin manually."));
+        
+        btn.innerHTML = originalText; // Reset button
+    }, (err) => {
+        alert("Could not fetch location. Please enable GPS or drag the pin manually.");
+        btn.innerHTML = originalText;
+    }, { enableHighAccuracy: true });
 }
 
-/* --- SUB-LOCATION MASTER LIST --- */
+/* --- SUB-LOCATION LOGIC (Auto-Move Enabled) --- */
 const subPlaces = {
     "Muringoor": ["Muringoor Junction", "Vadakkummuri", "Thekkummuri", "Sanjo Nagar", "Annallur", "Viyyoor Padam"],
     "Divine Nagar": ["Divine Retreat Centre", "Railway Station Area", "Muringoor Bridge Area", "Chalakudy River Side"],
@@ -103,6 +129,7 @@ window.updateSubLocations = function() {
 
     subSelect.innerHTML = "";
 
+    // 1. POPULATE DROPDOWN
     if (subPlaces[selectedTown]) {
         subWrapper.style.display = 'block';
         const defaultOpt = document.createElement('option');
@@ -110,14 +137,14 @@ window.updateSubLocations = function() {
         defaultOpt.disabled = true;
         defaultOpt.selected = true;
         subSelect.add(defaultOpt);
-
+        
         subPlaces[selectedTown].forEach(place => {
             const opt = document.createElement('option');
             opt.value = place;
             opt.text = place;
             subSelect.add(opt);
         });
-
+        
         const otherOpt = document.createElement('option');
         otherOpt.value = "Other";
         otherOpt.text = "Other / Not Listed";
@@ -126,7 +153,34 @@ window.updateSubLocations = function() {
         subWrapper.style.display = 'none';
         subSelect.value = "";
     }
+
+    // 2. AUTO-MOVE MAP TO SELECTED TOWN (NEW FEATURE)
+    if (AREA_COORDS[selectedTown] && map && marker) {
+        const coords = AREA_COORDS[selectedTown];
+        const newLatLng = new L.LatLng(coords.lat, coords.lng);
+        
+        marker.setLatLng(newLatLng);
+        map.setView(newLatLng, 15);
+        
+        // Update hidden inputs
+        document.getElementById('geo-lat').value = coords.lat;
+        document.getElementById('geo-lng').value = coords.lng;
+    }
 }
+
+// --- HELPER: CALCULATE DISTANCE (Haversine Formula) ---
+function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Radius of earth in km
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2); 
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    return R * c; // Distance in km
+}
+
+function deg2rad(deg) { return deg * (Math.PI/180); }
+
 
 /* --- PRELOADER --- */
 document.addEventListener('DOMContentLoaded', () => {
@@ -202,7 +256,6 @@ onValue(menuRef, (snapshot) => {
                 if (item.stockReturnTime && Date.now() < item.stockReturnTime) isAvailable = false;
             }
             if (item.inStock === false) isAvailable = false;
-            
             if (isAvailable) menuData.push(item);
         });
 
@@ -236,7 +289,6 @@ window.toggleFavorite = function(itemName) {
     const index = favorites.indexOf(itemName);
     if (index === -1) favorites.push(itemName);
     else favorites.splice(index, 1);
-    
     localStorage.setItem('ccc_favorites', JSON.stringify(favorites));
     if (currentCategory === 'Favorites') renderMenu();
     else {
@@ -284,7 +336,6 @@ window.setCategoryFilter = function(cat, btn) {
     if(btn) btn.classList.add('active');
     currentCategory = cat;
     renderMenu();
-    
     if(window.innerWidth <= 1000) {
         document.querySelector('.main-content').scrollTop = 0;
         const sidebar = document.querySelector('.left-sidebar');
@@ -334,7 +385,6 @@ window.toggleOffersPage = function() {
 function renderMenu() {
     const root = document.getElementById('menu-root');
     root.innerHTML = '';
-    
     let filteredItems = menuData.filter(item => {
         if (currentCategory === 'Favorites') return favorites.includes(item.name);
         if (currentCategory !== 'All' && item.category !== currentCategory) return false;
@@ -354,7 +404,6 @@ function renderMenu() {
     
     if (currentSort === 'low-high') filteredItems.sort((a, b) => a.price - b.price);
     else if (currentSort === 'high-low') filteredItems.sort((a, b) => b.price - a.price);
-
     if (filteredItems.length === 0) {
         root.innerHTML = '<div style="grid-column: 1/-1; text-align:center; color:#999; padding: 20px;">No items found matching your filters.</div>';
         return;
@@ -404,10 +453,8 @@ window.openOptionModal = function(index) {
     }
     tempSelectedItemIndex = index;
     let availableOptions = [];
-    
     const cheeseCats = ["Bun-Tastic Burgers", "Italian Indulgence", "Freshly Folded", "Toasty Treats"];
     if (cheeseCats.includes(item.category)) availableOptions.push({ name: "Extra Cheese", price: 15 });
-    
     if (item.category === "Bun-Tastic Burgers") {
         const friedEggEligible = [
             "Chicken Slider Burger - Pesto", "Chicken Slider Burger - Tandoori", "Cloud Special Chicken Burger",
@@ -438,7 +485,6 @@ window.openOptionModal = function(index) {
     }
     
     if (item.category === "Whipped Wonders") availableOptions.push({ name: "Extra Ice Cream (Thick Shake)", price: 30 });
-
     if (availableOptions.length === 0 && item.category === "ADD-ON") {
         addToCart(item.name, item.price, item.price, item.type, item.category);
         return;
@@ -448,26 +494,23 @@ window.openOptionModal = function(index) {
     document.getElementById('modal-item-base-price').innerText = `Base Price: ${rupeeSign}${item.price}`;
     const container = document.getElementById('modal-options-wrapper');
     container.innerHTML = '';
-    
     availableOptions.forEach((opt, i) => {
         container.innerHTML += `
             <div class="custom-option-row">
                 <label class="custom-option-label">
                     <input type="checkbox" class="modal-opt-checkbox" data-name="${opt.name}" data-price="${opt.price}" onchange="updateModalTotal()"> 
                     ${opt.name}
-                </label>
+                 </label>
                 <span class="custom-option-price">+${rupeeSign}${opt.price}</span>
             </div>
         `;
     });
-
     container.innerHTML += `
         <div style="margin-top:15px;">
             <label style="font-size:0.8rem; color:var(--grey-text);">Special Note:</label>
             <input type="text" id="modal-note-input" class="note-input" placeholder="e.g. Spicy, No Mayo">
         </div>
     `;
-
     document.getElementById('customization-modal').style.display = 'flex';
     updateModalTotal();
 }
@@ -491,7 +534,6 @@ window.addToCartFromModal = function() {
         finalPrice += parseInt(cb.dataset.price);
         modifiers.push(cb.dataset.name);
     });
-    
     const noteInput = document.getElementById('modal-note-input');
     const noteText = noteInput ? noteInput.value.trim() : '';
     let displayName = item.name;
@@ -668,13 +710,12 @@ function loadUserDetails() {
     }
 }
 
-// --- CHECKOUT MODAL ---
+// --- CHECKOUT MODAL (UPDATED: Closes Sidebar) ---
 window.openCheckoutModal = function() { 
     // 1. Load details first
     loadUserDetails();
-
+    
     // --- FIX: Close Mobile Cart Sidebar ---
-    // This ensures the cart gets out of the way so the user sees the form
     const cartSidebar = document.getElementById('cart-sidebar');
     if (cartSidebar && cartSidebar.classList.contains('active')) {
         cartSidebar.classList.remove('active');
@@ -719,7 +760,7 @@ function checkStoreStatus(orderType) {
     return { isOpen: true };
 }
 
-// --- FIXED FINALIZE ORDER FUNCTION ---
+// --- FINAL SUBMISSION (UPDATED: Distance Check) ---
 window.finalizeOrder = function() {
     // 1. Basic Validation
     const type = document.querySelector('input[name="orderType"]:checked').value;
@@ -735,20 +776,19 @@ window.finalizeOrder = function() {
     const email = document.getElementById('c-email').value.trim();
     const time = document.getElementById('c-time').value;
     const instruction = document.getElementById('c-instruction').value.trim();
-    
     if(!name || !time) { alert("Please fill in Name and Preferred Time."); return; }
     if (!email || !email.includes('@')) { alert("Please enter a valid email!"); return; }
 
-    // --- ADDRESS LOGIC ---
+    // --- ADDRESS LOGIC (UPDATED) ---
     let address = "";
     if (type === 'Delivery') {
         const house = document.getElementById('addr-house').value.trim();
         let street = document.getElementById('addr-street').value;
         const subStreet = document.getElementById('addr-sub-street').value;
         const landmark = document.getElementById('addr-landmark').value.trim();
-        const lat = document.getElementById('geo-lat').value;
-        const lng = document.getElementById('geo-lng').value;
-        
+        const lat = parseFloat(document.getElementById('geo-lat').value);
+        const lng = parseFloat(document.getElementById('geo-lng').value);
+
         if (!house) { alert("Please enter House Name/Flat No."); return; }
         if (!street) { alert("Please select your Main Town."); return; }
         
@@ -760,6 +800,20 @@ window.finalizeOrder = function() {
         }
 
         if (!landmark) { alert("Please enter a nearby Landmark."); return; }
+        
+        // --- NEW: DISTANCE VALIDATION CHECK ---
+        const mainTown = document.getElementById('addr-street').value;
+        if (AREA_COORDS[mainTown]) {
+            const townCoords = AREA_COORDS[mainTown];
+            const dist = getDistanceFromLatLonInKm(townCoords.lat, townCoords.lng, lat, lng);
+            // Block if pin is more than 4km away from the selected town
+            if (dist > 4.0) {
+                alert(`⚠️ LOCATION MISMATCH!\n\nYou selected "${mainTown}", but your map pin is placed too far away (${dist.toFixed(1)} km).\n\nPlease drag the map pin exactly to your delivery location, or correct the Town selection.`);
+                return;
+            }
+        }
+        // ----------------------------------------
+
         if (street === "Other") {
             if (instruction.length < 5) {
                 alert("You selected 'Other'. Please type your exact location name in 'Special Instructions'.");
@@ -786,8 +840,8 @@ window.finalizeOrder = function() {
     const orderId = Math.floor(100000 + Math.random() * 900000);
     const now = new Date();
     const timeString = now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
-
-    // --- CALCULATE TOTALS (Base) ---
+    
+    // --- CALCULATE TOTALS ---
     let subTotal = 0;
     let packingTotal = 0;
     const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
@@ -800,10 +854,8 @@ window.finalizeOrder = function() {
         let chargePerItem = 10;
         if (item.category === 'ADD-ON') chargePerItem = key.startsWith("Hummus") ? 7 : 5;
         else if (fiveRsCats.includes(item.category)) chargePerItem = 5;
-        
         packingTotal += (chargePerItem * item.qty);
         if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
-
         // Offer Item flagging
         let isOfferItem = false;
         if (activeCoupon) {
@@ -822,13 +874,12 @@ window.finalizeOrder = function() {
         });
     }
     
-    // --- SECURITY FIX: RECALCULATE DISCOUNT ---
+    // --- DISCOUNT CALCULATION ---
     let discountVal = 0;
     let couponName = "";
     
     if(activeCoupon) { 
         couponName = activeCoupon;
-        
         if(activeCoupon === 'MONBURGER') {
             let chickenItem = null, friesItem = null, beefItem = null;
             for(let key in cart) {
@@ -916,7 +967,7 @@ window.finalizeOrder = function() {
 
     let grandTotal = (subTotal - discountVal) + packingTotal;
     
-    // --- SECURITY FIX: MINIMUM ORDER CHECK ---
+    // --- MINIMUM ORDER CHECK ---
     if (grandTotal < MIN_ORDER_VAL) {
         alert("Wait a minute! Your total (₹" + grandTotal + ") has dropped below the minimum order value of ₹" + MIN_ORDER_VAL + ".\n\nPlease add more items to proceed.");
         return; 
@@ -925,7 +976,6 @@ window.finalizeOrder = function() {
     let finalNote = instruction || "";
     if (activeCoupon && discountVal > 0) finalNote += ` [COUPON: ${activeCoupon} OFF ₹${discountVal}]`;
     if (finalNote === "") finalNote = "-";
-
     const kitchenOrderData = {
         orderId: orderId,
         orderType: type,
@@ -957,7 +1007,7 @@ window.finalizeOrder = function() {
     set(newOrderRef, kitchenOrderData)
         .then(() => { console.log("Sent to Kitchen"); })
         .catch((error) => { console.error("Firebase Error:", error); });
-
+    
     // --- WHATSAPP MSG GENERATION ---
     let msg = `*New Order @ Café Cloud Club*\n`;
     msg += `*Type:* ${type.toUpperCase()}\n*Time:* ${timeString}\n*Order ID:* ${orderId}\n---------------------------\n`;
@@ -1263,7 +1313,6 @@ function renderCart() {
     }
 
     let grandTotal = (subTotal - discountVal) + packingTotal;
-
     document.getElementById('sub-total').innerText = rupeeSign + subTotal;
     document.getElementById('packing-total').innerText = rupeeSign + packingTotal;
     document.getElementById('grand-total').innerText = rupeeSign + grandTotal;
