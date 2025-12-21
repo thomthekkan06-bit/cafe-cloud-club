@@ -525,8 +525,18 @@ window.updateQty = function(name, change) {
     }
 }
 
+function isSundayPasta(name) {
+    const n = name.toLowerCase();
+    if (!n.includes('penne')) return false;
+    if (!n.includes('chicken') && !n.includes('veg')) return false;
+    if (n.includes('black garlic')) return false;
+    if (n.includes('pesto') || n.includes('alfredo') || n.includes('arabiata') || n.includes('cloud special')) return true;
+    return false;
+}
+
+// --- FIXED VALIDATION LOGIC: Allows extra items ---
 function checkComboRequirements(codeToCheck) {
-    let counts = { burger: 0, fries: 0, drink: 0, steak: 0, whipped: 0, wrap: 0, side: 0, main: 0, loaded: 0 };
+    let counts = { burger: 0, fries: 0, drink: 0, steak: 0, whipped: 0, wrap: 0, side: 0, main: 0, loaded: 0, sunPasta: 0, sunSlider: 0 };
     for (let key in cart) {
         const item = cart[key];
         const qty = item.qty;
@@ -539,22 +549,21 @@ function checkComboRequirements(codeToCheck) {
         if (key.includes("French Fries") || key === "Chicken Nuggets") counts.side += qty;
         if (item.category === "Italian Indulgence" || item.category === "Rice Harmony") counts.main += qty;
         if (key.includes("Loaded Fries")) counts.loaded += qty;
-        if (item.category === "Nature's Nectar") counts.drink += qty; // Shared counter
+        if (item.category === "Nature's Nectar") counts.drink += qty;
+        
+        // Specific checks for SUNFEAST
+        if (item.category === 'Italian Indulgence' && isSundayPasta(key)) counts.sunPasta += qty;
+        if (item.category === 'Bun-Tastic Burgers' && key.includes('Slider')) counts.sunSlider += qty;
     }
 
-    if (codeToCheck === 'CLOUD15') return counts.burger === 1 && counts.fries === 1 && counts.drink === 1;
-    if (codeToCheck === 'STEAK13') return counts.steak === 1 && counts.whipped === 1;
-    if (codeToCheck === 'QUICK20') return counts.wrap === 1 && counts.side === 1;
-    if (codeToCheck === 'FEAST14') return counts.burger === 2 && counts.main === 2 && counts.loaded === 1 && counts.drink === 4;
-    return false;
-}
+    // UPDATED: Changed === to >= to allow extras
+    if (codeToCheck === 'CLOUD15') return counts.burger >= 1 && counts.fries >= 1 && counts.drink >= 1;
+    if (codeToCheck === 'STEAK13') return counts.steak >= 1 && counts.whipped >= 1;
+    if (codeToCheck === 'QUICK20') return counts.wrap >= 1 && counts.side >= 1;
+    if (codeToCheck === 'FEAST14') return counts.burger >= 2 && counts.main >= 2 && counts.loaded >= 1 && counts.drink >= 4;
+    // Added SUNFEAST validation here so it works in cart view
+    if (codeToCheck === 'SUNFEAST') return counts.sunPasta >= 1 && counts.sunSlider >= 1 && counts.whipped >= 1;
 
-function isSundayPasta(name) {
-    const n = name.toLowerCase();
-    if (!n.includes('penne')) return false;
-    if (!n.includes('chicken') && !n.includes('veg')) return false;
-    if (n.includes('black garlic')) return false;
-    if (n.includes('pesto') || n.includes('alfredo') || n.includes('arabiata') || n.includes('cloud special')) return true;
     return false;
 }
 
@@ -608,11 +617,7 @@ window.applyCoupon = function() {
     }
     if (code === 'SUNFEAST') {
         if(todayIndex !== 0) { setMsg("Only valid on Sundays!", 'error'); return; }
-        let hasPasta = Object.entries(cart).some(([k,v]) => v.category === 'Italian Indulgence' && isSundayPasta(k));
-        let hasSlider = Object.keys(cart).some(k => cart[k].category === 'Bun-Tastic Burgers' && k.includes("Slider"));
-        let hasShake = Object.values(cart).some(v => v.category === 'Whipped Wonders');
-        if(hasPasta && hasSlider && hasShake) { activeCoupon = 'SUNFEAST'; setMsg("Sunday Feast Applied!", 'success');
-        }
+        if(checkComboRequirements('SUNFEAST')) { activeCoupon = 'SUNFEAST'; setMsg("Sunday Feast Applied!", 'success'); }
         else setMsg("Need 1 Penne + 1 Slider + 1 Shake", 'error');
         return;
     }
@@ -810,7 +815,7 @@ window.finalizeOrder = function() {
         });
     }
     
-    // --- SECURITY FIX: RECALCULATE DISCOUNT ---
+    // --- STRICT DISCOUNT CALCULATION ---
     let discountVal = 0;
     let couponName = "";
     
