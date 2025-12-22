@@ -405,13 +405,29 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- AUTH ---
-        window.checkPin = () => {
-            if(document.getElementById('pin').value === "2021") {
+// --- AUTH ---
+        window.checkPin = async () => {
+            const input = document.getElementById('pin').value;
+            
+            // 1. Calculate the Hash (Fingerprint) of what the user typed
+            const encoder = new TextEncoder();
+            const data = encoder.encode(input);
+            const hash = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hash));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+            // 2. This long string is the unique fingerprint for "2021"
+            // If you change the PIN later, you must generate a new hash.
+            const secret = "620952d766d0c40639a04a5d894b6357488390757313025268c1605a96860d5e"; 
+
+            // 3. Compare the fingerprints
+            if(hashHex === secret) {
                 document.getElementById('pin-overlay').style.display = 'none';
                 document.getElementById('app').style.display = 'flex'; 
                 loadMenu();
-            } else alert("❌ Wrong PIN");
+            } else {
+                alert("❌ Wrong PIN");
+            }
         }
 
         // --- GLOBAL STATE ---
