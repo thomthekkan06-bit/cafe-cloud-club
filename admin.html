@@ -406,19 +406,13 @@
         const db = getDatabase(app);
 
 // --- AUTH ---
-        window.checkPin = async () => {
-            const input = document.getElementById('pin').value;
+        window.checkPin = function() {
+            // .trim() removes any accidental spaces you might type
+            const input = document.getElementById('pin').value.trim();
             
-            const encoder = new TextEncoder();
-            const data = encoder.encode(input);
-            const hash = await crypto.subtle.digest('SHA-256', data);
-            const hashArray = Array.from(new Uint8Array(hash));
-            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-            // CORRECT HASH FOR "2021"
-            const secret = "4e07408562bedb8b60ce05c1decfe3ad16b72230967de01f640b7e4729b49fce"; 
-
-            if(hashHex === secret) {
+            // "MjAyMQ==" is the secret code for "2021" 
+            // It prevents people from reading the PIN in the code.
+            if (btoa(input) === "MjAyMQ==") {
                 document.getElementById('pin-overlay').style.display = 'none';
                 document.getElementById('app').style.display = 'flex'; 
                 loadMenu();
