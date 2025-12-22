@@ -535,101 +535,126 @@ function isSundayPasta(name) {
 }
 
 // --- FIXED VALIDATION LOGIC: Allows extra items ---
-function checkComboRequirements(codeToCheck) {
-    let counts = { burger: 0, fries: 0, drink: 0, steak: 0, whipped: 0, wrap: 0, side: 0, main: 0, loaded: 0, sunPasta: 0, sunSlider: 0 };
+// --- PART B: The "Brain" (Finds items for combos) ---
+function findComboItems(cart, rules) {
+    let currentTotal = 0;
+    let satisfiedRules = 0;
+    // Deep copy rules so we can mark them as "satisfied" without breaking the original
+    let pendingRules = JSON.parse(JSON.stringify(rules)); 
+
+    // Helper to check if an item is "used" by a rule
+    // We iterate items in cart
     for (let key in cart) {
-        const item = cart[key];
-        const qty = item.qty;
-        if (item.category === 'Bun-Tastic Burgers') counts.burger += qty;
-        if (key.includes('French Fries')) counts.fries += qty;
-        if (item.category === 'Icy Sips') counts.drink += qty;
-        if (item.category === "Butcher's Best") counts.steak += qty;
-        if (item.category === "Whipped Wonders") counts.whipped += qty;
-        if (item.category === "Freshly Folded") counts.wrap += qty;
-        if (key.includes("French Fries") || key === "Chicken Nuggets") counts.side += qty;
-        if (item.category === "Italian Indulgence" || item.category === "Rice Harmony") counts.main += qty;
-        if (key.includes("Loaded Fries")) counts.loaded += qty;
-        if (item.category === "Nature's Nectar") counts.drink += qty;
-        
-        // Specific checks for SUNFEAST
-        if (item.category === 'Italian Indulgence' && isSundayPasta(key)) counts.sunPasta += qty;
-        if (item.category === 'Bun-Tastic Burgers' && key.includes('Slider')) counts.sunSlider += qty;
+        let item = cart[key];
+        let itemQtyAvailable = item.qty;
+
+        // Try to match this item against rules
+        for (let i = 0; i < pendingRules.length; i++) {
+            let rule = pendingRules[i];
+            if (rule.satisfied) continue;
+            if (itemQtyAvailable <= 0) break;
+
+            // 1. Check Category (Single or List)
+            let catMatch = true;
+            if (rule.category) catMatch = (item.category === rule.category);
+            if (rule.allowedCategories) catMatch = rule.allowedCategories.includes(item.category);
+
+            // 2. Check Name (Contains match, or List of exact matches)
+            let nameMatch = true;
+            const itemNameLower = key.toLowerCase();
+            if (rule.matchName) nameMatch = itemNameLower.includes(rule.matchName.toLowerCase());
+            if (rule.matchNames) nameMatch = rule.matchNames.some(n => itemNameLower.includes(n.toLowerCase()));
+
+            // 3. Check Exclusions (e.g., No Vanilla)
+            let excludeMatch = false;
+            if (rule.excludeName && itemNameLower.includes(rule.excludeName.toLowerCase())) excludeMatch = true;
+
+            // 4. Check Price Floor (e.g. Pasta > 180)
+            let priceMatch = true;
+            if (rule.minPrice && item.basePrice < rule.minPrice) priceMatch = false;
+
+            if (catMatch && nameMatch && !excludeMatch && priceMatch) {
+                // Bingo! This item fits this rule.
+                currentTotal += item.basePrice; 
+                rule.satisfied = true;
+                satisfiedRules++;
+                itemQtyAvailable--; // Use up one quantity of this item
+            }
+        }
     }
 
-    // UPDATED: Changed === to >= to allow extras
-    if (codeToCheck === 'CLOUD15') return counts.burger >= 1 && counts.fries >= 1 && counts.drink >= 1;
-    if (codeToCheck === 'STEAK13') return counts.steak >= 1 && counts.whipped >= 1;
-    if (codeToCheck === 'QUICK20') return counts.wrap >= 1 && counts.side >= 1;
-    if (codeToCheck === 'FEAST14') return counts.burger >= 2 && counts.main >= 2 && counts.loaded >= 1 && counts.drink >= 4;
-    // Added SUNFEAST validation here so it works in cart view
-    if (codeToCheck === 'SUNFEAST') return counts.sunPasta >= 1 && counts.sunSlider >= 1 && counts.whipped >= 1;
-
-    return false;
+    return { 
+        found: satisfiedRules === pendingRules.length, 
+        currentTotal: currentTotal 
+    };
 }
 
+// --- PART C: The Validator (Applies the coupon) ---
 window.applyCoupon = function() {
     const codeInput = document.getElementById('coupon-input');
     const msgBox = document.getElementById('coupon-msg');
     const code = codeInput.value.trim().toUpperCase();
     const todayIndex = new Date().getDay();
 
-    const setMsg = (text, type) => { msgBox.innerText = text; msgBox.className = `coupon-msg ${type}`;
-    if(type==='success') renderCart(); else activeCoupon=null; };
+    const setMsg = (text, type) => { 
+        msgBox.innerText = text; 
+        msgBox.className = `coupon-msg ${type}`;
+        if (type === 'success') renderCart(); 
+        else activeCoupon = null; 
+    };
 
-    if (code === 'MONBURGER') {
-        if(todayIndex !== 1) { setMsg("Only valid on Mondays!", 'error'); return; }
-        activeCoupon = 'MONBURGER'; setMsg("Meat-Up Monday Applied!", 'success'); return;
+    const coupon = couponsData[code];
+    if (!coupon) { setMsg("Invalid Coupon Code", 'error'); return; }
+
+    if (coupon.validDays && !coupon.validDays.includes(todayIndex)) {
+        setMsg(`Offer not valid today!`, 'error'); return;
     }
-    if (code === 'TUEPASTA') {
-        if(todayIndex !== 2) { setMsg("Only valid on Tuesdays!", 'error'); return; }
-        activeCoupon = 'TUEPASTA'; setMsg("Twisted Tuesday Applied!", 'success'); return;
-    }
-    if (code === 'WEDSTEAK') {
-        if(todayIndex !== 3) { setMsg("Wednesday Only!", 'error'); return; }
-        let hasSteak = Object.values(cart).some(i => i.category === "Butcher's Best");
-        if(hasSteak) { activeCoupon = 'WEDSTEAK'; setMsg("Steak Offer Applied!", 'success'); }
-        else setMsg("Add a Steak to apply.", 'error');
-        return;
-    }
-    if (code === 'WEDSHAKE') {
-        if(todayIndex !== 3) { setMsg("Wednesday Only!", 'error'); return; }
-        let hasShake = Object.entries(cart).some(([k,v]) => v.category === "Whipped Wonders" && !k.toLowerCase().includes("vanilla"));
-        if(hasShake) { activeCoupon = 'WEDSHAKE'; setMsg("Shake Offer Applied!", 'success'); }
-        else setMsg("Add a Premium Shake (No Vanilla).", 'error');
-        return;
-    }
-    if (code === 'THUSAND') {
-        if(todayIndex !== 4) { setMsg("Only valid on Thursdays!", 'error'); return; }
-        let hasSand = Object.values(cart).some(i => i.category === 'Toasty Treats');
-        let hasChill = Object.values(cart).some(i => i.category === 'Icy Sips');
-        if(hasSand && hasChill) { activeCoupon = 'THUSAND'; setMsg("Thursday Club Applied!", 'success');
+
+    let discount = 0;
+    
+    // --- STRATEGY 1: PERCENTAGE OFF COMBO ---
+    if (coupon.type === 'percentage_off') {
+        const result = findComboItems(cart, coupon.rules);
+        if (result.found) {
+            discount = Math.round(result.currentTotal * (coupon.value / 100));
         }
-        else setMsg("Add 1 Sandwich & 1 Chiller!", 'error');
-        return;
+    } 
+    // --- STRATEGY 2: FIXED PRICE COMBO ---
+    else if (coupon.type === 'combo_fixed_price') {
+        const result = findComboItems(cart, coupon.rules);
+        if (result.found) {
+            discount = result.currentTotal - coupon.targetPrice;
+        } else if (coupon.alternative) {
+            // Check alternative (e.g. Beef Burger instead of Chicken)
+            const altResult = findComboItems(cart, coupon.alternative.rules);
+            if (altResult.found) {
+                if(coupon.alternative.type === 'flat_off') discount = coupon.alternative.value;
+                else discount = altResult.currentTotal - coupon.alternative.targetPrice;
+            }
+        }
     }
-    if (code === 'FRIFRIES') {
-        if(todayIndex !== 5) { setMsg("Only valid on Fridays!", 'error'); return; }
-        activeCoupon = 'FRIFRIES'; setMsg("Fri-Yay Fry-Day Applied!", 'success'); return;
+    // --- STRATEGY 3: SET ITEM PRICE (Single Items) ---
+    else if (coupon.type === 'set_item_price') {
+        // Try Primary Rule
+        const result = findComboItems(cart, coupon.rules);
+        if (result.found) {
+            discount = result.currentTotal - coupon.value;
+        } else if (coupon.alternative) {
+            // Try Alternative Rule (e.g. Veg Loaded Fries)
+            const altResult = findComboItems(cart, coupon.alternative.rules);
+            if (altResult.found) {
+                discount = altResult.currentTotal - coupon.alternative.value;
+            }
+        }
     }
-    if (code === 'SATROLL') {
-        if(todayIndex !== 6) { setMsg("Only valid on Saturdays!", 'error'); return; }
-        activeCoupon = 'SATROLL'; setMsg("Rock n' Roll Saturday Applied!", 'success'); return;
-    }
-    if (code === 'SUNFEAST') {
-        if(todayIndex !== 0) { setMsg("Only valid on Sundays!", 'error'); return; }
-        if(checkComboRequirements('SUNFEAST')) { activeCoupon = 'SUNFEAST'; setMsg("Sunday Feast Applied!", 'success'); }
-        else setMsg("Need 1 Penne + 1 Slider + 1 Shake", 'error');
-        return;
-    }
-    if (['CLOUD15', 'STEAK13', 'QUICK20', 'FEAST14'].includes(code)) {
-        if(checkComboRequirements(code)) { activeCoupon = code;
-        setMsg("Combo Offer Applied!", 'success'); }
-        else setMsg("Combo requirements not met. Check Menu.", 'error');
-        return;
-    }
-    setMsg("Invalid Coupon Code", 'error');
-}
 
+    if (discount > 0) {
+        activeCoupon = code;
+        setMsg(`${code} Applied! Saved ₹${discount}`, 'success');
+    } else {
+        setMsg("Requirements not met. Check Menu.", 'error');
+    }
+}
 window.toggleCartPage = function() { document.getElementById('cart-sidebar').classList.toggle('active');
 }
 
