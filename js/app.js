@@ -1257,184 +1257,53 @@ function renderCart() {
 
     let discountVal = 0;
     let discountText = "";
-    if(activeCoupon === 'MONBURGER') {
-        let chickenItem = null, friesItem = null, beefItem = null;
-        for(let key in cart) {
-            let item = cart[key];
-            if(item.category === 'Bun-Tastic Burgers' && key.toLowerCase().includes('chicken')) {
-                 if(!chickenItem || item.basePrice > chickenItem.basePrice) chickenItem = item;
+/* --- NEW DYNAMIC DISCOUNT CALCULATION --- */
+    if (activeCoupon && couponsData[activeCoupon]) {
+        const coupon = couponsData[activeCoupon];
+        const code = activeCoupon;
+        
+        // Use the same "Brain" as the Apply button
+        if (coupon.type === 'percentage_off') {
+            const result = findComboItems(cart, coupon.rules);
+            if (result.found) {
+                discountVal = Math.round(result.currentTotal * (coupon.value / 100));
             }
-            if((key === "French Fries - Salted" || key === "French Fries - Peri Peri")) {
-                 if(!friesItem || item.basePrice > friesItem.basePrice) friesItem = item;
-            }
-            if(item.category === 'Bun-Tastic Burgers' && key.toLowerCase().includes('beef')) {
-                 if(!beefItem || item.basePrice > beefItem.basePrice) beefItem = item;
-            }
-        }
-        if (chickenItem && friesItem) {
-            let comboBaseTotal = chickenItem.basePrice + friesItem.basePrice;
-            if (comboBaseTotal > 222) discountVal = comboBaseTotal - 222;
-            discountText = "Mon: Chicken+Fries @ 222";
-        } else if (beefItem) {
-            discountVal = 20;
-            discountText = "Mon: ₹20 OFF Beef";
-        } else {
-            discountVal = 0;
-            discountText = "Requirements not met";
-        }
-    }
-    else if(activeCoupon === 'TUEPASTA') {
-        let maxBasePrice = 0;
-        for(let key in cart) {
-            let item = cart[key];
-            const lowerName = key.toLowerCase();
-            if(item.category === 'Italian Indulgence' && lowerName.includes('penne')) {
-                const isEligibleFlavor = lowerName.includes('alfredo') || lowerName.includes('pesto') || lowerName.includes('arabiata') || lowerName.includes('cloud special');
-                if (isEligibleFlavor && item.basePrice > 179) { 
-                    if(item.basePrice > maxBasePrice) maxBasePrice = item.basePrice;
+        } 
+        else if (coupon.type === 'combo_fixed_price') {
+            const result = findComboItems(cart, coupon.rules);
+            if (result.found) {
+                discountVal = result.currentTotal - coupon.targetPrice;
+            } else if (coupon.alternative) {
+                const altResult = findComboItems(cart, coupon.alternative.rules);
+                if (altResult.found) {
+                     if(coupon.alternative.type === 'flat_off') discountVal = coupon.alternative.value;
+                     else discountVal = altResult.currentTotal - coupon.alternative.targetPrice;
                 }
             }
         }
-        if(maxBasePrice > 0) {
-            discountVal = maxBasePrice - 179;
-            discountText = "Twisted Tuesday (Flat ₹179)";
-        } else {
-            discountText = "Add Eligible Penne Pasta";
-        }
-    }
-    else if(activeCoupon === 'WEDSTEAK') {
-        let maxSteakPrice = 0;
-        for(let key in cart) {
-            if(cart[key].category === "Butcher's Best") {
-                if(cart[key].basePrice > maxSteakPrice) maxSteakPrice = cart[key].basePrice;
-            }
-        }
-        if (maxSteakPrice > 300) { 
-            discountVal = maxSteakPrice - 300; 
-            discountText = "Wed: Flat ₹300 Steak";
-        } else { 
-            discountText = "Item Removed";
-        }
-    }
-    else if(activeCoupon === 'WEDSHAKE') {
-        let maxShakePrice = 0;
-        for(let key in cart) {
-            if(cart[key].category === "Whipped Wonders" && !key.toLowerCase().includes("vanilla")) {
-                if(cart[key].basePrice > maxShakePrice) maxShakePrice = cart[key].basePrice;
-            }
-        }
-        if (maxShakePrice > 120) { 
-            discountVal = maxShakePrice - 120; 
-            discountText = "Wed: Flat ₹120 Shake";
-        } else {
-            discountText = "Item Removed";
-        }
-    }
-    else if(activeCoupon === 'THUSAND') {
-        let sandItem = null, chillItem = null;
-        for(let key in cart) {
-            if(cart[key].category === 'Toasty Treats') {
-                if(!sandItem || cart[key].basePrice > sandItem.basePrice) sandItem = cart[key];
-            }
-            if(cart[key].category === 'Icy Sips') {
-                if(!chillItem || cart[key].basePrice > chillItem.basePrice) chillItem = cart[key];
-            }
-        }
-        if(sandItem && chillItem) {
-            let baseTotal = sandItem.basePrice + chillItem.basePrice;
-            if(baseTotal > 189) discountVal = baseTotal - 189;
-        }
-        discountText = "Thursday Club";
-    }
-    else if(activeCoupon === 'FRIFRIES') {
-        let applied = false;
-        for (let key in cart) {
-            if (key === "Chicken Loaded Fries" || key === "Beef Loaded Fries") { 
-                discountVal = (cart[key].basePrice - 179); 
-                applied = true; 
-                break; 
-            }
-        }
-        if(!applied) {
-            for (let key in cart) {
-                if (key === "Veg - Loaded Fries") { 
-                    discountVal = (cart[key].basePrice - 119); 
-                    break;
+        else if (coupon.type === 'set_item_price') {
+            const result = findComboItems(cart, coupon.rules);
+            if (result.found) {
+                discountVal = result.currentTotal - coupon.value;
+            } else if (coupon.alternative) {
+                const altResult = findComboItems(cart, coupon.alternative.rules);
+                if (altResult.found) {
+                    discountVal = altResult.currentTotal - coupon.alternative.value;
                 }
             }
         }
-        discountText = "Fri-Yay Fries (Max 1)";
-    }
-    else if(activeCoupon === 'SATROLL') {
-        let maxRollPrice = 0;
-        for(let key in cart) {
-             if(cart[key].category === "Freshly Folded") {
-                 if(cart[key].basePrice > maxRollPrice) maxRollPrice = cart[key].basePrice;
-             }
-        }
-        if(maxRollPrice > 129) discountVal = maxRollPrice - 129;
-        discountText = "Sat Special (Max 1 Roll)";
-    }
-    else if(activeCoupon === 'SUNFEAST') {
-        if(checkComboRequirements('SUNFEAST')) {
-             let comboBaseTotal = 0;
-             let foundPasta=false, foundSlider=false, foundShake=false;
-             for(let key in cart) {
-                 let item = cart[key];
-                 if(!foundPasta && item.category==='Italian Indulgence' && isSundayPasta(key)) { 
-                     comboBaseTotal += item.basePrice; foundPasta=true;
-                 }
-                 else if(!foundSlider && item.category==='Bun-Tastic Burgers' && key.includes('Slider')) { 
-                     comboBaseTotal += item.basePrice; foundSlider=true;
-                 }
-                 else if(!foundShake && item.category==='Whipped Wonders') { 
-                     comboBaseTotal += item.basePrice; foundShake=true;
-                 }
-             }
-             if(comboBaseTotal > 399) discountVal = comboBaseTotal - 399;
-             discountText = "Sunday Feast (Combo @ 399)";
-        }
-    }
-    else if(['CLOUD15','STEAK13','QUICK20','FEAST14'].includes(activeCoupon)) {
-        let qualifyingTotal = 0;
-        let c = { burger:0, fries:0, drink:0, steak:0, shake:0, wrap:0, side:0, main:0, loaded:0 };
-        let L = { burger:0, fries:0, drink:0, steak:0, shake:0, wrap:0, side:0, main:0, loaded:0 };
 
-        if(activeCoupon === 'CLOUD15') { L.burger=1; L.fries=1; L.drink=1; }
-        if(activeCoupon === 'STEAK13') { L.steak=1; L.shake=1; }
-        if(activeCoupon === 'QUICK20') { L.wrap=1; L.side=1; }
-        if(activeCoupon === 'FEAST14') { L.burger=2; L.main=2; L.loaded=1; L.drink=4; }
-
-        for(let key in cart) {
-            let item = cart[key];
-            for(let i=0; i<item.qty; i++) {
-                if(activeCoupon === 'CLOUD15') {
-                    if(item.category === 'Bun-Tastic Burgers' && c.burger < L.burger) { qualifyingTotal+=item.basePrice; c.burger++; }
-                    else if(key.includes('French Fries') && c.fries < L.fries) { qualifyingTotal+=item.basePrice; c.fries++; }
-                    else if(item.category === 'Icy Sips' && c.drink < L.drink) { qualifyingTotal+=item.basePrice; c.drink++; }
-                }
-                else if(activeCoupon === 'STEAK13') {
-                    if(item.category === "Butcher's Best" && c.steak < L.steak) { qualifyingTotal+=item.basePrice; c.steak++; }
-                    else if(item.category === "Whipped Wonders" && c.shake < L.shake) { qualifyingTotal+=item.basePrice; c.shake++; }
-                }
-                else if(activeCoupon === 'QUICK20') {
-                    if(item.category === "Freshly Folded" && c.wrap < L.wrap) { qualifyingTotal+=item.basePrice; c.wrap++; }
-                    else if((key.includes("French Fries") || key === "Chicken Nuggets") && c.side < L.side) { qualifyingTotal+=item.basePrice; c.side++; }
-                }
-                else if(activeCoupon === 'FEAST14') {
-                    if(item.category === "Bun-Tastic Burgers" && c.burger < L.burger) { qualifyingTotal+=item.basePrice; c.burger++; }
-                    else if((item.category === "Italian Indulgence" || item.category === "Rice Harmony") && c.main < L.main) { qualifyingTotal+=item.basePrice; c.main++; }
-                    else if(key.includes("Loaded Fries") && c.loaded < L.loaded) { qualifyingTotal+=item.basePrice; c.loaded++; }
-                    else if(item.category === "Nature's Nectar" && c.drink < L.drink) { qualifyingTotal+=item.basePrice; c.drink++; }
-                }
-            }
+        // Safety check: Discount cannot be negative
+        if (discountVal < 0) discountVal = 0;
+        
+        // Set the text
+        if (discountVal > 0) {
+            discountText = `Coupon (${code})`; 
+        } else {
+            // If requirements are no longer met (e.g. user removed an item), remove the coupon
+            activeCoupon = null;
         }
-        if(activeCoupon === 'CLOUD15') { discountVal = Math.round(qualifyingTotal * 0.15); discountText = "Coupon (15% OFF Combo)"; }
-        if(activeCoupon === 'STEAK13') { discountVal = Math.round(qualifyingTotal * 0.13); discountText = "Steak & Sip (13% OFF Combo)"; }
-        if(activeCoupon === 'QUICK20') { discountVal = Math.round(qualifyingTotal * 0.20); discountText = "Quick Bite (20% OFF Combo)"; }
-        if(activeCoupon === 'FEAST14') { discountVal = Math.round(qualifyingTotal * 0.14); discountText = "Cloud Feast (14% OFF Combo)"; }
     }
-
     const discountRow = document.getElementById('discount-row');
     if (discountVal > 0) {
         discountRow.style.display = 'flex';
