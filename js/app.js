@@ -15,6 +15,15 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+/* --- NEW COUPON CONNECTION --- */
+import { onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+let couponsData = {};
+const couponsRef = ref(db, 'coupons');
+onValue(couponsRef, (snapshot) => {
+    couponsData = snapshot.val() || {};
+    console.log("Coupons loaded:", couponsData);
+});
 
 /* --- MAP & LOCATION LOGIC --- */
 let map = null;
