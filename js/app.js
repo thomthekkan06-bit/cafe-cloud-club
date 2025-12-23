@@ -1124,8 +1124,12 @@ document.addEventListener('DOMContentLoaded', () => {
         "FRI-YAY FRY-DAY: Veg Loaded Fries ₹119 | Chicken Loaded Fries ₹179. Use Code: FRIFRIES",
         "ROCK N' ROLL SATURDAY: Any Roll (Tandoori, Pesto, Chipotle) for ₹129. Use Code: SATROLL"
     ];
+    // FIX: Duplicate text to prevent blank gap during scrolling
     const tickerElement = document.getElementById('daily-ticker-text');
-    if(tickerElement) tickerElement.innerText = dailyOfferTexts[dayIndex];
+    if(tickerElement) {
+        const text = dailyOfferTexts[dayIndex];
+        tickerElement.innerHTML = `${text} &nbsp;&nbsp;&nbsp;✦&nbsp;&nbsp;&nbsp; ${text} &nbsp;&nbsp;&nbsp;✦&nbsp;&nbsp;&nbsp; ${text}`;
+    }
 });
 
 window.returnToMenu = function() {
