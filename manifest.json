@@ -1,12 +1,11 @@
-
 {
-  "name": "Kitchen Manager",
-  "short_name": "Kitchen",
-  "start_url": "/manager.html",
+  "name": "Cafe Cloud Club",
+  "short_name": "Cloud Club",
+  "start_url": "/index.html",
   "display": "standalone",
-  "orientation": "landscape",
+  "orientation": "portrait",
   "background_color": "#121212",
-  "theme_color": "#121212",
+  "theme_color": "#D42426",
   "icons": [
     {
       "src": "/icon.png",
