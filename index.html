@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Café Cloud Club | Order</title>
+
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-5LVP4VMKFW"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-5LVP4VMKFW');
+    </script>
+
+    <meta name="description" content="Order the best Burgers, Steaks, Pastas, and Shakes from Café Cloud Club. Fast delivery in Chalakudy. Fresh ingredients, great taste!">
+    <meta name="keywords" content="Cafe Cloud Club, Burger, Steak, Pasta, Chalakudy, Food Delivery, Restaurant">
+    
+    <meta name="theme-color" content="#D42426">
+
+    <meta property="og:title" content="Café Cloud Club | Order Online">
+    <meta property="og:description" content="Craving a Burger or Steak? Order now for pickup or delivery!">
+    <meta property="og:image" content="https://cafe-cloud-club.vercel.app/og-image.jpg">
+    <meta property="og:url" content="https://cafe-cloud-club.vercel.app/">
+    <meta property="og:type" content="website">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet"></noscript>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+    
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+
+<div class="christmas-lights-container">
+    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+</div>
+
+<div class="menu-bg-animation" id="snow-container"></div>
+
+<div class="santa-container">
+    <img src="santa.gif" alt="Flying Santa" onerror="this.style.display='none'">
+</div>
+
+<div class="tree-container">
+    <div class="tree-part"><div class="t-light tl-1"></div></div>
+    <div class="tree-part"><div class="t-light tl-2"></div></div>
+    <div class="tree-part"><div class="t-light tl-3"></div><div class="t-light tl-4"></div></div>
+    <div class="tree-trunk"></div>
+</div>
+
+
+<div id="preloader">
+    <div class="morph-loader-container">
+        <div class="loader-satellite"></div>
+        <div class="loader-main-circle">
+            <i class="fas fa-hamburger loader-icon icon-1"></i>
+            <i class="fas fa-cocktail loader-icon icon-2"></i>
+            <i class="fas fa-utensils loader-icon icon-3"></i>
+        </div>
+    </div>
+    <div class="loader-text">Café Cloud Club</div>
+    <div class="loader-subtext" id="dynamic-food-quote"></div>
+</div>
+
+<div id="offers-view" class="offers-view">
+    <div class="offers-page-header">
+        <button class="back-btn" onclick="toggleOffersPage()">
+            <i class="fas fa-arrow-left"></i> Back
+        </button>
+        <h2 style="margin:0; color:var(--primary); font-size:1.2rem;">OFFER ZONE</h2>
+        <div style="width:70px;"></div> 
+    </div>
+
+    <div class="offers-grid">
+        <div class="offer-full-card" style="animation-delay: 0.1s;">
+            <div class="offer-upper">
+                <div class="offer-day-badge">Monday Only</div>
+                <div class="offer-title">Meat-Up Monday 🍔</div>
+                <div class="offer-desc">
+                    <strong>OPTION A:</strong> 1 Chicken Burger + 1 Fries = ₹222.<br>
+                    <div style="text-align:center; font-weight:bold; margin: 4px 0;">-- OR --</div>
+                    <strong>OPTION B:</strong> Get ₹20 OFF on 1 Beef Burger.<br>
+                    <em style="font-size: 0.8em; color: #c0392b;">(Strictly one choice. Extras not included.)</em>
+                </div>
+            </div>
+            <div class="offer-divider"></div>
+            <div class="offer-lower">
+                <button class="offer-code-display" onclick="copyCode('MONBURGER')">
+                    <i class="fas fa-copy"></i> MONBURGER
+                </button>
+            </div>
+        </div>
+
+        <div class="offer-full-card" style="animation-delay: 0.2s;">
+            <div class="offer-upper">
+                <div class="offer-day-badge">Tuesday Only</div>
+                <div class="offer-title">Twisted Tuesday 🍝</div>
+                <div class="offer-desc">
+                    Any Penne Pasta (Alfredo, Pesto, Arabiata, Cloud) flat at ₹179.<br>
+                    Valid on Veg & Non-Veg options.
+                </div>
+            </div>
+            <div class="offer-divider"></div>
+            <div class="offer-lower">
+                <button class="offer-code-display" onclick="copyCode('TUEPASTA')">
+                    <i class="fas fa-copy"></i> TUEPASTA
+                </button>
+            </div>
+        </div>
+
+        <div class="offer-full-card" style="animation-delay: 0.3s;">
+            <div class="offer-upper">
+                <div class="offer-day-badge">Wednesday Only</div>
+                <div class="offer-title">Wicked Wednesday 🥩</div>
+                <div class="offer-desc">
+                    <strong>Redeem ONE of the following:</strong><br>
+                    • <strong>Flat ₹300:</strong> Any <em>one</em> Steak.<br>
+                    • <strong>Flat ₹120:</strong> Any <em>Whipped Wonder</em> shake (except Vanilla).<br>
+                    <em style="font-size:0.8em; color:#c0392b;">(Strictly one offer at a time. If both are added, code will not apply.)</em>
+                </div>
+            </div>
+            <div class="offer-divider"></div>
+            <div class="offer-lower" style="gap: 10px;">
+                <button class="offer-code-display" onclick="copyCode('WEDSTEAK')">
+                    <i class="fas fa-copy"></i> WEDSTEAK
+                </button>
+                <button class="offer-code-display" onclick="copyCode('WEDSHAKE')">
+                    <i class="fas fa-copy"></i> WEDSHAKE
+                </button>
+            </div>
+        </div>
+
+        <div class="offer-full-card" style="animation-delay: 0.4s;">
+            <div class="offer-upper">
+                <div class="offer-day-badge">Thursday Only</div>
+                <div class="offer-title">The Thursday Club 🥪</div>
+                <div class="offer-desc">
+                    Get any Sandwich + any Chiller for just ₹189.<br>
+                    Light, refreshing, and delicious.
+                </div>
+            </div>
+            <div class="offer-divider"></div>
+            <div class="offer-lower">
+                <button class="offer-code-display" onclick="copyCode('THUSAND')">
+                    <i class="fas fa-copy"></i> THUSAND
+                </button>
+            </div>
+        </div>
+
+        <div class="offer-full-card" style="animation-delay: 0.5s;">
+            <div class="offer-upper">
+                <div class="offer-day-badge">Friday Only</div>
+                <div class="offer-title">Fri-Yay Fry-Day 🍟</div>
+                <div class="offer-desc">
+                    Veg Loaded Fries @ ₹119<br>
+                    Chicken Loaded Fries @ ₹179
+                </div>
+            </div>
+            <div class="offer-divider"></div>
+            <div class="offer-lower">
+                <button class="offer-code-display" onclick="copyCode('FRIFRIES')">
+                    <i class="fas fa-copy"></i> FRIFRIES
+                </button>
+            </div>
+        </div>
+
+        <div class="offer-full-card" style="animation-delay: 0.6s;">
+            <div class="offer-upper">
+                <div class="offer-day-badge">Saturday Only</div>
+                <div class="offer-title">Rock n' Roll Saturday 🌯</div>
+                <div class="offer-desc">
+                    Any Roll (Tandoori, Pesto, Chipotle) for ₹129.<br>
+                    Grab a quick bite on the go!
+                </div>
+            </div>
+            <div class="offer-divider"></div>
+            <div class="offer-lower">
+                <button class="offer-code-display" onclick="copyCode('SATROLL')">
+                    <i class="fas fa-copy"></i> SATROLL
+                </button>
+            </div>
+        </div>
+
+        <div class="offer-full-card" style="animation-delay: 0.7s; border-color: #FFD700;">
+            <div class="offer-upper" style="background: linear-gradient(135deg, #2d3436, #000);">
+                <div class="offer-day-badge" style="background:#FFD700; color:black;">Sunday Special</div>
+                <div class="offer-title" style="color:white !important;">Fam-Jam Feast 👨‍👩‍👧‍👦</div>
+                <div class="offer-desc">
+                    The Ultimate Combo:<br>
+                    1 Penne Pasta + 1 Slider + 1 Shake = ₹399
+                </div>
+            </div>
+            <div class="offer-divider"></div>
+            <div class="offer-lower" style="background: #2d3436;">
+                <button class="offer-code-display" onclick="copyCode('SUNFEAST')" style="color:#FFD700; border-color:#FFD700;">
+                    <i class="fas fa-copy"></i> SUNFEAST
+                </button>
+            </div>
+        </div>
+
+        <div class="offer-full-card" style="animation-delay: 0.8s;">
+            <div class="offer-upper">
+                <div class="offer-day-badge" style="background:#888;">Any Day</div>
+                <div class="offer-title">Combo 15% OFF</div>
+                <div class="offer-desc">
+                    Buy Strictly: 1 Burger + 1 Fries + 1 Drink.<br>
+                    Get flat 15% discount on the total.
+                </div>
+            </div>
+            <div class="offer-divider"></div>
+            <div class="offer-lower">
+                <button class="offer-code-display" onclick="copyCode('CLOUD15')">
+                    <i class="fas fa-copy"></i> CLOUD15
+                </button>
+            </div>
+        </div>
+
+        <div class="offer-full-card" style="animation-delay: 0.9s;">
+            <div class="offer-upper">
+                <div class="offer-day-badge" style="background:#888;">Any Day</div>
+                <div class="offer-title">Quick Bite 20%</div>
+                <div class="offer-desc">
+                    Buy Strictly: 1 Wrap + 1 Side Dish.<br>
+                    Perfect for a light lunch!
+                </div>
+            </div>
+            <div class="offer-divider"></div>
+            <div class="offer-lower">
+                <button class="offer-code-display" onclick="copyCode('QUICK20')">
+                    <i class="fas fa-copy"></i> QUICK20
+                </button>
+            </div>
+        </div>
+
+        <div class="offer-full-card" style="animation-delay: 1.0s;">
+            <div class="offer-upper">
+                <div class="offer-day-badge" style="background:#888;">Any Day</div>
+                <div class="offer-title">Steak & Sip 13%</div>
+                <div class="offer-desc">
+                    Buy Strictly: 1 Butcher's Best Steak + 1 Shake.<br>
+                    Get flat 13% discount on the total.
+                </div>
+            </div>
+            <div class="offer-divider"></div>
+            <div class="offer-lower">
+                <button class="offer-code-display" onclick="copyCode('STEAK13')">
+                    <i class="fas fa-copy"></i> STEAK13
+                </button>
+            </div>
+        </div>
+
+        <div class="offer-full-card" style="animation-delay: 1.1s;">
+            <div class="offer-upper">
+                <div class="offer-day-badge" style="background:#888;">Any Day</div>
+                <div class="offer-title">Family Feast 14%</div>
+                <div class="offer-desc">
+                    Huge Order?<br>
+                    Buy 2 Burgers, 2 Mains, 1 Loaded Fries & 4 Drinks.<br>
+                    Get flat 14% discount on the total.
+                </div>
+            </div>
+            <div class="offer-divider"></div>
+            <div class="offer-lower">
+                <button class="offer-code-display" onclick="copyCode('FEAST14')">
+                    <i class="fas fa-copy"></i> FEAST14
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="tnc-section">
+        <h3><i class="fas fa-file-contract"></i> Terms and Conditions</h3>
+        <ul class="tnc-list">
+            <li><strong>Allergen Notice:</strong> Our kitchen handles nuts, dairy, gluten, and meat. We cannot guarantee zero cross-contamination.</li>
+            <li><strong>Base Price Policy:</strong> Discounts apply strictly to the <u>Base Price</u> of items. Cost of customizations, add-ons (e.g., Extra Cheese, Garlic Bread), and packing charges are excluded from discount calculations.</li>
+            <li><strong>Single Coupon Policy:</strong> Only one coupon code can be applied per order. Offers cannot be combined or stacked.</li>
+            <li><strong>Validity:</strong> Daily offers (e.g., Meat-Up Monday) are valid strictly on their respective days. The system will reject the code if used on a different day.</li>
+            <li><strong>Strict Items:</strong> Combo offers require the exact base items mentioned. If you add toppings to a combo item, you pay the discounted base price + full price for the toppings.</li>
+            <li><strong>Availability:</strong> All offers are subject to stock availability. Café Cloud Club reserves the right to modify or withdraw offers without prior notice.</li>
+            <li><strong>Errors & Omissions:</strong> We reserve the right to cancel orders due to pricing errors or technical glitches.</li>
+            <li><strong>Delivery:</strong> Delivery charges are calculated by the agent/partner and are not subject to store discounts.</li>
+            <li><strong>Third-Party Delivery:</strong> We are not responsible for damage or delays caused by delivery agents once the food leaves our kitchen.</li>
+            <li><strong>Order Acceptance:</strong> Your order is confirmed ONLY after you receive a reply from us on WhatsApp.</li>
+            <li><strong>Time limits:</strong> Orders must be placed within store operating hours (2 PM - 3 AM) to be accepted.</li>
+            <li><strong>Cancellations:</strong> No cancellations allowed once cooking has started.</li>
+        </ul>
+    </div>
+    
+    <div class="dev-credit">
+        <span>Page Built & Designed by</span>
+        <a href="#">Thomsons Networks</a>
+    </div>
+</div>
+
+<div class="success-screen" id="success-view">
+    <div class="success-icon-container">
+        <div class="checkmark-draw"></div>
+    </div>
+    <h1 class="success-title">Order Ready, <span id="customer-name-display"></span>!</h1>
+    <p class="success-subtitle">Your order details are ready. Please click the button below to send them to us via WhatsApp.</p>
+    
+    <div class="action-buttons-container">
+        <button class="whatsapp-final-btn" id="send-wa-btn">
+            <i class="fab fa-whatsapp"></i> Send Order to WhatsApp
+        </button>
+        
+        <a href="tel:+917907660093" class="call-final-btn">
+            <i class="fas fa-phone-alt"></i> Call to Confirm
+        </a>
+
+        <button class="funny-retry-btn" onclick="returnToMenu()">
+            Wait... I'm still hungry! 😋
+        </button>
+    </div>
+</div>
+
+<div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<div class="dashboard" id="main-dashboard">
+    <div class="left-sidebar">
+        <img src="og-image.jpg" alt="Cafe Cloud Club" class="brand-logo" style="width: 80%; max-width: 180px; height: auto; border-radius: 12px; margin: 0 auto 15px auto; display: block; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+        <div class="brand-subtitle">Cafe and Eatery</div>
+        <div class="brand-est">Established Since 2021</div>
+
+        <div class="store-timings-box">
+            <h2><i class="far fa-clock"></i> Store Timings</h2>
+            <div class="timing-row">
+                <span>Pickup/Dine-In:</span>
+                <span>3pm - 3am</span>
+            </div>
+            <div class="timing-row">
+                <span>Delivery:</span>
+                <span>2pm - 3am</span>
+            </div>
+        </div>
+
+        <div class="store-address-box">
+            <h2><i class="fas fa-map-marker-alt"></i> Location</h2>
+            <p>Opposite KFC, Muringoor,<br>Chalakudy, Kerala 680309</p>
+            <p>
+                <a href="tel:+917907660093"><i class="fas fa-phone-alt"></i> +91 79076 60093</a>
+            </p>
+        </div>
+
+        <div class="filter-list">
+            <div class="filter-item offers-link-btn" onclick="toggleOffersPage()">
+                <i class="fas fa-gift"></i> All Offers & T&C
+            </div>
+
+            <div class="reorder-btn-area">
+                <button class="reorder-btn" onclick="repeatLastOrder()">
+                    <i class="fas fa-history"></i> Repeat Last Order
+                </button>
+            </div>
+
+            <a href="my-orders.html" class="filter-item" style="text-decoration:none; color:inherit;">
+                <i class="fas fa-receipt" style="margin-right:8px; color:#3498db;"></i> Past Orders
+            </a>
+            <div class="filter-item" onclick="setCategoryFilter('Favorites', this)">
+                <i class="fas fa-heart" style="margin-right:8px; color:#e74c3c;"></i> My Favorites
+            </div>
+
+            <div class="filter-item active" onclick="setCategoryFilter('All', this)">All Items</div>
+            <div class="filter-item" onclick="setCategoryFilter('Bun-Tastic Burgers', this)">Bun-Tastic Burgers</div>
+            <div class="filter-item" onclick="setCategoryFilter('Butcher\'s Best', this)">Butcher's Best</div>
+            <div class="filter-item" onclick="setCategoryFilter('Italian Indulgence', this)">Italian Indulgence</div>
+            <div class="filter-item" onclick="setCategoryFilter('Freshly Folded', this)">Freshly Folded</div>
+            <div class="filter-item" onclick="setCategoryFilter('Rice Harmony', this)">Rice Harmony</div>
+            <div class="filter-item" onclick="setCategoryFilter('Salad Symphony', this)">Salad Symphony</div>
+            <div class="filter-item" onclick="setCategoryFilter('Toasty Treats', this)">Toasty Treats</div>
+            <div class="filter-item" onclick="setCategoryFilter('Warm Whispers', this)">Warm Whispers</div>
+            <div class="filter-item" onclick="setCategoryFilter('Nibbles & Bits', this)">Nibbles & Bits</div>
+            <div class="filter-item" onclick="setCategoryFilter('Icy Sips', this)">Icy Sips</div>
+            <div class="filter-item" onclick="setCategoryFilter('Mojito Magic', this)">Mojito Magic</div>
+            <div class="filter-item" onclick="setCategoryFilter('Nature\'s Nectar', this)">Nature's Nectar</div>
+            <div class="filter-item" onclick="setCategoryFilter('Whipped Wonders', this)">Whipped Wonders</div>
+            <div class="filter-item" onclick="setCategoryFilter('Frosted Leaf', this)">Frosted Leaf</div>
+            <div class="filter-item" onclick="setCategoryFilter('ADD-ON', this)">ADD-ON</div>
+        </div>
+
+        <div class="dev-credit sidebar-credit">
+            <span>Page Built & Designed by</span>
+            <a href="#">Thomsons Networks</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+
+        <div class="mobile-info-card">
+            <h2 class="mobile-brand-title">Café Cloud Club</h2>
+            <div class="mobile-info-row">
+                <i class="fas fa-map-marker-alt"></i> Opposite KFC, Muringoor, Chalakudy
+            </div>
+            <div class="mobile-info-row">
+                <a href="tel:+917907660093"><i class="fas fa-phone-alt"></i> +91 79076 60093</a>
+            </div>
+            <div class="mobile-info-row small-text">
+                <i class="far fa-clock"></i> Pickup: 3pm-3am | Delivery: 2pm-3am
+            </div>
+            <div style="margin-top: 15px; border-top: 1px dashed #eee; padding-top: 10px;">
+                <a href="track.html" style="text-decoration:none; background:#121212; color:white; padding:8px 20px; border-radius:50px; font-size:0.8rem; font-weight:bold; display:inline-block;">
+                    <i class="fas fa-crosshairs" style="color:#FF4500;"></i> Track My Order
+                </a>
+            </div>
+            </div>
+
+        <div class="header-bar">
+            <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Open Menu">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <div class="search-box">
+                <i class="fas fa-search" style="color: #ccc;"></i>
+                <input type="text" id="search-input" placeholder="Search..." onkeyup="updateSearch()">
+            </div>
+        </div>
+
+        <div class="news-ticker-area" onclick="toggleOffersPage()" style="cursor: pointer;">
+            <div class="ticker-label">TODAY'S SPECIAL</div>
+            <div class="ticker-content" id="daily-ticker-text">
+                Loading today's special offer...
+            </div>
+        </div>
+
+        <div class="promo-section">
+            <div class="promo-card bg-gradient-1" onclick="copyCode('CLOUD15')">
+                <h3>15% OFF</h3>
+                <p>Combo: Burger + Fries + Drink<br>Strictly 1 of each!</p>
+                <div class="code-badge">Use: CLOUD15</div>
+                <i class="fas fa-hamburger promo-icon"></i>
+            </div>
+
+            <div class="promo-card bg-gradient-2" onclick="copyCode('STEAK13')">
+                <h3>Steak & Sip</h3>
+                <p>13% OFF on Butcher's Best<br>+ Whipped Wonder Shake</p>
+                <div class="code-badge">Use: STEAK13</div>
+                <i class="fas fa-drumstick-bite promo-icon"></i>
+            </div>
+
+            <div class="promo-card bg-gradient-3" onclick="copyCode('QUICK20')">
+                <h3>Quick Bite 20%</h3>
+                <p>Any Wrap + Side Dish<br>Perfect for a light lunch!</p>
+                <div class="code-badge">Use: QUICK20</div>
+                <i class="fas fa-stopwatch promo-icon"></i>
+            </div>
+
+            <div class="promo-card bg-gradient-4" onclick="copyCode('FEAST14')">
+                <h3>Family Feast</h3>
+                <p>14% OFF Huge Order<br>2 Burgers, 2 Mains & more</p>
+                <div class="code-badge">Use: FEAST14</div>
+                <i class="fas fa-users promo-icon"></i>
+            </div>
+        </div>
+
+        <div class="advanced-filters">
+            <select class="adv-select" onchange="setSort(this.value)" aria-label="Sort menu items by price">
+                <option value="default">Sort By...</option>
+                <option value="low-high">Price: Low to High</option>
+                <option value="high-low">Price: High to Low</option>
+            </select>
+
+            <select class="adv-select" onchange="setType(this.value)" aria-label="Filter menu by diet type">
+                <option value="all">Diet: All</option>
+                <option value="veg">Veg Only</option>
+                <option value="non-veg">Non-Veg Only</option>
+            </select>
+
+            <select class="adv-select" onchange="setIngredient(this.value)" aria-label="Filter menu by main ingredient">
+                <option value="all">Ingredient: All</option>
+                <option value="Chicken">Chicken</option>
+                <option value="Beef">Beef</option>
+                <option value="Fish">Fish</option>
+                <option value="Panner">Paneer</option>
+            </select>
+
+            <div class="toggle-chip" onclick="toggleUnder200(this)" id="price-chip">
+                <i class="fas fa-tag"></i> Under ₹200
+            </div>
+        </div>
+
+        <div class="menu-grid" id="menu-root">
+            </div>
+
+        <div class="dev-credit mobile-bottom-credit">
+            <span>Page Built & Designed by</span>
+            <a href="#">Thomsons Networks</a>
+        </div>
+
+        <button class="mobile-cart-btn" onclick="toggleCartPage()">
+            <i class="fas fa-shopping-bag"></i> View Cart <span id="mobile-count">(0)</span>
+        </button>
+
+    </div>
+
+    <div class="order-sidebar" id="cart-sidebar">
+        <div class="cart-header-mobile">
+            <button class="back-btn" onclick="toggleCartPage()">
+                <i class="fas fa-arrow-left"></i> Back to Menu
+            </button>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div class="section-title" style="margin:0;">Current Order</div>
+        </div>
+        <br>
+        
+        <div class="cart-items-container" id="cart-items-list">
+        </div>
+        
+        <div class="coupon-section">
+            <input type="text" id="coupon-input" class="coupon-input" placeholder="COUPON CODE">
+            <button class="coupon-btn" id="coupon-apply-btn" onclick="applyCoupon()" disabled>APPLY</button>
+        </div>
+        <div id="coupon-msg" class="coupon-msg"></div>
+
+        <div class="cart-summary">
+            <div class="summary-row">
+                <span>Sub Total</span>
+                <span id="sub-total">0</span>
+            </div>
+            <div class="summary-row">
+                <span>Packing Charges</span>
+                <span id="packing-total">0</span>
+            </div>
+            
+            <div class="summary-row discount-row" id="discount-row" style="display:none;">
+                <span>Coupon (15% OFF)</span>
+                <span id="discount-total">-0</span>
+            </div>
+
+            <div class="summary-row">
+                <span>Delivery Fee</span>
+                <span>Calculated by Agent</span>
+            </div>
+        
+            <div class="summary-row summary-total">
+                <span>Total</span>
+                <span id="grand-total">0</span>
+            </div>
+            <button class="checkout-btn" id="main-checkout-btn" onclick="openCheckoutModal()" disabled>Cart Empty</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="checkout-modal">
+    <div class="modal-card">
+        <h3 style="margin-top: 0; margin-bottom: 15px;">Checkout</h3>
+        
+        <div class="radio-group">
+            <label class="radio-label">
+                <input type="radio" name="orderType" value="Delivery" checked onchange="toggleOrderFields()"> Delivery
+            </label>
+            <label class="radio-label">
+                <input type="radio" name="orderType" value="Pickup" onchange="toggleOrderFields()"> Pickup / Dine-In
+            </label>
+        </div>
+
+        <div class="input-group">
+            <label>Full Name</label>
+            <input type="text" class="input-field" id="c-name" placeholder="John Doe">
+        </div>
+        <div class="input-group">
+            <label>Phone Number (10 digits)</label>
+            <input type="tel" class="input-field" id="c-phone" placeholder="9876543210" pattern="[0-9]*">
+        </div>
+        <div class="input-group">
+            <label>Email Address</label>
+            <input type="email" class="input-field" id="c-email" placeholder="john@example.com">
+        </div>
+
+        <div class="input-group">
+            <label id="time-label" for="c-time">Preferred Delivery Time</label>
+            <select class="input-field" id="c-time">
+                <option value="" disabled selected>Select a time...</option>
+                <option value="ASAP">ASAP (Standard)</option>
+                <option value="In 30-45 mins">In 30-45 mins</option>
+                <option value="In 1 Hour">In 1 Hour</option>
+                <option value="In 1.5 Hours">In 1.5 Hours</option>
+                <option value="In 2 Hours">In 2 Hours</option>
+                <option value="Schedule Later (Call to confirm)">Schedule Later (Call to confirm)</option>
+            </select>
+        </div>
+        
+<div class="input-group" id="address-group">
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
+        <label>Delivery Address Details</label>
+        <span style="font-size:0.65rem; color:#e74c3c; font-weight:600;">(Max 15km Radius)</span>
+    </div>
+
+    <input type="text" class="input-field" id="addr-house" 
+           placeholder="House Name / Flat No (Required)" 
+           style="margin-bottom: 8px; border-left: 3px solid #FF4500;">
+
+    <select class="input-field" id="addr-street" onchange="updateSubLocations()" 
+            style="margin-bottom: 8px; appearance: none; background-color: white; font-weight:600;">
+        <option value="" disabled selected>Select Main Town...</option>
+        
+        <optgroup label="1. Immediate Vicinity (0-6km)">
+            <option value="Muringoor">Muringoor</option>
+            <option value="Divine Nagar">Divine Nagar</option>
+            <option value="Chalakudy">Chalakudy Town</option>
+            <option value="Potta">Potta</option>
+            <option value="Koratty">Koratty</option>
+            <option value="Meloor">Meloor</option>
+        </optgroup>
+
+        <optgroup label="2. North (Towards Thrissur)">
+            <option value="Kodakara">Kodakara</option>
+            <option value="Nellayi">Nellayi</option>
+        </optgroup>
+
+        <optgroup label="3. South (Towards Ernakulam)">
+            <option value="Karukutty">Karukutty</option>
+            <option value="Angamaly">Angamaly</option>
+        </optgroup>
+
+        <optgroup label="4. West (Towards Mala/Irinjalakuda)">
+            <option value="Aloor">Aloor</option>
+            <option value="Kuzhur">Kuzhur</option>
+        </optgroup>
+
+        <optgroup label="5. East (Towards Athirappilly)">
+            <option value="Pariyaram">Pariyaram</option>
+            <option value="Adichilappilly">Adichilappilly</option>
+        </optgroup>
+
+        <option value="Other">Other (Type in Instructions)</option>
+    </select>
+
+    <div id="sub-location-wrapper" style="display:none; animation: fadeIn 0.3s ease;">
+        <select class="input-field" id="addr-sub-street" style="margin-bottom: 8px; border-color: #27ae60; background: #f9fff9;">
+            </select>
+    </div>
+
+    <input type="text" class="input-field" id="addr-landmark" 
+           placeholder="Nearby Landmark (Required)"
+           style="border-left: 3px solid #27ae60;">
+
+    <div style="margin-top: 15px;">
+        <label style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+            <span>Pin Exact Location (Required)</span>
+            <button type="button" onclick="locateUser()" style="background:#27ae60; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.7rem;">
+                <i class="fas fa-crosshairs"></i> Locate Me
+            </button>
+        </label>
+        <div id="delivery-map" style="height: 200px; width: 100%; border-radius: 8px; border: 1px solid #ccc; z-index: 1;"></div>
+        <p style="font-size: 0.75rem; color: #666; margin-top: 5px; text-align: center;">Drag pin to your exact location.</p>
+        <input type="hidden" id="geo-lat"><input type="hidden" id="geo-lng">
+    </div>
+</div>
+
+        <div class="input-group">
+            <label>Special Instructions (Optional)</label>
+            <textarea class="input-field" id="c-instruction" rows="2" placeholder='e.g. "Doorbell doesn&#39;t work", "Dog in"'></textarea>
+        </div>
+
+        <div class="input-group" style="display: flex; align-items: center; gap: 10px; margin-top: 15px; margin-bottom: 15px;">
+            <input type="checkbox" id="tnc-confirm" onchange="toggleFinalButton()" style="width: 20px; height: 20px; accent-color: var(--primary); cursor: pointer;">
+            <label for="tnc-confirm" style="font-size: 0.85rem; color: var(--grey-text); cursor: pointer; user-select: none;">
+                I agree to the <u onclick="closeCheckoutModal(); toggleOffersPage();" style="color:var(--primary); cursor:pointer;">Terms & Conditions</u>
+            </label>
+        </div>
+
+        <button class="checkout-btn" id="final-submit-btn" onclick="finalizeOrder()" disabled style="opacity: 0.5; cursor: not-allowed; transition: all 0.3s ease;">Confirm Order</button>
+        
+        <button style="background:none; border:none; width:100%; padding:10px; margin-top:5px; cursor:pointer; color:#777;" onclick="closeCheckoutModal()">Cancel</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="customization-modal" style="display: none;">
+    <div class="modal-card">
+        <div class="modal-header-row">
+             <h3 id="modal-item-title" style="margin:0; color:var(--primary);">Item Name</h3>
+             <button onclick="closeCustomizationModal()" aria-label="Close customization modal" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--secondary);">&times;</button>
+        </div>
+        
+        <p id="modal-item-base-price" style="color:var(--grey-text); font-size:0.9rem; margin-bottom:15px; border-bottom: 1px solid #eee; padding-bottom: 10px;"></p>
+        
+        <div id="modal-options-wrapper" class="modal-scroll-area">
+        </div>
+
+        <div class="modal-footer-action">
+            <div style="font-weight:700; font-size:1.1rem; color:var(--secondary);">Total: <span id="modal-live-total" style="color:var(--primary);">0</span></div>
+            <button class="checkout-btn" onclick="addToCartFromModal()" style="width: auto; padding: 10px 25px;">Add to Cart</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="upsell-modal" style="display: none; z-index: 9999;">
+    <div class="modal-card" style="text-align: center;">
+        <div style="font-size: 3rem; margin-bottom: 10px;">🍟</div>
+        <h3 style="margin-top: 0; color: var(--primary);">Make it a Meal?</h3>
+        <p style="color: var(--grey-text); margin-bottom: 20px;">
+            You got the Burger. Don't forget the crunch.<br>
+            <strong>Add Salted Fries for just ₹100?</strong>
+        </p>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button class="checkout-btn" onclick="acceptUpsell()" style="background: #27ae60; width: auto; padding: 10px 20px;">
+                Yes, Add Fries
+            </button>
+            <button class="checkout-btn" onclick="closeUpsell()" style="background: var(--disabled); color: #fff; width: auto; padding: 10px 20px;">
+                No Thanks
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- HOLIDAY SNOW SCRIPT ---
+    // Minimal script to generate snow without heavy libraries
+    document.addEventListener('DOMContentLoaded', () => {
+        const container = document.getElementById('snow-container');
+        if (!container) return; // safety check
+        
+        const snowflakeCount = 30; // Keep it low for mobile performance
+
+        for (let i = 0; i < snowflakeCount; i++) {
+            const flake = document.createElement('div');
+            flake.classList.add('snowflake');
+            
+            // Randomize position and animation properties
+            const left = Math.random() * 100;
+            const size = Math.random() * 5 + 3; // 3px to 8px
+            const duration = Math.random() * 10 + 10; // 10s to 20s fall time
+            const delay = Math.random() * 10;
+            
+            flake.style.left = `${left}%`;
+            flake.style.width = `${size}px`;
+            flake.style.height = `${size}px`;
+            flake.style.animationDuration = `${duration}s`;
+            flake.style.animationDelay = `-${delay}s`; // Negative delay starts them mid-air
+            
+            container.appendChild(flake);
+        }
+    });
+</script>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

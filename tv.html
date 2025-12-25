@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f1115">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Queue Display | Café Cloud Club</title>
+    
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="manifest" href="tv-manifest.json">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f1115 0%, #1a1d23 100%);
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-border: rgba(255, 255, 255, 0.05);
+            /* CHRISTMAS RED UPDATE */
+            --primary: #D42426; 
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444; /* Added Red */
+            --text-main: #ffffff;
+            --text-muted: #9ca3af;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- CHRISTMAS LIGHTS --- */
+        .christmas-lights-container {
+            position: fixed;
+            top: -5px;
+            left: 0;
+            width: 100%;
+            height: 40px;
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            pointer-events: none;
+            overflow: hidden;
+            padding: 0 10px;
+        }
+
+        .light-bulb {
+            min-width: 12px;
+            height: 18px;
+            border-radius: 50%;
+            background: #ccc;
+            position: relative;
+            animation: lightGlow 2s infinite ease-in-out;
+        }
+
+        .light-bulb::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 10px;
+            background: #222;
+        }
+
+        .light-bulb:nth-child(4n+1) { background: #ff3b3b; box-shadow: 0 0 10px #ff3b3b; animation-delay: 0s; }
+        .light-bulb:nth-child(4n+2) { background: #3bff3b; box-shadow: 0 0 10px #3bff3b; animation-delay: 0.5s; }
+        .light-bulb:nth-child(4n+3) { background: #3b83ff; box-shadow: 0 0 10px #3b83ff; animation-delay: 1s; }
+        .light-bulb:nth-child(4n+4) { background: #ffdb3b; box-shadow: 0 0 10px #ffdb3b; animation-delay: 1.5s; }
+
+        @keyframes lightGlow {
+            0%, 100% { opacity: 0.4; transform: scale(0.9); }
+            50% { opacity: 1; transform: scale(1.1); box-shadow: 0 5px 20px currentColor; }
+        }
+
+        /* --- SNOW ANIMATION --- */
+        .menu-bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        /* --- UPDATED SNOWFLAKE CSS --- */
+        .snowflake {
+            position: absolute;
+            top: -10px;
+            background: transparent !important; /* Removes the white dot */
+            border-radius: 0 !important;        /* Removes round shape */
+            color: white;                       /* Color of the flake */
+            font-size: 1.5rem;                  /* Size of the flake */
+            user-select: none;
+            pointer-events: none;
+            opacity: 0.8;
+            /* Flex centers the character within the div */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fall linear infinite;
+        }
+
+        /* Add distinct flake shapes */
+        .snowflake::after { content: '\2744'; }       /* ❄ */
+        .snowflake:nth-child(2n)::after { content: '\2745'; } /* ❅ */
+        .snowflake:nth-child(3n)::after { content: '\2746'; } /* ❆ */
+
+        /* Updated Animation with Rotation */
+        @keyframes fall {
+            0% { transform: translateY(-10vh) translateX(0) rotate(0deg); opacity: 0.8; }
+            100% { transform: translateY(110vh) translateX(20px) rotate(360deg); opacity: 0.3; }
+        }
+
+        /* --- HEADER --- */
+        .tv-header {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            height: 100px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid var(--card-border);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+
+        .brand-title {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin: 0;
+            background: linear-gradient(90deg, #D42426, #165B33);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .clock {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.5rem;
+            color: var(--text-main);
+            text-shadow: 0 0 20px rgba(255,255,255,0.1);
+        }
+
+        .sound-indicator {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            border: 1px solid var(--card-border);
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* --- MAIN LAYOUT (3 COLUMNS) --- */
+        .queue-container {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr; /* CHANGED TO 3 COLUMNS */
+            height: calc(100vh - 180px);
+            gap: 2px;
+            position: relative;
+            z-index: 10; 
+        }
+
+        .column {
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        /* Divider Lines for all columns except the last one */
+        .column:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 5%;
+            height: 90%;
+            width: 1px;
+            background: linear-gradient(to bottom, transparent, var(--card-border), transparent);
+        }
+
+        .col-header {
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            font-weight: 800;
+            margin-bottom: 40px;
+            padding: 12px 0;
+            width: 80%;
+            text-align: center;
+            border-radius: 12px;
+            letter-spacing: 2px;
+        }
+
+        /* --- HEADER STYLES --- */
+        .col-incoming .col-header {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .col-preparing .col-header {
+            color: var(--warning);
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            box-shadow: 0 0 30px rgba(245, 158, 11, 0.05);
+        }
+        .col-ready .col-header {
+            color: var(--success);
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.05);
+        }
+
+        /* --- CARDS --- */
+        .numbers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); /* Adaptive grid */
+            gap: 25px;
+            width: 100%;
+            align-content: start;
+        }
+
+        .order-ticket {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 25px 15px;
+            text-align: center;
+            animation: slideUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            position: relative;
+            backdrop-filter: blur(5px);
+            transition: transform 0.3s;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .order-ticket h2 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 3rem; /* Slightly smaller to fit 3 cols */
+            margin: 0;
+            color: var(--text-main);
+            line-height: 1;
+        }
+
+        .order-ticket span {
+            display: block;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 10px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        /* --- INCOMING ORDER ANIMATIONS --- */
+        
+        /* 1. FRESH (0-5 mins) - GREEN PULSE */
+        .inc-fresh {
+            border-color: var(--success);
+            box-shadow: inset 0 0 20px rgba(16, 185, 129, 0.1);
+            animation: slideUp 0.5s, pulseGreen 2s infinite;
+        }
+        @keyframes pulseGreen {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.2); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* 2. WAITING (5-10 mins) - YELLOW PULSE */
+        .inc-waiting {
+            border-color: var(--warning);
+            color: var(--warning);
+            animation: slideUp 0.5s, pulseYellow 1.5s infinite;
+        }
+        @keyframes pulseYellow {
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.2); }
+            70% { box-shadow: 0 0 0 15px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+
+        /* 3. CRITICAL (10+ mins) - RED SHAKE */
+        .inc-critical {
+            border-color: var(--danger);
+            background: rgba(239, 68, 68, 0.15);
+            animation: shakeRed 0.5s infinite;
+        }
+        .inc-critical h2 { color: var(--danger); }
+        
+        @keyframes shakeRed {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        /* READY STATE GLOW */
+        .col-ready .order-ticket {
+            background: rgba(16, 185, 129, 0.05);
+            border-color: rgba(16, 185, 129, 0.3);
+            animation: slideUp 0.5s ease, pulseGlow 2s infinite;
+        }
+        
+        .col-ready .order-ticket h2 {
+            color: var(--success);
+            text-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.3); }
+            50% { box-shadow: 0 0 20px 0 rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.6); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.3); }
+        }
+
+        /* --- FOOTER --- */
+        .tv-footer {
+            height: 80px;
+            background: #000;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+            border-top: 1px solid var(--card-border);
+            z-index: 10;
+        }
+
+        .ticker-wrap { width: 100%; overflow: hidden; }
+        .ticker {
+            display: inline-block;
+            padding-left: 100%;
+            animation: ticker 35s linear infinite;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+        .ticker strong { color: var(--primary); }
+
+        @keyframes ticker {
+            0% { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(-100%, 0, 0); }
+        }
+
+        /* --- SOUND BUTTON --- */
+        #sound-overlay {
+            position: fixed;
+            top: 90px; right: 20px;
+            background: var(--primary);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            z-index: 1000;
+            font-weight: bold;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            border: 2px solid rgba(255,255,255,0.2);
+            transition: all 0.2s;
+        }
+        #sound-overlay:hover { transform: scale(1.05); }
+    </style>
+</head>
+<body>
+
+    <div class="christmas-lights-container">
+        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
+    </div>
+
+    <div class="menu-bg-animation" id="snow-container"></div>
+
+    <header class="tv-header">
+        <h1 class="brand-title">     <img src="og-image.jpg" alt="Logo" style="height: 60px; vertical-align: middle; border-radius: 12px; margin-right: 15px;"> Café Cloud Club </h1>
+        <div class="clock" id="clock">00:00</div>
+        <div class="sound-indicator" id="sound-status">Sound Off</div>
+    </header>
+
+    <div id="sound-overlay" onclick="enableAudio()">🔊 Tap to Enable Audio</div>
+
+    <div class="queue-container">
+        
+        <div class="column col-incoming">
+            <div class="col-header">Incoming</div>
+            <div id="grid-incoming" class="numbers-grid"></div>
+        </div>
+
+        <div class="column col-preparing">
+            <div class="col-header">Preparing</div>
+            <div id="grid-preparing" class="numbers-grid"></div>
+        </div>
+
+        <div class="column col-ready">
+            <div class="col-header">Ready for Pickup</div>
+            <div id="grid-ready" class="numbers-grid"></div>
+        </div>
+
+    </div>
+
+    <footer class="tv-footer">
+        <div class="ticker-wrap">
+            <div class="ticker" id="daily-offer-text">
+                Loading...
+            </div>
+        </div>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
+            authDomain: "cafe-orders-1afa1.firebaseapp.com",
+            databaseURL: "https://cafe-orders-1afa1-default-rtdb.firebaseio.com",
+            projectId: "cafe-orders-1afa1",
+            storageBucket: "cafe-orders-1afa1.firebasestorage.app",
+            messagingSenderId: "274410745480",
+            appId: "1:274410745480:web:9964c3914d512aed8d793d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // --- TIME HELPER ---
+        function getMinutesAgo(timestamp) {
+            if(!timestamp) return 0;
+            return Math.floor((Date.now() - timestamp) / 60000);
+        }
+
+        // --- CLOCK ---
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString('en-US', {
+                hour: '2-digit', minute: '2-digit', hour12: true
+            });
+        }, 1000);
+
+        // --- AUDIO SYSTEM & WAKE LOCK ---
+        const bell = new Audio('bell.mp3');
+        let audioEnabled = false;
+        let knownReadyIds = new Set(); 
+        let wakeLock = null;
+
+        window.enableAudio = async function() {
+            // 1. Play Audio
+            bell.play().then(() => {
+                bell.pause();
+                bell.currentTime = 0;
+                audioEnabled = true;
+                
+                document.getElementById('sound-overlay').style.display = 'none';
+                document.getElementById('sound-status').innerText = "Sound On";
+                document.getElementById('sound-status').style.color = "var(--success)";
+                document.getElementById('sound-status').style.borderColor = "var(--success)";
+            }).catch(e => console.error("Audio blocked", e));
+
+            // 2. Request Wake Lock
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Screen Wake Lock active');
+                    
+                    document.addEventListener('visibilitychange', async () => {
+                        if (wakeLock !== null && document.visibilityState === 'visible') {
+                            wakeLock = await navigator.wakeLock.request('screen');
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error(`Wake Lock failed: ${err.name}, ${err.message}`);
+            }
+        };
+
+        // --- DAILY OFFERS LOGIC ---
+        const dailyOfferTexts = [
+            "SUNDAY SPECIAL: Fam-Jam Feast! 1 Pasta + 1 Slider + 1 Shake = ₹399. Use Code: SUNFEAST",
+            "MEAT-UP MONDAY: Burger + Fries = ₹222. Strictly 1 Beef Burger gets ₹20 OFF. Use Code: MONBURGER",
+            "TWISTED TUESDAY: Any Penne Pasta (Alfredo/Pesto/Arabiata/Cloud) Flat @ ₹179. Use Code: TUEPASTA",
+            "WICKED WEDNESDAY: Steak @ ₹300 (Code: WEDSTEAK) OR Premium Shake @ ₹120 (Code: WEDSHAKE)",
+            "THURSDAY CLUB: Any Sandwich + Any Chiller = ₹189. Use Code: THUSAND",
+            "FRI-YAY FRY-DAY: Veg Loaded Fries ₹119 | Chicken Loaded Fries ₹179. Use Code: FRIFRIES",
+            "ROCK N' ROLL SATURDAY: Any Roll (Tandoori, Pesto, Chipotle) for ₹129. Use Code: SATROLL"
+        ];
+        
+        const dayIndex = new Date().getDay();
+        const todayOffer = dailyOfferTexts[dayIndex];
+        
+        document.getElementById('daily-offer-text').innerHTML = `<strong>📲 ONLINE EXCLUSIVE (Delivery & Pickup):</strong> ${todayOffer} | Order @ cafe-cloud-club.vercel.app`;
+
+
+        // --- FIREBASE ORDER LISTENER ---
+        const ordersRef = ref(db, 'orders');
+        
+        // REFRESH LOGIC: We render on data change, AND we force re-render every minute to update colors
+        let lastSnapshot = null;
+
+        function renderOrders() {
+            if (!lastSnapshot) return;
+            const data = lastSnapshot.val();
+
+            const incContainer = document.getElementById('grid-incoming');
+            const prepContainer = document.getElementById('grid-preparing');
+            const readyContainer = document.getElementById('grid-ready');
+            
+            incContainer.innerHTML = "";
+            prepContainer.innerHTML = "";
+            readyContainer.innerHTML = "";
+
+            if (!data) return;
+
+            // Convert to array and sort by time
+            const orders = Object.values(data).sort((a, b) => a.timestamp - b.timestamp);
+            let newReadyCount = 0;
+
+            orders.forEach(order => {
+                try {
+                    // STRICT FILTER
+                    if (!order || !order.status) return;
+                    if (!order.orderId) return; 
+                    if (!order.customer || !order.customer.name) return; 
+                    
+                    const status = order.status;
+                    const orderId = order.orderId;
+                    const customerName = order.customer.name.split(' ')[0];
+                    const type = order.orderType || "Order"; 
+
+                    // --- COLUMN 1: INCOMING (Pending) ---
+                    if (status === 'pending') {
+                        const mins = getMinutesAgo(order.timestamp);
+                        let animClass = 'inc-fresh'; // Default Green
+
+                        if (mins >= 10) animClass = 'inc-critical'; // Red
+                        else if (mins >= 5) animClass = 'inc-waiting'; // Yellow
+
+                        const cardHtml = `
+                            <div class="order-ticket ${animClass}">
+                                <h2>${orderId}</h2>
+                                <span>${mins}m Ago</span>
+                                <span>${customerName}</span>
+                            </div>
+                        `;
+                        incContainer.innerHTML += cardHtml;
+                    }
+
+                    // --- COLUMN 2: PREPARING (Cooking) ---
+                    else if (status === 'cooking') {
+                        const cardHtml = `
+                            <div class="order-ticket">
+                                <h2>${orderId}</h2>
+                                <span>${customerName} (${type})</span>
+                            </div>
+                        `;
+                        prepContainer.innerHTML += cardHtml;
+                    } 
+                    
+                    // --- COLUMN 3: READY (Done) ---
+                    else if (status === 'done') {
+                        const cardHtml = `
+                            <div class="order-ticket blink-me">
+                                <h2>${orderId}</h2>
+                                <span>${customerName}</span>
+                            </div>
+                        `;
+                        readyContainer.innerHTML += cardHtml;
+
+                        if (!knownReadyIds.has(orderId)) {
+                            newReadyCount++;
+                            knownReadyIds.add(orderId);
+                        }
+                    }
+                } catch (err) {
+                    console.warn("Skipped bad order", err);
+                }
+            });
+
+            if (newReadyCount > 0 && audioEnabled) {
+                bell.play().catch(e => console.log(e));
+            }
+        }
+
+        // LISTENER
+        onValue(ordersRef, (snapshot) => {
+            lastSnapshot = snapshot;
+            renderOrders();
+        });
+
+        // FORCE RENDER EVERY 60s TO UPDATE COLORS (Green -> Yellow -> Red)
+        setInterval(() => {
+            renderOrders();
+        }, 60000);
+
+        // --- HOLIDAY SNOW SCRIPT ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('snow-container');
+            if (!container) return;
+            const snowflakeCount = 40; 
+            for (let i = 0; i < snowflakeCount; i++) {
+                const flake = document.createElement('div');
+                flake.classList.add('snowflake');
+                const left = Math.random() * 100;
+                const size = Math.random() * 5 + 3;
+                const duration = Math.random() * 10 + 10;
+                const delay = Math.random() * 10;
+                flake.style.left = `${left}%`;
+                flake.style.width = `${size}px`;
+                flake.style.height = `${size}px`;
+                flake.style.animationDuration = `${duration}s`;
+                flake.style.animationDelay = `-${delay}s`;
+                container.appendChild(flake);
+            }
+        });
+    </script>
+</body>
+</html>
