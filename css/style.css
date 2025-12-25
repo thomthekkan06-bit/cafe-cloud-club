@@ -56,6 +56,84 @@ body {
     100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
 }
 
+/* --- NEW YEAR COUNTDOWN (FIXED HORIZONTAL LAYOUT) --- */
+.countdown-container {
+    background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+    border: 1px solid var(--primary);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 25px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
+    position: relative;
+    overflow: hidden;
+    max-width: 100%;
+}
+
+.countdown-label {
+    color: var(--primary);
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+}
+
+.countdown-timer {
+    display: flex !important;       /* Force flexbox */
+    flex-direction: row !important; /* Force horizontal alignment */
+    flex-wrap: nowrap !important;   /* Prevent wrapping to next line */
+    justify-content: center;
+    align-items: center;
+    gap: 15px;                      /* Space between numbers */
+    color: #fff;
+    font-family: 'Courier New', monospace;
+    width: 100%;
+}
+
+.time-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 60px; /* Ensures numbers don't get squished */
+}
+
+.time-box span {
+    font-size: 2rem; /* Big numbers */
+    font-weight: 700;
+    line-height: 1;
+    background: linear-gradient(to bottom, #fff, #ccc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: block;
+}
+
+.time-box small {
+    font-size: 0.7rem;
+    color: var(--grey-text);
+    text-transform: uppercase;
+    margin-top: 5px;
+    font-family: 'Poppins', sans-serif;
+    letter-spacing: 1px;
+}
+
+.colon {
+    font-size: 2rem;
+    color: var(--primary);
+    margin-top: -15px; /* Lift the colon slightly to match numbers */
+    font-weight: bold;
+}
+
+/* Mobile Adjustments for Countdown */
+@media (max-width: 600px) {
+    .countdown-timer { gap: 8px; }
+    .time-box { min-width: 45px; }
+    .time-box span { font-size: 1.5rem; }
+    .colon { font-size: 1.5rem; margin-top: -10px; }
+}
+
 /* --- PRELOADER (Layer 13000) --- */
 #preloader {
     position: fixed;
@@ -325,84 +403,6 @@ body {
 }
 .news-ticker-area:hover .ticker-content { animation-play-state: paused; }
 @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
-
-/* --- NEW YEAR COUNTDOWN (FIXED HORIZONTAL) --- */
-.countdown-container {
-    background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
-    border: 1px solid var(--primary);
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 25px;
-    text-align: center;
-    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
-    position: relative;
-    overflow: hidden;
-    max-width: 100%;
-}
-
-.countdown-label {
-    color: var(--primary);
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: 2px;
-    margin-bottom: 15px;
-    text-transform: uppercase;
-    text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
-}
-
-.countdown-timer {
-    display: flex !important;       /* Force flexbox */
-    flex-direction: row !important; /* Force horizontal alignment */
-    flex-wrap: nowrap !important;   /* Prevent wrapping to next line */
-    justify-content: center;
-    align-items: center;
-    gap: 15px;                      /* Space between numbers */
-    color: #fff;
-    font-family: 'Courier New', monospace;
-    width: 100%;
-}
-
-.time-box {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-width: 60px; /* Ensures numbers don't get squished */
-}
-
-.time-box span {
-    font-size: 2rem; /* Big numbers */
-    font-weight: 700;
-    line-height: 1;
-    background: linear-gradient(to bottom, #fff, #ccc);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    display: block;
-}
-
-.time-box small {
-    font-size: 0.7rem;
-    color: var(--grey-text);
-    text-transform: uppercase;
-    margin-top: 5px;
-    font-family: 'Poppins', sans-serif;
-    letter-spacing: 1px;
-}
-
-.colon {
-    font-size: 2rem;
-    color: var(--primary);
-    margin-top: -15px; /* Lift the colon slightly to match numbers */
-    font-weight: bold;
-}
-
-/* Mobile Adjustments for Countdown */
-@media (max-width: 600px) {
-    .countdown-timer { gap: 8px; }
-    .time-box { min-width: 45px; }
-    .time-box span { font-size: 1.5rem; }
-    .colon { font-size: 1.5rem; margin-top: -10px; }
-}
 
 .promo-section { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 20px; scroll-behavior: smooth; scrollbar-width: none; flex-shrink: 0; min-height: 190px; width: 100%; z-index: 10; position: relative; }
 .promo-section::-webkit-scrollbar { display: none; }
