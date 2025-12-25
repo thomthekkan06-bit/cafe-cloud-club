@@ -747,3 +747,82 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
 .cart-shake {
     animation: shakeCart 0.4s ease;
 }
+/* --- NEW YEAR COUNTDOWN --- */
+.countdown-container {
+    background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+    color: #FFD700; /* Gold Text */
+    padding: 20px;
+    margin-bottom: 25px;
+    border-radius: 12px;
+    text-align: center;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    position: relative;
+    overflow: hidden;
+    animation: slideUp 0.8s ease;
+    z-index: 20;
+}
+
+/* Sparkle effect background */
+.countdown-container::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle, rgba(255,215,0,0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.countdown-label {
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.countdown-timer {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.time-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px;
+    border-radius: 8px;
+    min-width: 60px;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    backdrop-filter: blur(5px);
+}
+
+.time-box span {
+    font-size: 1.5rem;
+    font-weight: 800;
+    font-family: monospace; /* Keeps numbers steady */
+    color: #FFD700;
+    line-height: 1;
+    margin-bottom: 5px;
+}
+
+.time-box small {
+    font-size: 0.6rem;
+    opacity: 0.8;
+    color: #ccc;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Mobile Tweak */
+@media (max-width: 480px) {
+    .countdown-timer { gap: 8px; }
+    .time-box { min-width: 50px; padding: 8px 5px; }
+    .time-box span { font-size: 1.2rem; }
+}
