@@ -56,39 +56,37 @@ body {
     100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
 }
 
-/* --- NEW YEAR COUNTDOWN (FIXED HORIZONTAL LAYOUT) --- */
+/* --- NEW YEAR COUNTDOWN (FIXED VISIBILITY) --- */
 .countdown-container {
-    background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+    background: #000000; /* Solid Black Background */
     border: 1px solid var(--primary);
     border-radius: 12px;
-    padding: 20px;
+    padding: 15px; /* Reduced padding slightly */
     margin-bottom: 25px;
     text-align: center;
     box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
     position: relative;
     overflow: hidden;
     max-width: 100%;
+    z-index: 50; /* Ensure it sits above background elements */
 }
 
 .countdown-label {
     color: var(--primary);
-    font-size: 1rem;
-    font-weight: 700;
+    font-size: 0.9rem;
+    font-weight: 800;
     letter-spacing: 2px;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     text-transform: uppercase;
-    text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
 }
 
 .countdown-timer {
-    display: flex !important;       /* Force flexbox */
-    flex-direction: row !important; /* Force horizontal alignment */
-    flex-wrap: nowrap !important;   /* Prevent wrapping to next line */
+    display: flex !important;       
+    flex-direction: row !important; 
+    flex-wrap: nowrap !important;   
     justify-content: center;
     align-items: center;
-    gap: 15px;                      /* Space between numbers */
-    color: #fff;
-    font-family: 'Courier New', monospace;
+    gap: 10px;                      
     width: 100%;
 }
 
@@ -97,41 +95,45 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-width: 60px; /* Ensures numbers don't get squished */
+    min-width: 50px; 
 }
 
 .time-box span {
-    font-size: 2rem; /* Big numbers */
+    /* REMOVED GRADIENT - WENT SOLID WHITE */
+    color: #ffffff !important; 
+    font-family: 'Courier New', monospace;
+    font-size: 1.8rem; 
     font-weight: 700;
     line-height: 1;
-    background: linear-gradient(to bottom, #fff, #ccc);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
     display: block;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5); /* shadow for pop */
+    -webkit-text-fill-color: #ffffff !important; /* Force opacity */
 }
 
 .time-box small {
-    font-size: 0.7rem;
-    color: var(--grey-text);
+    font-size: 0.65rem;
+    color: #999; /* Light grey */
     text-transform: uppercase;
-    margin-top: 5px;
+    margin-top: 4px;
     font-family: 'Poppins', sans-serif;
     letter-spacing: 1px;
+    font-weight: 500;
 }
 
 .colon {
-    font-size: 2rem;
+    font-size: 1.8rem;
     color: var(--primary);
-    margin-top: -15px; /* Lift the colon slightly to match numbers */
+    margin-top: -18px; 
     font-weight: bold;
+    opacity: 0.8;
 }
 
-/* Mobile Adjustments for Countdown */
+/* Mobile Adjustments */
 @media (max-width: 600px) {
-    .countdown-timer { gap: 8px; }
-    .time-box { min-width: 45px; }
-    .time-box span { font-size: 1.5rem; }
-    .colon { font-size: 1.5rem; margin-top: -10px; }
+    .countdown-timer { gap: 5px; }
+    .time-box { min-width: 40px; }
+    .time-box span { font-size: 1.4rem; }
+    .colon { font-size: 1.4rem; margin-top: -15px; }
 }
 
 /* --- PRELOADER (Layer 13000) --- */
