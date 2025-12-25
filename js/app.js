@@ -579,7 +579,7 @@ function findComboItems(cart, rules) {
 
             // 4. Check Price Floor (e.g. Pasta > 180)
             let priceMatch = true;
-            if (rule.minPrice && item.basePrice < rule.minPrice) priceMatch = false;
+            if (item.basePrice < rule.minPrice) priceMatch = false;
 
             if (catMatch && nameMatch && !excludeMatch && priceMatch) {
                 // Bingo! This item fits this rule.
@@ -991,6 +991,9 @@ window.finalizeOrder = function() {
 document.addEventListener('DOMContentLoaded', () => {
     loadCart(); 
     renderMenu();
+    // NEW YEAR COUNTDOWN TRIGGER
+    startNewYearCountdown();
+    
     const cInput = document.getElementById('coupon-input');
     const cBtn = document.getElementById('coupon-apply-btn');
     if(cInput && cBtn) {
@@ -1223,4 +1226,35 @@ window.toggleFinalButton = function() {
         else { btn.disabled = true;
         btn.style.opacity = "0.5"; btn.style.cursor = "not-allowed"; }
     }
+}
+
+/* --- NEW YEAR COUNTDOWN LOGIC --- */
+function startNewYearCountdown() {
+    const countdownEl = document.getElementById('new-year-countdown');
+    if (!countdownEl) return;
+
+    // TARGET DATE: Jan 1, 2026 00:00:00
+    const countTo = new Date("Jan 1, 2026 00:00:00").getTime();
+
+    const updateTimer = setInterval(function() {
+        const now = new Date().getTime();
+        const distance = countTo - now;
+
+        if (distance < 0) {
+            clearInterval(updateTimer);
+            document.querySelector('.countdown-label').innerText = "🎉 HAPPY NEW YEAR! 🎉";
+            document.querySelector('.countdown-timer').innerHTML = "<div style='font-size:1.2rem; color:var(--primary); padding:10px;'>Let the Feast Begin! 🍔</div>";
+            return;
+        }
+
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        document.getElementById('cd-days').innerText = days < 10 ? "0" + days : days;
+        document.getElementById('cd-hours').innerText = hours < 10 ? "0" + hours : hours;
+        document.getElementById('cd-min').innerText = minutes < 10 ? "0" + minutes : minutes;
+        document.getElementById('cd-sec').innerText = seconds < 10 ? "0" + seconds : seconds;
+    }, 1000);
 }
