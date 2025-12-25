@@ -25,14 +25,15 @@
 
     <meta name="description" content="Order the best Burgers, Steaks, Pastas, and Shakes from Café Cloud Club. Fast delivery in Chalakudy. Fresh ingredients, great taste!">
     <meta name="keywords" content="Cafe Cloud Club, Burger, Steak, Pasta, Chalakudy, Food Delivery, Restaurant">
-    
-    <meta name="theme-color" content="#D42426">
+    <meta name="theme-color" content="#FF4500">
 
     <meta property="og:title" content="Café Cloud Club | Order Online">
     <meta property="og:description" content="Craving a Burger or Steak? Order now for pickup or delivery!">
     <meta property="og:image" content="https://cafe-cloud-club.vercel.app/og-image.jpg">
     <meta property="og:url" content="https://cafe-cloud-club.vercel.app/">
     <meta property="og:type" content="website">
+
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍔</text></svg>">
     
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet"></noscript>
@@ -45,33 +46,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
-
-<div class="christmas-lights-container">
-    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-</div>
-
-<div class="menu-bg-animation" id="snow-container"></div>
-
-<div class="santa-container">
-    <img src="santa.gif" alt="Flying Santa" onerror="this.style.display='none'">
-</div>
-
-<div class="tree-container">
-    <div class="tree-part"><div class="t-light tl-1"></div></div>
-    <div class="tree-part"><div class="t-light tl-2"></div></div>
-    <div class="tree-part"><div class="t-light tl-3"></div><div class="t-light tl-4"></div></div>
-    <div class="tree-trunk"></div>
-</div>
-
 
 <div id="preloader">
     <div class="morph-loader-container">
@@ -343,7 +317,7 @@
 
 <div class="dashboard" id="main-dashboard">
     <div class="left-sidebar">
-        <img src="og-image.jpg" alt="Cafe Cloud Club" class="brand-logo" style="width: 80%; max-width: 180px; height: auto; border-radius: 12px; margin: 0 auto 15px auto; display: block; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+        <h1 class="brand-title">Café Cloud Club</h1>
         <div class="brand-subtitle">Cafe and Eatery</div>
         <div class="brand-est">Established Since 2021</div>
 
@@ -372,18 +346,18 @@
                 <i class="fas fa-gift"></i> All Offers & T&C
             </div>
 
-            <div class="reorder-btn-area">
-                <button class="reorder-btn" onclick="repeatLastOrder()">
-                    <i class="fas fa-history"></i> Repeat Last Order
-                </button>
-            </div>
+<div class="reorder-btn-area">
+    <button class="reorder-btn" onclick="repeatLastOrder()">
+        <i class="fas fa-history"></i> Repeat Last Order
+    </button>
+</div>
 
-            <a href="my-orders.html" class="filter-item" style="text-decoration:none; color:inherit;">
-                <i class="fas fa-receipt" style="margin-right:8px; color:#3498db;"></i> Past Orders
-            </a>
-            <div class="filter-item" onclick="setCategoryFilter('Favorites', this)">
-                <i class="fas fa-heart" style="margin-right:8px; color:#e74c3c;"></i> My Favorites
-            </div>
+<a href="my-orders.html" class="filter-item" style="text-decoration:none; color:inherit;">
+    <i class="fas fa-receipt" style="margin-right:8px; color:#3498db;"></i> Past Orders
+</a>
+<div class="filter-item" onclick="setCategoryFilter('Favorites', this)">
+    <i class="fas fa-heart" style="margin-right:8px; color:#e74c3c;"></i> My Favorites
+</div>
 
             <div class="filter-item active" onclick="setCategoryFilter('All', this)">All Items</div>
             <div class="filter-item" onclick="setCategoryFilter('Bun-Tastic Burgers', this)">Bun-Tastic Burgers</div>
@@ -410,6 +384,11 @@
     </div>
 
     <div class="main-content">
+        <div class="menu-bg-animation">
+            <div class="floating-shape shape-1"></div>
+            <div class="floating-shape shape-2"></div>
+            <div class="floating-shape shape-3"></div>
+        </div>
 
         <div class="mobile-info-card">
             <h2 class="mobile-brand-title">Café Cloud Club</h2>
@@ -439,30 +418,6 @@
                 <input type="text" id="search-input" placeholder="Search..." onkeyup="updateSearch()">
             </div>
         </div>
-        </div> 
-
-<div id="new-year-countdown" class="countdown-container" style="display:none;">
-    <div class="countdown-label">🎉 Counting Down to 2026 🎉</div>
-    <div class="countdown-timer">
-        <div class="time-box">
-            <span id="ny-days">00</span>
-            <small>DAYS</small>
-        </div>
-        <div class="time-box">
-            <span id="ny-hours">00</span>
-            <small>HRS</small>
-        </div>
-        <div class="time-box">
-            <span id="ny-mins">00</span>
-            <small>MINS</small>
-        </div>
-        <div class="time-box">
-            <span id="ny-secs">00</span>
-            <small>SECS</small>
-        </div>
-    </div>
-</div>
-<div class="news-ticker-area" onclick="toggleOffersPage()" style="cursor: pointer;">
 
         <div class="news-ticker-area" onclick="toggleOffersPage()" style="cursor: pointer;">
             <div class="ticker-label">TODAY'S SPECIAL</div>
@@ -753,36 +708,6 @@
         </div>
     </div>
 </div>
-
-<script>
-    // --- HOLIDAY SNOW SCRIPT ---
-    // Minimal script to generate snow without heavy libraries
-    document.addEventListener('DOMContentLoaded', () => {
-        const container = document.getElementById('snow-container');
-        if (!container) return; // safety check
-        
-        const snowflakeCount = 30; // Keep it low for mobile performance
-
-        for (let i = 0; i < snowflakeCount; i++) {
-            const flake = document.createElement('div');
-            flake.classList.add('snowflake');
-            
-            // Randomize position and animation properties
-            const left = Math.random() * 100;
-            const size = Math.random() * 5 + 3; // 3px to 8px
-            const duration = Math.random() * 10 + 10; // 10s to 20s fall time
-            const delay = Math.random() * 10;
-            
-            flake.style.left = `${left}%`;
-            flake.style.width = `${size}px`;
-            flake.style.height = `${size}px`;
-            flake.style.animationDuration = `${duration}s`;
-            flake.style.animationDelay = `-${delay}s`; // Negative delay starts them mid-air
-            
-            container.appendChild(flake);
-        }
-    });
-</script>
 
 <script type="module" src="js/app.js"></script>
 </body>
