@@ -1224,3 +1224,49 @@ window.toggleFinalButton = function() {
         btn.style.opacity = "0.5"; btn.style.cursor = "not-allowed"; }
     }
 }
+// --- NEW YEAR COUNTDOWN LOGIC ---
+function initCountdown() {
+    const countdownEl = document.getElementById('new-year-countdown');
+    if (!countdownEl) return;
+
+    // Target: Jan 1st of next year
+    const currentYear = new Date().getFullYear();
+    const nextYear = currentYear + 1;
+    const targetDate = new Date(`Jan 1, ${nextYear} 00:00:00`).getTime();
+
+    const updateTimer = () => {
+        const now = new Date().getTime();
+        const diff = targetDate - now;
+
+        // If New Year has arrived
+        if (diff < 0) {
+            countdownEl.innerHTML = `
+                <h2 style="color:#FFD700; margin:0; font-size:1.5rem; text-shadow:0 0 20px #FFD700;">
+                    🎆 HAPPY NEW YEAR ${nextYear}! 🎆
+                </h2>`;
+            countdownEl.style.display = 'block';
+            return;
+        }
+
+        // Calculations
+        const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+        // Update HTML
+        document.getElementById('ny-days').innerText = d < 10 ? "0" + d : d;
+        document.getElementById('ny-hours').innerText = h < 10 ? "0" + h : h;
+        document.getElementById('ny-mins').innerText = m < 10 ? "0" + m : m;
+        document.getElementById('ny-secs').innerText = s < 10 ? "0" + s : s;
+
+        // Show the box
+        countdownEl.style.display = 'block';
+    };
+
+    updateTimer(); // Run once immediately
+    setInterval(updateTimer, 1000); // Update every second
+}
+
+// Start the countdown when page loads
+initCountdown();
