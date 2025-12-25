@@ -113,7 +113,7 @@ body {
 
 .time-box small {
     font-size: 0.65rem;
-    color: #999;
+    color: #999; /* Light grey */
     text-transform: uppercase;
     margin-top: 4px;
     font-family: 'Poppins', sans-serif;
@@ -129,6 +129,7 @@ body {
     opacity: 0.8;
 }
 
+/* Mobile Adjustments for Countdown */
 @media (max-width: 600px) {
     .countdown-timer { gap: 8px; }
     .time-box { min-width: 45px; }
