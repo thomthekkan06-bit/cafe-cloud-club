@@ -987,43 +987,9 @@ window.finalizeOrder = function() {
     document.getElementById('customer-name-display').innerText = name;
     document.getElementById('send-wa-btn').onclick = function() { window.open(finalUrl, '_blank'); };
 }
-
-/* --- NEW YEAR COUNTDOWN LOGIC --- */
-function startNewYearCountdown() {
-    const countdownEl = document.getElementById('new-year-countdown');
-    if (!countdownEl) return;
-
-    // TARGET DATE: Jan 1, 2026 00:00:00
-    const countTo = new Date("Jan 1, 2026 00:00:00").getTime();
-
-    const updateTimer = setInterval(function() {
-        const now = new Date().getTime();
-        const distance = countTo - now;
-
-        if (distance < 0) {
-            clearInterval(updateTimer);
-            document.querySelector('.countdown-label').innerText = "🎉 HAPPY NEW YEAR! 🎉";
-            document.querySelector('.countdown-timer').innerHTML = "<div style='font-size:1.2rem; color:var(--primary); padding:10px;'>Let the Feast Begin! 🍔</div>";
-            return;
-        }
-
-        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-        document.getElementById('cd-days').innerText = days < 10 ? "0" + days : days;
-        document.getElementById('cd-hours').innerText = hours < 10 ? "0" + hours : hours;
-        document.getElementById('cd-min').innerText = minutes < 10 ? "0" + minutes : minutes;
-        document.getElementById('cd-sec').innerText = seconds < 10 ? "0" + seconds : seconds;
-    }, 1000);
-}
-
 document.addEventListener('DOMContentLoaded', () => {
     loadCart(); 
     renderMenu();
-    // NEW YEAR COUNTDOWN TRIGGER
-    startNewYearCountdown();
     
     const cInput = document.getElementById('coupon-input');
     const cBtn = document.getElementById('coupon-apply-btn');
