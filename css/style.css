@@ -68,7 +68,7 @@ body {
     position: relative;
     overflow: hidden;
     max-width: 100%;
-    z-index: 20; /* Ensure it is above other elements */
+    z-index: 20; 
 }
 
 .countdown-label {
@@ -113,7 +113,7 @@ body {
 
 .time-box small {
     font-size: 0.65rem;
-    color: #999; /* Light grey */
+    color: #999;
     text-transform: uppercase;
     margin-top: 4px;
     font-family: 'Poppins', sans-serif;
@@ -129,7 +129,6 @@ body {
     opacity: 0.8;
 }
 
-/* Mobile Adjustments for Countdown */
 @media (max-width: 600px) {
     .countdown-timer { gap: 8px; }
     .time-box { min-width: 45px; }
