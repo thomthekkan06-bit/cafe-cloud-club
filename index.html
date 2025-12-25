@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Café Cloud Club | Order</title>
+    <title>Café Cloud Club | Happy New Year</title>
 
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
@@ -26,7 +26,7 @@
     <meta name="description" content="Order the best Burgers, Steaks, Pastas, and Shakes from Café Cloud Club. Fast delivery in Chalakudy. Fresh ingredients, great taste!">
     <meta name="keywords" content="Cafe Cloud Club, Burger, Steak, Pasta, Chalakudy, Food Delivery, Restaurant">
     
-    <meta name="theme-color" content="#D42426">
+    <meta name="theme-color" content="#D4AF37">
 
     <meta property="og:title" content="Café Cloud Club | Order Online">
     <meta property="og:description" content="Craving a Burger or Steak? Order now for pickup or delivery!">
@@ -46,32 +46,7 @@
 </head>
 <body>
 
-<div class="christmas-lights-container">
-    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-    <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-</div>
-
-<div class="menu-bg-animation" id="snow-container"></div>
-
-<div class="santa-container">
-    <img src="santa.gif" alt="Flying Santa" onerror="this.style.display='none'">
-</div>
-
-<div class="tree-container">
-    <div class="tree-part"><div class="t-light tl-1"></div></div>
-    <div class="tree-part"><div class="t-light tl-2"></div></div>
-    <div class="tree-part"><div class="t-light tl-3"></div><div class="t-light tl-4"></div></div>
-    <div class="tree-trunk"></div>
-</div>
-
+<div class="menu-bg-animation" id="confetti-container"></div>
 
 <div id="preloader">
     <div class="morph-loader-container">
@@ -379,7 +354,7 @@
             </div>
 
             <a href="my-orders.html" class="filter-item" style="text-decoration:none; color:inherit;">
-                <i class="fas fa-receipt" style="margin-right:8px; color:#3498db;"></i> Past Orders
+                <i class="fas fa-receipt" style="margin-right:8px; color:var(--primary);"></i> Past Orders
             </a>
             <div class="filter-item" onclick="setCategoryFilter('Favorites', this)">
                 <i class="fas fa-heart" style="margin-right:8px; color:#e74c3c;"></i> My Favorites
@@ -424,7 +399,7 @@
             </div>
             <div style="margin-top: 15px; border-top: 1px dashed #eee; padding-top: 10px;">
                 <a href="track.html" style="text-decoration:none; background:#121212; color:white; padding:8px 20px; border-radius:50px; font-size:0.8rem; font-weight:bold; display:inline-block;">
-                    <i class="fas fa-crosshairs" style="color:#FF4500;"></i> Track My Order
+                    <i class="fas fa-crosshairs" style="color:var(--primary);"></i> Track My Order
                 </a>
             </div>
             </div>
@@ -614,7 +589,7 @@
 
     <input type="text" class="input-field" id="addr-house" 
            placeholder="House Name / Flat No (Required)" 
-           style="margin-bottom: 8px; border-left: 3px solid #FF4500;">
+           style="margin-bottom: 8px; border-left: 3px solid var(--primary);">
 
     <select class="input-field" id="addr-street" onchange="updateSubLocations()" 
             style="margin-bottom: 8px; appearance: none; background-color: white; font-weight:600;">
@@ -731,31 +706,33 @@
 </div>
 
 <script>
-    // --- HOLIDAY SNOW SCRIPT ---
-    // Minimal script to generate snow without heavy libraries
+    // --- CONFETTI SCRIPT (Lightweight) ---
     document.addEventListener('DOMContentLoaded', () => {
-        const container = document.getElementById('snow-container');
-        if (!container) return; // safety check
+        const container = document.getElementById('confetti-container');
+        if (!container) return;
         
-        const snowflakeCount = 30; // Keep it low for mobile performance
+        const confettiCount = 30; // Keep it optimized for mobile
+        const colors = ['#D4AF37', '#F1C40F', '#F39C12', '#E67E22', '#ECF0F1'];
 
-        for (let i = 0; i < snowflakeCount; i++) {
-            const flake = document.createElement('div');
-            flake.classList.add('snowflake');
+        for (let i = 0; i < confettiCount; i++) {
+            const conf = document.createElement('div');
+            conf.classList.add('confetti');
             
             // Randomize position and animation properties
             const left = Math.random() * 100;
-            const size = Math.random() * 5 + 3; // 3px to 8px
-            const duration = Math.random() * 10 + 10; // 10s to 20s fall time
-            const delay = Math.random() * 10;
+            const size = Math.random() * 6 + 4; 
+            const duration = Math.random() * 5 + 5; 
+            const delay = Math.random() * 5;
+            const color = colors[Math.floor(Math.random() * colors.length)];
             
-            flake.style.left = `${left}%`;
-            flake.style.width = `${size}px`;
-            flake.style.height = `${size}px`;
-            flake.style.animationDuration = `${duration}s`;
-            flake.style.animationDelay = `-${delay}s`; // Negative delay starts them mid-air
+            conf.style.left = `${left}%`;
+            conf.style.width = `${size}px`;
+            conf.style.height = `${size}px`;
+            conf.style.backgroundColor = color;
+            conf.style.animationDuration = `${duration}s`;
+            conf.style.animationDelay = `-${delay}s`;
             
-            container.appendChild(flake);
+            container.appendChild(conf);
         }
     });
 </script>
