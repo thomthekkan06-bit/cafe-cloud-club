@@ -56,19 +56,19 @@ body {
     100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
 }
 
-/* --- NEW YEAR COUNTDOWN (FIXED VISIBILITY) --- */
+/* --- NEW YEAR COUNTDOWN (FIXED VISIBILITY & LAYOUT) --- */
 .countdown-container {
     background: #000000; /* Solid Black Background */
-    border: 1px solid var(--primary);
+    border: 1px solid var(--primary); /* Gold Border */
     border-radius: 12px;
-    padding: 15px; /* Reduced padding slightly */
+    padding: 15px;
     margin-bottom: 25px;
     text-align: center;
     box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
     position: relative;
     overflow: hidden;
     max-width: 100%;
-    z-index: 50; /* Ensure it sits above background elements */
+    z-index: 20; /* Ensure it is above other elements */
 }
 
 .countdown-label {
@@ -86,7 +86,7 @@ body {
     flex-wrap: nowrap !important;   
     justify-content: center;
     align-items: center;
-    gap: 10px;                      
+    gap: 15px;                      
     width: 100%;
 }
 
@@ -99,15 +99,16 @@ body {
 }
 
 .time-box span {
-    /* REMOVED GRADIENT - WENT SOLID WHITE */
+    /* REMOVED GRADIENT - FORCED SOLID WHITE FOR VISIBILITY */
     color: #ffffff !important; 
     font-family: 'Courier New', monospace;
     font-size: 1.8rem; 
     font-weight: 700;
     line-height: 1;
     display: block;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.5); /* shadow for pop */
-    -webkit-text-fill-color: #ffffff !important; /* Force opacity */
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5); 
+    -webkit-text-fill-color: #ffffff !important;
+    background: none !important;
 }
 
 .time-box small {
@@ -128,12 +129,12 @@ body {
     opacity: 0.8;
 }
 
-/* Mobile Adjustments */
+/* Mobile Adjustments for Countdown */
 @media (max-width: 600px) {
-    .countdown-timer { gap: 5px; }
-    .time-box { min-width: 40px; }
-    .time-box span { font-size: 1.4rem; }
-    .colon { font-size: 1.4rem; margin-top: -15px; }
+    .countdown-timer { gap: 8px; }
+    .time-box { min-width: 45px; }
+    .time-box span { font-size: 1.5rem; }
+    .colon { font-size: 1.5rem; margin-top: -12px; }
 }
 
 /* --- PRELOADER (Layer 13000) --- */
