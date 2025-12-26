@@ -181,12 +181,13 @@ body {
 .left-sidebar .brand-title {
     font-size: 1.4rem;
     margin-bottom: 2px; 
-    font-weight: 700;
+    font-weight: 800;
     line-height: 1.2;
-    background: linear-gradient(to right, #D42426, #165B33);
+    /* Deep Blue to Cyan Gradient */
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .brand-subtitle { font-size: 0.85rem; color: var(--secondary); font-weight: 500; margin-bottom: 2px; }
