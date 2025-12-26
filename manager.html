@@ -34,85 +34,7 @@
             /* Ensure content sits above background snow */
             position: relative;
         }
-
-        /* --- CHRISTMAS LIGHTS ANIMATION --- */
-        .christmas-lights-container {
-            position: fixed;
-            top: -5px;
-            left: 0;
-            width: 100%;
-            height: 40px;
-            /* Ultra high Z-index to show over PIN screen */
-            z-index: 20000; 
-            display: flex;
-            justify-content: center;
-            gap: 25px;
-            pointer-events: none;
-            overflow: hidden;
-            padding: 0 10px;
-        }
-
-        .light-bulb {
-            min-width: 12px;
-            height: 18px;
-            border-radius: 50%;
-            background: #ccc;
-            position: relative;
-            animation: lightGlow 2s infinite ease-in-out;
-        }
-
-        .light-bulb::before {
-            content: '';
-            position: absolute;
-            top: -5px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 2px;
-            height: 10px;
-            background: #222;
-        }
-
-        .light-bulb:nth-child(4n+1) { background: #ff3b3b; box-shadow: 0 0 10px #ff3b3b; animation-delay: 0s; }
-        .light-bulb:nth-child(4n+2) { background: #3bff3b; box-shadow: 0 0 10px #3bff3b; animation-delay: 0.5s; }
-        .light-bulb:nth-child(4n+3) { background: #3b83ff; box-shadow: 0 0 10px #3b83ff; animation-delay: 1s; }
-        .light-bulb:nth-child(4n+4) { background: #ffdb3b; box-shadow: 0 0 10px #ffdb3b; animation-delay: 1.5s; }
-
-        @keyframes lightGlow {
-            0%, 100% { opacity: 0.4; transform: scale(0.9); }
-            50% { opacity: 1; transform: scale(1.1); box-shadow: 0 5px 20px currentColor; }
-        }
-
-        /* --- UPDATED SNOW ANIMATION --- */
-        .menu-bg-animation {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 1; pointer-events: none; overflow: hidden;
-        }
-
-        .snowflake {
-            position: absolute;
-            top: -10px;
-            background: transparent !important;
-            border-radius: 0 !important;
-            color: white;
-            font-size: 1.5rem;
-            user-select: none;
-            pointer-events: none;
-            opacity: 0.5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: fall linear infinite;
-        }
-
-        .snowflake::after { content: '\2744'; }
-        .snowflake:nth-child(2n)::after { content: '\2745'; }
-        .snowflake:nth-child(3n)::after { content: '\2746'; }
-
-        @keyframes fall {
-            0% { transform: translateY(-10vh) translateX(0) rotate(0deg); opacity: 0.8; }
-            100% { transform: translateY(110vh) translateX(20px) rotate(360deg); opacity: 0.3; }
-        }
-
+        
         /* --- PIN LOCK --- */
         #pin-overlay { 
             position: fixed;
@@ -337,22 +259,6 @@
     </style>
 </head>
 <body>
-
-    <div class="christmas-lights-container">
-        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-        <div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div><div class="light-bulb"></div>
-    </div>
-
-    <div class="menu-bg-animation" id="snow-container"></div>
-
     <div id="pin-overlay">
         <div class="pin-box">
             <h2 style="margin-top:0;">🔒 Kitchen Access</h2>
