@@ -317,10 +317,14 @@ body {
 .code-badge { background: rgba(255,255,255,0.2); padding: 5px 12px; border-radius: 6px; font-weight: 600; font-size: 0.9rem; width: fit-content; border: 1px dashed rgba(255,255,255,0.6); }
 .promo-icon { position: absolute; right: -10px; bottom: -10px; font-size: 100px; opacity: 0.2; transform: rotate(-15deg); }
 
-.bg-gradient-1 { background: linear-gradient(135deg, #D42426, #ff9f43); }
-.bg-gradient-2 { background: linear-gradient(135deg, #8e44ad, #3498db); }
-.bg-gradient-3 { background: linear-gradient(135deg, #165B33, #38ef7d); }
-.bg-gradient-4 { background: linear-gradient(135deg, #eb3349, #f45c43); }
+/* Blue/Cyan */
+.bg-gradient-1 { background: linear-gradient(135deg, #2563eb, #22d3ee); }
+/* Purple/Pink */
+.bg-gradient-2 { background: linear-gradient(135deg, #7c3aed, #d946ef); }
+/* Teal/Emerald */
+.bg-gradient-3 { background: linear-gradient(135deg, #059669, #34d399); }
+/* Orange/Amber (Accent) */
+.bg-gradient-4 { background: linear-gradient(135deg, #ea580c, #fbbf24); }
 
 /* --- OFFERS OVERLAY (Layer 12000) --- */
 .offers-view {
