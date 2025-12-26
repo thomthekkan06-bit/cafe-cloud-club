@@ -797,7 +797,7 @@ window.finalizeOrder = function() {
             }
         }
         // Fixed variable interpolation (${lat}) and used a standard Maps URL
-const mapLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+const mapLink = `https://www.google.com/maps?q=${lat},${lng}`;
         address = `${house}, ${street}\n(Landmark: ${landmark})\n📍 Pin: ${mapLink}`;
     }
 
