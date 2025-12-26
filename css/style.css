@@ -293,20 +293,21 @@ body {
 }
 .ticker-content {
     display: inline-block;
+    /* REMOVED: padding-left: 100%; */
+    /* REMOVED: box-sizing: content-box; */
     
-    /* FIX: Prevent global border-box from crushing the text */
-    box-sizing: content-box;
-    
-    padding-left: 100%;
+    white-space: nowrap; /* Ensure text stays on one line */
     animation: marquee 25s linear infinite;
     font-weight: 500; font-size: 0.9rem;
-    
-    /* FIX: Remove flex: 1 to prevent layout fighting */
     min-width: 0;
     line-height: 40px;
+    padding-right: 50px; /* Add some spacing at the end */
 }
 .news-ticker-area:hover .ticker-content { animation-play-state: paused; }
-@keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
+@keyframes marquee { 
+    0% { transform: translateX(100vw); } /* Starts off-screen right */
+    100% { transform: translateX(-100%); } /* Moves fully off-screen left */
+}
 
 .promo-section { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 20px; scroll-behavior: smooth; scrollbar-width: none; flex-shrink: 0; min-height: 190px; width: 100%; z-index: 10; position: relative; }
 .promo-section::-webkit-scrollbar { display: none; }
