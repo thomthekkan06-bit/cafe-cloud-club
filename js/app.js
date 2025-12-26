@@ -328,11 +328,23 @@ window.copyCode = function(code) {
 
 window.toggleOffersPage = function() {
     const offersView = document.getElementById('offers-view');
+    
+    // Logic: Toggle the offers view
     if (offersView.classList.contains('active')) {
         offersView.classList.remove('active');
     } else {
         offersView.classList.add('active');
         offersView.scrollTop = 0;
+        
+        // FIX: Close the sidebar if we are on mobile
+        if (window.innerWidth <= 1000) {
+            const sidebar = document.querySelector('.left-sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            if (sidebar && sidebar.classList.contains('active')) {
+                sidebar.classList.remove('active');
+                if (overlay) overlay.classList.remove('active');
+            }
+        }
     }
 }
 
