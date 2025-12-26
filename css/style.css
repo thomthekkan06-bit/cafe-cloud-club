@@ -277,8 +277,11 @@ body {
 
 /* FIX: Ticker Layout for Mobile */
 .news-ticker-area {
-    width: 100%; background: linear-gradient(90deg, #165B33 0%, #2d2d2d 100%); color: #FFD700;
-    overflow: hidden; white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--primary); position: relative; height: 40px; 
+    width: 100%; 
+    background: #0f172a; /* Dark Slate */
+    color: #FFD700;
+    overflow: hidden; white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 8px; margin-bottom: 20px; 
+    border-left: 4px solid var(--primary); position: relative; height: 40px; 
     display: flex; align-items: center; flex-shrink: 0;
 }
 .ticker-label { 
