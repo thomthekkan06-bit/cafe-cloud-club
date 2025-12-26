@@ -521,26 +521,6 @@
             renderOrders();
         }, 60000);
 
-        // --- HOLIDAY SNOW SCRIPT ---
-        document.addEventListener('DOMContentLoaded', () => {
-            const container = document.getElementById('snow-container');
-            if (!container) return;
-            const snowflakeCount = 40; 
-            for (let i = 0; i < snowflakeCount; i++) {
-                const flake = document.createElement('div');
-                flake.classList.add('snowflake');
-                const left = Math.random() * 100;
-                const size = Math.random() * 5 + 3;
-                const duration = Math.random() * 10 + 10;
-                const delay = Math.random() * 10;
-                flake.style.left = `${left}%`;
-                flake.style.width = `${size}px`;
-                flake.style.height = `${size}px`;
-                flake.style.animationDuration = `${duration}s`;
-                flake.style.animationDelay = `-${delay}s`;
-                container.appendChild(flake);
-            }
-        });
     </script>
 </body>
 </html>
