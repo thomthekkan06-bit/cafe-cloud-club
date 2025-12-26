@@ -3,241 +3,342 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kitchen Display System (TV) | Café Cloud Club</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#0f1115">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Queue Display | Café Cloud Club</title>
+    
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="manifest" href="tv-manifest.json">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --text-color: #e0e0e0;
+            --bg-gradient: linear-gradient(135deg, #0f1115 0%, #1a1d23 100%);
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-border: rgba(255, 255, 255, 0.05);
+            /* CHRISTMAS RED UPDATE */
             --primary: #3b82f6; 
-            --accent: #FFD700;
-            --danger: #ef4444;
             --success: #10b981;
-            --pending-border: #f59e0b;
-            --cooking-border: #3b82f6;
-            --done-border: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444; /* Added Red */
+            --text-main: #ffffff;
+            --text-muted: #9ca3af;
         }
 
+        * { box-sizing: border-box; }
+
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Poppins', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
             margin: 0;
-            padding: 20px;
             height: 100vh;
-            overflow: hidden;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
+            position: relative;
         }
 
         /* --- HEADER --- */
         .tv-header {
+            position: relative;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 20px 20px 20px;
-            border-bottom: 2px solid #333;
-            margin-bottom: 20px;
+            padding: 0 40px;
+            height: 100px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid var(--card-border);
+            backdrop-filter: blur(10px);
+            z-index: 10;
         }
 
-        .brand-area {
-            display: flex;
-            align-items: center;
-            gap: 20px;
+        .brand-title {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin: 0;
+            /* Professional Blue Gradient */
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
         }
-
-        .brand-logo {
-            height: 60px;
-            width: auto;
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
-        }
-
-        /* REMOVED: .brand-title class and element */
 
         .clock {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'JetBrains Mono', monospace;
             font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--text-color);
-            background: #222;
-            padding: 5px 20px;
-            border-radius: 10px;
-            border: 1px solid #444;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            color: var(--text-main);
+            text-shadow: 0 0 20px rgba(255,255,255,0.1);
         }
 
-        /* --- KANBAN BOARD --- */
-        .kanban-board {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 20px;
+        .sound-indicator {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            border: 1px solid var(--card-border);
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* --- MAIN LAYOUT (3 COLUMNS) --- */
+        .queue-container {
             flex: 1;
-            overflow: hidden;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr; /* CHANGED TO 3 COLUMNS */
+            height: calc(100vh - 180px);
+            gap: 2px;
+            position: relative;
+            z-index: 10; 
         }
 
         .column {
-            background: #1a1a1a;
-            border-radius: 15px;
+            padding: 30px;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
-            border-top: 5px solid transparent;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            align-items: center;
+            position: relative;
         }
 
-        .col-pending { border-top-color: var(--pending-border); background: linear-gradient(180deg, #1a1a1a 0%, #251805 100%); }
-        .col-cooking { border-top-color: var(--cooking-border); background: linear-gradient(180deg, #1a1a1a 0%, #051025 100%); }
-        .col-done { border-top-color: var(--done-border); background: linear-gradient(180deg, #1a1a1a 0%, #052515 100%); }
+        /* Divider Lines for all columns except the last one */
+        .column:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 5%;
+            height: 90%;
+            width: 1px;
+            background: linear-gradient(to bottom, transparent, var(--card-border), transparent);
+        }
 
         .col-header {
-            padding: 15px;
             font-size: 1.5rem;
-            font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(0,0,0,0.2);
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-weight: 800;
+            margin-bottom: 40px;
+            padding: 12px 0;
+            width: 80%;
+            text-align: center;
+            border-radius: 12px;
+            letter-spacing: 2px;
         }
 
-        .count-badge {
-            background: rgba(255,255,255,0.1);
-            padding: 2px 12px;
-            border-radius: 20px;
-            font-size: 1rem;
+        /* --- HEADER STYLES --- */
+        .col-incoming .col-header {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .col-preparing .col-header {
+            color: var(--warning);
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            box-shadow: 0 0 30px rgba(245, 158, 11, 0.05);
+        }
+        .col-ready .col-header {
+            color: var(--success);
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.05);
         }
 
-        .orders-list {
-            flex: 1;
-            padding: 15px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+        /* --- CARDS --- */
+        .numbers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); /* Adaptive grid */
+            gap: 25px;
+            width: 100%;
+            align-content: start;
         }
 
-        /* --- ORDER CARD --- */
-        .order-card {
+        .order-ticket {
             background: var(--card-bg);
-            border-radius: 10px;
-            padding: 15px;
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 25px 15px;
+            text-align: center;
+            animation: slideUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
             position: relative;
-            border-left: 5px solid #555;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            animation: slideIn 0.4s ease-out;
-            transition: transform 0.2s, box-shadow 0.2s;
+            backdrop-filter: blur(5px);
+            transition: transform 0.3s;
         }
-        
-        @keyframes slideIn {
+
+        @keyframes slideUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .order-card.priority-high {
-            border-left-color: var(--danger);
-            animation: pulseBorder 2s infinite;
-        }
-
-        @keyframes pulseBorder {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 10px;
-            border-bottom: 1px dashed #444;
-            padding-bottom: 8px;
-        }
-
-        .order-id { font-size: 1.4rem; font-weight: 800; color: var(--primary); }
-        .order-timer { font-family: monospace; font-size: 1rem; color: #aaa; font-weight: 600; }
-        .order-timer.late { color: var(--danger); }
-
-        .customer-name { font-size: 0.9rem; color: #888; margin-top: 2px; font-weight: 600; }
-
-        .items-list {
-            list-style: none;
-            padding: 0;
+        .order-ticket h2 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 3rem; /* Slightly smaller to fit 3 cols */
             margin: 0;
+            color: var(--text-main);
+            line-height: 1;
         }
 
-        .order-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 0;
-            font-size: 1.1rem;
-            color: #eee;
-            border-bottom: 1px solid #333;
-        }
-        .order-item:last-child { border-bottom: none; }
-        
-        .item-qty {
-            background: #333;
-            color: var(--accent);
-            font-weight: 800;
-            padding: 2px 8px;
-            border-radius: 4px;
-            margin-right: 10px;
-        }
-
-        .item-note {
+        .order-ticket span {
             display: block;
-            font-size: 0.85rem;
-            color: #f59e0b;
-            margin-top: 2px;
-            font-style: italic;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 10px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 1px;
         }
 
-        /* --- SCROLLBAR --- */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1a1a1a; }
-        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #666; }
+        /* --- INCOMING ORDER ANIMATIONS --- */
+        
+        /* 1. FRESH (0-5 mins) - GREEN PULSE */
+        .inc-fresh {
+            border-color: var(--success);
+            box-shadow: inset 0 0 20px rgba(16, 185, 129, 0.1);
+            animation: slideUp 0.5s, pulseGreen 2s infinite;
+        }
+        @keyframes pulseGreen {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.2); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
 
+        /* 2. WAITING (5-10 mins) - YELLOW PULSE */
+        .inc-waiting {
+            border-color: var(--warning);
+            color: var(--warning);
+            animation: slideUp 0.5s, pulseYellow 1.5s infinite;
+        }
+        @keyframes pulseYellow {
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.2); }
+            70% { box-shadow: 0 0 0 15px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+
+        /* 3. CRITICAL (10+ mins) - RED SHAKE */
+        .inc-critical {
+            border-color: var(--danger);
+            background: rgba(239, 68, 68, 0.15);
+            animation: shakeRed 0.5s infinite;
+        }
+        .inc-critical h2 { color: var(--danger); }
+        
+        @keyframes shakeRed {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        /* READY STATE GLOW */
+        .col-ready .order-ticket {
+            background: rgba(16, 185, 129, 0.05);
+            border-color: rgba(16, 185, 129, 0.3);
+            animation: slideUp 0.5s ease, pulseGlow 2s infinite;
+        }
+        
+        .col-ready .order-ticket h2 {
+            color: var(--success);
+            text-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.3); }
+            50% { box-shadow: 0 0 20px 0 rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.6); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.3); }
+        }
+
+        /* --- FOOTER --- */
+        .tv-footer {
+            height: 80px;
+            background: #000;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+            border-top: 1px solid var(--card-border);
+            z-index: 10;
+        }
+
+        .ticker-wrap { width: 100%; overflow: hidden; }
+        .ticker {
+            display: inline-block;
+            padding-left: 100%;
+            animation: ticker 35s linear infinite;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+        .ticker strong { color: var(--primary); }
+
+        @keyframes ticker {
+            0% { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(-100%, 0, 0); }
+        }
+
+        /* --- SOUND BUTTON --- */
+        #sound-overlay {
+            position: fixed;
+            top: 90px; right: 20px;
+            background: var(--primary);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            z-index: 1000;
+            font-weight: bold;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            border: 2px solid rgba(255,255,255,0.2);
+            transition: all 0.2s;
+        }
+        #sound-overlay:hover { transform: scale(1.05); }
     </style>
 </head>
 <body>
+    <header class="tv-header">
+        <h1 class="brand-title">
+            <img src="og-image.jpg" alt="Logo" style="height: 60px; vertical-align: middle; border-radius: 12px;"> 
+        </h1>
+        <div class="clock" id="clock">00:00</div>
+        <div class="sound-indicator" id="sound-status">Sound Off</div>
+    </header>
 
-    <div class="tv-header">
-        <div class="brand-area">
-            <img src="icon.png" alt="Logo" class="brand-logo">
-            </div>
-        <div class="clock" id="clock">00:00:00</div>
+    <div id="sound-overlay" onclick="enableAudio()">🔊 Tap to Enable Audio</div>
+
+    <div class="queue-container">
+        
+        <div class="column col-incoming">
+            <div class="col-header">Incoming</div>
+            <div id="grid-incoming" class="numbers-grid"></div>
+        </div>
+
+        <div class="column col-preparing">
+            <div class="col-header">Preparing</div>
+            <div id="grid-preparing" class="numbers-grid"></div>
+        </div>
+
+        <div class="column col-ready">
+            <div class="col-header">Ready for Pickup</div>
+            <div id="grid-ready" class="numbers-grid"></div>
+        </div>
+
     </div>
 
-    <div class="kanban-board">
-        <div class="column col-pending">
-            <div class="col-header">
-                Incoming <span class="count-badge" id="count-pending">0</span>
+    <footer class="tv-footer">
+        <div class="ticker-wrap">
+            <div class="ticker" id="daily-offer-text">
+                Loading...
             </div>
-            <div class="orders-list" id="list-pending">
-                </div>
         </div>
-
-        <div class="column col-cooking">
-            <div class="col-header">
-                Preparing <span class="count-badge" id="count-cooking">0</span>
-            </div>
-            <div class="orders-list" id="list-cooking">
-                </div>
-        </div>
-
-        <div class="column col-done">
-            <div class="col-header">
-                Ready <span class="count-badge" id="count-done">0</span>
-            </div>
-            <div class="orders-list" id="list-done">
-                </div>
-        </div>
-    </div>
+    </footer>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -255,125 +356,183 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const ordersRef = ref(db, 'orders');
+
+        // --- TIME HELPER ---
+        function getMinutesAgo(timestamp) {
+            if(!timestamp) return 0;
+            return Math.floor((Date.now() - timestamp) / 60000);
+        }
 
         // --- CLOCK ---
-        function updateClock() {
+        setInterval(() => {
             const now = new Date();
-            document.getElementById('clock').innerText = now.toLocaleTimeString('en-US', { hour12: true });
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
+            document.getElementById('clock').innerText = now.toLocaleTimeString('en-US', {
+                hour: '2-digit', minute: '2-digit', hour12: true
+            });
+        }, 1000);
 
-        // --- AUDIO SYSTEM (LOOPING LOGIC) ---
+        // --- AUDIO SYSTEM & WAKE LOCK ---
+        // MODIFICATION 2A: Enable Looping
         const bell = new Audio('bell.mp3');
-        bell.loop = true; // IMPORTANT: Sound will loop continuously
-        let isRinging = false;
+        bell.loop = true; 
+        
+        let audioEnabled = false;
+        let wakeLock = null;
 
-        function updateAudioState(hasPendingOrders) {
-            if (hasPendingOrders) {
-                if (!isRinging) {
-                    bell.currentTime = 0; // Start from beginning
-                    bell.play().catch(e => console.log("Audio play failed (user interaction needed):", e));
-                    isRinging = true;
+        window.enableAudio = async function() {
+            // 1. Play Audio
+            bell.play().then(() => {
+                bell.pause();
+                bell.currentTime = 0;
+                audioEnabled = true;
+                
+                document.getElementById('sound-overlay').style.display = 'none';
+                document.getElementById('sound-status').innerText = "Sound On";
+                document.getElementById('sound-status').style.color = "var(--success)";
+                document.getElementById('sound-status').style.borderColor = "var(--success)";
+            }).catch(e => console.error("Audio blocked", e));
+
+            // 2. Request Wake Lock
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Screen Wake Lock active');
+                    
+                    document.addEventListener('visibilitychange', async () => {
+                        if (wakeLock !== null && document.visibilityState === 'visible') {
+                            wakeLock = await navigator.wakeLock.request('screen');
+                        }
+                    });
                 }
-            } else {
-                if (isRinging) {
-                    bell.pause();
-                    bell.currentTime = 0;
-                    isRinging = false;
-                }
+            } catch (err) {
+                console.error(`Wake Lock failed: ${err.name}, ${err.message}`);
             }
-        }
+        };
 
-        // --- RENDER LOGIC ---
-        onValue(ordersRef, (snapshot) => {
-            const data = snapshot.val() || {};
-            
-            // Clear Lists
-            document.getElementById('list-pending').innerHTML = '';
-            document.getElementById('list-cooking').innerHTML = '';
-            document.getElementById('list-done').innerHTML = '';
+        // --- DAILY OFFERS LOGIC ---
+        const dailyOfferTexts = [
+            "SUNDAY SPECIAL: Fam-Jam Feast! 1 Pasta + 1 Slider + 1 Shake = ₹399. Use Code: SUNFEAST",
+            "MEAT-UP MONDAY: Burger + Fries = ₹222. Strictly 1 Beef Burger gets ₹20 OFF. Use Code: MONBURGER",
+            "TWISTED TUESDAY: Any Penne Pasta (Alfredo/Pesto/Arabiata/Cloud) Flat @ ₹179. Use Code: TUEPASTA",
+            "WICKED WEDNESDAY: Steak @ ₹300 (Code: WEDSTEAK) OR Premium Shake @ ₹120 (Code: WEDSHAKE)",
+            "THURSDAY CLUB: Any Sandwich + Any Chiller = ₹189. Use Code: THUSAND",
+            "FRI-YAY FRY-DAY: Veg Loaded Fries ₹119 | Chicken Loaded Fries ₹179. Use Code: FRIFRIES",
+            "ROCK N' ROLL SATURDAY: Any Roll (Tandoori, Pesto, Chipotle) for ₹129. Use Code: SATROLL"
+        ];
+        
+        const dayIndex = new Date().getDay();
+        const todayOffer = dailyOfferTexts[dayIndex];
+        
+        document.getElementById('daily-offer-text').innerHTML = `<strong>📲 ONLINE EXCLUSIVE (Delivery & Pickup):</strong> ${todayOffer} | Order @ cafe-cloud-club.vercel.app`;
 
-            let pendingCount = 0;
-            let cookingCount = 0;
-            let doneCount = 0;
+
+        // --- FIREBASE ORDER LISTENER ---
+        const ordersRef = ref(db, 'orders');
+        
+        // REFRESH LOGIC: We render on data change, AND we force re-render every minute to update colors
+        let lastSnapshot = null;
+
+        function renderOrders() {
+            if (!lastSnapshot) return;
+            const data = lastSnapshot.val();
+
+            const incContainer = document.getElementById('grid-incoming');
+            const prepContainer = document.getElementById('grid-preparing');
+            const readyContainer = document.getElementById('grid-ready');
             
+            incContainer.innerHTML = "";
+            prepContainer.innerHTML = "";
+            readyContainer.innerHTML = "";
+
+            if (!data) return;
+
             // Convert to array and sort by time
-            const orders = Object.entries(data).map(([key, val]) => ({ key, ...val }));
-            orders.sort((a, b) => a.timestamp - b.timestamp);
+            const orders = Object.values(data).sort((a, b) => a.timestamp - b.timestamp);
+            let hasPendingOrders = false; // Flag to check if we should ring
 
             orders.forEach(order => {
-                if(order.status === 'completed' || order.status === 'rejected') return;
+                try {
+                    // STRICT FILTER
+                    if (!order || !order.status) return;
+                    if (!order.orderId) return; 
+                    if (!order.customer || !order.customer.name) return; 
+                    
+                    const status = order.status;
+                    const orderId = order.orderId;
+                    const customerName = order.customer.name.split(' ')[0];
+                    const type = order.orderType || "Order"; 
 
-                const card = createOrderCard(order);
+                    // --- COLUMN 1: INCOMING (Pending) ---
+                    if (status === 'pending') {
+                        hasPendingOrders = true; // We found a pending order!
+                        const mins = getMinutesAgo(order.timestamp);
+                        let animClass = 'inc-fresh'; // Default Green
 
-                if (order.status === 'pending') {
-                    document.getElementById('list-pending').appendChild(card);
-                    pendingCount++;
-                } else if (order.status === 'cooking') {
-                    document.getElementById('list-cooking').appendChild(card);
-                    cookingCount++;
-                } else if (order.status === 'done' || order.status === 'out_for_delivery') {
-                    document.getElementById('list-done').appendChild(card);
-                    doneCount++;
+                        if (mins >= 10) animClass = 'inc-critical'; // Red
+                        else if (mins >= 5) animClass = 'inc-waiting'; // Yellow
+
+                        const cardHtml = `
+                            <div class="order-ticket ${animClass}">
+                                <h2>${orderId}</h2>
+                                <span>${mins}m Ago</span>
+                                <span>${customerName}</span>
+                            </div>
+                        `;
+                        incContainer.innerHTML += cardHtml;
+                    }
+
+                    // --- COLUMN 2: PREPARING (Cooking) ---
+                    else if (status === 'cooking') {
+                        const cardHtml = `
+                            <div class="order-ticket">
+                                <h2>${orderId}</h2>
+                                <span>${customerName} (${type})</span>
+                            </div>
+                        `;
+                        prepContainer.innerHTML += cardHtml;
+                    } 
+                    
+                    // --- COLUMN 3: READY (Done) ---
+                    else if (status === 'done') {
+                        const cardHtml = `
+                            <div class="order-ticket blink-me">
+                                <h2>${orderId}</h2>
+                                <span>${customerName}</span>
+                            </div>
+                        `;
+                        readyContainer.innerHTML += cardHtml;
+                    }
+                } catch (err) {
+                    console.warn("Skipped bad order", err);
                 }
             });
 
-            // Update Badges
-            document.getElementById('count-pending').innerText = pendingCount;
-            document.getElementById('count-cooking').innerText = cookingCount;
-            document.getElementById('count-done').innerText = doneCount;
+            // MODIFICATION 2B: Continuous Loop Logic
+            if (audioEnabled) {
+                if (hasPendingOrders) {
+                    // If there are pending orders and sound is not playing, play it
+                    if (bell.paused) {
+                        bell.play().catch(e => console.log(e));
+                    }
+                } else {
+                    // If NO pending orders (all moved to preparing/done), STOP sound
+                    bell.pause();
+                    bell.currentTime = 0;
+                }
+            }
+        }
 
-            // --- AUDIO TRIGGER ---
-            // If there are ANY pending orders, ring the bell.
-            // If pendingCount goes to 0 (all moved to preparing), sound stops.
-            updateAudioState(pendingCount > 0);
+        // LISTENER
+        onValue(ordersRef, (snapshot) => {
+            lastSnapshot = snapshot;
+            renderOrders();
         });
 
-        function createOrderCard(order) {
-            const el = document.createElement('div');
-            el.className = 'order-card';
-            
-            // Timer Logic
-            const elapsed = Math.floor((Date.now() - order.timestamp) / 60000);
-            const isLate = elapsed > 20; // Red text if waiting > 20 mins
-            if(isLate && order.status !== 'done') el.classList.add('priority-high');
+        // FORCE RENDER EVERY 60s TO UPDATE COLORS (Green -> Yellow -> Red)
+        setInterval(() => {
+            renderOrders();
+        }, 60000);
 
-            let itemsHtml = '';
-            if(order.items) {
-                order.items.forEach(item => {
-                    itemsHtml += `
-                        <li class="order-item">
-                            <span><span class="item-qty">${item.qty}</span> ${item.name}</span>
-                        </li>
-                    `;
-                });
-            }
-
-            // Note logic
-            let noteHtml = '';
-            if(order.globalNote && order.globalNote !== '-') {
-                noteHtml = `<div style="background:#333; padding:8px; margin-top:10px; border-radius:6px; font-size:0.9rem; border-left:3px solid #f59e0b; color:#fff;">
-                    <strong>Note:</strong> ${order.globalNote}
-                </div>`;
-            }
-
-            el.innerHTML = `
-                <div class="card-header">
-                    <div>
-                        <div class="order-id">#${order.orderId}</div>
-                        <div class="customer-name">${order.customer?.name || 'Guest'}</div>
-                    </div>
-                    <div class="order-timer ${isLate ? 'late' : ''}">${elapsed}m</div>
-                </div>
-                <ul class="items-list">
-                    ${itemsHtml}
-                </ul>
-                ${noteHtml}
-            `;
-            return el;
-        }
     </script>
 </body>
 </html>
