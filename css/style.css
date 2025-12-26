@@ -470,7 +470,11 @@ select.input-field { appearance: none; background-image: url("data:image/svg+xml
         display: flex; flex-direction: column; padding: 20px; overflow-y: auto; border-right: 1px solid #eee; flex-shrink: 0;
     }
     .left-sidebar.active { left: 0; }
-    .left-sidebar .brand-title, .brand-subtitle, .brand-est, .store-timings-box, .store-address-box, .sidebar-credit { display: block !important; }
+
+    /* UPDATED: Only show Brand info, hide Timings & Location */
+    .left-sidebar .brand-title, .brand-subtitle, .brand-est, .sidebar-credit { display: block !important; }
+    .left-sidebar .store-timings-box, .left-sidebar .store-address-box { display: none !important; }
+
     .left-sidebar .brand-title { font-size: 1.2rem; margin-top: 0; }
     .mobile-bottom-credit { display: block !important; }
     .mobile-info-card { display: block; }
