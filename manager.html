@@ -94,6 +94,7 @@
         }
         .order-card.status-pending { border-left-color: var(--primary); }
         .order-card.status-cooking { border-left-color: var(--warning); }
+        .order-card.status-done { border-left-color: var(--success); } /* Added Done State */
         .order-card.status-out_for_delivery { border-left-color: var(--purple); }
 
         .card-top { 
@@ -137,6 +138,7 @@
         .btn-act:hover { opacity: 0.9; }
         .btn-green { background: var(--success); color: white; }
         .btn-yellow { background: var(--warning); color: black; }
+        .btn-purple { background: var(--purple); color: white; } /* Added Purple Button */
         .btn-red { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
         .btn-blue { background: rgba(59, 130, 246, 0.2); color: var(--primary); border: 1px solid var(--primary); }
 
@@ -399,8 +401,8 @@
                             const f = order.financials || {};
                             tableData[tId].total += (f.grandTotal || 0);
                             tableData[tId].fins.sub += (f.subTotal || 0);
-                            tableData[tId].fins.disc += (f.discountAmount || 0);
-                            tableData[tId].fins.pack += (f.packingCharge || 0);
+                            tableData[tId].fins.disc += (f.discountVal || f.discountAmount || 0);
+                            tableData[tId].fins.pack += (f.packingTotal || f.packingCharge || 0);
 
                             if (order.timestamp < tableData[tId].timestamp) tableData[tId].timestamp = order.timestamp;
                             
@@ -456,26 +458,34 @@
                     </div>
                 `).join('');
 
-                // --- 3. FINANCIALS LOGIC (With Discount/Packing) ---
-                const f = order.financials || { subTotal:0, discountAmount:0, packingCharge:0, grandTotal:0 };
-                const discountText = f.discountCode ? `Discount (${f.discountCode})` : 'Discount';
+                // --- 3. FINANCIALS LOGIC (UPDATED VARIABLE NAMES) ---
+                const f = order.financials || { subTotal:0, discountVal:0, packingTotal:0, grandTotal:0 };
+                // Fallbacks for older data structure compatibility
+                const discount = f.discountVal || f.discountAmount || 0;
+                const packing = f.packingTotal || f.packingCharge || 0;
+                
+                const discountText = f.couponCode && f.couponCode !== "NONE" ? `Discount (${f.couponCode})` : 'Discount';
                 
                 let finHtml = `
                     <div class="fin-box">
                         <div class="fin-row"><span>Subtotal</span> <span>₹${f.subTotal || 0}</span></div>
-                        ${(f.discountAmount > 0) ? `<div class="fin-row" style="color:var(--warning)"><span>${discountText}</span> <span>-₹${f.discountAmount}</span></div>` : ''}
-                        ${(f.packingCharge > 0) ? `<div class="fin-row"><span>Packing</span> <span>₹${f.packingCharge}</span></div>` : ''}
+                        ${(discount > 0) ? `<div class="fin-row" style="color:var(--warning)"><span>${discountText}</span> <span>-₹${discount}</span></div>` : ''}
+                        ${(packing > 0) ? `<div class="fin-row"><span>Packing</span> <span>₹${packing}</span></div>` : ''}
                         <div class="fin-row total"><span>TOTAL</span> <span>₹${f.grandTotal || 0}</span></div>
                     </div>
                 `;
 
-                // --- 4. ACTIONS ---
+                // --- 4. ACTIONS (UPDATED FLOW) ---
                 let btnHtml = '';
                 if(order.status === 'pending') {
                     btnHtml = `<button class="btn-act btn-red" onclick="rejectOrder('${order.key}')">Reject</button>
                                <button class="btn-act btn-green" onclick="updateStatus('${order.key}', 'cooking')">Accept</button>`;
                 } else if (order.status === 'cooking') {
-                     btnHtml = `<button class="btn-act btn-yellow" onclick="updateStatus('${order.key}', 'out_for_delivery')">Mark Ready</button>`;
+                    // Changing from "Mark Ready" (direct to out) to "Mark Ready" (sets status DONE)
+                     btnHtml = `<button class="btn-act btn-yellow" onclick="updateStatus('${order.key}', 'done')">Mark Ready</button>`;
+                } else if (order.status === 'done') {
+                    // NEW STATE: Ready -> Out For Delivery
+                     btnHtml = `<button class="btn-act btn-purple" onclick="updateStatus('${order.key}', 'out_for_delivery')">Out For Delivery</button>`;
                 } else {
                      btnHtml = `<button class="btn-act btn-green" onclick="completeOrder('${order.key}')">Complete</button>`;
                 }
@@ -694,14 +704,14 @@
             });
             
             // Keep existing Discount Code logic
-            let disc = order.financials ? order.financials.discountAmount : 0;
-            let code = order.financials ? order.financials.discountCode : null;
+            let disc = order.financials ? (order.financials.discountVal || order.financials.discountAmount) : 0;
+            let code = order.financials ? order.financials.couponCode : null;
 
             order.financials = {
                 subTotal: sub,
-                discountAmount: disc,
-                discountCode: code,
-                packingCharge: pack,
+                discountVal: disc,
+                couponCode: code,
+                packingTotal: pack,
                 grandTotal: (sub + pack) - disc
             };
         }
