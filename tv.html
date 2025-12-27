@@ -433,6 +433,7 @@
         let lastSnapshot = null;
 
         function renderOrders() {
+            // 1. Safety Check: If no snapshot yet, do nothing
             if (!lastSnapshot) return;
             const data = lastSnapshot.val();
 
@@ -440,82 +441,86 @@
             const prepContainer = document.getElementById('grid-preparing');
             const readyContainer = document.getElementById('grid-ready');
             
+            // Clear current display
             incContainer.innerHTML = "";
             prepContainer.innerHTML = "";
             readyContainer.innerHTML = "";
 
-            if (!data) return;
+            // 2. STOP SOUND DEFAULT: Assume we should stop ringing unless we find a reason to ring
+            let shouldRing = false;
 
-            // Convert to array and sort by time
-            const orders = Object.values(data).sort((a, b) => a.timestamp - b.timestamp);
-            let hasPendingOrders = false; // Flag to check if we should ring
+            if (data) {
+                // Convert to array and sort by time
+                const orders = Object.values(data).sort((a, b) => a.timestamp - b.timestamp);
 
-            orders.forEach(order => {
-                try {
-                    // STRICT FILTER
-                    if (!order || !order.status) return;
-                    if (!order.orderId) return; 
-                    if (!order.customer || !order.customer.name) return; 
-                    
-                    const status = order.status;
-                    const orderId = order.orderId;
-                    const customerName = order.customer.name.split(' ')[0];
-                    const type = order.orderType || "Order"; 
+                orders.forEach(order => {
+                    try {
+                        // STRICT VALIDATION
+                        if (!order || !order.status) return;
+                        if (!order.orderId) return; 
+                        if (!order.customer || !order.customer.name) return; 
+                        
+                        const status = order.status;
+                        const orderId = order.orderId;
+                        const customerName = order.customer.name.split(' ')[0];
+                        const type = order.orderType || "Order"; 
 
-                    // --- COLUMN 1: INCOMING (Pending) ---
-                    if (status === 'pending') {
-                        hasPendingOrders = true; // We found a pending order!
-                        const mins = getMinutesAgo(order.timestamp);
-                        let animClass = 'inc-fresh'; // Default Green
+                        // --- COLUMN 1: INCOMING (Pending) ---
+                        if (status === 'pending') {
+                            shouldRing = true; // FOUND A PENDING ORDER -> RING BELL
+                            const mins = getMinutesAgo(order.timestamp);
+                            let animClass = 'inc-fresh'; 
 
-                        if (mins >= 10) animClass = 'inc-critical'; // Red
-                        else if (mins >= 5) animClass = 'inc-waiting'; // Yellow
+                            if (mins >= 10) animClass = 'inc-critical'; 
+                            else if (mins >= 5) animClass = 'inc-waiting'; 
 
-                        const cardHtml = `
-                            <div class="order-ticket ${animClass}">
-                                <h2>${orderId}</h2>
-                                <span>${mins}m Ago</span>
-                                <span>${customerName}</span>
-                            </div>
-                        `;
-                        incContainer.innerHTML += cardHtml;
+                            const cardHtml = `
+                                <div class="order-ticket ${animClass}">
+                                    <h2>${orderId}</h2>
+                                    <span>${mins}m Ago</span>
+                                    <span>${customerName}</span>
+                                </div>
+                            `;
+                            incContainer.innerHTML += cardHtml;
+                        }
+
+                        // --- COLUMN 2: PREPARING (Cooking) ---
+                        else if (status === 'cooking') {
+                            const cardHtml = `
+                                <div class="order-ticket">
+                                    <h2>${orderId}</h2>
+                                    <span>${customerName} (${type})</span>
+                                </div>
+                            `;
+                            prepContainer.innerHTML += cardHtml;
+                        } 
+                        
+                        // --- COLUMN 3: READY (Done) ---
+                        else if (status === 'done') {
+                            const cardHtml = `
+                                <div class="order-ticket blink-me">
+                                    <h2>${orderId}</h2>
+                                    <span>${customerName}</span>
+                                </div>
+                            `;
+                            readyContainer.innerHTML += cardHtml;
+                        }
+                    } catch (err) {
+                        console.warn("Skipped bad order", err);
                     }
+                });
+            }
 
-                    // --- COLUMN 2: PREPARING (Cooking) ---
-                    else if (status === 'cooking') {
-                        const cardHtml = `
-                            <div class="order-ticket">
-                                <h2>${orderId}</h2>
-                                <span>${customerName} (${type})</span>
-                            </div>
-                        `;
-                        prepContainer.innerHTML += cardHtml;
-                    } 
-                    
-                    // --- COLUMN 3: READY (Done) ---
-                    else if (status === 'done') {
-                        const cardHtml = `
-                            <div class="order-ticket blink-me">
-                                <h2>${orderId}</h2>
-                                <span>${customerName}</span>
-                            </div>
-                        `;
-                        readyContainer.innerHTML += cardHtml;
-                    }
-                } catch (err) {
-                    console.warn("Skipped bad order", err);
-                }
-            });
-
-            // MODIFICATION 2B: Continuous Loop Logic
+            // 3. AUDIO CONTROL (EXECUTES ALWAYS)
+            // This is the CRITICAL FIX. It runs regardless of whether data exists or not.
             if (audioEnabled) {
-                if (hasPendingOrders) {
-                    // If there are pending orders and sound is not playing, play it
+                if (shouldRing) {
+                    // Only play if it's not already playing
                     if (bell.paused) {
-                        bell.play().catch(e => console.log(e));
+                        bell.play().catch(e => console.log("Audio play failed:", e));
                     }
                 } else {
-                    // If NO pending orders (all moved to preparing/done), STOP sound
+                    // FORCE STOP if no pending orders found (or if data was null)
                     bell.pause();
                     bell.currentTime = 0;
                 }
