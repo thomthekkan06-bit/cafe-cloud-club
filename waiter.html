@@ -16,6 +16,7 @@
             --danger: #ef4444;
             --warning: #f59e0b;
             --text: #f3f4f6;
+            --text-muted: #9ca3af;
         }
 
         body { 
@@ -40,10 +41,19 @@
         }
         .btn-unlock { background: var(--primary); width: 100%; padding: 15px; border:none; border-radius:8px; color:white; font-weight:800; cursor:pointer; }
 
-        /* --- GRID --- */
+        /* --- HEADER --- */
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .brand { font-size: 1.5rem; font-weight: 800; color: white; }
         
+        /* --- SECTION HEADERS --- */
+        .section-title {
+            margin-top: 30px; margin-bottom: 15px;
+            font-size: 0.9rem; font-weight: 700; 
+            color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;
+            border-bottom: 1px solid var(--border); padding-bottom: 10px;
+        }
+
+        /* --- GRID --- */
         .tables-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px;
         }
@@ -59,7 +69,7 @@
         .table-num { font-size: 2.5rem; font-weight: 800; font-family: 'JetBrains Mono'; }
         .status-pill { font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; margin-top: 10px; text-transform: uppercase; }
 
-        /* STATUSES */
+        /* STATUS COLORS */
         .status-free { border-top: 4px solid var(--success); }
         .status-free .table-num { color: var(--success); }
         .status-free .status-pill { background: rgba(16, 185, 129, 0.1); color: var(--success); }
@@ -68,8 +78,6 @@
         .status-busy .table-num { color: var(--danger); }
         .status-busy .status-pill { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
 
-        .actions { margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .act-btn { background: var(--surface); border: 1px solid var(--border); padding: 15px; border-radius: 8px; color: #aaa; text-align: center; text-decoration: none; font-weight: 600; display: block; }
     </style>
 </head>
 <body>
@@ -87,12 +95,11 @@
         <div id="clock" style="font-family:'JetBrains Mono';">00:00</div>
     </div>
 
-    <div class="tables-grid" id="grid"></div>
+    <div class="section-title">Outdoor Dining (1-7)</div>
+    <div class="tables-grid" id="grid-outdoor"></div>
 
-    <div class="actions">
-        <a href="manager.html" class="act-btn">Kitchen View</a>
-        <a href="index.html" class="act-btn">Main Site</a>
-    </div>
+    <div class="section-title">Indoor AC (8-12)</div>
+    <div class="tables-grid" id="grid-indoor"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -109,7 +116,10 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const TOTAL_TABLES = 12; // Set your total tables here
+
+        // CONFIG
+        const OUTDOOR_COUNT = 7; // Tables 1 to 7
+        const INDOOR_COUNT = 5;  // Tables 8 to 12 (Total 12)
 
         window.checkPin = () => {
             if(document.getElementById('pin-input').value === '2024') {
@@ -121,10 +131,14 @@
         function loadTables() {
             onValue(ref(db, 'orders'), (snapshot) => {
                 const orders = snapshot.val() || {};
-                const grid = document.getElementById('grid');
-                grid.innerHTML = "";
+                
+                const gridOutdoor = document.getElementById('grid-outdoor');
+                const gridIndoor = document.getElementById('grid-indoor');
+                
+                gridOutdoor.innerHTML = "";
+                gridIndoor.innerHTML = "";
 
-                // Find occupied tables (Looking for "Table X" in customer name)
+                // Identify occupied tables
                 const occupied = {};
                 Object.values(orders).forEach(o => {
                     if (o.status !== 'completed' && o.status !== 'rejected' && o.status !== 'delivered') {
@@ -133,18 +147,28 @@
                     }
                 });
 
-                for(let i=1; i<=TOTAL_TABLES; i++) {
-                    const isBusy = occupied[i];
-                    const div = document.createElement('div');
-                    div.className = `table-card ${isBusy ? 'status-busy' : 'status-free'}`;
-                    div.onclick = () => window.location.href = `table.html?table=${i}`;
-                    div.innerHTML = `
-                        <div class="table-num">${i}</div>
-                        <div class="status-pill">${isBusy ? 'Occupied' : 'Free'}</div>
-                    `;
-                    grid.appendChild(div);
+                // Render Outdoor (1 to 7)
+                for(let i=1; i<=OUTDOOR_COUNT; i++) {
+                    createCard(i, gridOutdoor, occupied[i]);
+                }
+
+                // Render Indoor (8 to 12)
+                for(let i=OUTDOOR_COUNT+1; i<=OUTDOOR_COUNT+INDOOR_COUNT; i++) {
+                    createCard(i, gridIndoor, occupied[i]);
                 }
             });
+        }
+
+        function createCard(num, container, isBusy) {
+            const div = document.createElement('div');
+            div.className = `table-card ${isBusy ? 'status-busy' : 'status-free'}`;
+            // When clicked, open table.html for that specific table number
+            div.onclick = () => window.location.href = `table.html?table=${num}`;
+            div.innerHTML = `
+                <div class="table-num">${num}</div>
+                <div class="status-pill">${isBusy ? 'Occupied' : 'Free'}</div>
+            `;
+            container.appendChild(div);
         }
 
         setInterval(() => document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), 1000);
