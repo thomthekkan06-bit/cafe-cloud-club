@@ -56,49 +56,75 @@
             display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px;
         }
 
+        /* --- CARD STYLES --- */
         .table-card {
-            background: var(--surface); border: 1px solid var(--border);
+            background: var(--surface); 
+            border: 1px solid var(--border);
             border-radius: 12px; height: 140px;
             display: flex; flex-direction: column; justify-content: space-between; padding: 15px;
             cursor: pointer; transition: 0.2s; position: relative; overflow: hidden;
         }
         .table-card:active { transform: scale(0.95); }
         
-        /* CARD INTERNALS */
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
-        .table-num { font-size: 1.8rem; font-weight: 800; font-family: 'JetBrains Mono'; color: #555; }
-        .bill-total { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 6px; }
+        
+        /* Fixed Contrast: Lighter color for better visibility */
+        .table-num { 
+            font-size: 2.2rem; 
+            font-weight: 800; 
+            font-family: 'JetBrains Mono'; 
+            color: #e5e7eb; /* High visibility grey/white */
+            transition: color 0.3s;
+        }
+        
+        .bill-total { 
+            font-size: 0.9rem; font-weight: 600; 
+            color: var(--text-muted); background: rgba(0,0,0,0.3); 
+            padding: 4px 8px; border-radius: 6px; 
+        }
 
         .timer-display { 
             font-size: 1.5rem; font-weight: 700; font-family: 'JetBrains Mono'; 
-            text-align: center; margin: 10px 0; opacity: 0.3;
+            text-align: center; margin: 10px 0; opacity: 1;
         }
 
-        .status-text { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; text-align: center; opacity: 0.5; }
+        .status-text { 
+            font-size: 0.75rem; font-weight: 700; 
+            text-transform: uppercase; text-align: center; opacity: 0.8;
+        }
 
-        /* --- LOGIC STATES (The Brutal Part) --- */
+        /* --- DYNAMIC STATES --- */
         
-        /* FREE */
-        .status-free { opacity: 0.6; }
-        .status-free .table-num { color: #555; }
+        /* FREE STATE - Clean & Minimal */
+        .status-free { 
+            opacity: 1; 
+            border-color: #333; /* Subtle border */
+        }
+        .status-free .table-num { color: #555; /* Dimmed number to push it back visually */ }
+        .status-free .timer-display { display: none; /* HIDE TIMER */ }
+        .status-free .bill-total { display: none; /* HIDE BILL */ }
+        .status-free .status-text { color: #555; letter-spacing: 2px; }
 
         /* OCCUPIED: FRESH (< 60m) - GREEN */
         .status-fresh { border: 1px solid var(--success); background: rgba(16, 185, 129, 0.1); }
         .status-fresh .table-num { color: var(--success); }
-        .status-fresh .timer-display { color: var(--success); opacity: 1; }
+        .status-fresh .timer-display { color: var(--success); }
         .status-fresh .bill-total { color: var(--success); }
+        .status-fresh .status-text { color: var(--success); }
 
         /* OCCUPIED: WARNING (60-90m) - YELLOW */
         .status-warning { border: 1px solid var(--warning); background: rgba(245, 158, 11, 0.1); }
         .status-warning .table-num { color: var(--warning); }
-        .status-warning .timer-display { color: var(--warning); opacity: 1; }
+        .status-warning .timer-display { color: var(--warning); }
         .status-warning .bill-total { color: var(--warning); }
+        .status-warning .status-text { color: var(--warning); }
 
         /* OCCUPIED: CAMPER (> 90m) - RED */
         .status-camper { border: 1px solid var(--danger); background: rgba(239, 68, 68, 0.15); animation: pulseRed 2s infinite; }
         .status-camper .table-num { color: var(--danger); }
-        .status-camper .timer-display { color: var(--danger); opacity: 1; }
+        .status-camper .timer-display { color: var(--danger); }
         .status-camper .bill-total { color: var(--danger); }
+        .status-camper .status-text { color: var(--danger); }
 
         @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
@@ -221,9 +247,9 @@
             
             // Default State (Free)
             let statusClass = 'status-free';
-            let timeText = '--:--';
-            let totalText = 'Free';
-            let statusLabel = 'Available';
+            let timeText = ''; // Removed placeholder
+            let totalText = ''; // Removed placeholder
+            let statusLabel = 'FREE';
 
             // Active State
             if (data) {
@@ -235,7 +261,7 @@
                 
                 timeText = `${hrs}:${mins.toString().padStart(2, '0')}`;
                 totalText = `₹${data.total}`;
-                statusLabel = 'Occupied';
+                statusLabel = 'OCCUPIED';
 
                 // BRUTAL LOGIC COLORS
                 if (totalMinutes < 60) {
@@ -252,12 +278,16 @@
             // Clicking opens the order page for that table
             div.onclick = () => window.location.href = `table.html?table=${id}`;
             
+            // Conditional rendering: Timer and Bill ONLY appear if occupied
+            const timerHtml = data ? `<div class="timer-display">${timeText}</div>` : '';
+            const billHtml = data ? `<div class="bill-total">${totalText}</div>` : '';
+
             div.innerHTML = `
                 <div class="card-header">
                     <div class="table-num">${displayLabel}</div>
-                    <div class="bill-total">${totalText}</div>
+                    ${billHtml}
                 </div>
-                <div class="timer-display">${timeText}</div>
+                ${timerHtml}
                 <div class="status-text">${statusLabel}</div>
             `;
             container.appendChild(div);
