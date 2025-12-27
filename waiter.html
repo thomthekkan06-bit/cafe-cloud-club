@@ -125,6 +125,7 @@
         const db = getDatabase(app);
 
         window.checkPin = () => {
+            // NOTE: Ideally, use a safer auth method than a hardcoded PIN in production
             if(document.getElementById('pin-input').value === '2024') {
                 document.getElementById('pin-overlay').style.display = 'none';
                 loadTables();
@@ -151,7 +152,7 @@
                     }
                 });
 
-                // --- SECTION 1: Indoor Dining (1-7) ---
+                // --- SECTION 1: Indoor Dining (Tables 1-7) ---
                 for(let i=1; i<=7; i++) {
                     createCard(i, gridMain, occupied[i], false);
                 }
@@ -160,7 +161,7 @@
                 // We treat Table 8 as the "Bar Table"
                 createCard(8, gridMain, occupied[8], true, "BAR");
 
-                // --- SECTION 2: Indoor AC (9-13) ---
+                // --- SECTION 2: Indoor AC (Tables 9-13) ---
                 // 5 Tables starting from 9
                 for(let i=9; i<=13; i++) {
                     createCard(i, gridAC, occupied[i], false);
@@ -175,7 +176,9 @@
             // Add specific class if it's the Bar
             div.className = `table-card ${isBusy ? 'status-busy' : 'status-free'} ${isBar ? 'is-bar' : ''}`;
             
+            // Clicking takes you to the specific table page
             div.onclick = () => window.location.href = `table.html?table=${id}`;
+            
             div.innerHTML = `
                 <div class="table-num">${displayLabel}</div>
                 <div class="status-pill">${isBusy ? 'Occupied' : 'Free'}</div>
