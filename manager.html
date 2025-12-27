@@ -62,7 +62,7 @@
         /* LEFT SIDE: KITCHEN QUEUE */
         .left-pane {
             width: 40%;
-            min-width: 400px; /* Wider for details */
+            min-width: 400px; 
             border-right: 1px solid var(--border);
             display: flex; flex-direction: column;
             background: #121418;
@@ -85,7 +85,7 @@
             padding: 20px;
         }
 
-        /* --- ORDER CARDS (Left Side) --- */
+        /* --- ORDER CARDS --- */
         .order-card {
             background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
             overflow: hidden; margin-bottom: 15px;
@@ -105,7 +105,7 @@
         
         .card-body { padding: 12px; }
         
-        /* Customer Info Section */
+        /* Customer Info */
         .info-grid { display: grid; grid-template-columns: auto 1fr; gap: 5px 10px; margin-bottom: 10px; font-size: 0.9rem; }
         .info-label { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; align-self: center; font-weight:700; }
         .info-val { font-weight: 500; color: #fff; }
@@ -140,7 +140,7 @@
         .btn-red { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
         .btn-blue { background: rgba(59, 130, 246, 0.2); color: var(--primary); border: 1px solid var(--primary); }
 
-        /* --- TABLE GRID (Right Side) --- */
+        /* --- TABLE GRID --- */
         .section-label { 
             font-size: 0.8rem; font-weight: 700; color: var(--text-muted); 
             text-transform: uppercase; margin: 20px 0 10px 0; border-bottom: 1px solid var(--border); padding-bottom: 5px; 
@@ -177,7 +177,7 @@
         .is-bar { border-style: dashed; }
         @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
-        /* --- MODALS (Common) --- */
+        /* --- MODALS --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); z-index: 5000; display: none;
@@ -283,7 +283,7 @@
                     <label style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">ADD ITEM FROM MENU</label>
                     <div class="edit-inputs">
                         <select id="menu-select" class="inp-select" onchange="autoFillPrice()">
-                            <option value="">-- Select Item --</option>
+                            <option value="">-- Loading Menu... --</option>
                         </select>
                         
                         <input type="number" id="new-item-price" class="inp" placeholder="₹ Price">
@@ -314,50 +314,12 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- PRE-LOADED MENU (Edit here to change menu) ---
-        const MENU_ITEMS = [
-            { name: "Cappuccino", price: 140 },
-            { name: "Latte", price: 150 },
-            { name: "Americano", price: 120 },
-            { name: "Espresso", price: 100 },
-            { name: "Cold Coffee", price: 180 },
-            { name: "Chicken Burger", price: 220 },
-            { name: "Veg Burger", price: 180 },
-            { name: "French Fries", price: 110 },
-            { name: "Cheesy Fries", price: 160 },
-            { name: "Club Sandwich", price: 240 },
-            { name: "Pasta Alfredo", price: 280 },
-            { name: "Chicken Wings", price: 250 },
-            { name: "Brownie", price: 120 },
-            { name: "Water Bottle", price: 20 }
-        ];
-
-        // Populate Dropdown
-        const menuSelect = document.getElementById('menu-select');
-        MENU_ITEMS.forEach(item => {
-            const opt = document.createElement('option');
-            opt.value = item.name;
-            opt.dataset.price = item.price;
-            opt.innerText = item.name;
-            menuSelect.appendChild(opt);
-        });
-
-        window.autoFillPrice = () => {
-            const select = document.getElementById('menu-select');
-            const priceInput = document.getElementById('new-item-price');
-            const selectedOpt = select.options[select.selectedIndex];
-            if(selectedOpt.dataset.price) {
-                priceInput.value = selectedOpt.dataset.price;
-            } else {
-                priceInput.value = "";
-            }
-        }
-
         // --- AUTH ---
         window.checkPin = () => {
             if(document.getElementById('pin-input').value === '2024') {
                 document.getElementById('pin-overlay').style.display = 'none';
                 initData();
+                loadMenuForEdit(); // Load Menu dynamically
             } else alert("Wrong PIN");
         }
 
@@ -366,6 +328,41 @@
         let tableData = {}; 
         let currentSettleTable = null;
         let currentEditKey = null; 
+        let fullMenu = []; // Store fetched menu
+
+        // --- FETCH MENU FOR DROPDOWN ---
+        function loadMenuForEdit() {
+            onValue(ref(db, 'menu'), (snapshot) => {
+                const data = snapshot.val() || {};
+                fullMenu = Object.values(data);
+                
+                // Sort by Name
+                fullMenu.sort((a,b) => a.name.localeCompare(b.name));
+
+                const select = document.getElementById('menu-select');
+                select.innerHTML = '<option value="">-- Select Item --</option>';
+                
+                fullMenu.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.name;
+                    opt.dataset.price = item.price;
+                    opt.dataset.category = item.category || 'General';
+                    opt.innerText = item.name;
+                    select.appendChild(opt);
+                });
+            });
+        }
+
+        window.autoFillPrice = () => {
+            const select = document.getElementById('menu-select');
+            const priceInput = document.getElementById('new-item-price');
+            const selectedOpt = select.options[select.selectedIndex];
+            if(selectedOpt && selectedOpt.dataset.price) {
+                priceInput.value = selectedOpt.dataset.price;
+            } else {
+                priceInput.value = "";
+            }
+        }
 
         function initData() {
             onValue(ref(db, 'orders'), (snapshot) => {
@@ -381,16 +378,13 @@
                     const customerName = (order.customer && order.customer.name) ? order.customer.name : "Unknown";
 
                     // 1. LEFT LIST: KITCHEN QUEUE
-                    // Push EVERYTHING so manager sees it.
                     onlineOrders.push({ key, ...order });
 
-                    // 2. RIGHT MAP: DINE-IN TABLES
-                    // Only active if approved (not pending)
+                    // 2. RIGHT MAP: DINE-IN TABLES (Only active if approved)
                     if (type !== 'Delivery' && type !== 'Pickup') {
                         const match = customerName.match(/Table (\w+)/i);
                         if (match && order.status !== 'pending') {
                             const tId = match[1];
-                            const amt = order.financials ? order.financials.grandTotal : 0;
                             
                             if (!tableData[tId]) {
                                 tableData[tId] = { 
@@ -431,25 +425,25 @@
             onlineOrders.forEach(order => {
                 const time = new Date(order.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
                 const type = order.orderType || 'Dine-In';
+                const c = order.customer || {};
                 
                 // --- 1. CUSTOMER INFO LOGIC ---
                 let infoHtml = '';
-                const c = order.customer || {};
                 
                 if (type === 'Delivery' || type === 'Pickup') {
-                    // DELIVERY/PICKUP: Name, Phone, Address
+                    // SHOW: Name, Phone, Address
                     infoHtml = `
                         <div class="info-grid">
                             <span class="info-label">Customer</span> <span class="info-val">${c.name || 'Guest'}</span>
                             <span class="info-label">Phone</span>    <span class="info-val">${c.phone || '--'}</span>
-                            <span class="info-label">Loc</span>      <span class="info-val">${c.address || c.location || '--'}</span>
+                            <span class="info-label">Loc</span>      <span class="info-val" style="font-size:0.8rem; line-height:1.2;">${c.address || c.location || '--'}</span>
                         </div>
                     `;
                 } else {
-                    // DINE-IN: Table, Name ONLY
+                    // DINE-IN: Show Table & Name ONLY
                     infoHtml = `
                         <div class="info-grid">
-                            <span class="info-label">Table</span>    <span class="info-val" style="color:var(--primary)">${c.name || 'Table ?'}</span>
+                            <span class="info-label">Table</span>    <span class="info-val" style="color:var(--primary); font-size:1.1rem;">${c.name || 'Table ?'}</span>
                         </div>
                     `;
                 }
@@ -462,7 +456,7 @@
                     </div>
                 `).join('');
 
-                // --- 3. FINANCIALS LOGIC (Fixed Visibility) ---
+                // --- 3. FINANCIALS LOGIC (With Discount/Packing) ---
                 const f = order.financials || { subTotal:0, discountAmount:0, packingCharge:0, grandTotal:0 };
                 const discountText = f.discountCode ? `Discount (${f.discountCode})` : 'Discount';
                 
@@ -583,7 +577,6 @@
 
         window.openEditFromTable = () => {
             if(!currentSettleTable || !tableData[currentSettleTable]) return;
-            // Get the LAST active order key for this table to edit
             const keys = tableData[currentSettleTable].keys;
             if(keys.length > 0) {
                 const lastKey = keys[keys.length - 1];
@@ -597,7 +590,6 @@
             currentEditKey = key;
             document.getElementById('edit-modal').style.display = 'flex';
             
-            // Clear inputs
             document.getElementById('new-item-price').value = "";
             document.getElementById('new-item-qty').value = "1";
             document.getElementById('menu-select').value = "";
@@ -626,7 +618,7 @@
             });
         }
 
-        // --- EDIT ACTIONS ---
+        // --- EDIT ACTIONS (ADD/DELETE) ---
         window.deleteItem = async (index) => {
             if(!currentEditKey) return;
             const orderRef = ref(db, 'orders/' + currentEditKey);
@@ -635,7 +627,7 @@
 
             let order = snap.val();
             let items = order.items || [];
-            items.splice(index, 1);
+            items.splice(index, 1); // Remove
             updateOrderFinancials(order, items);
             await update(orderRef, order);
             renderEditList(items);
@@ -644,7 +636,10 @@
         window.addNewItemToOrder = async () => {
             if(!currentEditKey) return;
             const select = document.getElementById('menu-select');
-            const name = select.value; // Get name from Select
+            const name = select.value; 
+            const selectedOpt = select.options[select.selectedIndex];
+            const category = selectedOpt ? selectedOpt.dataset.category : "General";
+            
             const price = parseFloat(document.getElementById('new-item-price').value);
             const qty = parseInt(document.getElementById('new-item-qty').value);
 
@@ -657,7 +652,8 @@
             let order = snap.val();
             let items = order.items || [];
             
-            items.push({ name, price, qty });
+            // Add Item with Category logic for packing
+            items.push({ name, price, qty, category: category });
             
             updateOrderFinancials(order, items);
             await update(orderRef, order);
@@ -671,11 +667,34 @@
 
         function updateOrderFinancials(order, items) {
             order.items = items;
-            let sub = 0;
-            items.forEach(i => sub += (i.price * i.qty));
             
+            // 1. Recalculate Subtotal
+            let sub = 0;
+            let pack = 0;
+            
+            // 2. Recalculate Packing Charge (Smart Logic)
+            const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
+            
+            items.forEach(i => {
+                sub += (i.price * i.qty);
+                
+                // Smart Packing Calculation
+                let charge = 10; // Default
+                if(i.category) {
+                    if (i.category === 'ADD-ON') charge = i.name.startsWith("Hummus") ? 7 : 5;
+                    else if (fiveRsCats.includes(i.category)) charge = 5;
+                }
+                
+                // Add Logic for Rice extras
+                if (i.name && (i.name.includes("Tossed Rice") || i.name.includes("Sorted / Boiled"))) {
+                    pack += (7 * i.qty);
+                } else {
+                    pack += (charge * i.qty);
+                }
+            });
+            
+            // Keep existing Discount Code logic
             let disc = order.financials ? order.financials.discountAmount : 0;
-            let pack = order.financials ? order.financials.packingCharge : 0;
             let code = order.financials ? order.financials.discountCode : null;
 
             order.financials = {
@@ -687,13 +706,11 @@
             };
         }
 
-        // --- CLOSE ---
         window.closeModal = (id) => {
             document.getElementById(id).style.display = 'none';
             if(id === 'edit-modal') currentEditKey = null;
         }
 
-        // --- STANDARD ACTIONS ---
         window.updateStatus = (key, status) => update(ref(db, 'orders/'+key), {status});
         window.rejectOrder = (key) => remove(ref(db, 'orders/'+key)); 
         window.completeOrder = async (key) => {
