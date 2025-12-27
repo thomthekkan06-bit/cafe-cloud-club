@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kitchen Display System | Cafe Cloud Club</title>
+    <title>Manager POS | Cafe Cloud Club</title>
     <link rel="icon" type="image/png" href="icon.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <style>
@@ -27,216 +27,219 @@
             font-family: 'Inter', sans-serif;
             background: var(--bg); 
             color: var(--text-main); 
-            margin: 0; padding: 15px;
-            padding-bottom: 40px;
-            position: relative;
+            margin: 0; 
+            height: 100vh; /* Full viewport height */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Prevent body scroll */
         }
         
-        /* --- PIN LOCK --- */
-        #pin-overlay { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(15, 17, 21, 0.98); z-index: 10000; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        .pin-box { 
-            background: var(--surface); padding: 30px; border-radius: 16px; 
-            border: 1px solid var(--border); text-align: center; width: 90%; max-width: 320px;
-        }
-        .pin-input { 
-            background: var(--bg); border: 1px solid var(--border); color: white; 
-            font-size: 2rem; text-align: center; letter-spacing: 10px; padding: 10px; 
-            border-radius: 8px; width: 100%; margin: 20px 0; outline: none;
-            font-family: 'JetBrains Mono', monospace;
-        }
-        .btn-unlock { background: var(--primary); width: 100%; padding: 15px; border:none; border-radius:8px; color:white; font-weight:800; cursor:pointer; font-size: 1rem; }
-
-        /* --- EDIT MODAL --- */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); z-index: 5000; display: none;
-            align-items: center; justify-content: center; backdrop-filter: blur(5px);
-        }
-        .edit-card {
-            background: var(--surface); width: 90%; max-width: 400px;
-            border-radius: 16px; border: 1px solid var(--border);
-            display: flex; flex-direction: column; max-height: 80vh;
-        }
-        .edit-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        .edit-body { padding: 20px; overflow-y: auto; }
-        .search-input {
-            width: 100%; background: var(--bg); border: 1px solid var(--border);
-            padding: 12px; color: white; border-radius: 8px; font-size: 1rem; margin-bottom: 15px;
-        }
-        .menu-list-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 12px; border-bottom: 1px solid var(--border); cursor: pointer;
-        }
-        .menu-list-item:hover { background: var(--surface-hover); }
-        .add-mini-btn {
-            background: var(--primary); color: white; border: none; padding: 5px 12px;
-            border-radius: 6px; font-weight: bold; cursor: pointer;
-        }
-
         /* --- HEADER --- */
         .top-bar {
+            flex-shrink: 0;
             display: flex; justify-content: space-between; align-items: center;
-            background: var(--surface); padding: 12px 20px; border-radius: 12px;
-            border: 1px solid var(--border); margin-bottom: 20px; gap: 10px; position: relative; z-index: 10;
+            background: var(--surface); padding: 10px 20px; 
+            border-bottom: 1px solid var(--border); z-index: 10;
         }
-        .header-left, .header-right { display: flex; align-items: center; gap: 15px; }
         .app-title { 
-            margin: 0; font-size: 1.5rem; white-space: nowrap;
+            margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 10px;
             background: linear-gradient(135deg, #3b82f6, #60a5fa);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
-        .status-badge {
-            display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600;
-            padding: 6px 12px; border-radius: 20px; background: rgba(0,0,0,0.3); border: 1px solid var(--border);
-        }
-        .dot { width: 8px; height: 8px; border-radius: 50%; }
-        .dot.online { background: var(--success); box-shadow: 0 0 8px var(--success); }
-        .dot.offline { background: var(--danger); }
-        .clock { font-family: 'JetBrains Mono'; font-size: 1.2rem; font-weight: 700; color: var(--text-main); }
+        .clock { font-family: 'JetBrains Mono'; font-size: 1.1rem; font-weight: 700; color: var(--text-main); }
         .btn-history {
             background: var(--surface-hover); color: var(--text-muted); border: 1px solid var(--border);
-            padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; text-decoration: none; transition: 0.2s; white-space: nowrap;
-        }
-        .btn-history:hover { color: white; border-color: white; }
-
-        /* --- GRID --- */
-        #orders-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); 
-            gap: 20px; position: relative; z-index: 10;
+            padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; text-decoration: none;
         }
 
-        /* --- CARD STYLES --- */
+        /* --- SPLIT LAYOUT --- */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* LEFT SIDE: ONLINE ORDERS */
+        .left-pane {
+            width: 40%;
+            min-width: 350px;
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            background: #121418;
+        }
+        .pane-header {
+            padding: 15px; background: rgba(0,0,0,0.2); 
+            border-bottom: 1px solid var(--border); font-weight: 800; letter-spacing: 1px; color: var(--text-muted);
+            display: flex; justify-content: space-between;
+        }
+        .scroll-area {
+            flex: 1; overflow-y: auto; padding: 15px;
+        }
+
+        /* RIGHT SIDE: TABLE MAP */
+        .right-pane {
+            flex: 1;
+            background: var(--bg);
+            display: flex; flex-direction: column;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        /* --- ONLINE ORDER CARDS (Left Side) --- */
         .order-card {
             background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-            overflow: hidden; display: flex; flex-direction: column; position: relative;
-            animation: slideUp 0.3s ease-out; transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2); border-left: 5px solid var(--border);
+            overflow: hidden; margin-bottom: 15px;
+            border-left: 4px solid var(--border);
         }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
         .order-card.status-pending { border-left-color: var(--primary); }
         .order-card.status-cooking { border-left-color: var(--warning); }
-        .order-card.status-done { border-left-color: var(--success); }
         .order-card.status-out_for_delivery { border-left-color: var(--purple); }
 
-        .age-critical { animation: pulseRed 2s infinite; border-color: var(--danger); }
-        @keyframes pulseRed { 0% { box-shadow: 0 0 0 rgba(239, 68, 68, 0); } 50% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.3); } 100% { box-shadow: 0 0 0 rgba(239, 68, 68, 0); } }
+        .card-top { padding: 12px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.2); }
+        .card-id { font-family: 'JetBrains Mono'; font-weight: 800; }
+        .card-type { font-size: 0.7rem; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1); }
+        .card-body { padding: 12px; }
+        .cust-row { font-size: 0.9rem; margin-bottom: 8px; font-weight: 600; }
+        .item-list-text { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; }
+        .card-actions { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-top: 1px solid var(--border); }
+        .btn-act { padding: 8px; border-radius: 6px; border: none; cursor: pointer; font-weight: 700; font-size: 0.8rem; }
+        .btn-green { background: var(--success); color: white; }
+        .btn-yellow { background: var(--warning); color: black; }
+        .btn-red { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
 
-        .card-header { padding: 15px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; }
-        .order-id { font-family: 'JetBrains Mono'; font-size: 1.1rem; font-weight: 800; color: white; }
-        .timer-badge { font-size: 0.75rem; font-weight: 700; padding: 4px 8px; border-radius: 4px; background: var(--surface-hover); color: var(--text-muted); display: inline-block; margin-top: 5px; }
-        .type-badge { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; padding: 3px 6px; border-radius: 4px; margin-left: 8px; vertical-align: middle; }
-        .type-del { background: rgba(59, 130, 246, 0.2); color: var(--primary); }
-        .type-pick { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
-
-        .customer-box { padding: 12px 15px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: center; }
-        .avatar { width: 32px; height: 32px; background: var(--surface-hover); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; }
-        .cust-details { font-size: 0.9rem; line-height: 1.3; overflow: hidden; }
-        .cust-phone { color: var(--primary); text-decoration: none; font-size: 0.8rem; display: block; margin-top: 2px; }
-
-        .items-list { padding: 0; flex: 1; }
-        .item-row { padding: 12px 15px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; justify-content: space-between; }
-        .qty-badge { background: var(--surface-hover); border: 1px solid var(--border); color: white; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-weight: 700; font-family: 'JetBrains Mono'; flex-shrink: 0; }
-        .item-content { flex: 1; font-size: 0.95rem; line-height: 1.4; color: var(--text-main); }
-        .modifiers { display: block; font-size: 0.8rem; color: var(--warning); margin-top: 2px; font-style: italic; }
-        .diet-icon { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
-        .veg { background: var(--success); box-shadow: 0 0 5px var(--success); }
-        .non { background: var(--danger); box-shadow: 0 0 5px var(--danger); }
-        .item-price { font-family: 'JetBrains Mono'; font-weight: 600; color: var(--text-muted); font-size: 0.9rem; margin-left: 10px; }
-
-        .note-box { background: rgba(239, 68, 68, 0.1); color: #ff8a8a; padding: 10px 15px; font-size: 0.85rem; border-bottom: 1px solid var(--border); }
-
-        .finance-box { background: rgba(0,0,0,0.2); padding: 12px 15px; font-size: 0.85rem; border-top: 2px solid var(--border); }
-        .fin-row { display: flex; justify-content: space-between; margin-bottom: 4px; color: var(--text-muted); }
-        .fin-row span:last-child { font-family: 'JetBrains Mono'; color: var(--text-main); }
-        .fin-row.discount { color: var(--danger); }
-        .fin-row.discount span:last-child { color: var(--danger); }
-        .fin-row.grand-total { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); font-weight: 800; font-size: 1rem; color: var(--success); }
-        .fin-row.grand-total span:last-child { color: var(--success); }
-
-        .card-footer { padding: 15px; background: var(--surface); margin-top: auto; border-top: 1px solid var(--border); }
-        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn-act { border: none; padding: 14px; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 0.9rem; text-transform: uppercase; color: white; transition: 0.2s; }
-        .btn-accept { background: var(--success); grid-column: 2; }
-        .btn-reject { background: var(--surface-hover); color: var(--danger); border: 1px solid var(--danger); grid-column: 1; }
-        .btn-cook { background: var(--warning); color: #000; grid-column: 1 / -1; }
-        .btn-complete { background: var(--bg); border: 1px solid var(--success); color: var(--success); grid-column: 1 / -1; }
-        .btn-edit { background: var(--purple); grid-column: 1 / -1; margin-bottom: 5px; } /* NEW BUTTON */
-        
-        .out-delivery-box { background: rgba(139, 92, 246, 0.1); border: 1px solid var(--purple); color: var(--purple); padding: 12px; text-align: center; border-radius: 8px; font-weight: 700; grid-column: 1 / -1; }
-        .empty-state { grid-column: 1 / -1; text-align: center; padding: 60px; color: var(--text-muted); }
-        .empty-icon { font-size: 3rem; margin-bottom: 15px; opacity: 0.5; }
-
-        @media (max-width: 600px) {
-            body { padding: 10px; padding-bottom: 30px; }
-            .top-bar { padding: 10px; margin-bottom: 15px; }
-            .app-title { font-size: 1.2rem; }
-            .clock { font-size: 0.9rem; }
-            #status-text { display: none; }
-            .status-badge { padding: 6px; border-radius: 50%; }
-            #orders-grid { grid-template-columns: 1fr; }
-            .btn-history { padding: 6px 10px; font-size: 0.8rem; }
+        /* --- TABLE GRID (Right Side) --- */
+        .section-label { 
+            font-size: 0.8rem; font-weight: 700; color: var(--text-muted); 
+            text-transform: uppercase; margin: 20px 0 10px 0; border-bottom: 1px solid var(--border); padding-bottom: 5px; 
         }
+        .tables-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; }
+
+        /* TABLE CARD STYLES (Copied from Waiter App) */
+        .table-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 12px; height: 130px;
+            display: flex; flex-direction: column; justify-content: space-between; padding: 15px;
+            cursor: pointer; transition: 0.2s; position: relative; overflow: hidden;
+        }
+        .table-card:active { transform: scale(0.95); }
+        
+        .t-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .t-num { font-size: 2rem; font-weight: 800; font-family: 'JetBrains Mono'; color: #555; transition: color 0.3s; }
+        .t-bill { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 6px; }
+        .t-timer { font-size: 1.4rem; font-weight: 700; font-family: 'JetBrains Mono'; text-align: center; margin: 5px 0; }
+        .t-status { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; text-align: center; opacity: 0.8; }
+
+        /* FREE STATE */
+        .status-free { opacity: 1; border-color: #333; }
+        .status-free .t-num { color: #666; }
+        .status-free .t-timer, .status-free .t-bill { display: none; }
+        .status-free .t-status { color: #555; }
+
+        /* OCCUPIED STATES */
+        .status-fresh { border: 1px solid var(--success); background: rgba(16, 185, 129, 0.1); }
+        .status-fresh .t-num, .status-fresh .t-timer, .status-fresh .t-bill, .status-fresh .t-status { color: var(--success); }
+
+        .status-warning { border: 1px solid var(--warning); background: rgba(245, 158, 11, 0.1); }
+        .status-warning .t-num, .status-warning .t-timer, .status-warning .t-bill, .status-warning .t-status { color: var(--warning); }
+
+        .status-camper { border: 1px solid var(--danger); background: rgba(239, 68, 68, 0.15); animation: pulseRed 2s infinite; }
+        .status-camper .t-num, .status-camper .t-timer, .status-camper .t-bill, .status-camper .t-status { color: var(--danger); }
+        
+        .is-bar { border-style: dashed; }
+        @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+
+        /* --- SETTLE MODAL --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 5000; display: none;
+            align-items: center; justify-content: center; backdrop-filter: blur(5px);
+        }
+        .modal-card {
+            background: var(--surface); width: 400px; max-width: 90%;
+            border-radius: 16px; border: 1px solid var(--border); 
+            display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .modal-header { padding: 20px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 20px; max-height: 60vh; overflow-y: auto; }
+        .modal-footer { padding: 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+        
+        .bill-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; color: var(--text-muted); }
+        .bill-total-row { display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border); font-size: 1.2rem; font-weight: 800; color: var(--text-main); }
+        
+        .btn-modal-cancel { flex: 1; padding: 15px; background: transparent; border: 1px solid var(--border); color: var(--text-muted); border-radius: 8px; cursor: pointer; font-weight: 700; }
+        .btn-modal-settle { flex: 1; padding: 15px; background: var(--success); border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: 700; }
+
+        /* PIN LOCK */
+        #pin-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 17, 21, 0.98); z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .pin-input { background: var(--bg); border: 1px solid var(--border); color: white; font-size: 2rem; text-align: center; letter-spacing: 10px; padding: 10px; border-radius: 8px; width: 200px; margin: 20px 0; outline: none; }
     </style>
 </head>
 <body>
-    <div id="pin-overlay">
-        <div class="pin-box">
-            <h2 style="margin-top:0;">🔒 Kitchen Access</h2>
-            <p style="color:var(--text-muted); margin-bottom:20px;">Enter PIN to unlock sound</p>
-            <input type="password" id="pin-input" class="pin-input" placeholder="••••" maxlength="4" inputmode="numeric" pattern="[0-9]*">
-            <button class="btn-unlock" id="unlock-btn">UNLOCK SYSTEM</button>
-            <p id="pin-error" style="color:var(--danger); display:none; margin-top:10px;">Incorrect PIN</p>
-            <div style="margin-top: 25px; border-top: 1px solid var(--border); padding-top: 15px; font-size: 0.75rem; color: var(--text-muted);">
-                System by <span style="color: var(--primary); font-weight: 700;">Thomsons Networks</span>
-            </div>
-        </div>
-    </div>
 
-    <div class="modal-overlay" id="edit-modal">
-        <div class="edit-card">
-            <div class="edit-header">
-                <h3 style="margin:0;">Add Item to Order</h3>
-                <button onclick="closeEditModal()" style="background:none; border:none; color:white; font-size:1.5rem;">&times;</button>
-            </div>
-            <div class="edit-body">
-                <input type="text" id="item-search" class="search-input" placeholder="Search menu..." onkeyup="filterMenu()">
-                <div id="menu-results">
-                    </div>
-            </div>
-        </div>
+    <div id="pin-overlay">
+        <h2 style="color:white;">Manager Access</h2>
+        <input type="password" id="pin-input" class="pin-input" maxlength="4" inputmode="numeric">
+        <button onclick="checkPin()" style="background:var(--primary); border:none; padding:10px 30px; border-radius:6px; color:white; font-weight:bold; cursor:pointer;">UNLOCK</button>
     </div>
 
     <div class="top-bar">
-        <div class="header-left">
-            <h1 class="app-title"> <img src="og-image.jpg" alt="Logo" style="height: 40px; vertical-align: middle; border-radius: 8px; margin-right: 10px;"> KDS </h1>
-            <div class="status-badge" title="Connection Status">
-                <div class="dot" id="status-dot"></div>
-                <span id="status-text">Connecting...</span>
+        <h1 class="app-title"> <img src="og-image.jpg" alt="Logo" style="height: 30px; border-radius: 6px;"> MANAGER DECK </h1>
+        <div class="clock" id="clock">00:00</div>
+        <a href="history.html" class="btn-history">Sales History</a>
+    </div>
+
+    <div class="main-container">
+        <div class="left-pane">
+            <div class="pane-header">
+                <span>ONLINE / KITCHEN QUEUE</span>
+                <span id="online-count" style="color:var(--primary)">0</span>
             </div>
+            <div class="scroll-area" id="online-list">
+                </div>
         </div>
-        <div class="header-right">
-            <div class="clock" id="clock">00:00</div>
-            <a href="history.html" class="btn-history">History</a>
+
+        <div class="right-pane">
+            <div class="pane-header" style="background:transparent; border:none; padding-left:0;">
+                <span>FLOOR MAP (DINE-IN)</span>
+                <span id="dinein-count" style="color:var(--success)">0 Occupied</span>
+            </div>
+
+            <div class="section-label">Indoor Dining (1-7 + Bar)</div>
+            <div class="tables-grid" id="grid-main"></div>
+
+            <div class="section-label">Indoor AC (9-13)</div>
+            <div class="tables-grid" id="grid-ac"></div>
         </div>
     </div>
 
-    <div id="orders-grid">
-        <div class="empty-state">
-            <div class="empty-icon">🍳</div>
-            <h3>Kitchen is Clear</h3>
-            <p>Waiting for new orders...</p>
+    <div class="modal-overlay" id="settle-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 style="margin:0;">Settle Table <span id="modal-table-id"></span></h3>
+                <div style="cursor:pointer;" onclick="closeModal()">&times;</div>
+            </div>
+            <div class="modal-body">
+                <div id="modal-items-list"></div>
+                <div class="bill-total-row">
+                    <span>TOTAL TO PAY</span>
+                    <span id="modal-total" style="color:var(--success)">₹0</span>
+                </div>
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-top:10px; text-align:center;">
+                    ⚠️ Clicking 'Paid & Clear' will archive the order and free the table immediately.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-modal-settle" onclick="settleAndClear()">PAID & CLEAR ✅</button>
+            </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue, update, remove, get, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-        
+
         const firebaseConfig = {
             apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
             authDomain: "cafe-orders-1afa1.firebaseapp.com",
@@ -248,305 +251,235 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        
-        // CONFIG
-        const ACCESS_PIN = "2024";
-        const bell = new Audio('bell.mp3');
-        bell.loop = true; 
-        let audioEnabled = false;
 
-        // --- PIN LOGIC ---
-        document.getElementById('unlock-btn').addEventListener('click', attemptUnlock);
-        async function attemptUnlock() {
-            const input = document.getElementById('pin-input');
-            if (input.value === ACCESS_PIN) {
-                bell.play().then(() => {
-                    bell.pause(); bell.currentTime = 0; audioEnabled = true;
-                }).catch(e => console.log("Audio permission needed: " + e));
+        // --- PIN ---
+        window.checkPin = () => {
+            if(document.getElementById('pin-input').value === '2024') {
                 document.getElementById('pin-overlay').style.display = 'none';
-                try { if ('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch(e){}
-            } else {
-                document.getElementById('pin-error').style.display = 'block';
-                input.value = '';
-            }
+                initData();
+            } else alert("Wrong PIN");
         }
 
-        // --- CLOCK & TIMERS ---
-        setInterval(() => {
-            const now = new Date();
-            document.getElementById('clock').innerText = now.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
-            updateTimers();
-        }, 1000);
+        // --- GLOBAL STATE ---
+        let onlineOrders = [];
+        let tableData = {}; // Key = TableID, Value = { total, timestamp, orderKeys: [] }
+        let currentSettleTable = null;
 
-        onValue(ref(db, ".info/connected"), (snap) => {
-            const dot = document.getElementById('status-dot');
-            const txt = document.getElementById('status-text');
-            if (snap.val() === true) {
-                dot.className = "dot online"; txt.innerText = "ONLINE";
-            } else {
-                dot.className = "dot offline"; txt.innerText = "OFFLINE";
-            }
-        });
-        
-        // --- ORDER LOGIC ---
-        let activeOrders = [];
-        let menuData = [];
-        let currentEditingOrder = null;
-
-        // 1. Fetch Menu once for "Add Item" feature
-        onValue(ref(db, 'menu'), (snap) => {
-            const data = snap.val();
-            menuData = [];
-            if(data) {
-                Object.keys(data).forEach(k => {
-                    if(data[k].stockStatus !== 'MANUAL_OFF') menuData.push(data[k]);
-                });
-            }
-        });
-
-        // 2. Render Orders
-        onValue(ref(db, 'orders'), (snapshot) => {
-            const grid = document.getElementById('orders-grid');
-            const data = snapshot.val();
-            grid.innerHTML = "";
-
-            if (!data) {
-                grid.innerHTML = `<div class="empty-state"><div class="empty-icon">🍳</div><h3>Kitchen is Clear</h3><p>Waiting for new orders...</p></div>`;
-                activeOrders = [];
-                checkSound([]); 
-                return;
-            }
-
-            const ordersArray = Object.entries(data).reverse();
-            activeOrders = ordersArray;
-            checkSound(ordersArray);
-
-            ordersArray.forEach(([key, order]) => {
-                const status = order.status || 'pending';
-                const typeBadgeClass = order.orderType === 'Delivery' ? 'type-del' : 'type-pick';
-                const timeStr = new Date(order.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        function initData() {
+            onValue(ref(db, 'orders'), (snapshot) => {
+                const data = snapshot.val() || {};
                 
-                // Financials
-                const fins = order.financials || {grandTotal: order.price, subTotal: order.price, packingTotal: 0, discountVal: 0};
-                const subTotal = fins.subTotal || 0;
-                const packing = fins.packingTotal || 0;
-                const discount = fins.discountVal || 0;
-                const total = fins.grandTotal || 0;
-                
-                let financeHtml = `<div class="finance-box">`;
-                financeHtml += `<div class="fin-row"><span>Subtotal</span> <span>₹${subTotal}</span></div>`;
-                if (packing > 0) financeHtml += `<div class="fin-row"><span>Packing</span> <span>+₹${packing}</span></div>`;
-                if (discount > 0) financeHtml += `<div class="fin-row discount"><span>Discount</span> <span>-₹${discount}</span></div>`;
-                financeHtml += `<div class="fin-row grand-total"><span>GRAND TOTAL</span> <span>₹${total}</span></div>`;
-                financeHtml += `</div>`;
+                // Reset State
+                onlineOrders = [];
+                tableData = {};
 
-                // Items
-                let itemsHtml = '';
-                if(order.items) {
-                    order.items.forEach(item => {
-                        const dietClass = item.type === 'veg' ? 'veg' : 'non';
-                        let name = item.name.replace(/\[(.*?)\]/g, '<span class="modifiers">Add: $1</span>');
-                        const itemTotal = item.price * item.qty;
-                        itemsHtml += `
-                            <div class="item-row">
-                                <div style="display:flex; gap:10px; align-items:flex-start; flex:1;">
-                                    <div class="qty-badge">${item.qty}</div>
-                                    <div class="item-content">
-                                        <div style="display:flex; align-items:center;">
-                                            <span class="diet-icon ${dietClass}"></span>
-                                            ${name}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="item-price">₹${itemTotal}</div>
-                            </div>
-                        `;
-                    });
-                }
+                Object.entries(data).forEach(([key, order]) => {
+                    if (order.status === 'completed' || order.status === 'rejected') return;
 
-                const noteHtml = (order.globalNote && order.globalNote !== '-') 
-                    ? `<div class="note-box">⚠️ Note: ${order.globalNote}</div>` : '';
+                    const type = order.orderType || 'Dine-In';
 
-                // Buttons
-                let buttonsHtml = '';
-                
-                // ADD ITEM BUTTON (Visible in pending/cooking)
-                if(status === 'pending' || status === 'cooking') {
-                    buttonsHtml += `<button class="btn-act btn-edit" onclick="openEditModal('${key}')">Add Item ➕</button>`;
-                }
-
-                if (status === 'pending') {
-                    buttonsHtml += `
-                        <button class="btn-act btn-reject" onclick="rejectOrder('${key}')">Reject</button>
-                        <button class="btn-act btn-accept" onclick="updateStatus('${key}', 'cooking')">Accept</button>
-                    `;
-                } else if (status === 'cooking') {
-                    buttonsHtml += `
-                        <button class="btn-act btn-cook" onclick="updateStatus('${key}', 'done')">Mark Ready 🔔</button>
-                    `;
-                } else if (status === 'done') {
-                    if (order.orderType === 'Delivery') {
-                        buttonsHtml = `<div class="out-delivery-box">Wait for Driver</div>`;
+                    // 1. Separate Online/Delivery vs Table
+                    if (type === 'Delivery' || type === 'Pickup') {
+                        onlineOrders.push({ key, ...order });
                     } else {
-                        buttonsHtml = `<button class="btn-act btn-complete" onclick="completeOrder('${key}')">Complete Order ✅</button>`;
+                        // 2. Process Dine-In for Grid
+                        const match = (order.customer.name || "").match(/Table (\w+)/i);
+                        if (match) {
+                            const tId = match[1];
+                            const amt = order.financials ? order.financials.grandTotal : 0;
+                            
+                            if (!tableData[tId]) {
+                                tableData[tId] = { 
+                                    total: 0, 
+                                    timestamp: order.timestamp, 
+                                    keys: [],
+                                    items: [] 
+                                };
+                            }
+                            // Aggregate if multiple orders on one table
+                            tableData[tId].total += amt;
+                            if (order.timestamp < tableData[tId].timestamp) tableData[tId].timestamp = order.timestamp;
+                            tableData[tId].keys.push(key);
+                            if(order.items) tableData[tId].items.push(...order.items);
+                        }
                     }
-                } else if (status === 'out_for_delivery') {
-                    buttonsHtml = `<div class="out-delivery-box">🛵 Out for Delivery</div>`;
+                });
+
+                // Sort Online Orders by Time (Oldest first)
+                onlineOrders.sort((a,b) => a.timestamp - b.timestamp);
+
+                renderOnlineList();
+                renderTableGrid();
+            });
+        }
+
+        // --- LEFT PANE: ONLINE ORDERS ---
+        function renderOnlineList() {
+            const container = document.getElementById('online-list');
+            document.getElementById('online-count').innerText = onlineOrders.length;
+            container.innerHTML = "";
+
+            onlineOrders.forEach(order => {
+                const time = new Date(order.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                let itemsHtml = (order.items || []).map(i => `<div>${i.qty}x ${i.name}</div>`).join('');
+                
+                let btnHtml = '';
+                if(order.status === 'pending') {
+                    btnHtml = `<button class="btn-act btn-red" onclick="rejectOrder('${order.key}')">Reject</button>
+                               <button class="btn-act btn-green" onclick="updateStatus('${order.key}', 'cooking')">Accept</button>`;
+                } else if (order.status === 'cooking') {
+                     btnHtml = `<button class="btn-act btn-yellow" onclick="updateStatus('${order.key}', 'out_for_delivery')">Mark Ready</button>`;
                 } else {
-                    buttonsHtml = `<button class="btn-act btn-reject" onclick="rejectOrder('${key}')">Force Clear 🗑️</button>`;
+                     btnHtml = `<button class="btn-act btn-green" onclick="completeOrder('${order.key}')">Complete</button>`;
                 }
 
-                const addressHtml = order.orderType === 'Delivery' 
-                    ? `<div style="font-size:0.8rem; color:var(--text-muted); margin-top:5px;">📍 ${order.customer.address}</div>` : '';
-
-                const card = document.createElement('div');
-                card.className = `order-card status-${status}`;
-                card.dataset.ts = order.timestamp;
-                card.innerHTML = `
-                    <div class="card-header">
-                        <div>
-                            <div class="order-id">#${order.orderId} <span class="type-badge ${typeBadgeClass}">${order.orderType}</span></div>
-                            <div class="timer-badge" id="timer-${key}">Just now</div>
-                        </div>
-                        <div class="order-meta">
-                            <div style="font-size:0.8rem; color:var(--text-muted);">${timeStr}</div>
-                        </div>
-                    </div>
-                    <div class="customer-box">
-                        <div class="avatar">👤</div>
-                        <div class="cust-details">
-                            <div style="font-weight:600;">${order.customer.name}</div>
-                            <a href="tel:${order.customer.phone}" class="cust-phone">${order.customer.phone}</a>
-                            ${addressHtml}
-                        </div>
-                    </div>
-                    <div class="items-list">${itemsHtml}</div>
-                    ${noteHtml}
-                    ${financeHtml}
-                    <div class="card-footer"><div class="action-grid">${buttonsHtml}</div></div>
-                `;
-                grid.appendChild(card);
-            });
-            updateTimers();
-        });
-
-        // --- ADD ITEM FUNCTIONS ---
-        window.openEditModal = (key) => {
-            currentEditingOrder = key;
-            document.getElementById('edit-modal').style.display = 'flex';
-            filterMenu(); // Show all items initially
-        }
-        window.closeEditModal = () => {
-            document.getElementById('edit-modal').style.display = 'none';
-        }
-
-        window.filterMenu = () => {
-            const term = document.getElementById('item-search').value.toLowerCase();
-            const container = document.getElementById('menu-results');
-            container.innerHTML = "";
-            
-            const filtered = menuData.filter(i => i.name.toLowerCase().includes(term));
-            
-            filtered.forEach(item => {
                 const div = document.createElement('div');
-                div.className = "menu-list-item";
+                div.className = `order-card status-${order.status}`;
                 div.innerHTML = `
-                    <div>
-                        <div style="font-weight:600; font-size:0.9rem;">${item.name}</div>
-                        <div style="color:var(--text-muted); font-size:0.8rem;">₹${item.price}</div>
+                    <div class="card-top">
+                        <span class="card-id">#${order.orderId}</span>
+                        <span class="card-type">${order.orderType}</span>
                     </div>
-                    <button class="add-mini-btn" onclick="addItemToOrder('${item.name}', ${item.price}, '${item.type}')">ADD</button>
+                    <div class="card-body">
+                        <div class="cust-row">${order.customer.name}</div>
+                        <div class="item-list-text">${itemsHtml}</div>
+                        <div style="margin-top:5px; font-size:0.8rem; color:#888;">⏰ ${time}</div>
+                    </div>
+                    <div class="card-actions">${btnHtml}</div>
                 `;
                 container.appendChild(div);
             });
         }
 
-        window.addItemToOrder = (name, price, type) => {
-            if(!currentEditingOrder) return;
-            const orderRef = ref(db, 'orders/' + currentEditingOrder);
+        // --- RIGHT PANE: TABLE GRID ---
+        function renderTableGrid() {
+            const gridMain = document.getElementById('grid-main');
+            const gridAC = document.getElementById('grid-ac');
+            gridMain.innerHTML = "";
+            gridAC.innerHTML = "";
+
+            let occupiedCount = Object.keys(tableData).length;
+            document.getElementById('dinein-count').innerText = `${occupiedCount} Occupied`;
+
+            // Render 1-7 + Bar
+            for(let i=1; i<=7; i++) createTableCard(i, gridMain);
+            createTableCard(8, gridMain, true, "BAR");
             
-            get(orderRef).then((snap) => {
-                if(snap.exists()) {
-                    const order = snap.val();
-                    
-                    // 1. Add item to array
-                    if(!order.items) order.items = [];
-                    order.items.push({
-                        name: name,
-                        price: price,
-                        qty: 1,
-                        type: type
-                    });
-
-                    // 2. Update Financials
-                    if(!order.financials) order.financials = { subTotal:0, grandTotal:0, packingTotal:0, discountVal:0 };
-                    
-                    order.financials.subTotal += price;
-                    order.financials.grandTotal += price;
-
-                    // 3. Save
-                    update(orderRef, order).then(() => {
-                        alert(`Added ${name} to order!`);
-                        closeEditModal();
-                    });
-                }
-            });
+            // Render 9-13
+            for(let i=9; i<=13; i++) createTableCard(i, gridAC);
         }
 
-        // --- EXISTING FUNCTIONS ---
-        function updateTimers() {
-            const now = Date.now();
-            document.querySelectorAll('.order-card').forEach(card => {
-                const ts = parseInt(card.dataset.ts);
-                const diff = Math.floor((now - ts) / 60000); 
-                const badge = card.querySelector('.timer-badge');
-                if(diff < 1) badge.innerText = "Just now";
-                else badge.innerText = `${diff}m ago`;
-                if(diff > 30) {
-                    badge.style.background = "var(--danger)"; badge.style.color = "white";
-                    if(!card.classList.contains('status-done')) card.classList.add('age-critical');
-                } else if(diff > 15) {
-                    badge.style.background = "var(--warning)"; badge.style.color = "black";
-                }
-            });
-        }
+        function createTableCard(id, container, isBar=false, label=null) {
+            const data = tableData[id];
+            const div = document.createElement('div');
+            
+            let statusClass = 'status-free';
+            let timeText = '';
+            let totalText = '';
+            let statusLabel = 'FREE';
 
-        function checkSound(orders) {
-            if(!audioEnabled) return;
-            const hasPending = orders.some(([k, o]) => o.status === 'pending');
-            if(hasPending) {
-                if(bell.paused) bell.play().catch(e=>console.log("Audio Error:", e));
-            } else {
-                bell.pause(); bell.currentTime = 0;
+            if (data) {
+                const diff = Date.now() - data.timestamp;
+                const tm = Math.floor(diff / 60000);
+                const h = Math.floor(tm / 60);
+                const m = tm % 60;
+                timeText = `${h}:${m.toString().padStart(2,'0')}`;
+                totalText = `₹${data.total}`;
+                statusLabel = 'OCCUPIED';
+
+                if (tm < 60) statusClass = 'status-fresh';
+                else if (tm < 90) statusClass = 'status-warning';
+                else statusClass = 'status-camper';
             }
+
+            div.className = `table-card ${statusClass} ${isBar?'is-bar':''}`;
+            if(data) {
+                div.onclick = () => openSettleModal(id);
+            }
+
+            div.innerHTML = `
+                <div class="t-header">
+                    <div class="t-num">${label || id}</div>
+                    <div class="t-bill">${totalText}</div>
+                </div>
+                <div class="t-timer">${timeText}</div>
+                <div class="t-status">${statusLabel}</div>
+            `;
+            container.appendChild(div);
         }
 
-        window.updateStatus = (key, status) => update(ref(db, 'orders/' + key), { status: status });
-        
-        window.rejectOrder = (key) => {
-            if(confirm("Reject this order?")) {
+        // --- SETTLE MODAL LOGIC ---
+        window.openSettleModal = (tableId) => {
+            const data = tableData[tableId];
+            if(!data) return;
+
+            currentSettleTable = tableId;
+            document.getElementById('settle-modal').style.display = 'flex';
+            document.getElementById('modal-table-id').innerText = tableId;
+            document.getElementById('modal-total').innerText = `₹${data.total}`;
+
+            const list = document.getElementById('modal-items-list');
+            list.innerHTML = "";
+            
+            // Consolidate Items
+            data.items.forEach(item => {
+                list.innerHTML += `
+                    <div class="bill-row">
+                        <span>${item.qty}x ${item.name}</span>
+                        <span>${item.price * item.qty}</span>
+                    </div>
+                `;
+            });
+        }
+
+        window.closeModal = () => {
+            document.getElementById('settle-modal').style.display = 'none';
+            currentSettleTable = null;
+        }
+
+        window.settleAndClear = async () => {
+            if(!currentSettleTable || !tableData[currentSettleTable]) return;
+
+            const tId = currentSettleTable;
+            const keys = tableData[tId].keys;
+
+            // Move all orders for this table to history
+            for (const key of keys) {
                 const orderRef = ref(db, 'orders/' + key);
-                get(orderRef).then(snap => {
-                    if(snap.exists()) {
-                        const data = snap.val();
-                        data.status = 'rejected';
-                        data.rejectedAt = Date.now();
-                        set(ref(db, 'history/' + key), data).then(() => remove(orderRef));
-                    }
-                });
+                const snap = await get(orderRef);
+                if (snap.exists()) {
+                    const data = snap.val();
+                    data.status = 'completed';
+                    data.completedAt = Date.now();
+                    // Save to history
+                    await set(ref(db, 'history/' + key), data);
+                    // Remove from active
+                    await remove(orderRef);
+                }
+            }
+            closeModal();
+        }
+
+        // --- ACTIONS FOR ONLINE ORDERS ---
+        window.updateStatus = (key, status) => update(ref(db, 'orders/'+key), {status});
+        window.rejectOrder = (key) => remove(ref(db, 'orders/'+key)); // Or move to rejected history
+        window.completeOrder = async (key) => {
+            const r = ref(db, 'orders/'+key);
+            const s = await get(r);
+            if(s.exists()){
+                const d = s.val(); d.status='completed'; d.completedAt=Date.now();
+                await set(ref(db, 'history/'+key), d);
+                await remove(r);
             }
         };
 
-        window.completeOrder = (key) => {
-            const orderRef = ref(db, 'orders/' + key);
-            get(orderRef).then(snap => {
-                if(snap.exists()) {
-                    const data = snap.val();
-                    data.completedAt = Date.now();
-                    set(ref(db, 'history/' + key), data).then(() => remove(orderRef));
-                }
-            });
-        };
+        // --- CLOCK ---
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+            renderTableGrid(); // Update timers every minute
+        }, 60000);
+        document.getElementById('clock').innerText = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+
     </script>
 </body>
 </html>
