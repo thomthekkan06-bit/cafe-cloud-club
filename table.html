@@ -6,11 +6,11 @@
     <title>Table Ordering | Cafe Cloud Club</title>
     
     <link rel="icon" type="image/png" href="icon.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* --- CORE STYLES (Embedded for Stability) --- */
+        /* --- CORE STYLES --- */
         :root {
             --primary: #3b82f6; 
             --secondary: #1e293b;
@@ -25,71 +25,45 @@
             font-family: 'Poppins', sans-serif;
             background-color: var(--bg);
             margin: 0;
-            padding-bottom: 80px; /* Space for footer/cart btn */
+            padding-bottom: 80px; 
             color: var(--secondary);
         }
 
-        /* HEADER */
+        /* NAVBAR */
         .table-navbar {
             background: #1e293b;
             color: white;
             padding: 15px 20px;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            position: sticky; top: 0; z-index: 1000;
+            display: flex; justify-content: space-between; align-items: center;
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
         .table-info h1 { margin: 0; font-size: 1.2rem; font-weight: 700; color: var(--primary); }
         .table-info span { font-size: 0.8rem; opacity: 0.8; }
 
-        /* FILTERS */
+        /* CATEGORY CHIPS */
         .advanced-filters {
-            display: flex;
-            gap: 10px;
-            padding: 15px;
-            overflow-x: auto;
-            white-space: nowrap;
-            background: var(--bg);
-            scrollbar-width: none; /* Hide scrollbar Firefox */
-            -ms-overflow-style: none; /* Hide scrollbar IE/Edge */
+            display: flex; gap: 10px; padding: 15px;
+            overflow-x: auto; white-space: nowrap; background: var(--bg);
+            scrollbar-width: none;
         }
-        .advanced-filters::-webkit-scrollbar { display: none; /* Hide scrollbar Chrome/Safari */ }
+        .advanced-filters::-webkit-scrollbar { display: none; }
 
         .toggle-chip {
-            padding: 8px 16px;
-            border-radius: 20px;
-            border: 1px solid #ddd;
-            background: var(--white);
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: 0.2s;
-            flex-shrink: 0; /* Prevent shrinking */
+            padding: 8px 16px; border-radius: 20px; border: 1px solid #ddd;
+            background: var(--white); font-size: 0.85rem; cursor: pointer; transition: 0.2s; flex-shrink: 0;
         }
-        .toggle-chip.active {
-            background: var(--secondary);
-            color: var(--white);
-            border-color: var(--secondary);
-        }
+        .toggle-chip.active { background: var(--secondary); color: var(--white); border-color: var(--secondary); }
 
         /* MENU GRID */
         .menu-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 15px;
-            padding: 15px;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 15px; padding: 15px;
         }
-
         .food-card {
-            background: var(--white);
-            border-radius: 12px;
-            padding: 15px;
+            background: var(--white); border-radius: 12px; padding: 15px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+            display: flex; flex-direction: column; justify-content: space-between;
             border-left: 4px solid #ccc;
         }
         .food-card.veg { border-left-color: var(--success); }
@@ -101,122 +75,61 @@
 
         .price-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
         .price { font-weight: 700; font-size: 1rem; }
-        
         .add-btn-mini {
-            background: #f1f2f6;
-            color: var(--secondary);
-            padding: 6px 12px;
-            border-radius: 20px;
-            border: none;
-            cursor: pointer;
-            font-size: 0.8rem;
-            font-weight: 600;
-            transition: 0.2s;
+            background: #f1f2f6; color: var(--secondary); padding: 6px 12px;
+            border-radius: 20px; border: none; cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: 0.2s;
         }
         .add-btn-mini:hover { background: var(--primary); color: white; }
 
-        /* FLOATING CART BUTTON */
+        /* FLOATING CART */
         .mobile-cart-btn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 50px;
-            cursor: pointer;
-            font-weight: 600;
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: transform 0.2s;
+            position: fixed; bottom: 20px; right: 20px;
+            background: var(--primary); color: white; border: none;
+            padding: 12px 25px; border-radius: 50px; cursor: pointer; font-weight: 600;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); z-index: 100;
+            display: flex; align-items: center; gap: 10px; transition: transform 0.2s;
         }
 
-        /* CART SIDEBAR */
+        /* SIDEBAR */
         .order-sidebar {
-            position: fixed;
-            top: 0;
-            right: -100%; /* Hidden by default */
-            width: 100%;
-            max-width: 400px;
-            height: 100%;
-            background: var(--white);
-            z-index: 2000;
-            padding: 20px;
-            transition: right 0.3s ease;
-            box-shadow: -5px 0 15px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
+            position: fixed; top: 0; right: -100%; width: 100%; max-width: 400px; height: 100%;
+            background: var(--white); z-index: 2000; padding: 20px;
+            transition: right 0.3s ease; box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column;
         }
         .order-sidebar.active { right: 0; }
-
         .cart-header-mobile { display: flex; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
         .back-btn { background: none; border: none; font-size: 1rem; color: var(--primary); cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 5px;}
-
         .cart-items-container { flex: 1; overflow-y: auto; }
         .cart-item { display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px dashed #eee; padding-bottom: 10px; }
         .qty-btn { background: #eee; border: none; width: 25px; height: 25px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        
         .cart-summary { margin-top: auto; border-top: 2px solid #eee; padding-top: 15px; }
         .summary-row { display: flex; justify-content: space-between; font-weight: 700; font-size: 1.2rem; margin-bottom: 15px; }
-        
-        .checkout-btn {
-            width: 100%;
-            background: var(--primary);
-            color: white;
-            padding: 15px;
-            border: none;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-        }
+        .checkout-btn { width: 100%; background: var(--primary); color: white; padding: 15px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; }
         .checkout-btn:disabled { background: #ccc; cursor: not-allowed; }
 
-        /* MODALS (Hidden by default) */
+        /* GENERIC MODAL */
         .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6);
-            z-index: 3000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(4px);
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 3000; display: none;
+            align-items: center; justify-content: center; backdrop-filter: blur(4px);
         }
         .modal-card {
-            background: white;
-            padding: 30px;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 350px;
-            text-align: center;
-            animation: popUp 0.3s ease;
+            background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 350px;
+            text-align: center; animation: popUp 0.3s ease; display: flex; flex-direction: column; max-height: 80vh;
         }
-        .input-field {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0 20px 0;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-family: inherit;
-        }
+        .input-field { width: 100%; padding: 12px; margin: 10px 0 20px 0; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; }
+        
+        /* CUSTOMIZATION SPECIFIC */
+        .modal-scroll-area { overflow-y: auto; flex: 1; text-align: left; margin-bottom: 15px; padding-right: 5px; }
+        .custom-option-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #eee; font-size: 0.9rem; }
+        .modal-footer { border-top: 1px solid #eee; padding-top: 15px; display: flex; justify-content: space-between; align-items: center; }
 
-        /* SUCCESS SCREEN (Hidden by default) */
+        /* SUCCESS SCREEN */
         .success-screen {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: white;
-            z-index: 4000;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 30px;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; z-index: 4000; display: none;
+            flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 30px;
         }
         .success-icon-container {
             width: 80px; height: 80px; background: var(--success);
@@ -285,14 +198,34 @@
         <div class="modal-card">
             <h3 style="margin-top:0; color:var(--primary);">Confirm Order</h3>
             <p id="modal-table-txt" style="font-weight:bold; color:#555;"></p>
-            
             <div style="text-align:left; margin-top:15px;">
                 <label style="font-size:0.8rem; color:#666;">Guest Name (Optional)</label>
                 <input type="text" class="input-field" id="cust-name" placeholder="Enter Name">
             </div>
-
             <button class="checkout-btn" onclick="placeOrder()">SEND TO KITCHEN 👨‍🍳</button>
             <button style="width:100%; background:none; border:none; padding:15px; color:#777; cursor:pointer; margin-top:5px;" onclick="closeCheckout()">Cancel</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="customization-modal">
+        <div class="modal-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:15px;">
+                <h3 id="cust-title" style="margin:0; font-size:1.1rem; text-align:left;">Item Name</h3>
+                <div style="font-size:1.5rem; cursor:pointer;" onclick="closeCustomization()">&times;</div>
+            </div>
+            
+            <div id="cust-options" class="modal-scroll-area">
+                </div>
+            
+            <div style="text-align:left; margin-bottom:10px;">
+                <label style="font-size:0.8rem; color:#888;">Note (Optional)</label>
+                <input type="text" id="cust-note" class="input-field" style="margin:5px 0 10px 0; padding:8px;" placeholder="e.g. Less Spicy">
+            </div>
+
+            <div class="modal-footer">
+                <div style="font-weight:700; color:var(--primary);" id="cust-total">₹0</div>
+                <button class="checkout-btn" style="width:auto; padding:10px 25px;" onclick="addCustomizedItem()">Add +</button>
+            </div>
         </div>
     </div>
 
@@ -319,16 +252,16 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // 1. GET TABLE ID (Default to 1 if missing)
+        // --- INIT ---
         const params = new URLSearchParams(window.location.search);
         const TABLE_ID = params.get('table') || "1"; 
-        
         document.getElementById('header-table-num').innerText = `Table ${TABLE_ID}`;
         document.getElementById('modal-table-txt').innerText = `Ordering for Table ${TABLE_ID}`;
 
-        // 2. LOAD MENU
+        // --- DATA ---
         let menuData = [];
         let cart = {};
+        let selectedItem = null; // Temp holder for customization
 
         onValue(ref(db, 'menu'), (snap) => {
             const data = snap.val();
@@ -336,10 +269,7 @@
             if(data) {
                 Object.keys(data).forEach(key => {
                     const item = data[key];
-                    // Only show items that are NOT manually turned off
-                    if(item.stockStatus !== 'MANUAL_OFF' && item.inStock !== false) {
-                        menuData.push(item);
-                    }
+                    if(item.stockStatus !== 'MANUAL_OFF' && item.inStock !== false) menuData.push(item);
                 });
             }
             renderMenu('All');
@@ -361,35 +291,157 @@
                 return;
             }
 
-            filtered.forEach(item => {
-                const card = document.createElement('div');
-                card.className = `food-card ${item.type}`;
-                card.innerHTML = `
+            filtered.forEach((item, index) => {
+                // We pass the global index of the item in 'filtered' is tricky, so we find original obj
+                const div = document.createElement('div');
+                div.className = `food-card ${item.type}`;
+                div.innerHTML = `
                     <div class="card-top">
                         <div class="food-title">${item.name}</div>
                         <div class="food-meta">${item.category}</div>
                     </div>
                     <div class="price-row">
                         <div class="price">₹${item.price}</div>
-                        <button class="add-btn-mini" onclick="addToCart('${item.name}', ${item.price}, '${item.type}')">ADD +</button>
+                        <button class="add-btn-mini" onclick="checkOptions('${item.name}')">ADD +</button>
                     </div>
                 `;
-                root.appendChild(card);
+                root.appendChild(div);
             });
         }
 
-        // 3. CART LOGIC
-        window.addToCart = (name, price, type) => {
+        // --- CUSTOMIZATION LOGIC ---
+        window.checkOptions = (itemName) => {
+            const item = menuData.find(i => i.name === itemName);
+            if(!item) return;
+
+            // Define Logic (Ported from app.js)
+            const options = [];
+            const cat = item.category;
+            const name = item.name;
+
+            // 1. Extra Cheese
+            if (["Bun-Tastic Burgers", "Italian Indulgence", "Freshly Folded", "Toasty Treats"].includes(cat)) {
+                options.push({ name: "Extra Cheese", price: 15 });
+            }
+
+            // 2. Fried Egg (Specific Burgers)
+            if (cat === "Bun-Tastic Burgers") {
+                const friedEggEligible = [
+                    "Chicken Slider Burger - Pesto", "Chicken Slider Burger - Tandoori", "Cloud Special Chicken Burger",
+                    "Egg Burger", "Pesto Chicken Burger", "Tandoori Burger Chicken", "Tandoori Special Chicken Burger",
+                    "Tropical Beef Burger", "Tropical Pesto Chicken Burger", "Tropical Tandoori Chicken Burger",
+                    "Classic Beef Burger", "Double Decker Beef Burger"
+                ];
+                if (friedEggEligible.includes(name)) options.push({ name: "Add Fried Egg (Non-Veg)", price: 20 });
+            }
+
+            // 3. Pasta Add-ons
+            if (cat === "Italian Indulgence") {
+                options.push({ name: "Garlic Bread", price: 40 });
+                if (name.toLowerCase().includes('chicken')) options.push({ name: "Extra Chicken (Non-Veg)", price: 60 });
+                if (name.toLowerCase().includes('shrimp')) options.push({ name: "Extra Shrimp (Non-Veg)", price: 90 });
+            }
+
+            // 4. Steak Add-ons
+            if (cat === "Butcher's Best") {
+                options.push({ name: "Extra Hashbrown", price: 40 });
+                options.push({ name: "Tossed Rice", price: 40 });
+                options.push({ name: "Boiled Veggies", price: 40 });
+                options.push({ name: "Sunny Sideup (Non-Veg)", price: 25 });
+                if (!name.toLowerCase().includes('fish')) options.push({ name: "Hummus (Veg)", price: 40 });
+            }
+
+            // 5. Rice Add-ons
+            if (cat === "Rice Harmony") {
+                if (name.toLowerCase().includes('chicken')) options.push({ name: "Extra Chicken (Non-Veg)", price: 40 });
+                if (item.type === 'veg') options.push({ name: "Extra Paneer (Veg)", price: 30 });
+            }
+
+            // 6. Shakes
+            if (cat === "Whipped Wonders") options.push({ name: "Extra Ice Cream", price: 30 });
+
+            // DECISION: If options exist, show modal. Else add directly.
+            if (options.length > 0 || cat === "ADD-ON") {
+                openCustomization(item, options);
+            } else {
+                addToCartDirect(item);
+            }
+        }
+
+        function openCustomization(item, options) {
+            selectedItem = item;
+            document.getElementById('cust-title').innerText = item.name;
+            document.getElementById('cust-note').value = "";
+            
+            const container = document.getElementById('cust-options');
+            container.innerHTML = "";
+            
+            if(options.length === 0) {
+                 container.innerHTML = "<div style='color:#888; font-size:0.9rem; padding:10px 0;'>No extra add-ons available. Add note if needed.</div>";
+            } else {
+                options.forEach(opt => {
+                    container.innerHTML += `
+                        <div class="custom-option-row">
+                            <label style="display:flex; align-items:center; cursor:pointer;">
+                                <input type="checkbox" class="opt-check" data-name="${opt.name}" data-price="${opt.price}" onchange="calcTotal()" style="margin-right:10px;">
+                                ${opt.name}
+                            </label>
+                            <span>+₹${opt.price}</span>
+                        </div>
+                    `;
+                });
+            }
+            
+            calcTotal();
+            document.getElementById('customization-modal').style.display = 'flex';
+        }
+
+        window.calcTotal = () => {
+            if(!selectedItem) return;
+            let total = selectedItem.price;
+            document.querySelectorAll('.opt-check:checked').forEach(c => total += parseInt(c.dataset.price));
+            document.getElementById('cust-total').innerText = "₹" + total;
+        }
+
+        window.addCustomizedItem = () => {
+            if(!selectedItem) return;
+            let finalPrice = selectedItem.price;
+            let mods = [];
+            
+            document.querySelectorAll('.opt-check:checked').forEach(c => {
+                finalPrice += parseInt(c.dataset.price);
+                mods.push(c.dataset.name);
+            });
+            
+            const note = document.getElementById('cust-note').value.trim();
+            
+            // Generate Unique Name for Cart (e.g. "Burger [Extra Cheese]")
+            let displayName = selectedItem.name;
+            if(mods.length > 0) displayName += ` [${mods.join(', ')}]`;
+            if(note) displayName += ` (Note: ${note})`;
+            
+            addToCartLogic(displayName, finalPrice, selectedItem.type);
+            closeCustomization();
+        }
+
+        window.closeCustomization = () => document.getElementById('customization-modal').style.display = 'none';
+
+        function addToCartDirect(item) {
+            addToCartLogic(item.name, item.price, item.type);
+        }
+
+        function addToCartLogic(name, price, type) {
             if(cart[name]) cart[name].qty++;
             else cart[name] = { price, qty: 1, type };
             renderCart();
             
-            // Animation bump
+            // Animation
             const btn = document.querySelector('.mobile-cart-btn');
             btn.style.transform = "scale(1.1)";
             setTimeout(()=> btn.style.transform = "scale(1)", 200);
         }
 
+        // --- CART RENDER ---
         window.updateQty = (name, change) => {
             if(cart[name]) {
                 cart[name].qty += change;
@@ -412,7 +464,7 @@
                 list.innerHTML += `
                     <div class="cart-item">
                         <div class="cart-details">
-                            <span class="cart-name">${key}</span>
+                            <span class="cart-name" style="font-weight:600; display:block; line-height:1.2; margin-bottom:4px;">${key}</span>
                             <div style="font-size:0.8rem; color:#888;">₹${item.price}</div>
                         </div>
                         <div style="display:flex; align-items:center; gap:10px;">
@@ -429,18 +481,14 @@
             document.getElementById('btn-checkout').disabled = (count === 0);
         }
 
-        // 4. CHECKOUT
-        window.toggleCart = () => {
-            document.getElementById('cart-sidebar').classList.toggle('active');
-        }
-
+        // --- CHECKOUT ---
+        window.toggleCart = () => document.getElementById('cart-sidebar').classList.toggle('active');
         window.openCheckout = () => document.getElementById('checkout-modal').style.display = 'flex';
         window.closeCheckout = () => document.getElementById('checkout-modal').style.display = 'none';
 
         window.placeOrder = () => {
             const nameInput = document.getElementById('cust-name').value.trim() || "Guest";
-            // Prefix Table ID so Kitchen knows where it is
-            const finalName = `Table ${TABLE_ID} (${nameInput})`; 
+            const finalName = `Table ${TABLE_ID} (${nameInput})`;
             
             let total = 0;
             const items = [];
@@ -454,17 +502,9 @@
                 orderType: 'Dine-In',
                 timestamp: Date.now(),
                 status: 'pending',
-                customer: {
-                    name: finalName,
-                    phone: '0000000000', // Dummy phone for table orders
-                    address: 'Dine-In'
-                },
+                customer: { name: finalName, phone: '0000000000', address: 'Dine-In' },
                 items: items,
-                financials: {
-                    subTotal: total,
-                    grandTotal: total, // No packing fees for dine-in
-                    deliveryFee: 0
-                },
+                financials: { subTotal: total, grandTotal: total, deliveryFee: 0 },
                 globalNote: `Table ${TABLE_ID}`
             };
 
