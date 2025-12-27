@@ -114,7 +114,7 @@
         }
         .tables-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; }
 
-        /* TABLE CARD STYLES (Copied from Waiter App) */
+        /* TABLE CARD STYLES */
         .table-card {
             background: var(--surface); border: 1px solid var(--border);
             border-radius: 12px; height: 130px;
@@ -262,7 +262,7 @@
 
         // --- GLOBAL STATE ---
         let onlineOrders = [];
-        let tableData = {}; // Key = TableID, Value = { total, timestamp, orderKeys: [] }
+        let tableData = {}; 
         let currentSettleTable = null;
 
         function initData() {
@@ -274,16 +274,23 @@
                 tableData = {};
 
                 Object.entries(data).forEach(([key, order]) => {
+                    // 1. Safety Check: If order data is broken, skip it
+                    if (!order || !order.status) return;
+
                     if (order.status === 'completed' || order.status === 'rejected') return;
 
                     const type = order.orderType || 'Dine-In';
+                    
+                    // 2. SAFE Customer Name Check (The Fix)
+                    // We check if 'customer' exists before asking for 'name'
+                    const customerName = (order.customer && order.customer.name) ? order.customer.name : "Unknown";
 
                     // 1. Separate Online/Delivery vs Table
                     if (type === 'Delivery' || type === 'Pickup') {
                         onlineOrders.push({ key, ...order });
                     } else {
                         // 2. Process Dine-In for Grid
-                        const match = (order.customer.name || "").match(/Table (\w+)/i);
+                        const match = customerName.match(/Table (\w+)/i);
                         if (match) {
                             const tId = match[1];
                             const amt = order.financials ? order.financials.grandTotal : 0;
@@ -298,7 +305,9 @@
                             }
                             // Aggregate if multiple orders on one table
                             tableData[tId].total += amt;
+                            // Keep the oldest timestamp (when they first sat down)
                             if (order.timestamp < tableData[tId].timestamp) tableData[tId].timestamp = order.timestamp;
+                            
                             tableData[tId].keys.push(key);
                             if(order.items) tableData[tId].items.push(...order.items);
                         }
@@ -323,6 +332,9 @@
                 const time = new Date(order.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
                 let itemsHtml = (order.items || []).map(i => `<div>${i.qty}x ${i.name}</div>`).join('');
                 
+                // Safe Customer Name again for display
+                const cName = (order.customer && order.customer.name) ? order.customer.name : "Guest";
+
                 let btnHtml = '';
                 if(order.status === 'pending') {
                     btnHtml = `<button class="btn-act btn-red" onclick="rejectOrder('${order.key}')">Reject</button>
@@ -341,7 +353,7 @@
                         <span class="card-type">${order.orderType}</span>
                     </div>
                     <div class="card-body">
-                        <div class="cust-row">${order.customer.name}</div>
+                        <div class="cust-row">${cName}</div>
                         <div class="item-list-text">${itemsHtml}</div>
                         <div style="margin-top:5px; font-size:0.8rem; color:#888;">⏰ ${time}</div>
                     </div>
@@ -462,7 +474,7 @@
 
         // --- ACTIONS FOR ONLINE ORDERS ---
         window.updateStatus = (key, status) => update(ref(db, 'orders/'+key), {status});
-        window.rejectOrder = (key) => remove(ref(db, 'orders/'+key)); // Or move to rejected history
+        window.rejectOrder = (key) => remove(ref(db, 'orders/'+key)); 
         window.completeOrder = async (key) => {
             const r = ref(db, 'orders/'+key);
             const s = await get(r);
