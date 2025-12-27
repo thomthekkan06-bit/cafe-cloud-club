@@ -743,15 +743,18 @@
             }
         };
 
-        // --- NEW: MERGE & SETTLE FOR DINE-IN ---
+        // --- NEW: MERGE & SETTLE WITH 6-DIGIT BILL ID ---
         window.settleAndClear = async () => {
             if(!currentSettleTable || !tableData[currentSettleTable]) return;
             const tData = tableData[currentSettleTable];
             const keys = tData.keys;
 
-            // 1. Create Consolidated Bill
+            // 1. Generate Unique 6-Digit Bill Number
+            const billNumber = Math.floor(100000 + Math.random() * 900000);
+
+            // 2. Create Consolidated Master Bill
             const masterBill = {
-                orderId: `BILL-${Date.now()}`, // New ID for the merged bill
+                orderId: billNumber, // Clean 6-digit ID (e.g., 882415)
                 orderType: 'Dine-In',
                 timestamp: Date.now(),
                 status: 'paid',
@@ -760,7 +763,7 @@
                     phone: '0000000000',
                     address: 'Dine-In'
                 },
-                items: tData.items, // All items merged
+                items: tData.items, // All items merged into one list
                 financials: {
                     subTotal: tData.fins.sub,
                     discountVal: tData.fins.disc,
@@ -768,13 +771,13 @@
                     packingTotal: tData.fins.pack,
                     grandTotal: tData.total
                 },
-                originalOrderKeys: keys // Traceability
+                originalOrderKeys: keys // Keep track of which orders made this bill
             };
 
-            // 2. Push ONE master bill to history
+            // 3. Push ONE master bill to history
             await push(ref(db, 'history'), masterBill);
 
-            // 3. Delete ALL individual active orders
+            // 4. Delete ALL individual active orders
             for (const key of keys) {
                 await remove(ref(db, 'orders/' + key));
             }
