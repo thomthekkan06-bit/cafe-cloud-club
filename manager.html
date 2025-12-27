@@ -317,18 +317,19 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- SOUND CONFIG ---
+        // --- GLOBAL SOUND CONFIG ---
+        // Defined OUTSIDE any function to prevent multiple instances
         const bell = new Audio('bell.mp3');
         bell.loop = true;
 
         // --- AUTH ---
         window.checkPin = () => {
             if(document.getElementById('pin-input').value === '2024') {
-                // Initialize Audio Context on user interaction
+                // Initialize Audio Context on user interaction (Autoplay Policy)
                 bell.play().then(() => {
                     bell.pause();
                     bell.currentTime = 0;
-                }).catch(e => console.log("Audio blocked", e));
+                }).catch(e => console.log("Audio autoplay check failed (will try again on order)", e));
 
                 document.getElementById('pin-overlay').style.display = 'none';
                 initData();
@@ -376,13 +377,13 @@
                 onlineOrders = [];
                 tableData = {};
 
-                let hasPendingOrders = false;
+                let hasPendingOrders = false; // Flag to track if we should ring
 
                 Object.entries(data).forEach(([key, order]) => {
                     if (!order || !order.status) return;
                     if (order.status === 'completed' || order.status === 'rejected') return;
 
-                    // CHECK FOR PENDING STATUS FOR SOUND
+                    // CHECK STATUS FOR SOUND
                     if(order.status === 'pending') {
                         hasPendingOrders = true;
                     }
@@ -422,10 +423,14 @@
                     }
                 });
 
-                // --- SOUND CONTROL ---
+                // --- SOUND CONTROL LOGIC ---
                 if(hasPendingOrders) {
-                    if(bell.paused) bell.play().catch(e => console.log(e));
+                    // Only play if not already playing
+                    if(bell.paused) {
+                        bell.play().catch(e => console.log("Sound blocked by browser:", e));
+                    }
                 } else {
+                    // No pending orders? STOP immediately.
                     bell.pause();
                     bell.currentTime = 0;
                 }
