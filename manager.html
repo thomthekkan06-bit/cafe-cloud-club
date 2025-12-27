@@ -59,10 +59,10 @@
             overflow: hidden;
         }
 
-        /* LEFT SIDE: ONLINE ORDERS */
+        /* LEFT SIDE: KITCHEN QUEUE */
         .left-pane {
             width: 40%;
-            min-width: 350px;
+            min-width: 400px; /* Wider for details */
             border-right: 1px solid var(--border);
             display: flex; flex-direction: column;
             background: #121418;
@@ -90,22 +90,55 @@
             background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
             overflow: hidden; margin-bottom: 15px;
             border-left: 4px solid var(--border);
+            display: flex; flex-direction: column;
         }
         .order-card.status-pending { border-left-color: var(--primary); }
         .order-card.status-cooking { border-left-color: var(--warning); }
         .order-card.status-out_for_delivery { border-left-color: var(--purple); }
 
-        .card-top { padding: 12px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.2); }
-        .card-id { font-family: 'JetBrains Mono'; font-weight: 800; }
-        .card-type { font-size: 0.7rem; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1); }
+        .card-top { 
+            padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.2); 
+        }
+        .card-id { font-family: 'JetBrains Mono'; font-weight: 800; color: var(--text-muted); }
+        .card-type { font-size: 0.7rem; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1); font-weight: 700; }
+        
         .card-body { padding: 12px; }
-        .cust-row { font-size: 0.9rem; margin-bottom: 8px; font-weight: 600; }
-        .item-list-text { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; }
-        .card-actions { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-top: 1px solid var(--border); }
-        .btn-act { padding: 8px; border-radius: 6px; border: none; cursor: pointer; font-weight: 700; font-size: 0.8rem; }
+        
+        /* Customer Info Section */
+        .info-grid { display: grid; grid-template-columns: auto 1fr; gap: 5px 10px; margin-bottom: 10px; font-size: 0.9rem; }
+        .info-label { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; align-self: center; }
+        .info-val { font-weight: 600; color: #fff; }
+
+        /* Items Section */
+        .items-list { margin: 10px 0; border-top: 1px dashed var(--border); padding-top: 10px; }
+        .item-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 4px; }
+        .item-qty { color: var(--primary); font-weight: 700; margin-right: 5px; }
+        .item-price { font-family: 'JetBrains Mono'; color: var(--text-muted); }
+
+        /* Financials Section */
+        .fin-box { 
+            background: rgba(0,0,0,0.3); border-radius: 6px; padding: 8px; margin-top: 10px; 
+            font-size: 0.85rem; 
+        }
+        .fin-row { display: flex; justify-content: space-between; margin-bottom: 2px; color: var(--text-muted); }
+        .fin-row.total { 
+            margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); 
+            color: var(--success); font-weight: 800; font-size: 1rem;
+        }
+
+        .card-actions { 
+            padding: 10px; display: flex; gap: 10px; border-top: 1px solid var(--border); 
+        }
+        .btn-act { 
+            flex: 1; padding: 10px; border-radius: 6px; border: none; cursor: pointer; 
+            font-weight: 700; font-size: 0.8rem; transition: opacity 0.2s;
+        }
+        .btn-act:hover { opacity: 0.9; }
         .btn-green { background: var(--success); color: white; }
         .btn-yellow { background: var(--warning); color: black; }
         .btn-red { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+        .btn-blue { background: rgba(59, 130, 246, 0.2); color: var(--primary); border: 1px solid var(--primary); }
 
         /* --- TABLE GRID (Right Side) --- */
         .section-label { 
@@ -114,7 +147,6 @@
         }
         .tables-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; }
 
-        /* TABLE CARD STYLES */
         .table-card {
             background: var(--surface); border: 1px solid var(--border);
             border-radius: 12px; height: 130px;
@@ -129,33 +161,30 @@
         .t-timer { font-size: 1.4rem; font-weight: 700; font-family: 'JetBrains Mono'; text-align: center; margin: 5px 0; }
         .t-status { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; text-align: center; opacity: 0.8; }
 
-        /* FREE STATE */
+        /* TABLE STATES */
         .status-free { opacity: 1; border-color: #333; }
         .status-free .t-num { color: #666; }
         .status-free .t-timer, .status-free .t-bill { display: none; }
         .status-free .t-status { color: #555; }
 
-        /* OCCUPIED STATES */
         .status-fresh { border: 1px solid var(--success); background: rgba(16, 185, 129, 0.1); }
         .status-fresh .t-num, .status-fresh .t-timer, .status-fresh .t-bill, .status-fresh .t-status { color: var(--success); }
-
         .status-warning { border: 1px solid var(--warning); background: rgba(245, 158, 11, 0.1); }
         .status-warning .t-num, .status-warning .t-timer, .status-warning .t-bill, .status-warning .t-status { color: var(--warning); }
-
         .status-camper { border: 1px solid var(--danger); background: rgba(239, 68, 68, 0.15); animation: pulseRed 2s infinite; }
         .status-camper .t-num, .status-camper .t-timer, .status-camper .t-bill, .status-camper .t-status { color: var(--danger); }
         
         .is-bar { border-style: dashed; }
         @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
-        /* --- SETTLE MODAL --- */
+        /* --- MODALS (Common) --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); z-index: 5000; display: none;
             align-items: center; justify-content: center; backdrop-filter: blur(5px);
         }
         .modal-card {
-            background: var(--surface); width: 400px; max-width: 90%;
+            background: var(--surface); width: 450px; max-width: 90%;
             border-radius: 16px; border: 1px solid var(--border); 
             display: flex; flex-direction: column; overflow: hidden;
             box-shadow: 0 20px 50px rgba(0,0,0,0.5);
@@ -164,11 +193,16 @@
         .modal-body { padding: 20px; max-height: 60vh; overflow-y: auto; }
         .modal-footer { padding: 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
         
-        .bill-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; color: var(--text-muted); }
-        .bill-total-row { display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border); font-size: 1.2rem; font-weight: 800; color: var(--text-main); }
-        
         .btn-modal-cancel { flex: 1; padding: 15px; background: transparent; border: 1px solid var(--border); color: var(--text-muted); border-radius: 8px; cursor: pointer; font-weight: 700; }
-        .btn-modal-settle { flex: 1; padding: 15px; background: var(--success); border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: 700; }
+        .btn-modal-action { flex: 1; padding: 15px; border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: 700; }
+        
+        /* EDIT MODAL SPECIFIC */
+        .edit-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #333; }
+        .edit-inputs { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 5px; margin-top: 15px; }
+        .inp { background: var(--bg); border: 1px solid var(--border); color: white; padding: 8px; border-radius: 4px; width: 100%; }
+        .btn-icon { background: none; border: none; cursor: pointer; font-size: 1.2rem; }
+        .btn-trash { color: var(--danger); }
+        .btn-add { background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
         /* PIN LOCK */
         #pin-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 17, 21, 0.98); z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -217,21 +251,46 @@
         <div class="modal-card">
             <div class="modal-header">
                 <h3 style="margin:0;">Settle Table <span id="modal-table-id"></span></h3>
-                <div style="cursor:pointer;" onclick="closeModal()">&times;</div>
+                <div style="cursor:pointer;" onclick="closeModal('settle-modal')">&times;</div>
             </div>
             <div class="modal-body">
                 <div id="modal-items-list"></div>
-                <div class="bill-total-row">
-                    <span>TOTAL TO PAY</span>
-                    <span id="modal-total" style="color:var(--success)">₹0</span>
-                </div>
-                <div style="font-size:0.8rem; color:var(--text-muted); margin-top:10px; text-align:center;">
-                    ⚠️ Clicking 'Paid & Clear' will archive the order and free the table.
+                <div class="fin-box">
+                     <div class="fin-row"><span>Subtotal</span><span id="m-sub">₹0</span></div>
+                     <div class="fin-row"><span>Discount</span><span id="m-disc">₹0</span></div>
+                     <div class="fin-row"><span>Packing</span><span id="m-pack">₹0</span></div>
+                     <div class="fin-row total"><span>TOTAL PAYABLE</span><span id="m-total">₹0</span></div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn-modal-cancel" onclick="closeModal()">Cancel</button>
-                <button class="btn-modal-settle" onclick="settleAndClear()">PAID & CLEAR ✅</button>
+                <button class="btn-modal-cancel" onclick="openEditFromTable()">EDIT ORDER ✏️</button>
+                <button class="btn-modal-action" style="background:var(--success)" onclick="settleAndClear()">PAID & CLEAR ✅</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="edit-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 style="margin:0;">Edit Order</h3>
+                <div style="cursor:pointer;" onclick="closeModal('edit-modal')">&times;</div>
+            </div>
+            <div class="modal-body">
+                <div id="edit-list-container">
+                    </div>
+
+                <div style="margin-top:20px; padding-top:10px; border-top:1px solid #333;">
+                    <label style="font-size:0.8rem; color:var(--text-muted);">ADD ITEM</label>
+                    <div class="edit-inputs">
+                        <input type="text" id="new-item-name" class="inp" placeholder="Item Name">
+                        <input type="number" id="new-item-price" class="inp" placeholder="₹">
+                        <input type="number" id="new-item-qty" class="inp" value="1" placeholder="Qty">
+                        <button class="btn-add" onclick="addNewItemToOrder()">+</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal-cancel" onclick="closeModal('edit-modal')">Done</button>
             </div>
         </div>
     </div>
@@ -252,6 +311,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // --- AUTH ---
         window.checkPin = () => {
             if(document.getElementById('pin-input').value === '2024') {
                 document.getElementById('pin-overlay').style.display = 'none';
@@ -259,9 +319,11 @@
             } else alert("Wrong PIN");
         }
 
+        // --- STATE ---
         let onlineOrders = [];
         let tableData = {}; 
         let currentSettleTable = null;
+        let currentEditKey = null; // Key of the order being edited
 
         function initData() {
             onValue(ref(db, 'orders'), (snapshot) => {
@@ -276,37 +338,51 @@
                     const type = order.orderType || 'Dine-In';
                     const customerName = (order.customer && order.customer.name) ? order.customer.name : "Unknown";
 
-                    // 1. ADD EVERYTHING TO LEFT LIST (KITCHEN QUEUE)
-                    // This ensures the manager sees the order to Approve it.
+                    // 1. LEFT LIST: KITCHEN QUEUE
+                    // Push EVERYTHING so manager sees it.
                     onlineOrders.push({ key, ...order });
 
-                    // 2. ADD TO MAP (RIGHT SIDE) - ONLY IF NOT PENDING
-                    // Dine-In orders only occupy the table AFTER approval.
+                    // 2. RIGHT MAP: DINE-IN TABLES
+                    // Only active if approved (not pending)
                     if (type !== 'Delivery' && type !== 'Pickup') {
                         const match = customerName.match(/Table (\w+)/i);
-                        if (match && order.status !== 'pending') { // <--- CRITICAL CHECK
+                        if (match && order.status !== 'pending') {
                             const tId = match[1];
                             const amt = order.financials ? order.financials.grandTotal : 0;
                             
                             if (!tableData[tId]) {
-                                tableData[tId] = { total: 0, timestamp: order.timestamp, keys: [], items: [] };
+                                tableData[tId] = { 
+                                    total: 0, 
+                                    timestamp: order.timestamp, 
+                                    keys: [], 
+                                    items: [],
+                                    fins: { sub:0, disc:0, pack:0 } // Aggregate financials
+                                };
                             }
-                            tableData[tId].total += amt;
+                            
+                            // Aggregate Financials
+                            const f = order.financials || {};
+                            tableData[tId].total += (f.grandTotal || 0);
+                            tableData[tId].fins.sub += (f.subTotal || 0);
+                            tableData[tId].fins.disc += (f.discountAmount || 0);
+                            tableData[tId].fins.pack += (f.packingCharge || 0);
+
                             if (order.timestamp < tableData[tId].timestamp) tableData[tId].timestamp = order.timestamp;
+                            
+                            // Important: Track KEYS for editing
                             tableData[tId].keys.push(key);
                             if(order.items) tableData[tId].items.push(...order.items);
                         }
                     }
                 });
 
-                // Sort Online Orders by Time (Oldest first)
                 onlineOrders.sort((a,b) => a.timestamp - b.timestamp);
-
                 renderOnlineList();
                 renderTableGrid();
             });
         }
 
+        // --- RENDER LEFT LIST (SMART CARDS) ---
         function renderOnlineList() {
             const container = document.getElementById('online-list');
             document.getElementById('online-count').innerText = onlineOrders.length;
@@ -314,40 +390,85 @@
 
             onlineOrders.forEach(order => {
                 const time = new Date(order.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-                let itemsHtml = (order.items || []).map(i => `<div>${i.qty}x ${i.name}</div>`).join('');
-                const cName = (order.customer && order.customer.name) ? order.customer.name : "Guest";
+                const type = order.orderType || 'Dine-In';
+                
+                // --- 1. CUSTOMER INFO LOGIC ---
+                let infoHtml = '';
+                const c = order.customer || {};
+                
+                if (type === 'Delivery' || type === 'Pickup') {
+                    // Show: Name, Phone, Location
+                    infoHtml = `
+                        <div class="info-grid">
+                            <span class="info-label">Customer</span> <span class="info-val">${c.name || 'Guest'}</span>
+                            <span class="info-label">Phone</span>    <span class="info-val">${c.phone || '--'}</span>
+                            <span class="info-label">Loc</span>      <span class="info-val">${c.address || '--'}</span>
+                        </div>
+                    `;
+                } else {
+                    // DINE-IN: Show Table, Name
+                    infoHtml = `
+                        <div class="info-grid">
+                            <span class="info-label">Table</span>    <span class="info-val" style="color:var(--primary)">${c.name || 'Table ?'}</span>
+                        </div>
+                    `;
+                }
 
+                // --- 2. ITEMS LOGIC (With Prices) ---
+                let itemsHtml = (order.items || []).map(i => `
+                    <div class="item-row">
+                        <span><span class="item-qty">${i.qty}x</span> ${i.name}</span>
+                        <span class="item-price">₹${i.price * i.qty}</span>
+                    </div>
+                `).join('');
+
+                // --- 3. FINANCIALS LOGIC ---
+                const f = order.financials || { subTotal:0, discountAmount:0, packingCharge:0, grandTotal:0 };
+                const discountText = f.discountCode ? `Discount (${f.discountCode})` : 'Discount';
+                
+                let finHtml = `
+                    <div class="fin-box">
+                        <div class="fin-row"><span>Subtotal</span> <span>₹${f.subTotal || 0}</span></div>
+                        ${f.discountAmount ? `<div class="fin-row" style="color:var(--warning)"><span>${discountText}</span> <span>-₹${f.discountAmount}</span></div>` : ''}
+                        ${f.packingCharge ? `<div class="fin-row"><span>Packing</span> <span>₹${f.packingCharge}</span></div>` : ''}
+                        <div class="fin-row total"><span>TOTAL</span> <span>₹${f.grandTotal || 0}</span></div>
+                    </div>
+                `;
+
+                // --- 4. ACTIONS ---
                 let btnHtml = '';
-                // BUTTON LOGIC
                 if(order.status === 'pending') {
                     btnHtml = `<button class="btn-act btn-red" onclick="rejectOrder('${order.key}')">Reject</button>
                                <button class="btn-act btn-green" onclick="updateStatus('${order.key}', 'cooking')">Accept</button>`;
                 } else if (order.status === 'cooking') {
-                     // If it's delivery, "Out for Delivery". If Dine-In, maybe "Served"? 
-                     // Using "Mark Ready" as generic next step.
                      btnHtml = `<button class="btn-act btn-yellow" onclick="updateStatus('${order.key}', 'out_for_delivery')">Mark Ready</button>`;
                 } else {
                      btnHtml = `<button class="btn-act btn-green" onclick="completeOrder('${order.key}')">Complete</button>`;
                 }
 
+                // Inject Card
                 const div = document.createElement('div');
                 div.className = `order-card status-${order.status}`;
                 div.innerHTML = `
                     <div class="card-top">
                         <span class="card-id">#${order.orderId}</span>
-                        <span class="card-type">${order.orderType || 'Table'}</span>
+                        <span class="card-type">${type}</span>
                     </div>
                     <div class="card-body">
-                        <div class="cust-row">${cName}</div>
-                        <div class="item-list-text">${itemsHtml}</div>
-                        <div style="margin-top:5px; font-size:0.8rem; color:#888;">⏰ ${time}</div>
+                        ${infoHtml}
+                        <div class="items-list">${itemsHtml}</div>
+                        ${finHtml}
                     </div>
-                    <div class="card-actions">${btnHtml}</div>
+                    <div class="card-actions">
+                        <button class="btn-act btn-blue" style="flex:0.3" onclick="openEditModal('${order.key}')">EDIT</button>
+                        ${btnHtml}
+                    </div>
                 `;
                 container.appendChild(div);
             });
         }
 
+        // --- RENDER RIGHT MAP ---
         function renderTableGrid() {
             const gridMain = document.getElementById('grid-main');
             const gridAC = document.getElementById('grid-ac');
@@ -367,9 +488,7 @@
             const div = document.createElement('div');
             
             let statusClass = 'status-free';
-            let timeText = '';
-            let totalText = '';
-            let statusLabel = 'FREE';
+            let timeText = ''; let totalText = ''; let statusLabel = 'FREE';
 
             if (data) {
                 const diff = Date.now() - data.timestamp;
@@ -386,9 +505,7 @@
             }
 
             div.className = `table-card ${statusClass} ${isBar?'is-bar':''}`;
-            if(data) {
-                div.onclick = () => openSettleModal(id);
-            }
+            if(data) div.onclick = () => openSettleModal(id);
 
             div.innerHTML = `
                 <div class="t-header">
@@ -408,37 +525,143 @@
             currentSettleTable = tableId;
             document.getElementById('settle-modal').style.display = 'flex';
             document.getElementById('modal-table-id').innerText = tableId;
-            document.getElementById('modal-total').innerText = `₹${data.total}`;
+            
+            // Render Items
             const list = document.getElementById('modal-items-list');
-            list.innerHTML = "";
-            data.items.forEach(item => {
-                list.innerHTML += `<div class="bill-row"><span>${item.qty}x ${item.name}</span><span>${item.price * item.qty}</span></div>`;
+            list.innerHTML = data.items.map(i => 
+                `<div style="display:flex; justify-content:space-between; margin-bottom:5px; color:#aaa;">
+                    <span>${i.qty}x ${i.name}</span> <span>₹${i.price * i.qty}</span>
+                </div>`
+            ).join('');
+
+            // Render Financials
+            document.getElementById('m-sub').innerText = `₹${data.fins.sub}`;
+            document.getElementById('m-disc').innerText = `-₹${data.fins.disc}`;
+            document.getElementById('m-pack').innerText = `₹${data.fins.pack}`;
+            document.getElementById('m-total').innerText = `₹${data.total}`;
+        }
+
+        window.openEditFromTable = () => {
+            if(!currentSettleTable || !tableData[currentSettleTable]) return;
+            // Get the LAST active order key for this table to edit
+            const keys = tableData[currentSettleTable].keys;
+            if(keys.length > 0) {
+                // Edit the most recent order
+                const lastKey = keys[keys.length - 1];
+                closeModal('settle-modal');
+                openEditModal(lastKey);
+            }
+        }
+
+        // --- EDITING LOGIC ---
+        window.openEditModal = async (key) => {
+            currentEditKey = key;
+            document.getElementById('edit-modal').style.display = 'flex';
+            const snap = await get(ref(db, 'orders/' + key));
+            if(snap.exists()) {
+                const order = snap.val();
+                renderEditList(order.items || []);
+            }
+        }
+
+        function renderEditList(items) {
+            const container = document.getElementById('edit-list-container');
+            container.innerHTML = "";
+            items.forEach((item, index) => {
+                container.innerHTML += `
+                    <div class="edit-row">
+                        <button class="btn-icon btn-trash" onclick="deleteItem(${index})">🗑</button>
+                        <div style="flex:1">
+                            <div style="font-weight:bold">${item.name}</div>
+                            <div style="font-size:0.8rem; color:#888;">₹${item.price} x ${item.qty}</div>
+                        </div>
+                        <div style="font-family:'JetBrains Mono'">₹${item.price * item.qty}</div>
+                    </div>
+                `;
             });
         }
 
-        window.closeModal = () => {
-            document.getElementById('settle-modal').style.display = 'none';
-            currentSettleTable = null;
+        // --- EDIT ACTIONS ---
+        window.deleteItem = async (index) => {
+            if(!currentEditKey) return;
+            const orderRef = ref(db, 'orders/' + currentEditKey);
+            const snap = await get(orderRef);
+            if(!snap.exists()) return;
+
+            let order = snap.val();
+            let items = order.items || [];
+            
+            // Remove item
+            items.splice(index, 1);
+            
+            // Recalculate
+            updateOrderFinancials(order, items);
+            
+            // Save & Re-render
+            await update(orderRef, order);
+            renderEditList(items);
         }
 
-        window.settleAndClear = async () => {
-            if(!currentSettleTable || !tableData[currentSettleTable]) return;
-            const tId = currentSettleTable;
-            const keys = tableData[tId].keys;
-            for (const key of keys) {
-                const orderRef = ref(db, 'orders/' + key);
-                const snap = await get(orderRef);
-                if (snap.exists()) {
-                    const data = snap.val();
-                    data.status = 'completed';
-                    data.completedAt = Date.now();
-                    await set(ref(db, 'history/' + key), data);
-                    await remove(orderRef);
-                }
-            }
-            closeModal();
+        window.addNewItemToOrder = async () => {
+            if(!currentEditKey) return;
+            const name = document.getElementById('new-item-name').value;
+            const price = parseFloat(document.getElementById('new-item-price').value);
+            const qty = parseInt(document.getElementById('new-item-qty').value);
+
+            if(!name || !price || !qty) return alert("Fill all fields");
+
+            const orderRef = ref(db, 'orders/' + currentEditKey);
+            const snap = await get(orderRef);
+            if(!snap.exists()) return;
+
+            let order = snap.val();
+            let items = order.items || [];
+            
+            // Add Item
+            items.push({ name, price, qty });
+            
+            // Recalculate
+            updateOrderFinancials(order, items);
+
+            // Save & Re-render
+            await update(orderRef, order);
+            renderEditList(items);
+            
+            // Clear inputs
+            document.getElementById('new-item-name').value = "";
+            document.getElementById('new-item-price').value = "";
+            document.getElementById('new-item-qty').value = "1";
         }
 
+        function updateOrderFinancials(order, items) {
+            order.items = items;
+            
+            // Recalc Subtotal
+            let sub = 0;
+            items.forEach(i => sub += (i.price * i.qty));
+            
+            // Keep existing Discount/Packing
+            let disc = order.financials ? order.financials.discountAmount : 0;
+            let pack = order.financials ? order.financials.packingCharge : 0;
+            let code = order.financials ? order.financials.discountCode : null;
+
+            // Recalc Grand Total
+            order.financials = {
+                subTotal: sub,
+                discountAmount: disc,
+                discountCode: code,
+                packingCharge: pack,
+                grandTotal: (sub + pack) - disc
+            };
+        }
+
+        // --- CLOSE ---
+        window.closeModal = (id) => {
+            document.getElementById(id).style.display = 'none';
+            if(id === 'edit-modal') currentEditKey = null;
+        }
+
+        // --- STANDARD ACTIONS ---
         window.updateStatus = (key, status) => update(ref(db, 'orders/'+key), {status});
         window.rejectOrder = (key) => remove(ref(db, 'orders/'+key)); 
         window.completeOrder = async (key) => {
@@ -450,6 +673,14 @@
                 await remove(r);
             }
         };
+        window.settleAndClear = async () => {
+            if(!currentSettleTable || !tableData[currentSettleTable]) return;
+            const keys = tableData[currentSettleTable].keys;
+            for (const key of keys) {
+                await completeOrder(key);
+            }
+            closeModal('settle-modal');
+        }
 
         setInterval(() => { renderTableGrid(); document.getElementById('clock').innerText = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }, 60000);
         document.getElementById('clock').innerText = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
