@@ -275,6 +275,47 @@
             renderMenu('All');
         });
 
+        // --- NEW: AUTO-FILL NAME LISTENER ---
+        // This checks if there is already an active session for this table
+        onValue(ref(db, 'orders'), (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+            
+            // 1. Find the most recent ACTIVE order for this table
+            const activeOrders = Object.values(data).filter(o => {
+                const nameStr = (o.customer && o.customer.name) ? o.customer.name : "";
+                
+                // Must match "Table X ..."
+                const matchesTable = nameStr.startsWith(`Table ${TABLE_ID}`);
+                
+                // Must be active (not completed/rejected/paid)
+                // We include 'pending' so name persists immediately after 1st order
+                const isActive = !['completed', 'paid', 'rejected'].includes(o.status);
+                
+                return matchesTable && isActive;
+            });
+
+            if (activeOrders.length > 0) {
+                // Sort by timestamp desc (newest first)
+                activeOrders.sort((a, b) => b.timestamp - a.timestamp);
+                const latest = activeOrders[0];
+                
+                // Extract Name: "Table 5 (John)" -> "John"
+                // Regex looks for content inside parentheses
+                const match = latest.customer.name.match(/\(([^)]+)\)/);
+                if (match && match[1]) {
+                    const existingName = match[1];
+                    const nameInput = document.getElementById('cust-name');
+                    
+                    // Only auto-fill if input is empty (don't overwrite user typing)
+                    // And ignore 'Guest' if that was somehow saved
+                    if (nameInput.value.trim() === '' && existingName !== 'Guest') {
+                        nameInput.value = existingName;
+                    }
+                }
+            }
+        });
+
         window.filterCat = (cat, btn) => {
             document.querySelectorAll('.toggle-chip').forEach(c => c.classList.remove('active'));
             btn.classList.add('active');
