@@ -317,9 +317,19 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // --- SOUND CONFIG ---
+        const bell = new Audio('bell.mp3');
+        bell.loop = true;
+
         // --- AUTH ---
         window.checkPin = () => {
             if(document.getElementById('pin-input').value === '2024') {
+                // Initialize Audio Context on user interaction
+                bell.play().then(() => {
+                    bell.pause();
+                    bell.currentTime = 0;
+                }).catch(e => console.log("Audio blocked", e));
+
                 document.getElementById('pin-overlay').style.display = 'none';
                 initData();
                 loadMenuForEdit(); 
@@ -366,9 +376,16 @@
                 onlineOrders = [];
                 tableData = {};
 
+                let hasPendingOrders = false;
+
                 Object.entries(data).forEach(([key, order]) => {
                     if (!order || !order.status) return;
                     if (order.status === 'completed' || order.status === 'rejected') return;
+
+                    // CHECK FOR PENDING STATUS FOR SOUND
+                    if(order.status === 'pending') {
+                        hasPendingOrders = true;
+                    }
 
                     const type = order.orderType || 'Dine-In';
                     const customerName = (order.customer && order.customer.name) ? order.customer.name : "Unknown";
@@ -394,8 +411,8 @@
                             const f = order.financials || {};
                             tableData[tId].total += (f.grandTotal || 0);
                             tableData[tId].fins.sub += (f.subTotal || 0);
-                            tableData[tId].fins.disc += (f.discountVal || 0); // Corrected
-                            tableData[tId].fins.pack += (f.packingTotal || 0); // Corrected
+                            tableData[tId].fins.disc += (f.discountVal || 0); 
+                            tableData[tId].fins.pack += (f.packingTotal || 0); 
 
                             if (order.timestamp < tableData[tId].timestamp) tableData[tId].timestamp = order.timestamp;
                             
@@ -404,6 +421,14 @@
                         }
                     }
                 });
+
+                // --- SOUND CONTROL ---
+                if(hasPendingOrders) {
+                    if(bell.paused) bell.play().catch(e => console.log(e));
+                } else {
+                    bell.pause();
+                    bell.currentTime = 0;
+                }
 
                 onlineOrders.sort((a,b) => a.timestamp - b.timestamp);
                 renderOnlineList();
@@ -448,8 +473,8 @@
 
                 // --- FIXED FINANCIALS ---
                 const f = order.financials || {};
-                const discount = f.discountVal || 0; // Corrected Variable
-                const packing = f.packingTotal || 0; // Corrected Variable
+                const discount = f.discountVal || 0; 
+                const packing = f.packingTotal || 0; 
                 const subTotal = f.subTotal || 0;
                 const grandTotal = f.grandTotal || 0;
                 
@@ -472,23 +497,18 @@
                     btnHtml = `<button class="btn-act btn-red" onclick="rejectOrder('${order.key}')">Reject</button>
                                <button class="btn-act btn-green" onclick="updateStatus('${order.key}', 'cooking')">Accept</button>`;
                 } else if (order.status === 'cooking') {
-                    // COOKING -> MARK READY (DONE)
                      btnHtml = `<button class="btn-act btn-yellow" onclick="updateStatus('${order.key}', 'done')">Mark Ready</button>`;
                 } else if (order.status === 'done') {
-                    // --- FIXED LOGIC FOR DINE-IN vs DELIVERY ---
                     if (type === 'Delivery') {
-                         // Delivery must wait for driver
                          btnHtml = `<button class="btn-act btn-grey" disabled>Waiting for Partner...</button>`;
                          showEdit = false;
                     } else {
-                         // Dine-In/Pickup is ready to be served/cleared
                          btnHtml = `<button class="btn-act btn-green" onclick="completeOrder('${order.key}')">Mark Served / Clear</button>`;
                          showEdit = true;
                     }
                 } else if (order.status === 'out_for_delivery') {
-                    // OUT -> VIOLET BUTTON (Force Complete option)
                      btnHtml = `<button class="btn-act btn-purple" onclick="forceComplete('${order.key}')">Out For Delivery</button>`;
-                     showEdit = false; // HIDE EDIT
+                     showEdit = false; 
                 } else {
                      btnHtml = `<button class="btn-act btn-green" onclick="completeOrder('${order.key}')">Complete</button>`;
                 }
@@ -643,7 +663,6 @@
             renderEditList(items);
         }
 
-        // --- FIXED ADD NEW ITEM FUNCTION ---
         window.addNewItemToOrder = async () => {
             if(!currentEditKey) {
                 alert("Error: No order selected.");
