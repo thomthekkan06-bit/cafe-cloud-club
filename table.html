@@ -3,122 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order at Table | Cafe Cloud Club</title>
+    <title>Table Ordering | Cafe Cloud Club</title>
     
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css"> 
+    
     <style>
-        /* Table Page Specific Overrides */
-        .left-sidebar, .header-bar, .mobile-info-card { display: none !important; } /* Hide Sidebar/Header */
-        .dashboard { display: block; padding: 0; }
+        /* Specific overrides for Table Mode */
+        body { background: #f8f9fa; }
+        .dashboard { display: block; height: auto; overflow: visible; }
+        .left-sidebar, .header-bar, .mobile-info-card, .promo-section, .news-ticker-area { display: none !important; }
         
-        .table-header {
-            background: #121212; color: white; padding: 20px;
-            position: sticky; top: 0; z-index: 999;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            display: flex; align-items: center; justify-content: space-between;
+        .table-navbar {
+            background: #1e293b; color: white; padding: 15px 20px;
+            position: sticky; top: 0; z-index: 1000;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
-        .table-title { font-size: 1.2rem; font-weight: 800; }
-        .table-subtitle { font-size: 0.8rem; color: #aaa; }
+        .table-info h1 { margin: 0; font-size: 1.2rem; font-weight: 700; color: #3b82f6; }
+        .table-info span { font-size: 0.8rem; opacity: 0.8; }
         
-        .main-content { padding: 20px; padding-top: 10px; }
+        .main-content { padding: 20px; margin: 0 auto; max-width: 800px; padding-bottom: 80px; }
+        .menu-grid { margin-top: 20px; }
         
-        /* Floating Cart Button adjustments */
-        .mobile-cart-btn { bottom: 20px; right: 20px; }
-        
-        /* Clean up checkout modal for Table ordering */
-        #address-group, #time-label, #c-time, .radio-group { display: none !important; }
+        /* Floating Cart Button */
+        .mobile-cart-btn { display: flex !important; bottom: 20px; right: 20px; align-items: center; gap: 10px; }
+
+        /* Simplified Checkout Modal */
+        #simple-checkout-modal { display: none; }
+        .modal-card { max-width: 350px; margin: 0 auto; }
     </style>
 </head>
 <body>
 
-    <div class="table-header">
-        <div>
-            <div class="table-title" id="header-table-num">Table --</div>
-            <div class="table-subtitle">Dine-In Menu</div>
+    <div class="table-navbar">
+        <div class="table-info">
+            <h1 id="header-table-num">Table --</h1>
+            <span>Dine-In Menu</span>
         </div>
-        <a href="index.html" style="color:#3b82f6; text-decoration:none; font-size:0.8rem;">Home</a>
+        <a href="index.html" style="color:white; opacity:0.6; text-decoration:none; font-size:0.9rem;">
+            <i class="fas fa-home"></i>
+        </a>
     </div>
 
-    <div class="dashboard" id="main-dashboard">
-        
+    <div class="dashboard">
         <div class="main-content">
-            <div class="advanced-filters" style="margin-top:10px;">
-                <div class="toggle-chip active" onclick="setCategoryFilter('All', this)">All</div>
-                <div class="toggle-chip" onclick="setCategoryFilter('Bun-Tastic Burgers', this)">Burgers</div>
-                <div class="toggle-chip" onclick="setCategoryFilter('Italian Indulgence', this)">Pasta</div>
-                <div class="toggle-chip" onclick="setCategoryFilter('Whipped Wonders', this)">Shakes</div>
-                <div class="toggle-chip" onclick="setCategoryFilter('Mojito Magic', this)">Mojitos</div>
-            </div>
-
-            <div class="menu-grid" id="menu-root" style="margin-top:20px;">
-                </div>
-        </div>
-
-        <div class="order-sidebar" id="cart-sidebar" style="z-index:10000;">
-            <div class="cart-header-mobile" style="display:flex;">
-                <button class="back-btn" onclick="toggleCartPage()"><i class="fas fa-arrow-down"></i> Close Cart</button>
-            </div>
-            <h2 style="margin:10px 0;">Your Order</h2>
-            <div class="cart-items-container" id="cart-items-list"></div>
             
-            <div class="cart-summary">
-                <div class="summary-row summary-total">
-                    <span>Total</span>
-                    <span id="grand-total">0</span>
-                </div>
-                <button class="checkout-btn" id="main-checkout-btn" onclick="openTableCheckout()">Place Order</button>
+            <div class="advanced-filters" style="justify-content: center;">
+                <div class="toggle-chip active" onclick="filterCat('All', this)">All</div>
+                <div class="toggle-chip" onclick="filterCat('Bun-Tastic Burgers', this)">Burgers</div>
+                <div class="toggle-chip" onclick="filterCat('Italian Indulgence', this)">Pasta</div>
+                <div class="toggle-chip" onclick="filterCat('Mojito Magic', this)">Drinks</div>
+                <div class="toggle-chip" onclick="filterCat('Whipped Wonders', this)">Shakes</div>
             </div>
+
+            <div class="menu-grid" id="menu-root">
+                <div style="text-align:center; width:100%; padding:40px;">Loading Menu...</div>
+            </div>
+
         </div>
     </div>
 
-    <button class="mobile-cart-btn" onclick="toggleCartPage()">
-        <i class="fas fa-utensils"></i> View Order <span id="mobile-count">(0)</span>
+    <button class="mobile-cart-btn" onclick="toggleCart()">
+        <i class="fas fa-utensils"></i> View Order <span id="cart-count">(0)</span>
     </button>
+
+    <div class="order-sidebar" id="cart-sidebar" style="position:fixed; z-index:2000;">
+        <div class="cart-header-mobile" style="display:flex;">
+            <button class="back-btn" onclick="toggleCart()"><i class="fas fa-chevron-down"></i> Close</button>
+        </div>
+        <h3>Your Order</h3>
+        <div class="cart-items-container" id="cart-list"></div>
+        <div class="cart-summary">
+            <div class="summary-row summary-total">
+                <span>Total</span>
+                <span id="cart-total">₹0</span>
+            </div>
+            <button class="checkout-btn" id="btn-checkout" onclick="openCheckout()" disabled>Place Order</button>
+        </div>
+    </div>
 
     <div class="modal-overlay" id="checkout-modal">
         <div class="modal-card">
-            <h3 style="margin-top:0;">Confirm Table Order</h3>
-            <p id="modal-table-display" style="color:var(--primary); font-weight:bold; margin-bottom:20px;"></p>
+            <h3 style="margin-top:0; color:#3b82f6;">Confirm Order</h3>
+            <p id="modal-table-txt" style="font-weight:bold; margin-bottom:20px;"></p>
             
             <div class="input-group">
-                <label>Customer Name (Optional)</label>
-                <input type="text" class="input-field" id="c-name" placeholder="Guest">
+                <label>Guest Name (Optional)</label>
+                <input type="text" class="input-field" id="cust-name" placeholder="Enter Name">
             </div>
 
-            <button class="checkout-btn" onclick="finalizeTableOrder()">SEND TO KITCHEN 👨‍🍳</button>
-            <button style="background:none; border:none; width:100%; padding:10px; margin-top:5px; color:#777;" onclick="document.getElementById('checkout-modal').style.display='none'">Cancel</button>
+            <button class="checkout-btn" onclick="placeOrder()">SEND TO KITCHEN 👨‍🍳</button>
+            <button style="width:100%; background:none; border:none; padding:15px; color:#777; cursor:pointer;" onclick="closeCheckout()">Cancel</button>
         </div>
     </div>
 
     <div class="success-screen" id="success-view">
         <div class="success-icon-container"><div class="checkmark-draw"></div></div>
         <h1 class="success-title">Order Sent!</h1>
-        <p class="success-subtitle">Sit back and relax. Your food is being prepared.</p>
-        <button class="checkout-btn" onclick="window.location.reload()" style="width:auto; padding:10px 30px;">Order More</button>
-    </div>
-
-    <div class="modal-overlay" id="customization-modal" style="display: none;">
-        <div class="modal-card">
-            <div class="modal-header-row">
-                 <h3 id="modal-item-title" style="margin:0; color:var(--primary);">Item</h3>
-                 <button onclick="closeCustomizationModal()" style="background:none; border:none; font-size:1.5rem;">&times;</button>
-            </div>
-            <div id="modal-options-wrapper" class="modal-scroll-area"></div>
-            <div class="modal-footer-action">
-                <div style="font-weight:700;">Total: <span id="modal-live-total">0</span></div>
-                <button class="checkout-btn" onclick="addToCartFromModal()" style="width: auto;">Add</button>
-            </div>
-        </div>
+        <p class="success-subtitle">Sit back and relax. Your food will be served shortly.</p>
+        <button class="checkout-btn" onclick="window.location.reload()" style="width:auto; padding:12px 30px;">Order More</button>
     </div>
 
     <script type="module">
-        // Import necessary Firebase functions
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, push, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
             authDomain: "cafe-orders-1afa1.firebaseapp.com",
@@ -127,100 +118,93 @@
             messagingSenderId: "274410745480",
             appId: "1:274410745480:web:9964c3914d512aed8d793d"
         };
+
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- 1. GET TABLE NUMBER ---
-        const urlParams = new URLSearchParams(window.location.search);
-        const TABLE_NUM = urlParams.get('table') || "??";
-        document.getElementById('header-table-num').innerText = `Table ${TABLE_NUM}`;
-        document.getElementById('modal-table-display').innerText = `Ordering for Table ${TABLE_NUM}`;
+        // 1. GET TABLE ID
+        const params = new URLSearchParams(window.location.search);
+        const TABLE_ID = params.get('table') || "??";
+        document.getElementById('header-table-num').innerText = `Table ${TABLE_ID}`;
+        document.getElementById('modal-table-txt').innerText = `Ordering for Table ${TABLE_ID}`;
 
-        // --- 2. MENU LOGIC (Minified version of app.js) ---
+        // 2. LOAD MENU
         let menuData = [];
         let cart = {};
-        const rupeeSign = "₹";
 
-        // Load Menu
-        onValue(ref(db, 'menu'), (snapshot) => {
-            const data = snapshot.val();
+        onValue(ref(db, 'menu'), (snap) => {
+            const data = snap.val();
             menuData = [];
             if(data) {
                 Object.keys(data).forEach(key => {
                     const item = data[key];
-                    if(item.inStock !== false && item.stockStatus !== 'MANUAL_OFF') menuData.push(item);
+                    if(item.stockStatus !== 'MANUAL_OFF' && item.inStock !== false) {
+                        menuData.push(item);
+                    }
                 });
             }
             renderMenu('All');
         });
 
-        window.setCategoryFilter = (cat, btn) => {
-            document.querySelectorAll('.toggle-chip').forEach(b => b.classList.remove('active'));
+        window.filterCat = (cat, btn) => {
+            document.querySelectorAll('.toggle-chip').forEach(c => c.classList.remove('active'));
             btn.classList.add('active');
             renderMenu(cat);
         }
 
         function renderMenu(cat) {
             const root = document.getElementById('menu-root');
-            root.innerHTML = '';
+            root.innerHTML = "";
             const filtered = menuData.filter(i => cat === 'All' || i.category === cat);
             
-            filtered.forEach((item, index) => {
-                // Find original index for modal logic
-                const originalIndex = menuData.indexOf(item);
-                const div = document.createElement('div');
-                div.className = `food-card ${item.type}`;
-                div.innerHTML = `
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = `food-card ${item.type}`; // Uses existing CSS class
+                card.innerHTML = `
                     <div class="card-top">
                         <div class="food-title">${item.name}</div>
                         <div class="food-meta">${item.category}</div>
                     </div>
                     <div class="price-row">
                         <div class="price">₹${item.price}</div>
-                        <button class="add-btn-mini" onclick="openOptionModal(${originalIndex})">ADD +</button>
+                        <button class="add-btn-mini" onclick="addToCart('${item.name}', ${item.price}, '${item.type}')">ADD +</button>
                     </div>
                 `;
-                root.appendChild(div);
+                root.appendChild(card);
             });
         }
 
-        // --- 3. CART LOGIC ---
-        window.openOptionModal = (index) => {
-            // Simplified: just add directly for now to save complexity in this specific file
-            // You can copy the full modal logic from app.js if needed
-            const item = menuData[index];
-            addToCart(item.name, item.price);
-        }
-
-        function addToCart(name, price) {
+        // 3. CART LOGIC
+        window.addToCart = (name, price, type) => {
             if(cart[name]) cart[name].qty++;
-            else cart[name] = { price: price, qty: 1 };
+            else cart[name] = { price, qty: 1, type };
             renderCart();
             
             // Animation
             const btn = document.querySelector('.mobile-cart-btn');
             btn.style.transform = "scale(1.1)";
-            setTimeout(() => btn.style.transform = "scale(1)", 200);
+            setTimeout(()=> btn.style.transform = "scale(1)", 200);
         }
 
-        window.updateQty = (name, delta) => {
+        window.updateQty = (name, change) => {
             if(cart[name]) {
-                cart[name].qty += delta;
+                cart[name].qty += change;
                 if(cart[name].qty <= 0) delete cart[name];
                 renderCart();
             }
         }
 
         function renderCart() {
-            const list = document.getElementById('cart-items-list');
-            list.innerHTML = '';
-            let total = 0;
+            const list = document.getElementById('cart-list');
+            list.innerHTML = "";
+            let total = 0; 
             let count = 0;
-            
+
             for(let key in cart) {
                 const item = cart[key];
                 total += item.price * item.qty;
                 count += item.qty;
+                
                 list.innerHTML += `
                     <div class="cart-item">
                         <div class="cart-details">
@@ -235,73 +219,58 @@
                     </div>
                 `;
             }
-            
-            document.getElementById('grand-total').innerText = "₹" + total;
-            document.getElementById('mobile-count').innerText = `(${count})`;
-            
-            const btn = document.getElementById('main-checkout-btn');
-            btn.disabled = count === 0;
-            btn.innerText = count === 0 ? "Cart Empty" : "Checkout";
+
+            document.getElementById('cart-total').innerText = "₹" + total;
+            document.getElementById('cart-count').innerText = `(${count})`;
+            document.getElementById('btn-checkout').disabled = (count === 0);
         }
 
-        window.toggleCartPage = () => {
-            const el = document.getElementById('cart-sidebar');
-            el.classList.toggle('active');
+        // 4. CHECKOUT
+        window.toggleCart = () => {
+            const sb = document.getElementById('cart-sidebar');
+            sb.classList.toggle('active'); // Uses existing CSS class to slide in
         }
 
-        // --- 4. CHECKOUT LOGIC ---
-        window.openTableCheckout = () => {
-            document.getElementById('checkout-modal').style.display = 'flex';
-        }
+        window.openCheckout = () => document.getElementById('checkout-modal').style.display = 'flex';
+        window.closeCheckout = () => document.getElementById('checkout-modal').style.display = 'none';
 
-        window.finalizeTableOrder = () => {
-            const nameInput = document.getElementById('c-name').value.trim() || "Guest";
-            // TRICK: Prefix table number to name so it shows on Kitchen Display automatically
-            const finalName = `Table ${TABLE_NUM} (${nameInput})`; 
-            
-            const orderId = Math.floor(100000 + Math.random() * 900000);
+        window.placeOrder = () => {
+            const nameInput = document.getElementById('cust-name').value.trim() || "Guest";
+            const finalName = `Table ${TABLE_ID} (${nameInput})`; // KDS Name Format
             
             let total = 0;
-            let itemsList = [];
+            const items = [];
             for(let key in cart) {
                 total += cart[key].price * cart[key].qty;
-                itemsList.push({
-                    name: key,
-                    qty: cart[key].qty,
-                    price: cart[key].price,
-                    type: 'veg' // Simplified
-                });
+                items.push({ name: key, qty: cart[key].qty, price: cart[key].price });
             }
 
-            const orderData = {
-                orderId: orderId,
-                orderType: 'Dine-In', // Marks it as dine-in
+            const order = {
+                orderId: Math.floor(100000 + Math.random() * 900000),
+                orderType: 'Dine-In',
                 timestamp: Date.now(),
                 status: 'pending',
                 customer: {
-                    name: finalName, // "Table 5 (Guest)"
-                    phone: "0000000000",
-                    address: "Dine-In"
+                    name: finalName,
+                    phone: '0000000000',
+                    address: 'Dine-In'
                 },
-                items: itemsList,
+                items: items,
                 financials: {
-                    grandTotal: total,
-                    subTotal: total
+                    subTotal: total,
+                    grandTotal: total
                 },
-                globalNote: `Table ${TABLE_NUM}`
+                globalNote: `Table ${TABLE_ID}`
             };
 
-            push(ref(db, 'orders'), orderData).then(() => {
+            push(ref(db, 'orders'), order).then(() => {
                 cart = {};
                 renderCart();
-                document.getElementById('checkout-modal').style.display = 'none';
+                closeCheckout();
                 document.getElementById('cart-sidebar').classList.remove('active');
                 document.getElementById('success-view').style.display = 'flex';
             });
         }
-        
-        // --- MODAL STUBS (To prevent errors if reusing logic) ---
-        window.closeCustomizationModal = () => document.getElementById('customization-modal').style.display='none';
     </script>
 </body>
 </html>
