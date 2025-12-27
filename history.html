@@ -307,15 +307,12 @@
         
         let allOrders = [];
 
-        // --- PIN LOGIC ---
+        // --- PIN LOGIC (FIXED: Handles Enter Key) ---
         const pinInput = document.getElementById('pin-input');
         const unlockBtn = document.getElementById('unlock-btn');
 
-        // Allow pressing "Enter" key to unlock
         pinInput.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                checkPin();
-            }
+            if (e.key === 'Enter') checkPin();
         });
 
         unlockBtn.addEventListener('click', checkPin);
@@ -340,9 +337,15 @@
             onValue(historyQuery, (snapshot) => {
                 const data = snapshot.val();
                 if (!data) { renderTable([]); return; }
-                allOrders = Object.entries(data).map(([key, val]) => ({
-                    key: key, ...val
-                })).sort((a,b) => (b.completedAt || b.timestamp) - (a.completedAt || a.timestamp));
+                
+                // --- FIX: defensive coding to ignore broken orders ---
+                allOrders = Object.entries(data)
+                    .filter(([key, val]) => val && val.customer) // Only keep valid orders
+                    .map(([key, val]) => ({
+                        key: key, ...val
+                    }))
+                    .sort((a,b) => (b.completedAt || b.timestamp) - (a.completedAt || a.timestamp));
+                
                 renderTable(allOrders);
             });
         }
@@ -359,6 +362,10 @@
             }
 
             ordersData.forEach(order => {
+                // Defensive Check: Ensure customer exists before trying to access .name
+                const customerName = (order.customer && order.customer.name) ? order.customer.name : "Unknown";
+                const customerPhone = (order.customer && order.customer.phone) ? order.customer.phone : "--";
+
                 const isRejected = order.status === 'rejected';
                 const fins = order.financials || { grandTotal: 0, deliveryFee: 0 };
                 const total = fins.grandTotal || 0;
@@ -382,8 +389,8 @@
                         </td>
                         <td class="mono">#${order.orderId}</td>
                         <td>
-                            <div style="font-weight:600;">${order.customer.name}</div>
-                            <div style="font-size:0.8rem; color:var(--text-muted);">${order.customer.phone}</div>
+                            <div style="font-weight:600;">${customerName}</div>
+                            <div style="font-size:0.8rem; color:var(--text-muted);">${customerPhone}</div>
                         </td>
                         <td><span class="status-badge ${badgeClass}">${typeLabel}</span></td>
                         <td class="mono" style="color:var(--success);">₹${kitchen}</td>
@@ -417,9 +424,13 @@
                 let dateMatch = true;
                 if(start && oDate < start) dateMatch = false;
                 if(end && oDate > end) dateMatch = false;
+                
+                // Safe search
                 let searchMatch = true;
                 if(search) {
-                    const str = `${o.orderId} ${o.customer.name} ${o.customer.phone}`.toLowerCase();
+                    const cName = o.customer ? o.customer.name : "";
+                    const cPhone = o.customer ? o.customer.phone : "";
+                    const str = `${o.orderId} ${cName} ${cPhone}`.toLowerCase();
                     if(!str.includes(search)) searchMatch = false;
                 }
                 return dateMatch && searchMatch;
@@ -441,8 +452,13 @@
             const d = new Date(order.completedAt || order.timestamp);
             document.getElementById('m-date').innerText = d.toLocaleDateString();
             document.getElementById('m-time').innerText = d.toLocaleTimeString();
-            document.getElementById('m-customer').innerText = order.customer.name;
-            document.getElementById('m-phone').innerText = order.customer.phone;
+            
+            const cName = order.customer ? order.customer.name : "Unknown";
+            const cPhone = order.customer ? order.customer.phone : "--";
+
+            document.getElementById('m-customer').innerText = cName;
+            document.getElementById('m-phone').innerText = cPhone;
+
             const itemsContainer = document.getElementById('m-items-list');
             itemsContainer.innerHTML = "";
             if(order.items) {
@@ -484,9 +500,12 @@
             allOrders.forEach(o => {
                 const d = new Date(o.completedAt || o.timestamp);
                 const fins = o.financials || {grandTotal:0, deliveryFee:0};
+                const cName = o.customer ? o.customer.name : "Unknown";
+                const cPhone = o.customer ? o.customer.phone : "--";
+                
                 const row = [
                     d.toLocaleDateString(), d.toLocaleTimeString(), o.orderId,
-                    o.customer.name, o.customer.phone, o.orderType,
+                    cName, cPhone, o.orderType,
                     (fins.grandTotal - (fins.deliveryFee||0)), (fins.deliveryFee||0), fins.grandTotal
                 ].join(",");
                 csvContent += row + "\n";
