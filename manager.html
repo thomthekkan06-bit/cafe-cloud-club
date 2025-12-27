@@ -3,114 +3,242 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Waiter Dashboard | Cafe Cloud Club</title>
+    <title>Manager POS | Cafe Cloud Club</title>
     <link rel="icon" type="image/png" href="icon.png">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #0f1115;
             --surface: #181b21;
+            --surface-hover: #22262e;
             --border: #2f3542;
             --primary: #3b82f6;
             --success: #10b981;
             --danger: #ef4444;
             --warning: #f59e0b;
-            --text: #f3f4f6;
+            --purple: #8b5cf6;
+            --text-main: #f3f4f6;
             --text-muted: #9ca3af;
         }
 
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
         body { 
-            font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); 
-            margin: 0; padding: 20px;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg); 
+            color: var(--text-main); 
+            margin: 0; 
+            height: 100vh; 
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; 
         }
-
-        #pin-overlay { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(15, 17, 21, 0.98); z-index: 10000; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        .pin-box { 
-            background: var(--surface); padding: 30px; border-radius: 16px; 
-            border: 1px solid var(--border); text-align: center; width: 300px;
-        }
-        .pin-input { 
-            background: var(--bg); border: 1px solid var(--border); color: white; 
-            font-size: 2rem; text-align: center; letter-spacing: 10px; padding: 10px; 
-            border-radius: 8px; width: 100%; margin: 20px 0; outline: none; font-family: 'JetBrains Mono';
-        }
-        .btn-unlock { background: var(--primary); width: 100%; padding: 15px; border:none; border-radius:8px; color:white; font-weight:800; cursor:pointer; }
-
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .brand { font-size: 1.5rem; font-weight: 800; color: white; }
         
-        .section-title {
-            margin-top: 30px; margin-bottom: 15px; font-size: 0.9rem; font-weight: 700; 
-            color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;
-            border-bottom: 1px solid var(--border); padding-bottom: 10px;
+        /* --- HEADER --- */
+        .top-bar {
+            flex-shrink: 0;
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--surface); padding: 10px 20px; 
+            border-bottom: 1px solid var(--border); z-index: 10;
+        }
+        .app-title { 
+            margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 10px;
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .clock { font-family: 'JetBrains Mono'; font-size: 1.1rem; font-weight: 700; color: var(--text-main); }
+        .btn-history {
+            background: var(--surface-hover); color: var(--text-muted); border: 1px solid var(--border);
+            padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; text-decoration: none;
         }
 
-        .tables-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px;
+        /* --- SPLIT LAYOUT --- */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
         }
 
+        /* LEFT SIDE: ONLINE ORDERS */
+        .left-pane {
+            width: 40%;
+            min-width: 350px;
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            background: #121418;
+        }
+        .pane-header {
+            padding: 15px; background: rgba(0,0,0,0.2); 
+            border-bottom: 1px solid var(--border); font-weight: 800; letter-spacing: 1px; color: var(--text-muted);
+            display: flex; justify-content: space-between;
+        }
+        .scroll-area {
+            flex: 1; overflow-y: auto; padding: 15px;
+        }
+
+        /* RIGHT SIDE: TABLE MAP */
+        .right-pane {
+            flex: 1;
+            background: var(--bg);
+            display: flex; flex-direction: column;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        /* --- ORDER CARDS (Left Side) --- */
+        .order-card {
+            background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+            overflow: hidden; margin-bottom: 15px;
+            border-left: 4px solid var(--border);
+        }
+        .order-card.status-pending { border-left-color: var(--primary); }
+        .order-card.status-cooking { border-left-color: var(--warning); }
+        .order-card.status-out_for_delivery { border-left-color: var(--purple); }
+
+        .card-top { padding: 12px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.2); }
+        .card-id { font-family: 'JetBrains Mono'; font-weight: 800; }
+        .card-type { font-size: 0.7rem; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1); }
+        .card-body { padding: 12px; }
+        .cust-row { font-size: 0.9rem; margin-bottom: 8px; font-weight: 600; }
+        .item-list-text { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; }
+        .card-actions { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-top: 1px solid var(--border); }
+        .btn-act { padding: 8px; border-radius: 6px; border: none; cursor: pointer; font-weight: 700; font-size: 0.8rem; }
+        .btn-green { background: var(--success); color: white; }
+        .btn-yellow { background: var(--warning); color: black; }
+        .btn-red { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+
+        /* --- TABLE GRID (Right Side) --- */
+        .section-label { 
+            font-size: 0.8rem; font-weight: 700; color: var(--text-muted); 
+            text-transform: uppercase; margin: 20px 0 10px 0; border-bottom: 1px solid var(--border); padding-bottom: 5px; 
+        }
+        .tables-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; }
+
+        /* TABLE CARD STYLES */
         .table-card {
             background: var(--surface); border: 1px solid var(--border);
-            border-radius: 12px; height: 140px;
+            border-radius: 12px; height: 130px;
             display: flex; flex-direction: column; justify-content: space-between; padding: 15px;
             cursor: pointer; transition: 0.2s; position: relative; overflow: hidden;
         }
         .table-card:active { transform: scale(0.95); }
         
-        .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
-        .table-num { font-size: 2.2rem; font-weight: 800; font-family: 'JetBrains Mono'; color: #e5e7eb; transition: color 0.3s; }
-        .bill-total { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 6px; }
-        .timer-display { font-size: 1.5rem; font-weight: 700; font-family: 'JetBrains Mono'; text-align: center; margin: 10px 0; opacity: 1; }
-        .status-text { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; text-align: center; opacity: 0.8; }
+        .t-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .t-num { font-size: 2rem; font-weight: 800; font-family: 'JetBrains Mono'; color: #555; transition: color 0.3s; }
+        .t-bill { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 6px; }
+        .t-timer { font-size: 1.4rem; font-weight: 700; font-family: 'JetBrains Mono'; text-align: center; margin: 5px 0; }
+        .t-status { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; text-align: center; opacity: 0.8; }
 
         /* FREE STATE */
         .status-free { opacity: 1; border-color: #333; }
-        .status-free .table-num { color: #666; }
-        .status-free .timer-display, .status-free .bill-total { display: none; }
-        .status-free .status-text { color: #555; letter-spacing: 2px; }
+        .status-free .t-num { color: #666; }
+        .status-free .t-timer, .status-free .t-bill { display: none; }
+        .status-free .t-status { color: #555; }
 
         /* OCCUPIED STATES */
         .status-fresh { border: 1px solid var(--success); background: rgba(16, 185, 129, 0.1); }
-        .status-fresh .table-num, .status-fresh .timer-display, .status-fresh .bill-total, .status-fresh .status-text { color: var(--success); }
+        .status-fresh .t-num, .status-fresh .t-timer, .status-fresh .t-bill, .status-fresh .t-status { color: var(--success); }
 
         .status-warning { border: 1px solid var(--warning); background: rgba(245, 158, 11, 0.1); }
-        .status-warning .table-num, .status-warning .timer-display, .status-warning .bill-total, .status-warning .status-text { color: var(--warning); }
+        .status-warning .t-num, .status-warning .t-timer, .status-warning .t-bill, .status-warning .t-status { color: var(--warning); }
 
         .status-camper { border: 1px solid var(--danger); background: rgba(239, 68, 68, 0.15); animation: pulseRed 2s infinite; }
-        .status-camper .table-num, .status-camper .timer-display, .status-camper .bill-total, .status-camper .status-text { color: var(--danger); }
+        .status-camper .t-num, .status-camper .t-timer, .status-camper .t-bill, .status-camper .t-status { color: var(--danger); }
         
-        @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
         .is-bar { border-style: dashed; }
+        @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+
+        /* --- SETTLE MODAL --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 5000; display: none;
+            align-items: center; justify-content: center; backdrop-filter: blur(5px);
+        }
+        .modal-card {
+            background: var(--surface); width: 400px; max-width: 90%;
+            border-radius: 16px; border: 1px solid var(--border); 
+            display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .modal-header { padding: 20px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 20px; max-height: 60vh; overflow-y: auto; }
+        .modal-footer { padding: 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+        
+        .bill-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; color: var(--text-muted); }
+        .bill-total-row { display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border); font-size: 1.2rem; font-weight: 800; color: var(--text-main); }
+        
+        .btn-modal-cancel { flex: 1; padding: 15px; background: transparent; border: 1px solid var(--border); color: var(--text-muted); border-radius: 8px; cursor: pointer; font-weight: 700; }
+        .btn-modal-settle { flex: 1; padding: 15px; background: var(--success); border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: 700; }
+
+        /* PIN LOCK */
+        #pin-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 17, 21, 0.98); z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .pin-input { background: var(--bg); border: 1px solid var(--border); color: white; font-size: 2rem; text-align: center; letter-spacing: 10px; padding: 10px; border-radius: 8px; width: 200px; margin: 20px 0; outline: none; }
     </style>
 </head>
 <body>
 
     <div id="pin-overlay">
-        <div class="pin-box">
-            <h2>Waiter Access</h2>
-            <input type="password" id="pin-input" class="pin-input" placeholder="••••" maxlength="4" inputmode="numeric">
-            <button class="btn-unlock" onclick="checkPin()">UNLOCK</button>
+        <h2 style="color:white;">Manager Access</h2>
+        <input type="password" id="pin-input" class="pin-input" maxlength="4" inputmode="numeric">
+        <button onclick="checkPin()" style="background:var(--primary); border:none; padding:10px 30px; border-radius:6px; color:white; font-weight:bold; cursor:pointer;">UNLOCK</button>
+    </div>
+
+    <div class="top-bar">
+        <h1 class="app-title"> <img src="og-image.jpg" alt="Logo" style="height: 30px; border-radius: 6px;"> MANAGER DECK </h1>
+        <div class="clock" id="clock">00:00</div>
+        <a href="history.html" class="btn-history">Sales History</a>
+    </div>
+
+    <div class="main-container">
+        <div class="left-pane">
+            <div class="pane-header">
+                <span>KITCHEN QUEUE</span>
+                <span id="online-count" style="color:var(--primary)">0</span>
+            </div>
+            <div class="scroll-area" id="online-list">
+                </div>
+        </div>
+
+        <div class="right-pane">
+            <div class="pane-header" style="background:transparent; border:none; padding-left:0;">
+                <span>FLOOR MAP (DINE-IN)</span>
+                <span id="dinein-count" style="color:var(--success)">0 Occupied</span>
+            </div>
+
+            <div class="section-label">Indoor Dining (1-7 + Bar)</div>
+            <div class="tables-grid" id="grid-main"></div>
+
+            <div class="section-label">Indoor AC (9-13)</div>
+            <div class="tables-grid" id="grid-ac"></div>
         </div>
     </div>
 
-    <div class="header">
-        <div class="brand">Waiter Deck</div>
-        <div id="clock" style="font-family:'JetBrains Mono';">00:00</div>
+    <div class="modal-overlay" id="settle-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 style="margin:0;">Settle Table <span id="modal-table-id"></span></h3>
+                <div style="cursor:pointer;" onclick="closeModal()">&times;</div>
+            </div>
+            <div class="modal-body">
+                <div id="modal-items-list"></div>
+                <div class="bill-total-row">
+                    <span>TOTAL TO PAY</span>
+                    <span id="modal-total" style="color:var(--success)">₹0</span>
+                </div>
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-top:10px; text-align:center;">
+                    ⚠️ Clicking 'Paid & Clear' will archive the order and free the table.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-modal-settle" onclick="settleAndClear()">PAID & CLEAR ✅</button>
+            </div>
+        </div>
     </div>
-
-    <div class="section-title">Indoor Dining (1-7 + Bar)</div>
-    <div class="tables-grid" id="grid-indoor-main"></div>
-
-    <div class="section-title">Indoor AC (9-13)</div>
-    <div class="tables-grid" id="grid-indoor-ac"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue, update, remove, get, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
@@ -127,97 +255,204 @@
         window.checkPin = () => {
             if(document.getElementById('pin-input').value === '2024') {
                 document.getElementById('pin-overlay').style.display = 'none';
-                loadTables();
+                initData();
             } else alert("Wrong PIN");
         }
 
-        let liveTableData = {};
+        let onlineOrders = [];
+        let tableData = {}; 
+        let currentSettleTable = null;
 
-        function loadTables() {
+        function initData() {
             onValue(ref(db, 'orders'), (snapshot) => {
-                const orders = snapshot.val() || {};
-                liveTableData = {}; 
+                const data = snapshot.val() || {};
+                onlineOrders = [];
+                tableData = {};
 
-                Object.values(orders).forEach(o => {
-                    // Logic Update: Ignore Pending Orders!
-                    if (o.status !== 'completed' && o.status !== 'rejected' && o.status !== 'delivered' && o.status !== 'pending') {
-                        const customerName = (o.customer && o.customer.name) ? o.customer.name : "";
+                Object.entries(data).forEach(([key, order]) => {
+                    if (!order || !order.status) return;
+                    if (order.status === 'completed' || order.status === 'rejected') return;
+
+                    const type = order.orderType || 'Dine-In';
+                    const customerName = (order.customer && order.customer.name) ? order.customer.name : "Unknown";
+
+                    // 1. ADD EVERYTHING TO LEFT LIST (KITCHEN QUEUE)
+                    // This ensures the manager sees the order to Approve it.
+                    onlineOrders.push({ key, ...order });
+
+                    // 2. ADD TO MAP (RIGHT SIDE) - ONLY IF NOT PENDING
+                    // Dine-In orders only occupy the table AFTER approval.
+                    if (type !== 'Delivery' && type !== 'Pickup') {
                         const match = customerName.match(/Table (\w+)/i);
-                        
-                        if (match) {
-                            const tableId = match[1];
-                            const total = o.financials ? o.financials.grandTotal : 0;
-                            const startTime = o.timestamp; 
-
-                            if (!liveTableData[tableId] || startTime < liveTableData[tableId].timestamp) {
-                                liveTableData[tableId] = {
-                                    timestamp: startTime,
-                                    total: (liveTableData[tableId] ? liveTableData[tableId].total : 0) + total,
-                                    status: 'OCCUPIED'
-                                };
-                            } else {
-                                liveTableData[tableId].total += total;
+                        if (match && order.status !== 'pending') { // <--- CRITICAL CHECK
+                            const tId = match[1];
+                            const amt = order.financials ? order.financials.grandTotal : 0;
+                            
+                            if (!tableData[tId]) {
+                                tableData[tId] = { total: 0, timestamp: order.timestamp, keys: [], items: [] };
                             }
+                            tableData[tId].total += amt;
+                            if (order.timestamp < tableData[tId].timestamp) tableData[tId].timestamp = order.timestamp;
+                            tableData[tId].keys.push(key);
+                            if(order.items) tableData[tId].items.push(...order.items);
                         }
                     }
                 });
 
-                renderGrid(); 
+                // Sort Online Orders by Time (Oldest first)
+                onlineOrders.sort((a,b) => a.timestamp - b.timestamp);
+
+                renderOnlineList();
+                renderTableGrid();
             });
         }
 
-        function renderGrid() {
-            const gridMain = document.getElementById('grid-indoor-main');
-            const gridAC = document.getElementById('grid-indoor-ac');
-            gridMain.innerHTML = "";
-            gridAC.innerHTML = "";
-            for(let i=1; i<=7; i++) createCard(i, gridMain, liveTableData[i]);
-            createCard(8, gridMain, liveTableData[8], true, "BAR");
-            for(let i=9; i<=13; i++) createCard(i, gridAC, liveTableData[i]);
+        function renderOnlineList() {
+            const container = document.getElementById('online-list');
+            document.getElementById('online-count').innerText = onlineOrders.length;
+            container.innerHTML = "";
+
+            onlineOrders.forEach(order => {
+                const time = new Date(order.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                let itemsHtml = (order.items || []).map(i => `<div>${i.qty}x ${i.name}</div>`).join('');
+                const cName = (order.customer && order.customer.name) ? order.customer.name : "Guest";
+
+                let btnHtml = '';
+                // BUTTON LOGIC
+                if(order.status === 'pending') {
+                    btnHtml = `<button class="btn-act btn-red" onclick="rejectOrder('${order.key}')">Reject</button>
+                               <button class="btn-act btn-green" onclick="updateStatus('${order.key}', 'cooking')">Accept</button>`;
+                } else if (order.status === 'cooking') {
+                     // If it's delivery, "Out for Delivery". If Dine-In, maybe "Served"? 
+                     // Using "Mark Ready" as generic next step.
+                     btnHtml = `<button class="btn-act btn-yellow" onclick="updateStatus('${order.key}', 'out_for_delivery')">Mark Ready</button>`;
+                } else {
+                     btnHtml = `<button class="btn-act btn-green" onclick="completeOrder('${order.key}')">Complete</button>`;
+                }
+
+                const div = document.createElement('div');
+                div.className = `order-card status-${order.status}`;
+                div.innerHTML = `
+                    <div class="card-top">
+                        <span class="card-id">#${order.orderId}</span>
+                        <span class="card-type">${order.orderType || 'Table'}</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="cust-row">${cName}</div>
+                        <div class="item-list-text">${itemsHtml}</div>
+                        <div style="margin-top:5px; font-size:0.8rem; color:#888;">⏰ ${time}</div>
+                    </div>
+                    <div class="card-actions">${btnHtml}</div>
+                `;
+                container.appendChild(div);
+            });
         }
 
-        function createCard(id, container, data, isBar = false, labelOverride = null) {
+        function renderTableGrid() {
+            const gridMain = document.getElementById('grid-main');
+            const gridAC = document.getElementById('grid-ac');
+            gridMain.innerHTML = "";
+            gridAC.innerHTML = "";
+
+            let occupiedCount = Object.keys(tableData).length;
+            document.getElementById('dinein-count').innerText = `${occupiedCount} Occupied`;
+
+            for(let i=1; i<=7; i++) createTableCard(i, gridMain);
+            createTableCard(8, gridMain, true, "BAR");
+            for(let i=9; i<=13; i++) createTableCard(i, gridAC);
+        }
+
+        function createTableCard(id, container, isBar=false, label=null) {
+            const data = tableData[id];
             const div = document.createElement('div');
-            const displayLabel = labelOverride || id;
             
             let statusClass = 'status-free';
-            let timeText = ''; 
-            let totalText = ''; 
+            let timeText = '';
+            let totalText = '';
             let statusLabel = 'FREE';
 
             if (data) {
                 const diff = Date.now() - data.timestamp;
-                const totalMinutes = Math.floor(diff / 60000);
-                const hrs = Math.floor(totalMinutes / 60);
-                const mins = totalMinutes % 60;
-                timeText = `${hrs}:${mins.toString().padStart(2, '0')}`;
+                const tm = Math.floor(diff / 60000);
+                const h = Math.floor(tm / 60);
+                const m = tm % 60;
+                timeText = `${h}:${m.toString().padStart(2,'0')}`;
                 totalText = `₹${data.total}`;
                 statusLabel = 'OCCUPIED';
 
-                if (totalMinutes < 60) statusClass = 'status-fresh';
-                else if (totalMinutes < 90) statusClass = 'status-warning';
+                if (tm < 60) statusClass = 'status-fresh';
+                else if (tm < 90) statusClass = 'status-warning';
                 else statusClass = 'status-camper';
             }
 
-            div.className = `table-card ${statusClass} ${isBar ? 'is-bar' : ''}`;
-            div.onclick = () => window.location.href = `table.html?table=${id}`;
-            
-            const timerHtml = data ? `<div class="timer-display">${timeText}</div>` : '';
-            const billHtml = data ? `<div class="bill-total">${totalText}</div>` : '';
+            div.className = `table-card ${statusClass} ${isBar?'is-bar':''}`;
+            if(data) {
+                div.onclick = () => openSettleModal(id);
+            }
 
             div.innerHTML = `
-                <div class="card-header">
-                    <div class="table-num">${displayLabel}</div>
-                    ${billHtml}
+                <div class="t-header">
+                    <div class="t-num">${label || id}</div>
+                    <div class="t-bill">${totalText}</div>
                 </div>
-                ${timerHtml}
-                <div class="status-text">${statusLabel}</div>
+                <div class="t-timer">${timeText}</div>
+                <div class="t-status">${statusLabel}</div>
             `;
             container.appendChild(div);
         }
 
-        setInterval(() => { renderGrid(); document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }, 60000);
-        document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        // --- SETTLE MODAL ---
+        window.openSettleModal = (tableId) => {
+            const data = tableData[tableId];
+            if(!data) return;
+            currentSettleTable = tableId;
+            document.getElementById('settle-modal').style.display = 'flex';
+            document.getElementById('modal-table-id').innerText = tableId;
+            document.getElementById('modal-total').innerText = `₹${data.total}`;
+            const list = document.getElementById('modal-items-list');
+            list.innerHTML = "";
+            data.items.forEach(item => {
+                list.innerHTML += `<div class="bill-row"><span>${item.qty}x ${item.name}</span><span>${item.price * item.qty}</span></div>`;
+            });
+        }
+
+        window.closeModal = () => {
+            document.getElementById('settle-modal').style.display = 'none';
+            currentSettleTable = null;
+        }
+
+        window.settleAndClear = async () => {
+            if(!currentSettleTable || !tableData[currentSettleTable]) return;
+            const tId = currentSettleTable;
+            const keys = tableData[tId].keys;
+            for (const key of keys) {
+                const orderRef = ref(db, 'orders/' + key);
+                const snap = await get(orderRef);
+                if (snap.exists()) {
+                    const data = snap.val();
+                    data.status = 'completed';
+                    data.completedAt = Date.now();
+                    await set(ref(db, 'history/' + key), data);
+                    await remove(orderRef);
+                }
+            }
+            closeModal();
+        }
+
+        window.updateStatus = (key, status) => update(ref(db, 'orders/'+key), {status});
+        window.rejectOrder = (key) => remove(ref(db, 'orders/'+key)); 
+        window.completeOrder = async (key) => {
+            const r = ref(db, 'orders/'+key);
+            const s = await get(r);
+            if(s.exists()){
+                const d = s.val(); d.status='completed'; d.completedAt=Date.now();
+                await set(ref(db, 'history/'+key), d);
+                await remove(r);
+            }
+        };
+
+        setInterval(() => { renderTableGrid(); document.getElementById('clock').innerText = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }, 60000);
+        document.getElementById('clock').innerText = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
     </script>
 </body>
 </html>
