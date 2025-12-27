@@ -125,7 +125,6 @@
         const db = getDatabase(app);
 
         window.checkPin = () => {
-            // NOTE: Ideally, use a safer auth method than a hardcoded PIN in production
             if(document.getElementById('pin-input').value === '2024') {
                 document.getElementById('pin-overlay').style.display = 'none';
                 loadTables();
@@ -146,8 +145,11 @@
                 const occupied = {};
                 Object.values(orders).forEach(o => {
                     if (o.status !== 'completed' && o.status !== 'rejected' && o.status !== 'delivered') {
-                        // Regex now handles "Table 8" or "Table Bar" (though we use 8 for Bar internally)
-                        const match = (o.customer.name || "").match(/Table (\w+)/i);
+                        // --- FIX IS HERE: SAFE NAVIGATION (?.) ---
+                        // We check if o.customer exists before reading .name
+                        const customerName = (o.customer && o.customer.name) ? o.customer.name : "";
+                        
+                        const match = customerName.match(/Table (\w+)/i);
                         if(match) occupied[match[1]] = true;
                     }
                 });
@@ -158,11 +160,9 @@
                 }
                 
                 // --- BAR TABLE (ID: 8) ---
-                // We treat Table 8 as the "Bar Table"
                 createCard(8, gridMain, occupied[8], true, "BAR");
 
                 // --- SECTION 2: Indoor AC (Tables 9-13) ---
-                // 5 Tables starting from 9
                 for(let i=9; i<=13; i++) {
                     createCard(i, gridAC, occupied[i], false);
                 }
@@ -173,10 +173,9 @@
             const div = document.createElement('div');
             const displayLabel = labelOverride || id;
             
-            // Add specific class if it's the Bar
             div.className = `table-card ${isBusy ? 'status-busy' : 'status-free'} ${isBar ? 'is-bar' : ''}`;
             
-            // Clicking takes you to the specific table page
+            // Link to the specific table ID
             div.onclick = () => window.location.href = `table.html?table=${id}`;
             
             div.innerHTML = `
