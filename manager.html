@@ -303,7 +303,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue, update, remove, get, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue, update, remove, get, push, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
@@ -378,22 +378,19 @@
 
                 Object.entries(data).forEach(([key, order]) => {
                     if (!order || !order.status) return;
-                    // IGNORE COMPLETED
                     if (order.status === 'completed' || order.status === 'rejected') return;
 
-                    // CHECK STATUS FOR SOUND
+                    // SOUND CHECK
                     if(order.status === 'pending') {
                         hasPendingOrders = true;
                     }
 
-                    // 1. LEFT LIST: KITCHEN QUEUE
-                    // CRITICAL FIX: DO NOT show 'served' orders in the Kitchen Queue (Left Pane)
+                    // 1. KITCHEN QUEUE: Ignore 'served'
                     if (order.status !== 'served') {
                         onlineOrders.push({ key, ...order });
                     }
 
-                    // 2. RIGHT MAP: DINE-IN TABLES
-                    // 'served' orders STILL count here, so the bill remains active
+                    // 2. TABLE MAP: 'served' counts here
                     const type = order.orderType || 'Dine-In';
                     if (type !== 'Delivery' && type !== 'Pickup') {
                         const customerName = (order.customer && order.customer.name) ? order.customer.name : "Unknown";
@@ -401,12 +398,14 @@
                         if (match && order.status !== 'pending') {
                             const tId = match[1];
                             if (!tableData[tId]) {
+                                // Important: We store the raw 'order' objects to merge later
                                 tableData[tId] = { 
                                     total: 0, 
                                     timestamp: order.timestamp, 
                                     keys: [], 
                                     items: [],
-                                    fins: { sub:0, disc:0, pack:0 } 
+                                    fins: { sub:0, disc:0, pack:0 },
+                                    rawOrders: [] // NEW: Store raw orders for merging
                                 };
                             }
                             
@@ -419,6 +418,7 @@
                             if (order.timestamp < tableData[tId].timestamp) tableData[tId].timestamp = order.timestamp;
                             
                             tableData[tId].keys.push(key);
+                            tableData[tId].rawOrders.push(order);
                             if(order.items) tableData[tId].items.push(...order.items);
                         }
                     }
@@ -437,7 +437,6 @@
             });
         }
 
-        // --- RENDER LEFT LIST ---
         function renderOnlineList() {
             const container = document.getElementById('online-list');
             document.getElementById('online-count').innerText = onlineOrders.length;
@@ -478,7 +477,6 @@
                     </div>
                 `;
 
-                // --- LOGIC FIX: HIDE EDIT BUTTON IF DONE ---
                 let btnHtml = '';
                 let showEdit = true;
 
@@ -492,8 +490,6 @@
                          btnHtml = `<button class="btn-act btn-grey" disabled>Waiting for Partner...</button>`;
                          showEdit = false;
                     } else {
-                         // CRITICAL CHANGE: "Mark Served" sets status to 'served' instead of completing
-                         // HIDE EDIT BUTTON
                          btnHtml = `<button class="btn-act btn-green" onclick="updateStatus('${order.key}', 'served')">Mark Served</button>`;
                          showEdit = false; 
                     }
@@ -523,7 +519,6 @@
             });
         }
 
-        // --- RENDER RIGHT MAP ---
         function renderTableGrid() {
             const gridMain = document.getElementById('grid-main');
             const gridAC = document.getElementById('grid-ac');
@@ -573,7 +568,6 @@
             container.appendChild(div);
         }
 
-        // --- SETTLE MODAL ---
         window.openSettleModal = (tableId) => {
             const data = tableData[tableId];
             if(!data) return;
@@ -734,27 +728,59 @@
         
         window.forceComplete = (key) => {
             if(confirm("Driver should complete this. Force Complete?")) {
-                completeOrder(key);
+                completeOrderSingle(key);
             }
         }
         
-        window.completeOrder = async (key) => {
+        // FOR DELIVERY/PICKUP SINGLE ORDERS
+        window.completeOrderSingle = async (key) => {
             const r = ref(db, 'orders/'+key);
             const s = await get(r);
             if(s.exists()){
                 const d = s.val(); d.status='completed'; d.completedAt=Date.now();
-                await set(ref(db, 'history/'+key), d);
+                await push(ref(db, 'history'), d); // Push individual order
                 await remove(r);
             }
         };
+
+        // --- NEW: MERGE & SETTLE FOR DINE-IN ---
         window.settleAndClear = async () => {
             if(!currentSettleTable || !tableData[currentSettleTable]) return;
-            const keys = tableData[currentSettleTable].keys;
+            const tData = tableData[currentSettleTable];
+            const keys = tData.keys;
+
+            // 1. Create Consolidated Bill
+            const masterBill = {
+                orderId: `BILL-${Date.now()}`, // New ID for the merged bill
+                orderType: 'Dine-In',
+                timestamp: Date.now(),
+                status: 'paid',
+                customer: { 
+                    name: `Table ${currentSettleTable} (Merged)`,
+                    phone: '0000000000',
+                    address: 'Dine-In'
+                },
+                items: tData.items, // All items merged
+                financials: {
+                    subTotal: tData.fins.sub,
+                    discountVal: tData.fins.disc,
+                    couponCode: "MERGED",
+                    packingTotal: tData.fins.pack,
+                    grandTotal: tData.total
+                },
+                originalOrderKeys: keys // Traceability
+            };
+
+            // 2. Push ONE master bill to history
+            await push(ref(db, 'history'), masterBill);
+
+            // 3. Delete ALL individual active orders
             for (const key of keys) {
-                await completeOrder(key);
+                await remove(ref(db, 'orders/' + key));
             }
+
             closeModal('settle-modal');
-        }
+        };
 
         setInterval(() => { renderTableGrid(); document.getElementById('clock').innerText = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }, 60000);
         document.getElementById('clock').innerText = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
