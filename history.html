@@ -21,7 +21,6 @@
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-        /* --- DESKTOP LAYOUT (Fixed Dashboard) --- */
         body { 
             font-family: 'Inter', sans-serif; 
             background: var(--bg); 
@@ -159,27 +158,14 @@
         .total-row { font-size: 1.2rem; font-weight: 800; border-top: 2px dashed var(--border); padding-top: 15px; margin-top: 15px; }
         .close-modal { position: absolute; top: 20px; right: 25px; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); z-index: 20; }
 
-        /* --- MOBILE OPTIMIZATION (THE FIX) --- */
+        /* --- MOBILE OPTIMIZATION --- */
         @media (max-width: 768px) {
-            /* 1. Unlock scrolling so page isn't stuck */
             body { height: auto; overflow-y: auto; display: block; padding: 15px; padding-bottom: 30px; }
-            
-            /* 2. Compact Stats Grid: 2 columns instead of 1 */
             .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
             .stat-card { padding: 15px; }
             .stat-value { font-size: 1.5rem; }
             .stat-label { font-size: 0.7rem; }
-
-            /* 3. FIX: Restore horizontal scrolling for table */
-            .table-container { 
-                height: auto; 
-                overflow-x: auto; /* ALLOW SWIPING */
-                margin-bottom: 50px; 
-                border: 1px solid var(--border);
-                display: block; 
-            }
-            
-            /* 4. Controls layout */
+            .table-container { height: auto; overflow-x: auto; margin-bottom: 50px; border: 1px solid var(--border); display: block; }
             .search-box { min-width: 100%; }
             .date-group { width: 100%; }
             .input-field { width: 100%; }
@@ -193,14 +179,8 @@
         <div class="pin-box">
             <h3 style="margin-top:0;">🔒 Admin Access</h3>
             <p style="color:var(--text-muted); font-size:0.9rem;">Enter security PIN to view financials</p>
-            
             <input type="password" id="pin-input" class="pin-input" placeholder="••••" maxlength="4" inputmode="numeric" pattern="[0-9]*">
-            
             <button class="btn-primary" id="unlock-btn">UNLOCK DASHBOARD</button>
-
-            <div style="margin-top: 25px; border-top: 1px solid var(--border); padding-top: 15px; font-size: 0.75rem; color: var(--text-muted);">
-                System by <span style="color: var(--primary); font-weight: 700;">Thomsons Networks</span>
-            </div>
         </div>
     </div>
 
@@ -244,7 +224,7 @@
 
     <div class="header-section flex justify-between">
         <div>
-            <h1 class="page-title">     <img src="og-image.jpg" alt="Logo" style="height: 35px; vertical-align: middle; border-radius: 6px; margin-right: 10px;"> Sales History </h1>
+            <h1 class="page-title">Sales History</h1>
             <p style="color:var(--text-muted); margin:5px 0 0 0; font-size:0.9rem;">Detailed transaction logs and financial breakdown.</p>
         </div>
         <div>
@@ -306,7 +286,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue, remove, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue, remove, query } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
@@ -340,7 +320,10 @@
 
         function loadHistory() {
             document.getElementById('table-body').innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px;">Loading full history...</td></tr>`;
-            const historyQuery = query(ref(db, 'history'), limitToLast(500));
+            
+            // --- BRUTAL FIX: REMOVED limitToLast(500) ---
+            // Now fetches ALL history so your date filters actually work.
+            const historyQuery = query(ref(db, 'history'));
 
             onValue(historyQuery, (snapshot) => {
                 const data = snapshot.val();
@@ -483,26 +466,4 @@
         }
 
         window.exportToCSV = function() {
-            if(allOrders.length === 0) return alert("No data to export.");
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Date,Time,OrderID,Customer,Phone,Type,KitchenRevenue,DeliveryFee,TotalAmount\n";
-            allOrders.forEach(o => {
-                const d = new Date(o.completedAt || o.timestamp);
-                const fins = o.financials || {grandTotal:0, deliveryFee:0};
-                const row = [
-                    d.toLocaleDateString(), d.toLocaleTimeString(), o.orderId,
-                    o.customer.name, o.customer.phone, o.orderType,
-                    (fins.grandTotal - (fins.deliveryFee||0)), (fins.deliveryFee||0), fins.grandTotal
-                ].join(",");
-                csvContent += row + "\n";
-            });
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "cafe_sales_history.csv");
-            document.body.appendChild(link);
-            link.click();
-        }
-    </script>
-</body>
-</html>
+            if(allOrders.length === 0) return alert("No
