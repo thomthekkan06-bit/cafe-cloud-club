@@ -117,17 +117,19 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // CONFIG
-        const OUTDOOR_COUNT = 7; // Tables 1 to 7
-        const INDOOR_COUNT = 5;  // Tables 8 to 12 (Total 12)
+        // CONFIG: This is where the tables are defined
+        const OUTDOOR_COUNT = 7; 
+        const INDOOR_COUNT = 5;  
 
         window.checkPin = () => {
+            // Default PIN is 2024
             if(document.getElementById('pin-input').value === '2024') {
                 document.getElementById('pin-overlay').style.display = 'none';
                 loadTables();
             } else alert("Wrong PIN");
         }
 
+        // This function BUILDS the tables automatically
         function loadTables() {
             onValue(ref(db, 'orders'), (snapshot) => {
                 const orders = snapshot.val() || {};
@@ -138,7 +140,7 @@
                 gridOutdoor.innerHTML = "";
                 gridIndoor.innerHTML = "";
 
-                // Identify occupied tables
+                // Check which tables are busy
                 const occupied = {};
                 Object.values(orders).forEach(o => {
                     if (o.status !== 'completed' && o.status !== 'rejected' && o.status !== 'delivered') {
@@ -147,12 +149,12 @@
                     }
                 });
 
-                // Render Outdoor (1 to 7)
+                // Generate Outdoor Tables (1 to 7)
                 for(let i=1; i<=OUTDOOR_COUNT; i++) {
                     createCard(i, gridOutdoor, occupied[i]);
                 }
 
-                // Render Indoor (8 to 12)
+                // Generate Indoor Tables (8 to 12)
                 for(let i=OUTDOOR_COUNT+1; i<=OUTDOOR_COUNT+INDOOR_COUNT; i++) {
                     createCard(i, gridIndoor, occupied[i]);
                 }
@@ -162,7 +164,7 @@
         function createCard(num, container, isBusy) {
             const div = document.createElement('div');
             div.className = `table-card ${isBusy ? 'status-busy' : 'status-free'}`;
-            // When clicked, open table.html for that specific table number
+            // This link opens the specific table order page
             div.onclick = () => window.location.href = `table.html?table=${num}`;
             div.innerHTML = `
                 <div class="table-num">${num}</div>
