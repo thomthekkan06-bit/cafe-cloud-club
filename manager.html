@@ -318,18 +318,16 @@
         const db = getDatabase(app);
 
         // --- GLOBAL SOUND CONFIG ---
-        // Defined OUTSIDE any function to prevent multiple instances
         const bell = new Audio('bell.mp3');
         bell.loop = true;
 
         // --- AUTH ---
         window.checkPin = () => {
             if(document.getElementById('pin-input').value === '2024') {
-                // Initialize Audio Context on user interaction (Autoplay Policy)
                 bell.play().then(() => {
                     bell.pause();
                     bell.currentTime = 0;
-                }).catch(e => console.log("Audio autoplay check failed (will try again on order)", e));
+                }).catch(e => console.log("Audio autoplay check failed", e));
 
                 document.getElementById('pin-overlay').style.display = 'none';
                 initData();
@@ -344,7 +342,6 @@
         let currentEditKey = null; 
         let fullMenu = []; 
 
-        // --- FETCH MENU FOR DROPDOWN ---
         function loadMenuForEdit() {
             onValue(ref(db, 'menu'), (snapshot) => {
                 const data = snapshot.val() || {};
@@ -377,10 +374,11 @@
                 onlineOrders = [];
                 tableData = {};
 
-                let hasPendingOrders = false; // Flag to track if we should ring
+                let hasPendingOrders = false;
 
                 Object.entries(data).forEach(([key, order]) => {
                     if (!order || !order.status) return;
+                    // IGNORE COMPLETED
                     if (order.status === 'completed' || order.status === 'rejected') return;
 
                     // CHECK STATUS FOR SOUND
@@ -388,14 +386,17 @@
                         hasPendingOrders = true;
                     }
 
-                    const type = order.orderType || 'Dine-In';
-                    const customerName = (order.customer && order.customer.name) ? order.customer.name : "Unknown";
-
                     // 1. LEFT LIST: KITCHEN QUEUE
-                    onlineOrders.push({ key, ...order });
+                    // CRITICAL FIX: DO NOT show 'served' orders in the Kitchen Queue (Left Pane)
+                    if (order.status !== 'served') {
+                        onlineOrders.push({ key, ...order });
+                    }
 
                     // 2. RIGHT MAP: DINE-IN TABLES
+                    // 'served' orders STILL count here, so the bill remains active
+                    const type = order.orderType || 'Dine-In';
                     if (type !== 'Delivery' && type !== 'Pickup') {
+                        const customerName = (order.customer && order.customer.name) ? order.customer.name : "Unknown";
                         const match = customerName.match(/Table (\w+)/i);
                         if (match && order.status !== 'pending') {
                             const tId = match[1];
@@ -423,14 +424,9 @@
                     }
                 });
 
-                // --- SOUND CONTROL LOGIC ---
                 if(hasPendingOrders) {
-                    // Only play if not already playing
-                    if(bell.paused) {
-                        bell.play().catch(e => console.log("Sound blocked by browser:", e));
-                    }
+                    if(bell.paused) bell.play().catch(e => console.log("Sound blocked", e));
                 } else {
-                    // No pending orders? STOP immediately.
                     bell.pause();
                     bell.currentTime = 0;
                 }
@@ -441,14 +437,13 @@
             });
         }
 
-        // --- RENDER LEFT LIST (SMART CARDS) ---
+        // --- RENDER LEFT LIST ---
         function renderOnlineList() {
             const container = document.getElementById('online-list');
             document.getElementById('online-count').innerText = onlineOrders.length;
             container.innerHTML = "";
 
             onlineOrders.forEach(order => {
-                const time = new Date(order.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
                 const type = order.orderType || 'Dine-In';
                 const c = order.customer || {};
                 
@@ -458,7 +453,6 @@
                         <div class="info-grid">
                             <span class="info-label">Customer</span> <span class="info-val">${c.name || 'Guest'}</span>
                             <span class="info-label">Phone</span>    <span class="info-val">${c.phone || '--'}</span>
-                            <span class="info-label">Loc</span>      <span class="info-val" style="font-size:0.8rem; line-height:1.2;">${c.address || c.location || '--'}</span>
                         </div>
                     `;
                 } else {
@@ -476,25 +470,15 @@
                     </div>
                 `).join('');
 
-                // --- FIXED FINANCIALS ---
                 const f = order.financials || {};
-                const discount = f.discountVal || 0; 
-                const packing = f.packingTotal || 0; 
-                const subTotal = f.subTotal || 0;
-                const grandTotal = f.grandTotal || 0;
-                
-                const discountText = f.couponCode && f.couponCode !== "NONE" ? `Discount (${f.couponCode})` : 'Discount';
                 
                 let finHtml = `
                     <div class="fin-box">
-                        <div class="fin-row"><span>Subtotal</span> <span>₹${subTotal}</span></div>
-                        ${(discount > 0) ? `<div class="fin-row" style="color:var(--warning)"><span>${discountText}</span> <span>-₹${discount}</span></div>` : ''}
-                        ${(packing > 0) ? `<div class="fin-row"><span>Packing</span> <span>₹${packing}</span></div>` : ''}
-                        <div class="fin-row total"><span>TOTAL</span> <span>₹${grandTotal}</span></div>
+                        <div class="fin-row total"><span>TOTAL</span> <span>₹${f.grandTotal || 0}</span></div>
                     </div>
                 `;
 
-                // --- UPDATED ACTIONS & EDIT VISIBILITY ---
+                // --- LOGIC FIX: HIDE EDIT BUTTON IF DONE ---
                 let btnHtml = '';
                 let showEdit = true;
 
@@ -508,15 +492,15 @@
                          btnHtml = `<button class="btn-act btn-grey" disabled>Waiting for Partner...</button>`;
                          showEdit = false;
                     } else {
-                         btnHtml = `<button class="btn-act btn-green" onclick="completeOrder('${order.key}')">Mark Served / Clear</button>`;
-                         showEdit = true;
+                         // CRITICAL CHANGE: "Mark Served" sets status to 'served' instead of completing
+                         // HIDE EDIT BUTTON
+                         btnHtml = `<button class="btn-act btn-green" onclick="updateStatus('${order.key}', 'served')">Mark Served</button>`;
+                         showEdit = false; 
                     }
                 } else if (order.status === 'out_for_delivery') {
                      btnHtml = `<button class="btn-act btn-purple" onclick="forceComplete('${order.key}')">Out For Delivery</button>`;
                      showEdit = false; 
-                } else {
-                     btnHtml = `<button class="btn-act btn-green" onclick="completeOrder('${order.key}')">Complete</button>`;
-                }
+                } 
 
                 const div = document.createElement('div');
                 div.className = `order-card status-${order.status}`;
@@ -653,7 +637,6 @@
             });
         }
 
-        // --- EDIT ACTIONS (ADD/DELETE) ---
         window.deleteItem = async (index) => {
             if(!currentEditKey) return;
             const orderRef = ref(db, 'orders/' + currentEditKey);
@@ -679,7 +662,6 @@
             const selectedOpt = select.options[select.selectedIndex];
             const category = selectedOpt ? selectedOpt.dataset.category : "General";
             
-            // Allow price to be 0
             const priceVal = document.getElementById('new-item-price').value;
             const price = parseFloat(priceVal);
             const qty = parseInt(document.getElementById('new-item-qty').value);
@@ -730,7 +712,6 @@
                 }
             });
             
-            // Safe access to financials
             let disc = (order.financials && order.financials.discountVal) ? order.financials.discountVal : 0;
             let code = (order.financials && order.financials.couponCode) ? order.financials.couponCode : null;
 
