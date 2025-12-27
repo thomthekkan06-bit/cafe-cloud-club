@@ -475,9 +475,16 @@
                     // COOKING -> MARK READY (DONE)
                      btnHtml = `<button class="btn-act btn-yellow" onclick="updateStatus('${order.key}', 'done')">Mark Ready</button>`;
                 } else if (order.status === 'done') {
-                    // DONE (READY) -> WAITING (Gray button, no action)
-                     btnHtml = `<button class="btn-act btn-grey" disabled>Waiting for Partner...</button>`;
-                     showEdit = false; // HIDE EDIT
+                    // --- FIXED LOGIC FOR DINE-IN vs DELIVERY ---
+                    if (type === 'Delivery') {
+                         // Delivery must wait for driver
+                         btnHtml = `<button class="btn-act btn-grey" disabled>Waiting for Partner...</button>`;
+                         showEdit = false;
+                    } else {
+                         // Dine-In/Pickup is ready to be served/cleared
+                         btnHtml = `<button class="btn-act btn-green" onclick="completeOrder('${order.key}')">Mark Served / Clear</button>`;
+                         showEdit = true;
+                    }
                 } else if (order.status === 'out_for_delivery') {
                     // OUT -> VIOLET BUTTON (Force Complete option)
                      btnHtml = `<button class="btn-act btn-purple" onclick="forceComplete('${order.key}')">Out For Delivery</button>`;
@@ -636,21 +643,33 @@
             renderEditList(items);
         }
 
+        // --- FIXED ADD NEW ITEM FUNCTION ---
         window.addNewItemToOrder = async () => {
-            if(!currentEditKey) return;
+            if(!currentEditKey) {
+                alert("Error: No order selected.");
+                return;
+            }
+
             const select = document.getElementById('menu-select');
             const name = select.value; 
             const selectedOpt = select.options[select.selectedIndex];
             const category = selectedOpt ? selectedOpt.dataset.category : "General";
             
-            const price = parseFloat(document.getElementById('new-item-price').value);
+            // Allow price to be 0
+            const priceVal = document.getElementById('new-item-price').value;
+            const price = parseFloat(priceVal);
             const qty = parseInt(document.getElementById('new-item-qty').value);
 
-            if(!name || !price || !qty) return alert("Select an item and check price");
+            if(!name || isNaN(price) || !qty || qty < 1) {
+                return alert("Select item and ensure price/qty are valid");
+            }
 
             const orderRef = ref(db, 'orders/' + currentEditKey);
             const snap = await get(orderRef);
-            if(!snap.exists()) return;
+            if(!snap.exists()) {
+                alert("Order not found!");
+                return;
+            }
 
             let order = snap.val();
             let items = order.items || [];
@@ -687,8 +706,9 @@
                 }
             });
             
-            let disc = order.financials ? (order.financials.discountVal || 0) : 0;
-            let code = order.financials ? order.financials.couponCode : null;
+            // Safe access to financials
+            let disc = (order.financials && order.financials.discountVal) ? order.financials.discountVal : 0;
+            let code = (order.financials && order.financials.couponCode) ? order.financials.couponCode : null;
 
             order.financials = {
                 subTotal: sub,
