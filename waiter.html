@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Waiter Dashboard | Cafe Cloud Club</title>
+    <link rel="icon" type="image/png" href="icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f1115;
+            --surface: #181b21;
+            --border: #2f3542;
+            --primary: #3b82f6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --text: #f3f4f6;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); 
+            margin: 0; padding: 20px;
+        }
+
+        /* --- PIN LOCK --- */
+        #pin-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(15, 17, 21, 0.98); z-index: 10000; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .pin-box { 
+            background: var(--surface); padding: 30px; border-radius: 16px; 
+            border: 1px solid var(--border); text-align: center; width: 300px;
+        }
+        .pin-input { 
+            background: var(--bg); border: 1px solid var(--border); color: white; 
+            font-size: 2rem; text-align: center; letter-spacing: 10px; padding: 10px; 
+            border-radius: 8px; width: 100%; margin: 20px 0; outline: none; font-family: 'JetBrains Mono';
+        }
+        .btn-unlock { background: var(--primary); width: 100%; padding: 15px; border:none; border-radius:8px; color:white; font-weight:800; cursor:pointer; }
+
+        /* --- GRID --- */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .brand { font-size: 1.5rem; font-weight: 800; color: white; }
+        
+        .tables-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px;
+        }
+
+        .table-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 12px; height: 120px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.2s; position: relative; overflow: hidden;
+        }
+        .table-card:active { transform: scale(0.95); }
+        
+        .table-num { font-size: 2.5rem; font-weight: 800; font-family: 'JetBrains Mono'; }
+        .status-pill { font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; margin-top: 10px; text-transform: uppercase; }
+
+        /* STATUSES */
+        .status-free { border-top: 4px solid var(--success); }
+        .status-free .table-num { color: var(--success); }
+        .status-free .status-pill { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+
+        .status-busy { border-top: 4px solid var(--danger); background: rgba(239, 68, 68, 0.05); }
+        .status-busy .table-num { color: var(--danger); }
+        .status-busy .status-pill { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+
+        .actions { margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .act-btn { background: var(--surface); border: 1px solid var(--border); padding: 15px; border-radius: 8px; color: #aaa; text-align: center; text-decoration: none; font-weight: 600; display: block; }
+    </style>
+</head>
+<body>
+
+    <div id="pin-overlay">
+        <div class="pin-box">
+            <h2>Waiter Access</h2>
+            <input type="password" id="pin-input" class="pin-input" placeholder="••••" maxlength="4" inputmode="numeric">
+            <button class="btn-unlock" onclick="checkPin()">UNLOCK</button>
+        </div>
+    </div>
+
+    <div class="header">
+        <div class="brand">Waiter Deck</div>
+        <div id="clock" style="font-family:'JetBrains Mono';">00:00</div>
+    </div>
+
+    <div class="tables-grid" id="grid"></div>
+
+    <div class="actions">
+        <a href="manager.html" class="act-btn">Kitchen View</a>
+        <a href="index.html" class="act-btn">Main Site</a>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
+            authDomain: "cafe-orders-1afa1.firebaseapp.com",
+            databaseURL: "https://cafe-orders-1afa1-default-rtdb.firebaseio.com",
+            projectId: "cafe-orders-1afa1",
+            messagingSenderId: "274410745480",
+            appId: "1:274410745480:web:9964c3914d512aed8d793d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const TOTAL_TABLES = 12; // Set your total tables here
+
+        window.checkPin = () => {
+            if(document.getElementById('pin-input').value === '2024') {
+                document.getElementById('pin-overlay').style.display = 'none';
+                loadTables();
+            } else alert("Wrong PIN");
+        }
+
+        function loadTables() {
+            onValue(ref(db, 'orders'), (snapshot) => {
+                const orders = snapshot.val() || {};
+                const grid = document.getElementById('grid');
+                grid.innerHTML = "";
+
+                // Find occupied tables (Looking for "Table X" in customer name)
+                const occupied = {};
+                Object.values(orders).forEach(o => {
+                    if (o.status !== 'completed' && o.status !== 'rejected' && o.status !== 'delivered') {
+                        const match = (o.customer.name || "").match(/Table (\d+)/i);
+                        if(match) occupied[match[1]] = true;
+                    }
+                });
+
+                for(let i=1; i<=TOTAL_TABLES; i++) {
+                    const isBusy = occupied[i];
+                    const div = document.createElement('div');
+                    div.className = `table-card ${isBusy ? 'status-busy' : 'status-free'}`;
+                    div.onclick = () => window.location.href = `table.html?table=${i}`;
+                    div.innerHTML = `
+                        <div class="table-num">${i}</div>
+                        <div class="status-pill">${isBusy ? 'Occupied' : 'Free'}</div>
+                    `;
+                    grid.appendChild(div);
+                }
+            });
+        }
+
+        setInterval(() => document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), 1000);
+    </script>
+</body>
+</html>
