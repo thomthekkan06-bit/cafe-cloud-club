@@ -292,7 +292,6 @@
             }
 
             filtered.forEach((item, index) => {
-                // We pass the global index of the item in 'filtered' is tricky, so we find original obj
                 const div = document.createElement('div');
                 div.className = `food-card ${item.type}`;
                 div.innerHTML = `
@@ -314,7 +313,6 @@
             const item = menuData.find(i => i.name === itemName);
             if(!item) return;
 
-            // Define Logic (Ported from app.js)
             const options = [];
             const cat = item.category;
             const name = item.name;
@@ -360,7 +358,6 @@
             // 6. Shakes
             if (cat === "Whipped Wonders") options.push({ name: "Extra Ice Cream", price: 30 });
 
-            // DECISION: If options exist, show modal. Else add directly.
             if (options.length > 0 || cat === "ADD-ON") {
                 openCustomization(item, options);
             } else {
@@ -415,7 +412,6 @@
             
             const note = document.getElementById('cust-note').value.trim();
             
-            // Generate Unique Name for Cart (e.g. "Burger [Extra Cheese]")
             let displayName = selectedItem.name;
             if(mods.length > 0) displayName += ` [${mods.join(', ')}]`;
             if(note) displayName += ` (Note: ${note})`;
@@ -435,7 +431,6 @@
             else cart[name] = { price, qty: 1, type };
             renderCart();
             
-            // Animation
             const btn = document.querySelector('.mobile-cart-btn');
             btn.style.transform = "scale(1.1)";
             setTimeout(()=> btn.style.transform = "scale(1)", 200);
@@ -497,14 +492,26 @@
                 items.push({ name: key, qty: cart[key].qty, price: cart[key].price, type: cart[key].type });
             }
 
+            // CRITICAL FIX: STRUCTURE DATA EXACTLY LIKE APP.JS BUT WITH 0 PACKING
             const order = {
                 orderId: Math.floor(100000 + Math.random() * 900000),
                 orderType: 'Dine-In',
                 timestamp: Date.now(),
                 status: 'pending',
-                customer: { name: finalName, phone: '0000000000', address: 'Dine-In' },
+                customer: { 
+                    name: finalName, 
+                    phone: '0000000000', 
+                    address: 'Dine-In',
+                    email: '-' // Added for consistency
+                },
                 items: items,
-                financials: { subTotal: total, grandTotal: total, deliveryFee: 0 },
+                financials: { 
+                    subTotal: total, 
+                    discountVal: 0,
+                    couponCode: "NONE",
+                    packingTotal: 0, // EXPLICITLY 0
+                    grandTotal: total 
+                },
                 globalNote: `Table ${TABLE_ID}`
             };
 
@@ -514,7 +521,7 @@
                 closeCheckout();
                 document.getElementById('cart-sidebar').classList.remove('active');
                 document.getElementById('success-view').style.display = 'flex';
-            });
+            }).catch(e => console.error(e));
         }
     </script>
 </body>
