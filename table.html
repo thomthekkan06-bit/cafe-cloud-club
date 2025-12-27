@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Table Ordering | Cafe Cloud Club</title>
+    
     <link rel="icon" type="image/png" href="icon.png">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     
     <style>
         /* --- CORE STYLES (Embedded for Stability) --- */
@@ -52,8 +53,11 @@
             overflow-x: auto;
             white-space: nowrap;
             background: var(--bg);
-            scrollbar-width: none;
+            scrollbar-width: none; /* Hide scrollbar Firefox */
+            -ms-overflow-style: none; /* Hide scrollbar IE/Edge */
         }
+        .advanced-filters::-webkit-scrollbar { display: none; /* Hide scrollbar Chrome/Safari */ }
+
         .toggle-chip {
             padding: 8px 16px;
             border-radius: 20px;
@@ -62,6 +66,7 @@
             font-size: 0.85rem;
             cursor: pointer;
             transition: 0.2s;
+            flex-shrink: 0; /* Prevent shrinking */
         }
         .toggle-chip.active {
             background: var(--secondary);
@@ -177,7 +182,7 @@
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.6);
             z-index: 3000;
-            display: none; /* KEY FIX: Hidden initially */
+            display: none;
             align-items: center;
             justify-content: center;
             backdrop-filter: blur(4px);
@@ -206,7 +211,7 @@
             top: 0; left: 0; width: 100%; height: 100%;
             background: white;
             z-index: 4000;
-            display: none; /* KEY FIX: Hidden initially */
+            display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -237,9 +242,20 @@
     <div class="advanced-filters">
         <div class="toggle-chip active" onclick="filterCat('All', this)">All</div>
         <div class="toggle-chip" onclick="filterCat('Bun-Tastic Burgers', this)">Burgers</div>
+        <div class="toggle-chip" onclick="filterCat('Butcher\'s Best', this)">Steaks</div>
         <div class="toggle-chip" onclick="filterCat('Italian Indulgence', this)">Pasta</div>
-        <div class="toggle-chip" onclick="filterCat('Mojito Magic', this)">Drinks</div>
+        <div class="toggle-chip" onclick="filterCat('Freshly Folded', this)">Wraps</div>
+        <div class="toggle-chip" onclick="filterCat('Rice Harmony', this)">Rice</div>
+        <div class="toggle-chip" onclick="filterCat('Salad Symphony', this)">Salads</div>
+        <div class="toggle-chip" onclick="filterCat('Toasty Treats', this)">Sandwich</div>
+        <div class="toggle-chip" onclick="filterCat('Warm Whispers', this)">Soups</div>
+        <div class="toggle-chip" onclick="filterCat('Nibbles & Bits', this)">Fries/Sides</div>
         <div class="toggle-chip" onclick="filterCat('Whipped Wonders', this)">Shakes</div>
+        <div class="toggle-chip" onclick="filterCat('Mojito Magic', this)">Mojitos</div>
+        <div class="toggle-chip" onclick="filterCat('Icy Sips', this)">Coolers</div>
+        <div class="toggle-chip" onclick="filterCat('Nature\'s Nectar', this)">Juices</div>
+        <div class="toggle-chip" onclick="filterCat('Frosted Leaf', this)">Tea</div>
+        <div class="toggle-chip" onclick="filterCat('ADD-ON', this)">Add-Ons</div>
     </div>
 
     <div class="menu-grid" id="menu-root">
