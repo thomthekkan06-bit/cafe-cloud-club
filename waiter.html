@@ -24,7 +24,6 @@
             margin: 0; padding: 20px;
         }
 
-        /* --- PIN LOCK --- */
         #pin-overlay { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(15, 17, 21, 0.98); z-index: 10000; 
@@ -41,7 +40,6 @@
         }
         .btn-unlock { background: var(--primary); width: 100%; padding: 15px; border:none; border-radius:8px; color:white; font-weight:800; cursor:pointer; }
 
-        /* --- HEADER --- */
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .brand { font-size: 1.5rem; font-weight: 800; color: white; }
         
@@ -51,15 +49,12 @@
             border-bottom: 1px solid var(--border); padding-bottom: 10px;
         }
 
-        /* --- GRID --- */
         .tables-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px;
         }
 
-        /* --- CARD STYLES --- */
         .table-card {
-            background: var(--surface); 
-            border: 1px solid var(--border);
+            background: var(--surface); border: 1px solid var(--border);
             border-radius: 12px; height: 140px;
             display: flex; flex-direction: column; justify-content: space-between; padding: 15px;
             cursor: pointer; transition: 0.2s; position: relative; overflow: hidden;
@@ -67,68 +62,28 @@
         .table-card:active { transform: scale(0.95); }
         
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
-        
-        /* Fixed Contrast: Lighter color for better visibility */
-        .table-num { 
-            font-size: 2.2rem; 
-            font-weight: 800; 
-            font-family: 'JetBrains Mono'; 
-            color: #e5e7eb; /* High visibility grey/white */
-            transition: color 0.3s;
-        }
-        
-        .bill-total { 
-            font-size: 0.9rem; font-weight: 600; 
-            color: var(--text-muted); background: rgba(0,0,0,0.3); 
-            padding: 4px 8px; border-radius: 6px; 
-        }
+        .table-num { font-size: 2.2rem; font-weight: 800; font-family: 'JetBrains Mono'; color: #e5e7eb; transition: color 0.3s; }
+        .bill-total { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 6px; }
+        .timer-display { font-size: 1.5rem; font-weight: 700; font-family: 'JetBrains Mono'; text-align: center; margin: 10px 0; opacity: 1; }
+        .status-text { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; text-align: center; opacity: 0.8; }
 
-        .timer-display { 
-            font-size: 1.5rem; font-weight: 700; font-family: 'JetBrains Mono'; 
-            text-align: center; margin: 10px 0; opacity: 1;
-        }
-
-        .status-text { 
-            font-size: 0.75rem; font-weight: 700; 
-            text-transform: uppercase; text-align: center; opacity: 0.8;
-        }
-
-        /* --- DYNAMIC STATES --- */
-        
-        /* FREE STATE - Clean & Minimal */
-        .status-free { 
-            opacity: 1; 
-            border-color: #333; /* Subtle border */
-        }
-        .status-free .table-num { color: #555; /* Dimmed number to push it back visually */ }
-        .status-free .timer-display { display: none; /* HIDE TIMER */ }
-        .status-free .bill-total { display: none; /* HIDE BILL */ }
+        /* FREE STATE */
+        .status-free { opacity: 1; border-color: #333; }
+        .status-free .table-num { color: #666; }
+        .status-free .timer-display, .status-free .bill-total { display: none; }
         .status-free .status-text { color: #555; letter-spacing: 2px; }
 
-        /* OCCUPIED: FRESH (< 60m) - GREEN */
+        /* OCCUPIED STATES */
         .status-fresh { border: 1px solid var(--success); background: rgba(16, 185, 129, 0.1); }
-        .status-fresh .table-num { color: var(--success); }
-        .status-fresh .timer-display { color: var(--success); }
-        .status-fresh .bill-total { color: var(--success); }
-        .status-fresh .status-text { color: var(--success); }
+        .status-fresh .table-num, .status-fresh .timer-display, .status-fresh .bill-total, .status-fresh .status-text { color: var(--success); }
 
-        /* OCCUPIED: WARNING (60-90m) - YELLOW */
         .status-warning { border: 1px solid var(--warning); background: rgba(245, 158, 11, 0.1); }
-        .status-warning .table-num { color: var(--warning); }
-        .status-warning .timer-display { color: var(--warning); }
-        .status-warning .bill-total { color: var(--warning); }
-        .status-warning .status-text { color: var(--warning); }
+        .status-warning .table-num, .status-warning .timer-display, .status-warning .bill-total, .status-warning .status-text { color: var(--warning); }
 
-        /* OCCUPIED: CAMPER (> 90m) - RED */
         .status-camper { border: 1px solid var(--danger); background: rgba(239, 68, 68, 0.15); animation: pulseRed 2s infinite; }
-        .status-camper .table-num { color: var(--danger); }
-        .status-camper .timer-display { color: var(--danger); }
-        .status-camper .bill-total { color: var(--danger); }
-        .status-camper .status-text { color: var(--danger); }
-
+        .status-camper .table-num, .status-camper .timer-display, .status-camper .bill-total, .status-camper .status-text { color: var(--danger); }
+        
         @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
-
-        /* BAR STYLE */
         .is-bar { border-style: dashed; }
     </style>
 </head>
@@ -169,7 +124,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- AUTH ---
         window.checkPin = () => {
             if(document.getElementById('pin-input').value === '2024') {
                 document.getElementById('pin-overlay').style.display = 'none';
@@ -177,31 +131,24 @@
             } else alert("Wrong PIN");
         }
 
-        // We store live data here so the timer interval can update the UI 
-        // without hitting Firebase every second.
         let liveTableData = {};
 
         function loadTables() {
             onValue(ref(db, 'orders'), (snapshot) => {
                 const orders = snapshot.val() || {};
-                liveTableData = {}; // Reset local state
+                liveTableData = {}; 
 
-                // 1. Process Orders to find Occupied Tables
                 Object.values(orders).forEach(o => {
-                    // Only care about active orders
-                    if (o.status !== 'completed' && o.status !== 'rejected' && o.status !== 'delivered') {
-                        
-                        // Safe check for customer name
+                    // Logic Update: Ignore Pending Orders!
+                    if (o.status !== 'completed' && o.status !== 'rejected' && o.status !== 'delivered' && o.status !== 'pending') {
                         const customerName = (o.customer && o.customer.name) ? o.customer.name : "";
                         const match = customerName.match(/Table (\w+)/i);
                         
                         if (match) {
                             const tableId = match[1];
                             const total = o.financials ? o.financials.grandTotal : 0;
-                            const startTime = o.timestamp; // When order was placed
+                            const startTime = o.timestamp; 
 
-                            // Logic: If a table has multiple active orders, we want the OLDEST timestamp
-                            // (When they first sat down) and the SUM of the money.
                             if (!liveTableData[tableId] || startTime < liveTableData[tableId].timestamp) {
                                 liveTableData[tableId] = {
                                     timestamp: startTime,
@@ -209,76 +156,52 @@
                                     status: 'OCCUPIED'
                                 };
                             } else {
-                                // Just add to total if we already have the start time
                                 liveTableData[tableId].total += total;
                             }
                         }
                     }
                 });
 
-                renderGrid(); // Render immediately when data changes
+                renderGrid(); 
             });
         }
 
         function renderGrid() {
             const gridMain = document.getElementById('grid-indoor-main');
             const gridAC = document.getElementById('grid-indoor-ac');
-            
             gridMain.innerHTML = "";
             gridAC.innerHTML = "";
-
-            // --- SECTION 1: Indoor Dining (Tables 1-7) ---
-            for(let i=1; i<=7; i++) {
-                createCard(i, gridMain, liveTableData[i]);
-            }
-            
-            // --- BAR (ID: 8) ---
+            for(let i=1; i<=7; i++) createCard(i, gridMain, liveTableData[i]);
             createCard(8, gridMain, liveTableData[8], true, "BAR");
-
-            // --- SECTION 2: Indoor AC (Tables 9-13) ---
-            for(let i=9; i<=13; i++) {
-                createCard(i, gridAC, liveTableData[i]);
-            }
+            for(let i=9; i<=13; i++) createCard(i, gridAC, liveTableData[i]);
         }
 
         function createCard(id, container, data, isBar = false, labelOverride = null) {
             const div = document.createElement('div');
             const displayLabel = labelOverride || id;
             
-            // Default State (Free)
             let statusClass = 'status-free';
-            let timeText = ''; // Removed placeholder
-            let totalText = ''; // Removed placeholder
+            let timeText = ''; 
+            let totalText = ''; 
             let statusLabel = 'FREE';
 
-            // Active State
             if (data) {
-                // Calculate Duration
                 const diff = Date.now() - data.timestamp;
                 const totalMinutes = Math.floor(diff / 60000);
                 const hrs = Math.floor(totalMinutes / 60);
                 const mins = totalMinutes % 60;
-                
                 timeText = `${hrs}:${mins.toString().padStart(2, '0')}`;
                 totalText = `₹${data.total}`;
                 statusLabel = 'OCCUPIED';
 
-                // BRUTAL LOGIC COLORS
-                if (totalMinutes < 60) {
-                    statusClass = 'status-fresh';      // < 1 hr (Green)
-                } else if (totalMinutes < 90) {
-                    statusClass = 'status-warning';    // 1-1.5 hr (Yellow)
-                } else {
-                    statusClass = 'status-camper';     // > 1.5 hr (Red/Pulse)
-                }
+                if (totalMinutes < 60) statusClass = 'status-fresh';
+                else if (totalMinutes < 90) statusClass = 'status-warning';
+                else statusClass = 'status-camper';
             }
 
             div.className = `table-card ${statusClass} ${isBar ? 'is-bar' : ''}`;
-            
-            // Clicking opens the order page for that table
             div.onclick = () => window.location.href = `table.html?table=${id}`;
             
-            // Conditional rendering: Timer and Bill ONLY appear if occupied
             const timerHtml = data ? `<div class="timer-display">${timeText}</div>` : '';
             const billHtml = data ? `<div class="bill-total">${totalText}</div>` : '';
 
@@ -293,15 +216,7 @@
             container.appendChild(div);
         }
 
-        // --- CLOCK & AUTO-UPDATE ---
-        // We update the grid every minute to refresh the colors/timers 
-        // even if no new data comes from Firebase.
-        setInterval(() => {
-            renderGrid();
-            document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-        }, 60000);
-        
-        // Initial clock set
+        setInterval(() => { renderGrid(); document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }, 60000);
         document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
     </script>
 </body>
