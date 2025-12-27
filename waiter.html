@@ -69,10 +69,17 @@
         .table-num { font-size: 2.5rem; font-weight: 800; font-family: 'JetBrains Mono'; }
         .status-pill { font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; margin-top: 10px; text-transform: uppercase; }
 
+        /* SPECIAL BAR STYLE */
+        .table-card.is-bar { border: 1px solid var(--warning); background: rgba(245, 158, 11, 0.05); }
+        .is-bar .table-num { font-size: 2rem; color: var(--warning); }
+
         /* STATUS COLORS */
         .status-free { border-top: 4px solid var(--success); }
         .status-free .table-num { color: var(--success); }
         .status-free .status-pill { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+        
+        /* Override color for Bar if free */
+        .is-bar.status-free .table-num { color: var(--warning); }
 
         .status-busy { border-top: 4px solid var(--danger); background: rgba(239, 68, 68, 0.05); }
         .status-busy .table-num { color: var(--danger); }
@@ -95,11 +102,11 @@
         <div id="clock" style="font-family:'JetBrains Mono';">00:00</div>
     </div>
 
-    <div class="section-title">Outdoor Dining (1-7)</div>
-    <div class="tables-grid" id="grid-outdoor"></div>
+    <div class="section-title">Indoor Dining (1-7 + Bar)</div>
+    <div class="tables-grid" id="grid-indoor-main"></div>
 
-    <div class="section-title">Indoor AC (8-12)</div>
-    <div class="tables-grid" id="grid-indoor"></div>
+    <div class="section-title">Indoor AC (9-13)</div>
+    <div class="tables-grid" id="grid-indoor-ac"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -117,57 +124,60 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // CONFIG: This is where the tables are defined
-        const OUTDOOR_COUNT = 7; 
-        const INDOOR_COUNT = 5;  
-
         window.checkPin = () => {
-            // Default PIN is 2024
             if(document.getElementById('pin-input').value === '2024') {
                 document.getElementById('pin-overlay').style.display = 'none';
                 loadTables();
             } else alert("Wrong PIN");
         }
 
-        // This function BUILDS the tables automatically
         function loadTables() {
             onValue(ref(db, 'orders'), (snapshot) => {
                 const orders = snapshot.val() || {};
                 
-                const gridOutdoor = document.getElementById('grid-outdoor');
-                const gridIndoor = document.getElementById('grid-indoor');
+                const gridMain = document.getElementById('grid-indoor-main');
+                const gridAC = document.getElementById('grid-indoor-ac');
                 
-                gridOutdoor.innerHTML = "";
-                gridIndoor.innerHTML = "";
+                gridMain.innerHTML = "";
+                gridAC.innerHTML = "";
 
-                // Check which tables are busy
+                // Check busy status
                 const occupied = {};
                 Object.values(orders).forEach(o => {
                     if (o.status !== 'completed' && o.status !== 'rejected' && o.status !== 'delivered') {
-                        const match = (o.customer.name || "").match(/Table (\d+)/i);
+                        // Regex now handles "Table 8" or "Table Bar" (though we use 8 for Bar internally)
+                        const match = (o.customer.name || "").match(/Table (\w+)/i);
                         if(match) occupied[match[1]] = true;
                     }
                 });
 
-                // Generate Outdoor Tables (1 to 7)
-                for(let i=1; i<=OUTDOOR_COUNT; i++) {
-                    createCard(i, gridOutdoor, occupied[i]);
+                // --- SECTION 1: Indoor Dining (1-7) ---
+                for(let i=1; i<=7; i++) {
+                    createCard(i, gridMain, occupied[i], false);
                 }
+                
+                // --- BAR TABLE (ID: 8) ---
+                // We treat Table 8 as the "Bar Table"
+                createCard(8, gridMain, occupied[8], true, "BAR");
 
-                // Generate Indoor Tables (8 to 12)
-                for(let i=OUTDOOR_COUNT+1; i<=OUTDOOR_COUNT+INDOOR_COUNT; i++) {
-                    createCard(i, gridIndoor, occupied[i]);
+                // --- SECTION 2: Indoor AC (9-13) ---
+                // 5 Tables starting from 9
+                for(let i=9; i<=13; i++) {
+                    createCard(i, gridAC, occupied[i], false);
                 }
             });
         }
 
-        function createCard(num, container, isBusy) {
+        function createCard(id, container, isBusy, isBar = false, labelOverride = null) {
             const div = document.createElement('div');
-            div.className = `table-card ${isBusy ? 'status-busy' : 'status-free'}`;
-            // This link opens the specific table order page
-            div.onclick = () => window.location.href = `table.html?table=${num}`;
+            const displayLabel = labelOverride || id;
+            
+            // Add specific class if it's the Bar
+            div.className = `table-card ${isBusy ? 'status-busy' : 'status-free'} ${isBar ? 'is-bar' : ''}`;
+            
+            div.onclick = () => window.location.href = `table.html?table=${id}`;
             div.innerHTML = `
-                <div class="table-num">${num}</div>
+                <div class="table-num">${displayLabel}</div>
                 <div class="status-pill">${isBusy ? 'Occupied' : 'Free'}</div>
             `;
             container.appendChild(div);
