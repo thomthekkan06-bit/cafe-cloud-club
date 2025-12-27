@@ -94,7 +94,7 @@
         }
         .order-card.status-pending { border-left-color: var(--primary); }
         .order-card.status-cooking { border-left-color: var(--warning); }
-        .order-card.status-done { border-left-color: var(--success); } /* Added Done State */
+        .order-card.status-done { border-left-color: var(--success); }
         .order-card.status-out_for_delivery { border-left-color: var(--purple); }
 
         .card-top { 
@@ -138,9 +138,10 @@
         .btn-act:hover { opacity: 0.9; }
         .btn-green { background: var(--success); color: white; }
         .btn-yellow { background: var(--warning); color: black; }
-        .btn-purple { background: var(--purple); color: white; } /* Added Purple Button */
+        .btn-purple { background: var(--purple); color: white; }
         .btn-red { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
         .btn-blue { background: rgba(59, 130, 246, 0.2); color: var(--primary); border: 1px solid var(--primary); }
+        .btn-grey { background: #333; color: #888; cursor: not-allowed; }
 
         /* --- TABLE GRID --- */
         .section-label { 
@@ -321,7 +322,7 @@
             if(document.getElementById('pin-input').value === '2024') {
                 document.getElementById('pin-overlay').style.display = 'none';
                 initData();
-                loadMenuForEdit(); // Load Menu dynamically
+                loadMenuForEdit(); 
             } else alert("Wrong PIN");
         }
 
@@ -330,20 +331,16 @@
         let tableData = {}; 
         let currentSettleTable = null;
         let currentEditKey = null; 
-        let fullMenu = []; // Store fetched menu
+        let fullMenu = []; 
 
         // --- FETCH MENU FOR DROPDOWN ---
         function loadMenuForEdit() {
             onValue(ref(db, 'menu'), (snapshot) => {
                 const data = snapshot.val() || {};
                 fullMenu = Object.values(data);
-                
-                // Sort by Name
                 fullMenu.sort((a,b) => a.name.localeCompare(b.name));
-
                 const select = document.getElementById('menu-select');
                 select.innerHTML = '<option value="">-- Select Item --</option>';
-                
                 fullMenu.forEach(item => {
                     const opt = document.createElement('option');
                     opt.value = item.name;
@@ -359,11 +356,8 @@
             const select = document.getElementById('menu-select');
             const priceInput = document.getElementById('new-item-price');
             const selectedOpt = select.options[select.selectedIndex];
-            if(selectedOpt && selectedOpt.dataset.price) {
-                priceInput.value = selectedOpt.dataset.price;
-            } else {
-                priceInput.value = "";
-            }
+            if(selectedOpt && selectedOpt.dataset.price) priceInput.value = selectedOpt.dataset.price;
+            else priceInput.value = "";
         }
 
         function initData() {
@@ -382,12 +376,11 @@
                     // 1. LEFT LIST: KITCHEN QUEUE
                     onlineOrders.push({ key, ...order });
 
-                    // 2. RIGHT MAP: DINE-IN TABLES (Only active if approved)
+                    // 2. RIGHT MAP: DINE-IN TABLES
                     if (type !== 'Delivery' && type !== 'Pickup') {
                         const match = customerName.match(/Table (\w+)/i);
                         if (match && order.status !== 'pending') {
                             const tId = match[1];
-                            
                             if (!tableData[tId]) {
                                 tableData[tId] = { 
                                     total: 0, 
@@ -401,8 +394,8 @@
                             const f = order.financials || {};
                             tableData[tId].total += (f.grandTotal || 0);
                             tableData[tId].fins.sub += (f.subTotal || 0);
-                            tableData[tId].fins.disc += (f.discountVal || f.discountAmount || 0);
-                            tableData[tId].fins.pack += (f.packingTotal || f.packingCharge || 0);
+                            tableData[tId].fins.disc += (f.discountVal || 0); // Corrected
+                            tableData[tId].fins.pack += (f.packingTotal || 0); // Corrected
 
                             if (order.timestamp < tableData[tId].timestamp) tableData[tId].timestamp = order.timestamp;
                             
@@ -429,11 +422,8 @@
                 const type = order.orderType || 'Dine-In';
                 const c = order.customer || {};
                 
-                // --- 1. CUSTOMER INFO LOGIC ---
                 let infoHtml = '';
-                
                 if (type === 'Delivery' || type === 'Pickup') {
-                    // SHOW: Name, Phone, Address
                     infoHtml = `
                         <div class="info-grid">
                             <span class="info-label">Customer</span> <span class="info-val">${c.name || 'Guest'}</span>
@@ -442,7 +432,6 @@
                         </div>
                     `;
                 } else {
-                    // DINE-IN: Show Table & Name ONLY
                     infoHtml = `
                         <div class="info-grid">
                             <span class="info-label">Table</span>    <span class="info-val" style="color:var(--primary); font-size:1.1rem;">${c.name || 'Table ?'}</span>
@@ -450,7 +439,6 @@
                     `;
                 }
 
-                // --- 2. ITEMS LOGIC ---
                 let itemsHtml = (order.items || []).map(i => `
                     <div class="item-row">
                         <span><span class="item-qty">${i.qty}x</span> ${i.name}</span>
@@ -458,39 +446,46 @@
                     </div>
                 `).join('');
 
-                // --- 3. FINANCIALS LOGIC (UPDATED VARIABLE NAMES) ---
-                const f = order.financials || { subTotal:0, discountVal:0, packingTotal:0, grandTotal:0 };
-                // Fallbacks for older data structure compatibility
-                const discount = f.discountVal || f.discountAmount || 0;
-                const packing = f.packingTotal || f.packingCharge || 0;
+                // --- FIXED FINANCIALS ---
+                const f = order.financials || {};
+                const discount = f.discountVal || 0; // Corrected Variable
+                const packing = f.packingTotal || 0; // Corrected Variable
+                const subTotal = f.subTotal || 0;
+                const grandTotal = f.grandTotal || 0;
                 
                 const discountText = f.couponCode && f.couponCode !== "NONE" ? `Discount (${f.couponCode})` : 'Discount';
                 
                 let finHtml = `
                     <div class="fin-box">
-                        <div class="fin-row"><span>Subtotal</span> <span>₹${f.subTotal || 0}</span></div>
+                        <div class="fin-row"><span>Subtotal</span> <span>₹${subTotal}</span></div>
                         ${(discount > 0) ? `<div class="fin-row" style="color:var(--warning)"><span>${discountText}</span> <span>-₹${discount}</span></div>` : ''}
                         ${(packing > 0) ? `<div class="fin-row"><span>Packing</span> <span>₹${packing}</span></div>` : ''}
-                        <div class="fin-row total"><span>TOTAL</span> <span>₹${f.grandTotal || 0}</span></div>
+                        <div class="fin-row total"><span>TOTAL</span> <span>₹${grandTotal}</span></div>
                     </div>
                 `;
 
-                // --- 4. ACTIONS (UPDATED FLOW) ---
+                // --- UPDATED ACTIONS & EDIT VISIBILITY ---
                 let btnHtml = '';
+                let showEdit = true;
+
                 if(order.status === 'pending') {
                     btnHtml = `<button class="btn-act btn-red" onclick="rejectOrder('${order.key}')">Reject</button>
                                <button class="btn-act btn-green" onclick="updateStatus('${order.key}', 'cooking')">Accept</button>`;
                 } else if (order.status === 'cooking') {
-                    // Changing from "Mark Ready" (direct to out) to "Mark Ready" (sets status DONE)
+                    // COOKING -> MARK READY (DONE)
                      btnHtml = `<button class="btn-act btn-yellow" onclick="updateStatus('${order.key}', 'done')">Mark Ready</button>`;
                 } else if (order.status === 'done') {
-                    // NEW STATE: Ready -> Out For Delivery
-                     btnHtml = `<button class="btn-act btn-purple" onclick="updateStatus('${order.key}', 'out_for_delivery')">Out For Delivery</button>`;
+                    // DONE (READY) -> WAITING (Gray button, no action)
+                     btnHtml = `<button class="btn-act btn-grey" disabled>Waiting for Partner...</button>`;
+                     showEdit = false; // HIDE EDIT
+                } else if (order.status === 'out_for_delivery') {
+                    // OUT -> VIOLET BUTTON (Force Complete option)
+                     btnHtml = `<button class="btn-act btn-purple" onclick="forceComplete('${order.key}')">Out For Delivery</button>`;
+                     showEdit = false; // HIDE EDIT
                 } else {
                      btnHtml = `<button class="btn-act btn-green" onclick="completeOrder('${order.key}')">Complete</button>`;
                 }
 
-                // Inject Card
                 const div = document.createElement('div');
                 div.className = `order-card status-${order.status}`;
                 div.innerHTML = `
@@ -504,7 +499,7 @@
                         ${finHtml}
                     </div>
                     <div class="card-actions">
-                        <button class="btn-act btn-blue" style="flex:0.3" onclick="openEditModal('${order.key}')">EDIT</button>
+                        ${showEdit ? `<button class="btn-act btn-blue" style="flex:0.3" onclick="openEditModal('${order.key}')">EDIT</button>` : ''}
                         ${btnHtml}
                     </div>
                 `;
@@ -570,7 +565,6 @@
             document.getElementById('settle-modal').style.display = 'flex';
             document.getElementById('modal-table-id').innerText = tableId;
             
-            // Render Items
             const list = document.getElementById('modal-items-list');
             list.innerHTML = data.items.map(i => 
                 `<div style="display:flex; justify-content:space-between; margin-bottom:5px; color:#aaa;">
@@ -578,7 +572,6 @@
                 </div>`
             ).join('');
 
-            // Render Financials
             document.getElementById('m-sub').innerText = `₹${data.fins.sub}`;
             document.getElementById('m-disc').innerText = `-₹${data.fins.disc}`;
             document.getElementById('m-pack').innerText = `₹${data.fins.pack}`;
@@ -637,7 +630,7 @@
 
             let order = snap.val();
             let items = order.items || [];
-            items.splice(index, 1); // Remove
+            items.splice(index, 1);
             updateOrderFinancials(order, items);
             await update(orderRef, order);
             renderEditList(items);
@@ -662,14 +655,12 @@
             let order = snap.val();
             let items = order.items || [];
             
-            // Add Item with Category logic for packing
             items.push({ name, price, qty, category: category });
             
             updateOrderFinancials(order, items);
             await update(orderRef, order);
             renderEditList(items);
             
-            // Reset fields
             select.value = "";
             document.getElementById('new-item-price').value = "";
             document.getElementById('new-item-qty').value = "1";
@@ -678,24 +669,17 @@
         function updateOrderFinancials(order, items) {
             order.items = items;
             
-            // 1. Recalculate Subtotal
             let sub = 0;
             let pack = 0;
-            
-            // 2. Recalculate Packing Charge (Smart Logic)
             const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
             
             items.forEach(i => {
                 sub += (i.price * i.qty);
-                
-                // Smart Packing Calculation
-                let charge = 10; // Default
+                let charge = 10;
                 if(i.category) {
                     if (i.category === 'ADD-ON') charge = i.name.startsWith("Hummus") ? 7 : 5;
                     else if (fiveRsCats.includes(i.category)) charge = 5;
                 }
-                
-                // Add Logic for Rice extras
                 if (i.name && (i.name.includes("Tossed Rice") || i.name.includes("Sorted / Boiled"))) {
                     pack += (7 * i.qty);
                 } else {
@@ -703,8 +687,7 @@
                 }
             });
             
-            // Keep existing Discount Code logic
-            let disc = order.financials ? (order.financials.discountVal || order.financials.discountAmount) : 0;
+            let disc = order.financials ? (order.financials.discountVal || 0) : 0;
             let code = order.financials ? order.financials.couponCode : null;
 
             order.financials = {
@@ -723,6 +706,13 @@
 
         window.updateStatus = (key, status) => update(ref(db, 'orders/'+key), {status});
         window.rejectOrder = (key) => remove(ref(db, 'orders/'+key)); 
+        
+        window.forceComplete = (key) => {
+            if(confirm("Driver should complete this. Force Complete?")) {
+                completeOrder(key);
+            }
+        }
+        
         window.completeOrder = async (key) => {
             const r = ref(db, 'orders/'+key);
             const s = await get(r);
