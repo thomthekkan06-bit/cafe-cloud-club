@@ -179,7 +179,7 @@
         <div class="pin-box">
             <h3 style="margin-top:0;">🔒 Admin Access</h3>
             <p style="color:var(--text-muted); font-size:0.9rem;">Enter security PIN to view financials</p>
-            <input type="password" id="pin-input" class="pin-input" placeholder="••••" maxlength="4" inputmode="numeric" pattern="[0-9]*">
+            <input type="password" id="pin-input" class="pin-input" placeholder="••••" maxlength="4" inputmode="numeric" pattern="[0-9]*" autofocus>
             <button class="btn-primary" id="unlock-btn">UNLOCK DASHBOARD</button>
         </div>
     </div>
@@ -307,22 +307,34 @@
         
         let allOrders = [];
 
-        document.getElementById('unlock-btn').addEventListener('click', () => {
-            const input = document.getElementById('pin-input');
-            if(input.value === ACCESS_PIN) {
+        // --- PIN LOGIC ---
+        const pinInput = document.getElementById('pin-input');
+        const unlockBtn = document.getElementById('unlock-btn');
+
+        // Allow pressing "Enter" key to unlock
+        pinInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                checkPin();
+            }
+        });
+
+        unlockBtn.addEventListener('click', checkPin);
+
+        function checkPin() {
+            if(pinInput.value === ACCESS_PIN) {
                 document.getElementById('pin-overlay').style.display = 'none';
                 loadHistory(); 
             } else {
                 alert("❌ Access Denied");
-                input.value = '';
+                pinInput.value = '';
+                pinInput.focus();
             }
-        });
+        }
 
         function loadHistory() {
             document.getElementById('table-body').innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px;">Loading full history...</td></tr>`;
             
-            // --- BRUTAL FIX: REMOVED limitToLast(500) ---
-            // Now fetches ALL history so your date filters actually work.
+            // FETCH EVERYTHING (No Limit)
             const historyQuery = query(ref(db, 'history'));
 
             onValue(historyQuery, (snapshot) => {
@@ -466,4 +478,26 @@
         }
 
         window.exportToCSV = function() {
-            if(allOrders.length === 0) return alert("No
+            if(allOrders.length === 0) return alert("No data to export.");
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Date,Time,OrderID,Customer,Phone,Type,KitchenRevenue,DeliveryFee,TotalAmount\n";
+            allOrders.forEach(o => {
+                const d = new Date(o.completedAt || o.timestamp);
+                const fins = o.financials || {grandTotal:0, deliveryFee:0};
+                const row = [
+                    d.toLocaleDateString(), d.toLocaleTimeString(), o.orderId,
+                    o.customer.name, o.customer.phone, o.orderType,
+                    (fins.grandTotal - (fins.deliveryFee||0)), (fins.deliveryFee||0), fins.grandTotal
+                ].join(",");
+                csvContent += row + "\n";
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "cafe_sales_history.csv");
+            document.body.appendChild(link);
+            link.click();
+        }
+    </script>
+</body>
+</html>
