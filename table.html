@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order at Table | Cafe Cloud Club</title>
+    
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Table Page Specific Overrides */
+        .left-sidebar, .header-bar, .mobile-info-card { display: none !important; } /* Hide Sidebar/Header */
+        .dashboard { display: block; padding: 0; }
+        
+        .table-header {
+            background: #121212; color: white; padding: 20px;
+            position: sticky; top: 0; z-index: 999;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .table-title { font-size: 1.2rem; font-weight: 800; }
+        .table-subtitle { font-size: 0.8rem; color: #aaa; }
+        
+        .main-content { padding: 20px; padding-top: 10px; }
+        
+        /* Floating Cart Button adjustments */
+        .mobile-cart-btn { bottom: 20px; right: 20px; }
+        
+        /* Clean up checkout modal for Table ordering */
+        #address-group, #time-label, #c-time, .radio-group { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="table-header">
+        <div>
+            <div class="table-title" id="header-table-num">Table --</div>
+            <div class="table-subtitle">Dine-In Menu</div>
+        </div>
+        <a href="index.html" style="color:#3b82f6; text-decoration:none; font-size:0.8rem;">Home</a>
+    </div>
+
+    <div class="dashboard" id="main-dashboard">
+        
+        <div class="main-content">
+            <div class="advanced-filters" style="margin-top:10px;">
+                <div class="toggle-chip active" onclick="setCategoryFilter('All', this)">All</div>
+                <div class="toggle-chip" onclick="setCategoryFilter('Bun-Tastic Burgers', this)">Burgers</div>
+                <div class="toggle-chip" onclick="setCategoryFilter('Italian Indulgence', this)">Pasta</div>
+                <div class="toggle-chip" onclick="setCategoryFilter('Whipped Wonders', this)">Shakes</div>
+                <div class="toggle-chip" onclick="setCategoryFilter('Mojito Magic', this)">Mojitos</div>
+            </div>
+
+            <div class="menu-grid" id="menu-root" style="margin-top:20px;">
+                </div>
+        </div>
+
+        <div class="order-sidebar" id="cart-sidebar" style="z-index:10000;">
+            <div class="cart-header-mobile" style="display:flex;">
+                <button class="back-btn" onclick="toggleCartPage()"><i class="fas fa-arrow-down"></i> Close Cart</button>
+            </div>
+            <h2 style="margin:10px 0;">Your Order</h2>
+            <div class="cart-items-container" id="cart-items-list"></div>
+            
+            <div class="cart-summary">
+                <div class="summary-row summary-total">
+                    <span>Total</span>
+                    <span id="grand-total">0</span>
+                </div>
+                <button class="checkout-btn" id="main-checkout-btn" onclick="openTableCheckout()">Place Order</button>
+            </div>
+        </div>
+    </div>
+
+    <button class="mobile-cart-btn" onclick="toggleCartPage()">
+        <i class="fas fa-utensils"></i> View Order <span id="mobile-count">(0)</span>
+    </button>
+
+    <div class="modal-overlay" id="checkout-modal">
+        <div class="modal-card">
+            <h3 style="margin-top:0;">Confirm Table Order</h3>
+            <p id="modal-table-display" style="color:var(--primary); font-weight:bold; margin-bottom:20px;"></p>
+            
+            <div class="input-group">
+                <label>Customer Name (Optional)</label>
+                <input type="text" class="input-field" id="c-name" placeholder="Guest">
+            </div>
+
+            <button class="checkout-btn" onclick="finalizeTableOrder()">SEND TO KITCHEN 👨‍🍳</button>
+            <button style="background:none; border:none; width:100%; padding:10px; margin-top:5px; color:#777;" onclick="document.getElementById('checkout-modal').style.display='none'">Cancel</button>
+        </div>
+    </div>
+
+    <div class="success-screen" id="success-view">
+        <div class="success-icon-container"><div class="checkmark-draw"></div></div>
+        <h1 class="success-title">Order Sent!</h1>
+        <p class="success-subtitle">Sit back and relax. Your food is being prepared.</p>
+        <button class="checkout-btn" onclick="window.location.reload()" style="width:auto; padding:10px 30px;">Order More</button>
+    </div>
+
+    <div class="modal-overlay" id="customization-modal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header-row">
+                 <h3 id="modal-item-title" style="margin:0; color:var(--primary);">Item</h3>
+                 <button onclick="closeCustomizationModal()" style="background:none; border:none; font-size:1.5rem;">&times;</button>
+            </div>
+            <div id="modal-options-wrapper" class="modal-scroll-area"></div>
+            <div class="modal-footer-action">
+                <div style="font-weight:700;">Total: <span id="modal-live-total">0</span></div>
+                <button class="checkout-btn" onclick="addToCartFromModal()" style="width: auto;">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import necessary Firebase functions
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, push, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
+            authDomain: "cafe-orders-1afa1.firebaseapp.com",
+            databaseURL: "https://cafe-orders-1afa1-default-rtdb.firebaseio.com",
+            projectId: "cafe-orders-1afa1",
+            messagingSenderId: "274410745480",
+            appId: "1:274410745480:web:9964c3914d512aed8d793d"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // --- 1. GET TABLE NUMBER ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const TABLE_NUM = urlParams.get('table') || "??";
+        document.getElementById('header-table-num').innerText = `Table ${TABLE_NUM}`;
+        document.getElementById('modal-table-display').innerText = `Ordering for Table ${TABLE_NUM}`;
+
+        // --- 2. MENU LOGIC (Minified version of app.js) ---
+        let menuData = [];
+        let cart = {};
+        const rupeeSign = "₹";
+
+        // Load Menu
+        onValue(ref(db, 'menu'), (snapshot) => {
+            const data = snapshot.val();
+            menuData = [];
+            if(data) {
+                Object.keys(data).forEach(key => {
+                    const item = data[key];
+                    if(item.inStock !== false && item.stockStatus !== 'MANUAL_OFF') menuData.push(item);
+                });
+            }
+            renderMenu('All');
+        });
+
+        window.setCategoryFilter = (cat, btn) => {
+            document.querySelectorAll('.toggle-chip').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderMenu(cat);
+        }
+
+        function renderMenu(cat) {
+            const root = document.getElementById('menu-root');
+            root.innerHTML = '';
+            const filtered = menuData.filter(i => cat === 'All' || i.category === cat);
+            
+            filtered.forEach((item, index) => {
+                // Find original index for modal logic
+                const originalIndex = menuData.indexOf(item);
+                const div = document.createElement('div');
+                div.className = `food-card ${item.type}`;
+                div.innerHTML = `
+                    <div class="card-top">
+                        <div class="food-title">${item.name}</div>
+                        <div class="food-meta">${item.category}</div>
+                    </div>
+                    <div class="price-row">
+                        <div class="price">₹${item.price}</div>
+                        <button class="add-btn-mini" onclick="openOptionModal(${originalIndex})">ADD +</button>
+                    </div>
+                `;
+                root.appendChild(div);
+            });
+        }
+
+        // --- 3. CART LOGIC ---
+        window.openOptionModal = (index) => {
+            // Simplified: just add directly for now to save complexity in this specific file
+            // You can copy the full modal logic from app.js if needed
+            const item = menuData[index];
+            addToCart(item.name, item.price);
+        }
+
+        function addToCart(name, price) {
+            if(cart[name]) cart[name].qty++;
+            else cart[name] = { price: price, qty: 1 };
+            renderCart();
+            
+            // Animation
+            const btn = document.querySelector('.mobile-cart-btn');
+            btn.style.transform = "scale(1.1)";
+            setTimeout(() => btn.style.transform = "scale(1)", 200);
+        }
+
+        window.updateQty = (name, delta) => {
+            if(cart[name]) {
+                cart[name].qty += delta;
+                if(cart[name].qty <= 0) delete cart[name];
+                renderCart();
+            }
+        }
+
+        function renderCart() {
+            const list = document.getElementById('cart-items-list');
+            list.innerHTML = '';
+            let total = 0;
+            let count = 0;
+            
+            for(let key in cart) {
+                const item = cart[key];
+                total += item.price * item.qty;
+                count += item.qty;
+                list.innerHTML += `
+                    <div class="cart-item">
+                        <div class="cart-details">
+                            <span class="cart-name">${key}</span>
+                            <span class="cart-price">₹${item.price}</span>
+                        </div>
+                        <div class="qty-wrapper">
+                            <button class="qty-btn" onclick="updateQty('${key}', -1)">-</button>
+                            <span>${item.qty}</span>
+                            <button class="qty-btn" onclick="updateQty('${key}', 1)">+</button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('grand-total').innerText = "₹" + total;
+            document.getElementById('mobile-count').innerText = `(${count})`;
+            
+            const btn = document.getElementById('main-checkout-btn');
+            btn.disabled = count === 0;
+            btn.innerText = count === 0 ? "Cart Empty" : "Checkout";
+        }
+
+        window.toggleCartPage = () => {
+            const el = document.getElementById('cart-sidebar');
+            el.classList.toggle('active');
+        }
+
+        // --- 4. CHECKOUT LOGIC ---
+        window.openTableCheckout = () => {
+            document.getElementById('checkout-modal').style.display = 'flex';
+        }
+
+        window.finalizeTableOrder = () => {
+            const nameInput = document.getElementById('c-name').value.trim() || "Guest";
+            // TRICK: Prefix table number to name so it shows on Kitchen Display automatically
+            const finalName = `Table ${TABLE_NUM} (${nameInput})`; 
+            
+            const orderId = Math.floor(100000 + Math.random() * 900000);
+            
+            let total = 0;
+            let itemsList = [];
+            for(let key in cart) {
+                total += cart[key].price * cart[key].qty;
+                itemsList.push({
+                    name: key,
+                    qty: cart[key].qty,
+                    price: cart[key].price,
+                    type: 'veg' // Simplified
+                });
+            }
+
+            const orderData = {
+                orderId: orderId,
+                orderType: 'Dine-In', // Marks it as dine-in
+                timestamp: Date.now(),
+                status: 'pending',
+                customer: {
+                    name: finalName, // "Table 5 (Guest)"
+                    phone: "0000000000",
+                    address: "Dine-In"
+                },
+                items: itemsList,
+                financials: {
+                    grandTotal: total,
+                    subTotal: total
+                },
+                globalNote: `Table ${TABLE_NUM}`
+            };
+
+            push(ref(db, 'orders'), orderData).then(() => {
+                cart = {};
+                renderCart();
+                document.getElementById('checkout-modal').style.display = 'none';
+                document.getElementById('cart-sidebar').classList.remove('active');
+                document.getElementById('success-view').style.display = 'flex';
+            });
+        }
+        
+        // --- MODAL STUBS (To prevent errors if reusing logic) ---
+        window.closeCustomizationModal = () => document.getElementById('customization-modal').style.display='none';
+    </script>
+</body>
+</html>
