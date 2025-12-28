@@ -275,44 +275,48 @@
             renderMenu('All');
         });
 
-        // --- NEW: AUTO-FILL NAME LISTENER ---
-        // This checks if there is already an active session for this table
+        // --- SESSION LOCK & NAME AUTO-FILL ---
         onValue(ref(db, 'orders'), (snapshot) => {
             const data = snapshot.val();
-            if (!data) return;
+            const nameInput = document.getElementById('cust-name');
             
-            // 1. Find the most recent ACTIVE order for this table
-            const activeOrders = Object.values(data).filter(o => {
-                const nameStr = (o.customer && o.customer.name) ? o.customer.name : "";
-                
-                // Must match "Table X ..."
-                const matchesTable = nameStr.startsWith(`Table ${TABLE_ID}`);
-                
-                // Must be active (not completed/rejected/paid)
-                // We include 'pending' so name persists immediately after 1st order
-                const isActive = !['completed', 'paid', 'rejected'].includes(o.status);
-                
-                return matchesTable && isActive;
-            });
+            let shouldLock = false;
+            let foundName = "";
 
-            if (activeOrders.length > 0) {
-                // Sort by timestamp desc (newest first)
-                activeOrders.sort((a, b) => b.timestamp - a.timestamp);
-                const latest = activeOrders[0];
-                
-                // Extract Name: "Table 5 (John)" -> "John"
-                // Regex looks for content inside parentheses
-                const match = latest.customer.name.match(/\(([^)]+)\)/);
-                if (match && match[1]) {
-                    const existingName = match[1];
-                    const nameInput = document.getElementById('cust-name');
+            if (data) {
+                // Find active orders for this specific table
+                const activeOrders = Object.values(data).filter(o => {
+                    const nameStr = (o.customer && o.customer.name) ? o.customer.name : "";
+                    const matchesTable = nameStr.startsWith(`Table ${TABLE_ID}`);
+                    const isActive = !['completed', 'paid', 'rejected'].includes(o.status);
+                    return matchesTable && isActive;
+                });
+
+                if (activeOrders.length > 0) {
+                    // Sort by timestamp to find the very first order of the session
+                    activeOrders.sort((a, b) => a.timestamp - b.timestamp);
+                    const firstOrder = activeOrders[0];
                     
-                    // Only auto-fill if input is empty (don't overwrite user typing)
-                    // And ignore 'Guest' if that was somehow saved
-                    if (nameInput.value.trim() === '' && existingName !== 'Guest') {
-                        nameInput.value = existingName;
+                    // Regex extract: "Table 5 (John)" -> "John"
+                    const match = firstOrder.customer.name.match(/\(([^)]+)\)/);
+                    if (match && match[1]) {
+                        foundName = match[1];
+                        shouldLock = true;
                     }
                 }
+            }
+
+            if (shouldLock) {
+                if(foundName !== 'Guest') {
+                    nameInput.value = foundName;
+                    nameInput.disabled = true; // DISABLE INPUT
+                    nameInput.style.backgroundColor = "#eee"; 
+                    nameInput.title = "Name locked for current session";
+                }
+            } else {
+                // If table is free, unlock the field
+                nameInput.disabled = false;
+                nameInput.style.backgroundColor = "white";
             }
         });
 
@@ -523,8 +527,10 @@
         window.closeCheckout = () => document.getElementById('checkout-modal').style.display = 'none';
 
         window.placeOrder = () => {
-            const nameInput = document.getElementById('cust-name').value.trim() || "Guest";
-            const finalName = `Table ${TABLE_ID} (${nameInput})`;
+            const nameInput = document.getElementById('cust-name');
+            // If locked, we take the value; if not, we take what they typed (or default to Guest)
+            const nameVal = nameInput.value.trim() || "Guest";
+            const finalName = `Table ${TABLE_ID} (${nameVal})`;
             
             let total = 0;
             const items = [];
@@ -533,7 +539,7 @@
                 items.push({ name: key, qty: cart[key].qty, price: cart[key].price, type: cart[key].type });
             }
 
-            // CRITICAL FIX: STRUCTURE DATA EXACTLY LIKE APP.JS BUT WITH 0 PACKING
+            // ZERO PACKING CHARGE FOR DINE-IN
             const order = {
                 orderId: Math.floor(100000 + Math.random() * 900000),
                 orderType: 'Dine-In',
@@ -543,7 +549,7 @@
                     name: finalName, 
                     phone: '0000000000', 
                     address: 'Dine-In',
-                    email: '-' // Added for consistency
+                    email: '-' 
                 },
                 items: items,
                 financials: { 
