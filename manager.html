@@ -128,10 +128,12 @@
 
         /* Items Section */
         .items-list { margin: 10px 0; border-top: 1px dashed var(--border); padding-top: 10px; }
-        .item-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 4px; }
+        .item-row { display: flex; flex-direction: column; font-size: 0.9rem; margin-bottom: 8px; }
+        .item-top { display: flex; justify-content: space-between; }
         .item-qty { color: var(--primary); font-weight: 700; margin-right: 5px; }
         .item-price { font-family: 'JetBrains Mono'; color: var(--text-muted); }
         .item-void { text-decoration: line-through; color: var(--danger); opacity: 0.7; }
+        .item-custom { font-size: 0.75rem; color: #888; font-style: italic; margin-left: 20px; margin-top: 2px; }
 
         /* Financials Section */
         .fin-box { 
@@ -223,8 +225,10 @@
         .pin-input { background: var(--bg); border: 1px solid var(--border); color: white; font-size: 2rem; text-align: center; letter-spacing: 10px; padding: 10px; border-radius: 8px; width: 200px; margin: 20px 0; outline: none; }
         
         /* EXT ORDER ITEM */
-        .ext-item-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px; margin-bottom: 5px; border-radius: 4px; }
-        .btn-sm-del { color: var(--danger); background: none; border: none; cursor: pointer; font-size: 1.1rem; }
+        .ext-item-row { display: flex; justify-content: space-between; align-items: flex-start; background: rgba(255,255,255,0.05); padding: 8px; margin-bottom: 5px; border-radius: 4px; }
+        .ext-item-details { display: flex; flex-direction: column; }
+        .ext-item-note { font-size: 0.75rem; color: #aaa; font-style: italic; margin-top: 2px; }
+        .btn-sm-del { color: var(--danger); background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 0 5px; }
     </style>
 </head>
 <body>
@@ -317,6 +321,9 @@
                         </select>
                         <input type="number" id="ext-price" class="inp" placeholder="Price">
                     </div>
+                    
+                    <input type="text" id="ext-note" class="inp" placeholder="Customization (e.g. No Mayo, Extra Cheese)" style="font-style: italic;">
+                    
                     <div class="row-inputs" style="grid-template-columns: 1fr 1fr;">
                         <input type="number" id="ext-qty" class="inp" value="1" placeholder="Qty">
                         <button class="btn-modal-action" style="background:var(--primary); height:42px;" onclick="addExtItem()">ADD +</button>
@@ -451,6 +458,7 @@
             extOrderItems = [];
             renderExtItems();
             document.getElementById('ext-id').value = "";
+            document.getElementById('ext-note').value = "";
         }
 
         window.addExtItem = () => {
@@ -458,10 +466,14 @@
             const name = select.value;
             const price = parseFloat(document.getElementById('ext-price').value);
             const qty = parseInt(document.getElementById('ext-qty').value);
+            const note = document.getElementById('ext-note').value.trim();
             
             if(!name || isNaN(price) || !qty) return;
 
-            extOrderItems.push({ name, price, qty, kitchenDone: false });
+            extOrderItems.push({ name, price, qty, variant: note, kitchenDone: false });
+            
+            // Reset input for next item
+            document.getElementById('ext-note').value = "";
             renderExtItems();
         }
 
@@ -471,11 +483,17 @@
             let total = 0;
             extOrderItems.forEach((item, idx) => {
                 total += (item.price * item.qty);
+                const noteHtml = item.variant ? `<div class="ext-item-note">${item.variant}</div>` : '';
                 cont.innerHTML += `
                     <div class="ext-item-row">
-                        <span>${item.qty}x ${item.name}</span>
-                        <span>₹${item.price * item.qty}</span>
-                        <button class="btn-sm-del" onclick="removeExtItem(${idx})">&times;</button>
+                        <div class="ext-item-details">
+                            <span>${item.qty}x ${item.name}</span>
+                            ${noteHtml}
+                        </div>
+                        <div>
+                            <span style="margin-right:10px;">₹${item.price * item.qty}</span>
+                            <button class="btn-sm-del" onclick="removeExtItem(${idx})">&times;</button>
+                        </div>
                     </div>
                 `;
             });
@@ -606,7 +624,18 @@
 
                 let itemsHtml = (order.items || []).map(i => {
                     if(i.deleted) return `<div class="item-row item-void"><span>${i.qty}x ${i.name}</span><span>VOID</span></div>`;
-                    return `<div class="item-row"><span><span class="item-qty">${i.qty}x</span> ${i.name}</span><span class="item-price">₹${i.price * i.qty}</span></div>`;
+                    
+                    // NEW: Display Customization
+                    let customHtml = i.variant ? `<div class="item-custom">${i.variant}</div>` : '';
+                    
+                    return `
+                    <div class="item-row">
+                        <div class="item-top">
+                            <span><span class="item-qty">${i.qty}x</span> ${i.name}</span>
+                            <span class="item-price">₹${i.price * i.qty}</span>
+                        </div>
+                        ${customHtml}
+                    </div>`;
                 }).join('');
 
                 const f = order.financials || {};
