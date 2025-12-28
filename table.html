@@ -514,7 +514,7 @@
             });
         }
 
-        // --- CUSTOMIZATION ---
+        // --- CUSTOMIZATION & PACKING LOGIC ---
         window.checkOptions = (itemName) => {
             const item = menuData.find(i => i.name === itemName);
             if(!item) return;
@@ -522,6 +522,7 @@
             const cat = item.category;
             const name = item.name;
 
+            // Existing Customization Logic
             if (["Bun-Tastic Burgers", "Italian Indulgence", "Freshly Folded", "Toasty Treats"].includes(cat)) {
                 options.push({ name: "Extra Cheese", price: 15 });
             }
@@ -538,7 +539,20 @@
             }
             if (cat === "Whipped Wonders") options.push({ name: "Extra Ice Cream", price: 30 });
 
-            if (options.length > 0 || cat === "ADD-ON") {
+            // --- WAITER PACKING ADDITION ---
+            if (MODE === 'waiter') {
+                let packPrice = 10;
+                const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
+                if (fiveRsCats.includes(cat)) packPrice = 5;
+                if (cat === 'ADD-ON') packPrice = name.startsWith("Hummus") ? 7 : 5;
+                if (name.includes("Tossed Rice") || name.includes("Sorted / Boiled Vegges")) packPrice = 7;
+                
+                options.push({ name: "Packing", price: packPrice });
+            }
+            // ----------------------------------
+
+            // Force open modal if options exist OR if it's an ADD-ON OR if it's a waiter
+            if (options.length > 0 || cat === "ADD-ON" || MODE === 'waiter') {
                 openCustomization(item, options);
             } else {
                 addToCartLogic(item.name, item.price, item.type);
