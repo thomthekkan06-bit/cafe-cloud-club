@@ -27,8 +27,8 @@ onValue(couponsRef, (snapshot) => {
 /* --- MAP & LOCATION LOGIC --- */
 let map = null;
 let marker = null;
-const CAFE_LAT = 10.286;
-const CAFE_LNG = 76.368;
+const CAFE_LAT = 10.280419;
+const CAFE_LNG = 76.343779;
 
 // --- SMART MAP INIT (READS SAVED LOCATION) ---
 window.initDeliveryMap = function() {
