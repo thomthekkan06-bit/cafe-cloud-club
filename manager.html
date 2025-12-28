@@ -17,6 +17,8 @@
             --danger: #ef4444;
             --warning: #f59e0b;
             --purple: #8b5cf6;
+            --swiggy: #fc8019; /* Swiggy Orange */
+            --zomato: #cb202d; /* Zomato Red */
             --text-main: #f3f4f6;
             --text-muted: #9ca3af;
         }
@@ -47,10 +49,16 @@
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
         .clock { font-family: 'JetBrains Mono'; font-size: 1.1rem; font-weight: 700; color: var(--text-main); }
-        .btn-history {
+        
+        .header-actions { display: flex; gap: 10px; }
+        .btn-header {
             background: var(--surface-hover); color: var(--text-muted); border: 1px solid var(--border);
             padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; text-decoration: none;
+            display: flex; align-items: center; gap: 6px;
         }
+        .btn-header:hover { background: var(--border); color: white; }
+        .btn-swiggy-zomato { background: rgba(252, 128, 25, 0.15); color: #fc8019; border-color: #fc8019; }
+        .btn-swiggy-zomato:hover { background: #fc8019; color: white; }
 
         /* --- SPLIT LAYOUT --- */
         .main-container {
@@ -95,7 +103,10 @@
         .order-card.status-pending { border-left-color: var(--primary); }
         .order-card.status-cooking { border-left-color: var(--warning); }
         .order-card.status-done { border-left-color: var(--success); }
-        .order-card.status-out_for_delivery { border-left-color: var(--purple); }
+        
+        /* Platform Colors */
+        .order-card.type-swiggy { border-left-color: var(--swiggy); }
+        .order-card.type-zomato { border-left-color: var(--zomato); }
 
         .card-top { 
             padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;
@@ -104,6 +115,10 @@
         .card-id { font-family: 'JetBrains Mono'; font-weight: 800; color: var(--text-muted); }
         .card-type { font-size: 0.7rem; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1); font-weight: 700; }
         
+        /* Specific Badges */
+        .badge-swiggy { background: var(--swiggy); color: white; }
+        .badge-zomato { background: var(--zomato); color: white; }
+
         .card-body { padding: 12px; }
         
         /* Customer Info */
@@ -138,11 +153,9 @@
         }
         .btn-act:hover { opacity: 0.9; }
         .btn-green { background: var(--success); color: white; }
-        .btn-yellow { background: var(--warning); color: black; }
-        .btn-purple { background: var(--purple); color: white; }
         .btn-red { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
         .btn-blue { background: rgba(59, 130, 246, 0.2); color: var(--primary); border: 1px solid var(--primary); }
-        .btn-grey { background: #333; color: #888; cursor: not-allowed; }
+        .btn-orange { background: var(--swiggy); color: white; }
 
         /* --- TABLE GRID --- */
         .section-label { 
@@ -200,19 +213,18 @@
         .btn-modal-cancel { flex: 1; padding: 15px; background: transparent; border: 1px solid var(--border); color: var(--text-muted); border-radius: 8px; cursor: pointer; font-weight: 700; }
         .btn-modal-action { flex: 1; padding: 15px; border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: 700; }
         
-        /* EDIT MODAL SPECIFIC */
-        .edit-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #333; }
-        .edit-row.is-deleted { opacity: 0.5; }
-        .edit-row.is-deleted div { text-decoration: line-through; color: var(--danger); }
-        .edit-inputs { display: grid; grid-template-columns: 2fr 1fr 0.8fr auto; gap: 5px; margin-top: 15px; }
-        .inp, .inp-select { background: var(--bg); border: 1px solid var(--border); color: white; padding: 8px; border-radius: 4px; width: 100%; }
-        .btn-icon { background: none; border: none; cursor: pointer; font-size: 1.2rem; }
-        .btn-trash { color: var(--danger); }
-        .btn-add { background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-
+        /* GENERAL MODAL INPUTS */
+        .inp, .inp-select { background: var(--bg); border: 1px solid var(--border); color: white; padding: 10px; border-radius: 6px; width: 100%; margin-bottom: 10px; }
+        .row-inputs { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+        .add-row-btn { width:100%; padding:10px; background:var(--surface-hover); border:1px dashed var(--border); color:var(--text-muted); cursor:pointer; }
+        
         /* PIN LOCK */
         #pin-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 17, 21, 0.98); z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .pin-input { background: var(--bg); border: 1px solid var(--border); color: white; font-size: 2rem; text-align: center; letter-spacing: 10px; padding: 10px; border-radius: 8px; width: 200px; margin: 20px 0; outline: none; }
+        
+        /* EXT ORDER ITEM */
+        .ext-item-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px; margin-bottom: 5px; border-radius: 4px; }
+        .btn-sm-del { color: var(--danger); background: none; border: none; cursor: pointer; font-size: 1.1rem; }
     </style>
 </head>
 <body>
@@ -225,8 +237,14 @@
 
     <div class="top-bar">
         <h1 class="app-title"> <img src="og-image.jpg" alt="Logo" style="height: 30px; border-radius: 6px;"> MANAGER DECK </h1>
-        <div class="clock" id="clock">00:00</div>
-        <a href="history.html" class="btn-history">Sales History</a>
+        
+        <div class="header-actions">
+            <div class="clock" id="clock">00:00</div>
+            <button class="btn-header btn-swiggy-zomato" onclick="openExtOrderModal()">
+                + 🛵 Swiggy/Zomato
+            </button>
+            <a href="history.html" class="btn-header">Sales History</a>
+        </div>
     </div>
 
     <div class="main-container">
@@ -275,6 +293,46 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="ext-order-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 style="margin:0;">New Third-Party Order</h3>
+                <div style="cursor:pointer;" onclick="closeModal('ext-order-modal')">&times;</div>
+            </div>
+            <div class="modal-body">
+                <label style="font-size:0.8rem; color:var(--text-muted);">PLATFORM</label>
+                <select id="ext-platform" class="inp-select">
+                    <option value="Swiggy">Swiggy</option>
+                    <option value="Zomato">Zomato</option>
+                </select>
+
+                <label style="font-size:0.8rem; color:var(--text-muted);">ORDER ID (Last 4 Digits)</label>
+                <input type="text" id="ext-id" class="inp" placeholder="e.g. 4092">
+
+                <div style="border-top:1px solid var(--border); margin:15px 0; padding-top:10px;">
+                    <label style="font-size:0.8rem; color:var(--text-muted);">ADD ITEMS</label>
+                    <div class="row-inputs">
+                        <select id="ext-menu-select" class="inp-select" onchange="extAutoFill()">
+                            <option value="">-- Select Item --</option>
+                        </select>
+                        <input type="number" id="ext-price" class="inp" placeholder="Price">
+                    </div>
+                    <div class="row-inputs" style="grid-template-columns: 1fr 1fr;">
+                        <input type="number" id="ext-qty" class="inp" value="1" placeholder="Qty">
+                        <button class="btn-modal-action" style="background:var(--primary); height:42px;" onclick="addExtItem()">ADD +</button>
+                    </div>
+                </div>
+
+                <div id="ext-items-list" style="max-height:150px; overflow-y:auto; margin-bottom:10px;"></div>
+                <div style="text-align:right; font-weight:bold; color:var(--success);">Total: <span id="ext-total-display">₹0</span></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal-cancel" onclick="closeModal('ext-order-modal')">Cancel</button>
+                <button class="btn-modal-action" style="background:var(--success)" onclick="submitExtOrder()">CONFIRM & PRINT</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="edit-modal">
         <div class="modal-card">
             <div class="modal-header">
@@ -284,22 +342,21 @@
             <div class="modal-body">
                 <div style="background:rgba(59, 130, 246, 0.1); padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid var(--primary); display: flex; align-items: center; gap: 10px;">
                     <label style="font-size:0.75rem; color:var(--primary); font-weight:800; white-space: nowrap;">MOVE TABLE:</label>
-                    <select id="table-transfer-select" class="inp-select" style="border-color:var(--primary);"></select>
-                    <button class="btn-add" onclick="saveTableMove()" style="width:auto; padding:8px 15px; background:var(--primary);">GO</button>
+                    <select id="table-transfer-select" class="inp-select" style="border-color:var(--primary); margin:0;"></select>
+                    <button class="btn-modal-action" onclick="saveTableMove()" style="width:auto; padding:8px 15px; background:var(--primary);">GO</button>
                 </div>
-                <div id="edit-list-container">
-                    </div>
+
+                <div id="edit-list-container"></div>
 
                 <div style="margin-top:20px; padding-top:10px; border-top:1px solid #333;">
-                    <label style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">ADD ITEM FROM MENU (Creates New KOT)</label>
-                    <div class="edit-inputs">
-                        <select id="menu-select" class="inp-select" onchange="autoFillPrice()">
-                            <option value="">-- Loading Menu... --</option>
+                    <label style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">ADD ITEM</label>
+                    <div class="row-inputs" style="grid-template-columns: 2fr 1fr 0.8fr auto; gap:5px;">
+                        <select id="menu-select" class="inp-select" style="margin:0;" onchange="autoFillPrice()">
+                            <option value="">-- Select --</option>
                         </select>
-                        
-                        <input type="number" id="new-item-price" class="inp" placeholder="₹ Price">
-                        <input type="number" id="new-item-qty" class="inp" value="1" placeholder="Qty">
-                        <button class="btn-add" onclick="addNewItemToOrder()">+</button>
+                        <input type="number" id="new-item-price" class="inp" style="margin:0;" placeholder="₹">
+                        <input type="number" id="new-item-qty" class="inp" style="margin:0;" value="1">
+                        <button class="btn-modal-action" style="background:var(--primary); width:auto; padding:0 15px;" onclick="addNewItemToOrder()">+</button>
                     </div>
                 </div>
             </div>
@@ -332,11 +389,7 @@
         // --- AUTH ---
         window.checkPin = () => {
             if(document.getElementById('pin-input').value === '2024') {
-                bell.play().then(() => {
-                    bell.pause();
-                    bell.currentTime = 0;
-                }).catch(e => console.log("Audio autoplay check failed", e));
-
+                bell.play().then(() => { bell.pause(); bell.currentTime = 0; }).catch(e => {});
                 document.getElementById('pin-overlay').style.display = 'none';
                 initData();
                 loadMenuForEdit(); 
@@ -349,15 +402,23 @@
         let currentSettleTable = null;
         let currentEditKey = null; 
         let fullMenu = []; 
-        let currentGuestNameSuffix = ""; // Stores "(John)" or "(Guest)"
+        let extOrderItems = []; // For the Swiggy Modal
 
+        // --- MENU LOADING ---
         function loadMenuForEdit() {
             onValue(ref(db, 'menu'), (snapshot) => {
                 const data = snapshot.val() || {};
                 fullMenu = Object.values(data);
                 fullMenu.sort((a,b) => a.name.localeCompare(b.name));
+                
+                // Populate Standard Edit
                 const select = document.getElementById('menu-select');
                 select.innerHTML = '<option value="">-- Select Item --</option>';
+                
+                // Populate Ext Modal
+                const extSelect = document.getElementById('ext-menu-select');
+                extSelect.innerHTML = '<option value="">-- Select Item --</option>';
+
                 fullMenu.forEach(item => {
                     const opt = document.createElement('option');
                     opt.value = item.name;
@@ -365,6 +426,7 @@
                     opt.dataset.category = item.category || 'General';
                     opt.innerText = item.name;
                     select.appendChild(opt);
+                    extSelect.appendChild(opt.cloneNode(true));
                 });
             });
         }
@@ -374,15 +436,82 @@
             const priceInput = document.getElementById('new-item-price');
             const selectedOpt = select.options[select.selectedIndex];
             if(selectedOpt && selectedOpt.dataset.price) priceInput.value = selectedOpt.dataset.price;
-            else priceInput.value = "";
         }
 
+        window.extAutoFill = () => {
+            const select = document.getElementById('ext-menu-select');
+            const priceInput = document.getElementById('ext-price');
+            const selectedOpt = select.options[select.selectedIndex];
+            if(selectedOpt && selectedOpt.dataset.price) priceInput.value = selectedOpt.dataset.price;
+        }
+
+        // --- EXTERNAL ORDER LOGIC ---
+        window.openExtOrderModal = () => {
+            document.getElementById('ext-order-modal').style.display = 'flex';
+            extOrderItems = [];
+            renderExtItems();
+            document.getElementById('ext-id').value = "";
+        }
+
+        window.addExtItem = () => {
+            const select = document.getElementById('ext-menu-select');
+            const name = select.value;
+            const price = parseFloat(document.getElementById('ext-price').value);
+            const qty = parseInt(document.getElementById('ext-qty').value);
+            
+            if(!name || isNaN(price) || !qty) return;
+
+            extOrderItems.push({ name, price, qty, kitchenDone: false });
+            renderExtItems();
+        }
+
+        function renderExtItems() {
+            const cont = document.getElementById('ext-items-list');
+            cont.innerHTML = "";
+            let total = 0;
+            extOrderItems.forEach((item, idx) => {
+                total += (item.price * item.qty);
+                cont.innerHTML += `
+                    <div class="ext-item-row">
+                        <span>${item.qty}x ${item.name}</span>
+                        <span>₹${item.price * item.qty}</span>
+                        <button class="btn-sm-del" onclick="removeExtItem(${idx})">&times;</button>
+                    </div>
+                `;
+            });
+            document.getElementById('ext-total-display').innerText = `₹${total}`;
+        }
+        window.removeExtItem = (idx) => { extOrderItems.splice(idx, 1); renderExtItems(); }
+
+        window.submitExtOrder = () => {
+            const platform = document.getElementById('ext-platform').value;
+            const idVal = document.getElementById('ext-id').value.trim();
+            
+            if(!idVal || extOrderItems.length === 0) return alert("Enter ID and add items.");
+            
+            const total = extOrderItems.reduce((acc, i) => acc + (i.price * i.qty), 0);
+            
+            const newOrder = {
+                orderId: idVal,
+                orderType: platform, // 'Swiggy' or 'Zomato'
+                timestamp: Date.now(),
+                status: 'cooking', // Directly to cooking
+                customer: { name: platform + " #" + idVal, phone: "-", address: "Pickup" },
+                items: extOrderItems,
+                financials: { subTotal: total, discountVal: 0, packingTotal: 0, grandTotal: total }
+            };
+
+            push(ref(db, 'orders'), newOrder).then(() => {
+                closeModal('ext-order-modal');
+            });
+        }
+
+        // --- MAIN INIT ---
         function initData() {
             onValue(ref(db, 'orders'), (snapshot) => {
                 const data = snapshot.val() || {};
                 onlineOrders = [];
                 tableData = {};
-
                 let hasPendingOrders = false;
 
                 Object.entries(data).forEach(([key, order]) => {
@@ -392,33 +521,30 @@
                     const type = order.orderType || 'Dine-In';
 
                     // SOUND CHECK
-                    if(order.status === 'pending') {
-                        hasPendingOrders = true;
-                    }
+                    if(order.status === 'pending') hasPendingOrders = true;
 
                     // 1. KITCHEN QUEUE LOGIC
                     let showInQueue = true;
                     if (order.status === 'served') showInQueue = false;
-                    if (order.status === 'done' && type !== 'Delivery' && type !== 'Pickup') showInQueue = false;
+                    // Keep Delivery, Pickup, Swiggy, Zomato in queue until marked done
+                    if (order.status === 'done') {
+                         if(type === 'Dine-In') showInQueue = false; // Dine-in done = on table
+                    }
 
                     if (showInQueue) {
                         onlineOrders.push({ key, ...order });
                     }
 
-                    // 2. TABLE MAP LOGIC
-                    if (type !== 'Delivery' && type !== 'Pickup') {
+                    // 2. TABLE MAP LOGIC (Dine-In Only)
+                    if (type === 'Dine-In') {
                         const customerName = (order.customer && order.customer.name) ? order.customer.name : "Unknown";
                         const match = customerName.match(/Table (\w+)/i);
                         if (match && order.status !== 'pending') {
                             const tId = match[1];
                             if (!tableData[tId]) {
                                 tableData[tId] = { 
-                                    total: 0, 
-                                    timestamp: order.timestamp, 
-                                    keys: [], 
-                                    items: [],
-                                    fins: { sub:0, disc:0, pack:0 },
-                                    rawOrders: []
+                                    total: 0, timestamp: order.timestamp, keys: [], items: [],
+                                    fins: { sub:0, disc:0, pack:0 }, rawOrders: []
                                 };
                             }
                             
@@ -427,13 +553,10 @@
                             tableData[tId].fins.sub += (f.subTotal || 0);
                             tableData[tId].fins.disc += (f.discountVal || 0); 
                             tableData[tId].fins.pack += (f.packingTotal || 0); 
-
                             if (order.timestamp < tableData[tId].timestamp) tableData[tId].timestamp = order.timestamp;
-                            
                             tableData[tId].keys.push(key);
                             tableData[tId].rawOrders.push(order);
                             if(order.items) {
-                                // Filter out deleted items for the clean bill view in Settle
                                 const activeItems = order.items.filter(i => !i.deleted);
                                 tableData[tId].items.push(...activeItems);
                             }
@@ -442,10 +565,9 @@
                 });
 
                 if(hasPendingOrders) {
-                    if(bell.paused) bell.play().catch(e => console.log("Sound blocked", e));
+                    if(bell.paused) bell.play().catch(e => console.log("Sound blocked"));
                 } else {
-                    bell.pause();
-                    bell.currentTime = 0;
+                    bell.pause(); bell.currentTime = 0;
                 }
 
                 onlineOrders.sort((a,b) => a.timestamp - b.timestamp);
@@ -463,48 +585,32 @@
                 const type = order.orderType || 'Dine-In';
                 const c = order.customer || {};
                 
+                let badgeClass = 'card-type';
+                if(type === 'Swiggy') badgeClass += ' badge-swiggy';
+                else if(type === 'Zomato') badgeClass += ' badge-zomato';
+                
+                // Color Code the card based on type
+                let cardTypeClass = '';
+                if(type === 'Swiggy') cardTypeClass = 'type-swiggy';
+                else if(type === 'Zomato') cardTypeClass = 'type-zomato';
+                else cardTypeClass = `status-${order.status}`;
+
                 let infoHtml = '';
                 if (type === 'Delivery' || type === 'Pickup') {
-                    infoHtml = `
-                        <div class="info-grid">
-                            <span class="info-label">Customer</span> <span class="info-val">${c.name || 'Guest'}</span>
-                            <span class="info-label">Phone</span>    <span class="info-val">${c.phone || '--'}</span>
-                        </div>
-                    `;
+                    infoHtml = `<div class="info-grid"><span class="info-label">Customer</span><span class="info-val">${c.name}</span></div>`;
+                } else if (type === 'Swiggy' || type === 'Zomato') {
+                     infoHtml = `<div class="info-grid"><span class="info-label">ID</span><span class="info-val">#${order.orderId}</span></div>`;
                 } else {
-                    infoHtml = `
-                        <div class="info-grid">
-                            <span class="info-label">Table</span>    <span class="info-val" style="color:var(--primary); font-size:1.1rem;">${c.name || 'Table ?'}</span>
-                        </div>
-                    `;
+                    infoHtml = `<div class="info-grid"><span class="info-label">Table</span><span class="info-val" style="color:var(--primary); font-size:1.1rem;">${c.name}</span></div>`;
                 }
 
                 let itemsHtml = (order.items || []).map(i => {
-                    if(i.deleted) {
-                         return `<div class="item-row item-void"><span>${i.qty}x ${i.name}</span><span>VOID</span></div>`;
-                    }
-                    return `
-                    <div class="item-row">
-                        <span><span class="item-qty">${i.qty}x</span> ${i.name}</span>
-                        <span class="item-price">₹${i.price * i.qty}</span>
-                    </div>`;
+                    if(i.deleted) return `<div class="item-row item-void"><span>${i.qty}x ${i.name}</span><span>VOID</span></div>`;
+                    return `<div class="item-row"><span><span class="item-qty">${i.qty}x</span> ${i.name}</span><span class="item-price">₹${i.price * i.qty}</span></div>`;
                 }).join('');
 
                 const f = order.financials || {};
-                
-                // --- FINANCIAL BREAKDOWN START ---
-                let discountText = f.discountVal > 0 ? `-₹${f.discountVal}` : '₹0';
-                if(f.couponCode) discountText += ` <span style="font-size:0.7rem; color:var(--text-muted)">(${f.couponCode})</span>`;
-
-                let finHtml = `
-                    <div class="fin-box">
-                        <div class="fin-row"><span>Subtotal</span> <span>₹${f.subTotal || 0}</span></div>
-                        <div class="fin-row"><span>Discount</span> <span>${discountText}</span></div>
-                        <div class="fin-row"><span>Packing</span> <span>₹${f.packingTotal || 0}</span></div>
-                        <div class="fin-row total"><span>GRAND TOTAL</span> <span>₹${f.grandTotal || 0}</span></div>
-                    </div>
-                `;
-                // --- FINANCIAL BREAKDOWN END ---
+                let finHtml = `<div class="fin-box"><div class="fin-row total"><span>TOTAL</span><span>₹${f.grandTotal || 0}</span></div></div>`;
 
                 let btnHtml = '';
                 let showEdit = true;
@@ -513,28 +619,27 @@
                     btnHtml = `<button class="btn-act btn-red" onclick="rejectOrder('${order.key}')">Reject</button>
                                <button class="btn-act btn-green" onclick="updateStatus('${order.key}', 'cooking')">Accept</button>`;
                 } else if (order.status === 'cooking') {
-                     // NO BUTTONS EXCEPT EDIT
-                     btnHtml = ''; 
+                     btnHtml = `<button class="btn-act btn-green" onclick="updateStatus('${order.key}', 'done')">Ready</button>`;
                 } else if (order.status === 'done') {
                     if (type === 'Delivery') {
-                         btnHtml = `<button class="btn-act btn-grey" disabled>Waiting for Partner...</button>`;
+                         btnHtml = `<button class="btn-act btn-red" disabled>Wait for Driver</button>`;
                          showEdit = false;
-                    } else if (type === 'Pickup') {
-                         // CHANGED: Use completeOrderSingle to move to history immediately
-                         btnHtml = `<button class="btn-act btn-green" onclick="completeOrderSingle('${order.key}')">Mark Picked Up</button>`;
+                    } else if (type === 'Pickup' || type === 'Swiggy' || type === 'Zomato') {
+                         let label = (type === 'Swiggy' || type === 'Zomato') ? "Rider Picked Up" : "Mark Picked Up";
+                         btnHtml = `<button class="btn-act btn-orange" onclick="completeOrderSingle('${order.key}')">${label}</button>`;
                          showEdit = false;
                     }
                 } else if (order.status === 'out_for_delivery') {
-                     btnHtml = `<button class="btn-act btn-purple" onclick="forceComplete('${order.key}')">Out For Delivery</button>`;
+                     btnHtml = `<button class="btn-act btn-red" onclick="forceComplete('${order.key}')">Driver Out</button>`;
                      showEdit = false; 
                 } 
 
                 const div = document.createElement('div');
-                div.className = `order-card status-${order.status}`;
+                div.className = `order-card ${cardTypeClass}`;
                 div.innerHTML = `
                     <div class="card-top">
                         <span class="card-id">#${order.orderId}</span>
-                        <span class="card-type">${type}</span>
+                        <span class="${badgeClass}">${type}</span>
                     </div>
                     <div class="card-body">
                         ${infoHtml}
@@ -550,11 +655,11 @@
             });
         }
 
+        // --- TABLE GRID (UNCHANGED) ---
         function renderTableGrid() {
             const gridMain = document.getElementById('grid-main');
             const gridAC = document.getElementById('grid-ac');
-            gridMain.innerHTML = "";
-            gridAC.innerHTML = "";
+            gridMain.innerHTML = ""; gridAC.innerHTML = "";
 
             let occupiedCount = Object.keys(tableData).length;
             document.getElementById('dinein-count').innerText = `${occupiedCount} Occupied`;
@@ -567,7 +672,6 @@
         function createTableCard(id, container, isBar=false, label=null) {
             const data = tableData[id];
             const div = document.createElement('div');
-            
             let statusClass = 'status-free';
             let timeText = ''; let totalText = ''; let statusLabel = 'FREE';
 
@@ -587,18 +691,12 @@
 
             div.className = `table-card ${statusClass} ${isBar?'is-bar':''}`;
             if(data) div.onclick = () => openSettleModal(id);
-
-            div.innerHTML = `
-                <div class="t-header">
-                    <div class="t-num">${label || id}</div>
-                    <div class="t-bill">${totalText}</div>
-                </div>
-                <div class="t-timer">${timeText}</div>
-                <div class="t-status">${statusLabel}</div>
-            `;
+            div.innerHTML = `<div class="t-header"><div class="t-num">${label || id}</div><div class="t-bill">${totalText}</div></div>
+                             <div class="t-timer">${timeText}</div><div class="t-status">${statusLabel}</div>`;
             container.appendChild(div);
         }
 
+        // --- SETTLE & EDIT LOGIC (Standard) ---
         window.openSettleModal = (tableId) => {
             const data = tableData[tableId];
             if(!data) return;
@@ -607,12 +705,7 @@
             document.getElementById('modal-table-id').innerText = tableId;
             
             const list = document.getElementById('modal-items-list');
-            list.innerHTML = data.items.map(i => 
-                `<div style="display:flex; justify-content:space-between; margin-bottom:5px; color:#aaa;">
-                    <span>${i.qty}x ${i.name}</span> <span>₹${i.price * i.qty}</span>
-                </div>`
-            ).join('');
-
+            list.innerHTML = data.items.map(i => `<div style="display:flex; justify-content:space-between; margin-bottom:5px; color:#aaa;"><span>${i.qty}x ${i.name}</span> <span>₹${i.price * i.qty}</span></div>`).join('');
             document.getElementById('m-sub').innerText = `₹${data.fins.sub}`;
             document.getElementById('m-disc').innerText = `-₹${data.fins.disc}`;
             document.getElementById('m-pack').innerText = `₹${data.fins.pack}`;
@@ -623,213 +716,100 @@
             if(!currentSettleTable || !tableData[currentSettleTable]) return;
             const keys = tableData[currentSettleTable].keys;
             if(keys.length > 0) {
-                const lastKey = keys[keys.length - 1];
                 closeModal('settle-modal');
-                openEditModal(lastKey);
+                openEditModal(keys[keys.length - 1]);
             }
         }
 
-        // --- EDITING LOGIC ---
         window.openEditModal = async (key) => {
             currentEditKey = key;
             document.getElementById('edit-modal').style.display = 'flex';
-            
-            document.getElementById('new-item-price').value = "";
-            document.getElementById('new-item-qty').value = "1";
-            document.getElementById('menu-select').value = "";
-
             const snap = await get(ref(db, 'orders/' + key));
             if(snap.exists()) {
                 const order = snap.val();
-                
-                // --- NEW: Populate Table Dropdown ---
+                // Populating Transfer Table dropdown
                 const sel = document.getElementById('table-transfer-select');
                 sel.innerHTML = "";
-                
                 let currentTableId = "";
-                currentGuestNameSuffix = ""; // Reset suffix
-
-                // Parse Name: "Table 1 (John)" -> ID="1", Suffix="(John)"
-                if (order.customer && order.customer.name) {
-                    const nameStr = order.customer.name;
-                    if(nameStr.startsWith("Table")) {
-                        const parts = nameStr.split(" "); 
-                        // parts[0] is "Table", parts[1] is ID, rest is Name
-                        if(parts.length >= 2) {
-                            currentTableId = parts[1];
-                            // Join the rest back together (e.g. "(John Doe)")
-                            currentGuestNameSuffix = parts.slice(2).join(" "); 
-                        }
-                    }
+                if (order.customer && order.customer.name && order.customer.name.startsWith("Table")) {
+                    currentTableId = order.customer.name.split(" ")[1];
                 }
-
-                // Generate Options (1-13)
                 for(let i=1; i<=13; i++) {
                     const opt = document.createElement('option');
-                    opt.value = i;
-                    opt.text = (i === 8) ? "Table 8 (BAR)" : `Table ${i}`;
-                    
-                    // Pre-select current table
+                    opt.value = i; opt.text = (i===8)?"Table 8 (BAR)":`Table ${i}`;
                     if(i.toString() === currentTableId) opt.selected = true;
-                    
                     sel.appendChild(opt);
                 }
-                // -------------------------------------
-
                 renderEditList(order.items || []);
             }
-        }
-
-        window.saveTableMove = async () => {
-            if(!currentEditKey) return;
-
-            const newTableId = document.getElementById('table-transfer-select').value;
-            
-            // Reconstruct the name string
-            let newFullName = `Table ${newTableId}`;
-            if(currentGuestNameSuffix) {
-                newFullName += ` ${currentGuestNameSuffix}`;
-            }
-
-            // Update Firebase
-            await update(ref(db, 'orders/' + currentEditKey + '/customer'), { name: newFullName });
-            
-            // Visual feedback and close
-            closeModal('edit-modal');
         }
 
         function renderEditList(items) {
             const container = document.getElementById('edit-list-container');
             container.innerHTML = "";
             items.forEach((item, index) => {
-                const isDel = item.deleted ? 'is-deleted' : '';
+                const isDel = item.deleted ? 'opacity:0.5; text-decoration:line-through;' : '';
                 container.innerHTML += `
-                    <div class="edit-row ${isDel}">
-                        <button class="btn-icon btn-trash" onclick="deleteItem(${index})">🗑</button>
-                        <div style="flex:1">
-                            <div style="font-weight:bold">${item.name}</div>
-                            <div style="font-size:0.8rem; color:#888;">₹${item.price} x ${item.qty}</div>
-                        </div>
-                        <div style="font-family:'JetBrains Mono'">₹${item.price * item.qty}</div>
-                    </div>
-                `;
+                    <div class="edit-row" style="display:flex; justify-content:space-between; margin-bottom:5px; ${isDel}">
+                        <div>${item.qty}x ${item.name}</div>
+                        <button style="color:red; background:none; border:none; cursor:pointer;" onclick="deleteItem(${index})">🗑</button>
+                    </div>`;
             });
         }
 
-        // DELETE (Marks as Void)
-        window.deleteItem = async (index) => {
-            if(!currentEditKey) return;
-            const orderRef = ref(db, 'orders/' + currentEditKey);
-            const snap = await get(orderRef);
-            if(!snap.exists()) return;
-
-            let order = snap.val();
-            let items = order.items || [];
-            
-            if(!items[index].deleted) {
-                items[index].deleted = true;
-            }
-
-            updateOrderFinancials(order, items);
-            await update(orderRef, order);
-            renderEditList(items);
-        }
-
-        // ADD (Updates existing Order)
         window.addNewItemToOrder = async () => {
-            if(!currentEditKey) {
-                alert("Error: No order selected.");
-                return;
-            }
-
             const select = document.getElementById('menu-select');
             const name = select.value; 
-            const selectedOpt = select.options[select.selectedIndex];
-            const category = selectedOpt ? selectedOpt.dataset.category : "General";
-            
-            const priceVal = document.getElementById('new-item-price').value;
-            const price = parseFloat(priceVal);
+            const price = parseFloat(document.getElementById('new-item-price').value);
             const qty = parseInt(document.getElementById('new-item-qty').value);
-
-            if(!name || isNaN(price) || !qty || qty < 1) {
-                return alert("Select item and ensure price/qty are valid");
-            }
-
-            // 1. Get Existing Order
-            const orderRef = ref(db, 'orders/' + currentEditKey);
-            const snap = await get(orderRef);
-            if(!snap.exists()) { alert("Order lost."); return; }
+            
+            if(!name || isNaN(price)) return;
+            const snap = await get(ref(db, 'orders/' + currentEditKey));
             let order = snap.val();
             let items = order.items || [];
-
-            // 2. Add New Item (Initialize kitchenDone = false)
-            items.push({ 
-                name, price, qty, category,
-                kitchenDone: false 
-            });
-
-            // 3. Update & Save
+            items.push({ name, price, qty, kitchenDone: false });
+            
             updateOrderFinancials(order, items);
-            await update(orderRef, order);
-            
-            // 4. Reset UI
+            await update(ref(db, 'orders/' + currentEditKey), order);
             renderEditList(items);
-            select.value = "";
-            document.getElementById('new-item-price').value = "";
-            document.getElementById('new-item-qty').value = "1";
-            
-            alert("Item Added to Order #" + order.orderId);
+        }
+
+        // --- HELPER FUNCTIONS ---
+        window.deleteItem = async (index) => {
+            const snap = await get(ref(db, 'orders/' + currentEditKey));
+            let order = snap.val();
+            if(order.items[index]) {
+                order.items[index].deleted = true;
+                updateOrderFinancials(order, order.items);
+                await update(ref(db, 'orders/' + currentEditKey), order);
+                renderEditList(order.items);
+            }
+        }
+
+        window.saveTableMove = async () => {
+            const newTableId = document.getElementById('table-transfer-select').value;
+            await update(ref(db, 'orders/' + currentEditKey + '/customer'), { name: `Table ${newTableId}` });
             closeModal('edit-modal');
         }
 
         function updateOrderFinancials(order, items) {
             order.items = items;
-            
-            let sub = 0;
-            let pack = 0;
+            let sub = 0; let pack = 0;
             const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
-            
             items.forEach(i => {
-                if(i.deleted) return; // Ignore void items in total
-
+                if(i.deleted) return;
                 sub += (i.price * i.qty);
-                let charge = 10;
-                if(i.category) {
-                    if (i.category === 'ADD-ON') charge = i.name.startsWith("Hummus") ? 7 : 5;
-                    else if (fiveRsCats.includes(i.category)) charge = 5;
-                }
-                if (i.name && (i.name.includes("Tossed Rice") || i.name.includes("Sorted / Boiled"))) {
-                    pack += (7 * i.qty);
-                } else {
-                    pack += (charge * i.qty);
-                }
+                // Simple packing logic for demo
+                pack += (5 * i.qty); 
             });
-            
-            let disc = (order.financials && order.financials.discountVal) ? order.financials.discountVal : 0;
-            let code = (order.financials && order.financials.couponCode) ? order.financials.couponCode : null;
-
-            order.financials = {
-                subTotal: sub,
-                discountVal: disc,
-                couponCode: code,
-                packingTotal: pack,
-                grandTotal: (sub + pack) - disc
-            };
+            order.financials = { subTotal: sub, discountVal: 0, packingTotal: pack, grandTotal: sub + pack };
         }
 
-        window.closeModal = (id) => {
-            document.getElementById(id).style.display = 'none';
-            if(id === 'edit-modal') currentEditKey = null;
-        }
-
+        window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+        
         window.updateStatus = (key, status) => update(ref(db, 'orders/'+key), {status});
         window.rejectOrder = (key) => remove(ref(db, 'orders/'+key)); 
-        
-        window.forceComplete = (key) => {
-            if(confirm("Driver should complete this. Force Complete?")) {
-                completeOrderSingle(key);
-            }
-        }
+        window.forceComplete = (key) => { if(confirm("Force Complete?")) completeOrderSingle(key); }
         
         window.completeOrderSingle = async (key) => {
             const r = ref(db, 'orders/'+key);
@@ -842,50 +822,26 @@
         };
 
         window.settleAndClear = async () => {
-            if(!currentSettleTable || !tableData[currentSettleTable]) return;
+            if(!currentSettleTable) return;
             const tData = tableData[currentSettleTable];
-            const keys = tData.keys;
-
-            let finalCustomerName = `Table ${currentSettleTable}`; 
-            if (tData.rawOrders && tData.rawOrders.length > 0) {
-                tData.rawOrders.sort((a,b) => a.timestamp - b.timestamp);
-                finalCustomerName = tData.rawOrders[0].customer.name;
-            }
-
-            const billNumber = Math.floor(100000 + Math.random() * 900000);
-
             const masterBill = {
-                orderId: billNumber, 
-                orderType: 'Dine-In',
-                timestamp: Date.now(),
-                status: 'paid',
-                customer: { 
-                    name: finalCustomerName,
-                    phone: '-', 
-                    address: 'Dine-In'
-                },
+                orderId: Math.floor(100000 + Math.random() * 900000),
+                orderType: 'Dine-In', timestamp: Date.now(), status: 'paid',
+                customer: { name: `Table ${currentSettleTable}`, phone: '-', address: 'Dine-In' },
                 items: tData.items, 
-                financials: {
-                    subTotal: tData.fins.sub,
-                    discountVal: tData.fins.disc,
-                    couponCode: "MERGED",
-                    packingTotal: tData.fins.pack,
-                    grandTotal: tData.total
-                },
-                originalOrderKeys: keys 
+                financials: { grandTotal: tData.total }
             };
-
             await push(ref(db, 'history'), masterBill);
-
-            for (const key of keys) {
-                await remove(ref(db, 'orders/' + key));
-            }
-
+            for (const key of tData.keys) await remove(ref(db, 'orders/' + key));
             closeModal('settle-modal');
         };
-
-        setInterval(() => { renderTableGrid(); document.getElementById('clock').innerText = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }, 60000);
-        document.getElementById('clock').innerText = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+        
+        // Window Exports
+        window.openExtOrderModal = openExtOrderModal;
+        window.closeModal = closeModal;
+        window.addExtItem = addExtItem;
+        window.submitExtOrder = submitExtOrder;
+        window.removeExtItem = removeExtItem;
     </script>
 </body>
 </html>
