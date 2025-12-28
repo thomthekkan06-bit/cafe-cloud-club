@@ -360,8 +360,13 @@
                 if(historyOrders.length > 20) historyOrders.pop();
                 renderHistory();
 
-                // Update Firebase: cooking -> done
-                update(ref(db, `orders/${key}`), { status: 'done' });
+                // LOGIC UPDATE: 
+                // - Dine-In: Set to 'served' (Removes from TV, keeps on Table Billing)
+                // - Delivery/Pickup: Set to 'done' (Keeps on TV/Manager Queue for handoff)
+                const type = order.orderType || 'Dine-In';
+                const nextStatus = (type === 'Delivery' || type === 'Pickup') ? 'done' : 'served';
+
+                update(ref(db, `orders/${key}`), { status: nextStatus });
             }
         };
 
