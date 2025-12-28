@@ -607,14 +607,29 @@
             if(type==='Swiggy') cls += ' type-swiggy';
             if(type==='Zomato') cls += ' type-zomato';
 
+            // 1. GET FINANCIALS (Safely fallback to 0 if missing)
+            const f = order.financials || { subTotal: 0, packingTotal: 0, discountVal: 0, grandTotal: 0 };
+
+            // 2. BUILD ITEMS LIST (With Prices)
             let itemsHtml = (order.items||[]).map(i => {
                 if(i.deleted) return `<div class="item-row item-void"><span>${i.qty}x ${i.name}</span><span>VOID</span></div>`;
+                
                 let v = i.variant ? `<div class="item-custom">${i.variant}</div>` : '';
-                return `<div class="item-row"><div class="item-top"><span><span class="item-qty">${i.qty}x</span>${i.name}</span></div>${v}</div>`;
+                let lineTotal = i.price * i.qty; // Calculate line total
+                
+                return `
+                    <div class="item-row">
+                        <div class="item-top">
+                            <span><span class="item-qty">${i.qty}x</span>${i.name}</span>
+                            <span style="font-weight:bold; color: #888;">₹${lineTotal}</span>
+                        </div>
+                        ${v}
+                    </div>`;
             }).join('');
 
             let showEdit = (order.status !== 'done' && order.status !== 'out_for_delivery');
             
+            // 3. BUTTONS LOGIC
             let btns = '';
             if(order.status==='pending') btns = `<button class="btn-act btn-red" onclick="rejectOrder('${key}')">REJECT</button><button class="btn-act btn-green" onclick="upd('${key}','cooking')">ACCEPT</button>`;
             else if(order.status==='cooking') btns = `<button class="btn-act btn-green" onclick="upd('${key}','done')">READY</button>`;
@@ -624,12 +639,28 @@
             } 
             else if(order.status==='out_for_delivery') btns = `<button class="btn-act btn-red" onclick="forceComplete('${key}')">COMPLETE</button>`;
 
+            // 4. RENDER FULL CARD
             container.innerHTML += `
                 <div class="${cls}">
-                    <div class="card-top"><span class="card-id">#${order.orderId}</span><span class="card-type ${type==='Swiggy'?'badge-swiggy':(type==='Zomato'?'badge-zomato':'')}">${type}</span></div>
+                    <div class="card-top">
+                        <span class="card-id">#${order.orderId}</span>
+                        <span class="card-type ${type==='Swiggy'?'badge-swiggy':(type==='Zomato'?'badge-zomato':'')}">${type}</span>
+                    </div>
                     <div class="card-body">
-                        <div class="info-grid"><span class="info-label">Info</span><span>${order.customer.name}</span></div>
+                        <div class="info-grid">
+                            <span class="info-label">Name</span><span>${order.customer.name}</span>
+                            <span class="info-label">Phone</span><span><a href="tel:${order.customer.phone}" style="color:var(--primary);text-decoration:none;">${order.customer.phone || '-'}</a></span>
+                            <span class="info-label">Addr</span><span style="font-size:0.85rem; line-height:1.2;">${order.customer.address || '-'}</span>
+                        </div>
+
                         <div class="items-list">${itemsHtml}</div>
+                        
+                        <div class="fin-box">
+                             <div class="fin-row"><span>Sub Total</span><span>₹${f.subTotal}</span></div>
+                             <div class="fin-row"><span>Packing</span><span>₹${f.packingTotal}</span></div>
+                             ${f.discountVal > 0 ? `<div class="fin-row" style="color:var(--danger)"><span>Discount</span><span>-₹${f.discountVal}</span></div>` : ''}
+                             <div class="fin-row total"><span>GRAND TOTAL</span><span>₹${f.grandTotal}</span></div>
+                        </div>
                     </div>
                     <div class="card-actions">
                          ${showEdit ? `<button class="btn-act btn-blue" style="flex:0.3" onclick="openEditModal('${key}')">EDIT</button>` : ''}
