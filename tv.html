@@ -173,10 +173,11 @@
 
         .order-ticket h2 {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 3rem; /* Slightly smaller to fit 3 cols */
+            font-size: 2.2rem; /* Adjusted for longer names */
             margin: 0;
             color: var(--text-main);
-            line-height: 1;
+            line-height: 1.1;
+            word-wrap: break-word;
         }
 
         .order-ticket span {
@@ -448,8 +449,43 @@
                         
                         const status = order.status;
                         const orderId = order.orderId;
-                        const customerName = order.customer.name.split(' ')[0];
-                        const type = order.orderType || "Order"; 
+                        const type = order.orderType || 'Dine-In';
+                        const rawName = order.customer.name || 'Guest';
+
+                        // --- 1. DETERMINE DISPLAY TEXT BASED ON TYPE ---
+                        let h2Text = "";
+                        let spanText = "";
+
+                        if (type === 'Delivery') {
+                            // Rule: "Customer Order ID number displayed"
+                            h2Text = `#${orderId}`;
+                            spanText = "Delivery";
+                        } 
+                        else if (type === 'Pickup') {
+                            // Rule: "Customer Name only displayed"
+                            h2Text = rawName;
+                            spanText = ""; 
+                        } 
+                        else {
+                            // Rule: "Dine-In" -> "Customer Name and Table No"
+                            // Attempt to parse standard format: "Table 5 (John)"
+                            if (rawName.toLowerCase().startsWith('table')) {
+                                const parts = rawName.split(' ');
+                                // parts[0]="Table", parts[1]="5", rest...
+                                if(parts.length >= 2) {
+                                    h2Text = `${parts[0]} ${parts[1]}`; // "Table 5"
+                                    const guestName = parts.slice(2).join(' ').replace(/[()]/g, ''); // "John"
+                                    spanText = guestName || 'Guest';
+                                } else {
+                                    h2Text = rawName;
+                                    spanText = `#${orderId}`;
+                                }
+                            } else {
+                                // Fallback for non-table strings
+                                h2Text = rawName;
+                                spanText = `Order #${orderId}`;
+                            }
+                        }
 
                         // --- CHECK FOR PARTIAL READY ITEMS ---
                         let readyCount = 0;
@@ -470,35 +506,34 @@
 
                             incContainer.innerHTML += `
                                 <div class="order-ticket ${animClass}">
-                                    <h2>${orderId}</h2>
-                                    <span>${mins}m Ago</span>
-                                    <span>${customerName}</span>
+                                    <h2>${h2Text}</h2>
+                                    <span>${spanText}</span>
+                                    <span style="color:var(--text-muted); font-size:0.75rem;">${mins}m Ago</span>
                                 </div>
                             `;
                         }
 
-                        // --- COLUMN 2: PREPARING (Cooking & Nothing Ready) ---
+                        // --- COLUMN 2: PREPARING (Cooking & !Partial) ---
                         else if (status === 'cooking' && !isPartial) {
                             prepContainer.innerHTML += `
                                 <div class="order-ticket">
-                                    <h2>${orderId}</h2>
-                                    <span>${customerName} (${type})</span>
+                                    <h2>${h2Text}</h2>
+                                    <span>${spanText}</span>
                                 </div>
                             `;
                         } 
                         
                         // --- COLUMN 3: READY (Done OR Partial) ---
                         else if (status === 'done' || isPartial) {
-                            let statusText = customerName;
-                            // Update text for partial orders
+                            let bottomText = spanText;
                             if (isPartial) {
-                                statusText = `${customerName}<br><span style="font-size:0.75rem; color:#fff; display:block; margin-top:5px;">SERVING ${readyCount}/${totalCount}</span>`;
+                                bottomText += ` <br><span style="font-size:0.75rem; color:#fff; display:block; margin-top:5px;">SERVING ${readyCount}/${totalCount}</span>`;
                             }
 
                             readyContainer.innerHTML += `
                                 <div class="order-ticket blink-me">
-                                    <h2>${orderId}</h2>
-                                    <span>${statusText}</span>
+                                    <h2>${h2Text}</h2>
+                                    <span>${bottomText}</span>
                                 </div>
                             `;
                         }
