@@ -621,7 +621,7 @@
         window.openCheckout = () => document.getElementById('checkout-modal').style.display = 'flex';
         window.closeCheckout = () => document.getElementById('checkout-modal').style.display = 'none';
 
-        // --- PLACE ORDER ---
+// --- ORDER PLACEMENT ---
         window.placeOrder = () => {
             const nameInput = document.getElementById('cust-name');
             const nameVal = nameInput.value.trim() || "Guest";
@@ -649,13 +649,20 @@
                 cart = {}; renderCart(); closeCheckout();
                 document.getElementById('cart-sidebar').classList.remove('active');
                 
+                // SHOW SUCCESS SCREEN
                 const succ = document.getElementById('success-view');
                 succ.style.display = 'flex';
                 
                 if(MODE === 'waiter') {
-                    setTimeout(() => { window.location.href = "waiter.html"; }, 2000);
+                    // WAITER: Fast redirect (0.7s) so they can get back to work
+                    setTimeout(() => {
+                        window.location.href = "waiter.html";
+                    }, 700);
                 } else {
-                    setTimeout(() => { window.location.reload(); }, 3000);
+                    // CUSTOMER: Standard delay (3s) to read the confirmation
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 3000);
                 }
             }).catch(e => { alert("Error: " + e.message); console.error(e); });
         }
