@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chef KDS | Café Cloud Club</title>
+    <link rel="icon" type="image/png" href="icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #121418;
+            --surface: #1e2329;
+            --surface-hover: #2c3138;
+            --border: #2f3542;
+            --primary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text-main: #ffffff;
+            --text-muted: #9ca3af;
+            --strike-color: #555;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- HEADER --- */
+        .kds-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 25px; background: #1a1d21; border-bottom: 1px solid var(--border);
+            height: 70px; flex-shrink: 0;
+        }
+        .brand { font-size: 1.5rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
+        .brand span { color: var(--warning); }
+        
+        .header-controls { display: flex; gap: 15px; align-items: center; }
+        .clock { font-family: 'JetBrains Mono'; font-size: 1.2rem; font-weight: 700; color: var(--text-muted); }
+        .btn-history {
+            background: var(--surface); border: 1px solid var(--border); color: var(--text-muted);
+            padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;
+        }
+        .btn-history.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* --- PIN OVERLAY --- */
+        #pin-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(18, 20, 24, 0.98); z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .pin-box { background: var(--surface); padding: 40px; border-radius: 16px; border: 1px solid var(--border); text-align: center; }
+        .pin-input {
+            background: var(--bg); border: 1px solid var(--border); color: white;
+            font-size: 2rem; text-align: center; letter-spacing: 10px; padding: 10px;
+            border-radius: 8px; width: 200px; margin: 20px 0; outline: none;
+            font-family: 'JetBrains Mono';
+        }
+        .btn-unlock { background: var(--primary); width: 100%; padding: 12px; border:none; border-radius:8px; color:white; font-weight:800; cursor:pointer; font-size: 1rem; }
+
+        /* --- GRID LAYOUT --- */
+        .kds-container {
+            flex: 1; padding: 20px; overflow-y: auto; overflow-x: hidden;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px; align-content: start;
+        }
+
+        /* --- KOT CARD --- */
+        .kot-card {
+            background: var(--surface); border-radius: 12px;
+            border: 1px solid var(--border); overflow: hidden;
+            display: flex; flex-direction: column;
+            animation: slideIn 0.3s ease-out;
+            height: fit-content;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .kot-header {
+            padding: 12px 15px; background: rgba(0,0,0,0.3);
+            border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer; transition: background 0.2s;
+            user-select: none;
+        }
+        .kot-header:hover { background: rgba(255,255,255,0.05); }
+        .kot-header:active { background: rgba(255,255,255,0.1); }
+
+        .kot-id { font-family: 'JetBrains Mono'; font-weight: 800; font-size: 1.1rem; }
+        .kot-timer { font-family: 'JetBrains Mono'; font-weight: 700; font-size: 1rem; padding: 4px 8px; border-radius: 4px; background: rgba(0,0,0,0.2); }
+        
+        .timer-fresh { color: var(--success); }
+        .timer-warn { color: var(--warning); }
+        .timer-late { color: var(--danger); animation: pulse 2s infinite; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+
+        .kot-info {
+            padding: 10px 15px; font-size: 0.9rem; color: var(--text-muted);
+            border-bottom: 1px dashed var(--border); display: flex; justify-content: space-between;
+        }
+        .kot-type-badge { font-weight: 700; text-transform: uppercase; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border); }
+
+        .kot-items { padding: 5px 0; }
+        .kot-item {
+            padding: 12px 15px; border-bottom: 1px solid #2a2f36;
+            cursor: pointer; display: flex; justify-content: space-between; align-items: flex-start;
+            transition: background 0.1s; font-size: 1.05rem; line-height: 1.4;
+        }
+        .kot-item:last-child { border-bottom: none; }
+        .kot-item:hover { background: var(--surface-hover); }
+        
+        .item-qty { font-weight: 800; color: var(--primary); margin-right: 10px; min-width: 25px; }
+        .item-name { flex: 1; font-weight: 500; }
+        .item-mods { display: block; font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; font-style: italic; }
+
+        /* COMPLETED ITEM STATE */
+        .kot-item.done { opacity: 0.4; }
+        .kot-item.done .item-name { text-decoration: line-through; color: var(--strike-color); }
+        .kot-item.done .item-qty { color: var(--strike-color); }
+
+        .kot-note {
+            padding: 10px 15px; background: rgba(245, 158, 11, 0.1);
+            color: var(--warning); font-size: 0.85rem; font-weight: 600;
+            border-top: 1px solid var(--border);
+        }
+
+        /* --- HISTORY VIEW --- */
+        #history-view { display: none; background: #000; position: absolute; top: 70px; left: 0; width: 100%; height: calc(100% - 70px); z-index: 50; padding: 20px; overflow-y: auto; }
+        .history-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px; background: var(--surface); margin-bottom: 10px; border-radius: 8px; border: 1px solid var(--border);
+        }
+        .btn-undo { background: var(--surface-hover); border: 1px solid var(--border); color: var(--text-main); padding: 8px 15px; border-radius: 6px; cursor: pointer; }
+        .btn-undo:hover { background: var(--primary); border-color: var(--primary); }
+
+        .empty-msg { width: 100%; text-align: center; margin-top: 100px; color: var(--border); font-size: 1.5rem; font-weight: 700; opacity: 0.5; }
+
+        /* HEADER CLICK ACTION HINT */
+        .header-hint { font-size: 0.7rem; color: var(--success); text-transform: uppercase; letter-spacing: 1px; opacity: 0; transition: opacity 0.2s; text-align: right; }
+        .kot-header:hover .header-hint { opacity: 1; }
+
+    </style>
+</head>
+<body>
+
+    <div id="pin-overlay">
+        <div class="pin-box">
+            <h2 style="margin-top:0;">👨‍🍳 Kitchen Display</h2>
+            <input type="password" id="pin-input" class="pin-input" placeholder="••••" maxlength="4" inputmode="numeric" autofocus>
+            <button class="btn-unlock" onclick="checkPin()">ENTER KITCHEN</button>
+        </div>
+    </div>
+
+    <header class="kds-header">
+        <div class="brand">
+            <i class="fas fa-fire"></i> KDS <span>LIVE</span>
+        </div>
+        <div class="header-controls">
+            <div id="clock" class="clock">00:00</div>
+            <button class="btn-history" id="toggle-hist-btn" onclick="toggleHistory()">History</button>
+        </div>
+    </header>
+
+    <div id="active-container" class="kds-container">
+        <div class="empty-msg">ALL CLEARED<br>WAITING FOR ORDERS</div>
+    </div>
+
+    <div id="history-view">
+        <h2 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px;">Recently Completed</h2>
+        <div id="history-list"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
+            authDomain: "cafe-orders-1afa1.firebaseapp.com",
+            databaseURL: "https://cafe-orders-1afa1-default-rtdb.firebaseio.com",
+            projectId: "cafe-orders-1afa1",
+            messagingSenderId: "274410745480",
+            appId: "1:274410745480:web:9964c3914d512aed8d793d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // CONFIG
+        const ACCESS_PIN = "2024";
+        const bell = new Audio('bell.mp3');
+        
+        let activeOrders = [];
+        let historyOrders = []; // Local session history for Undo
+        let previousOrderCount = 0;
+        let isFirstLoad = true;
+
+        // --- AUTH ---
+        window.checkPin = function() {
+            if(document.getElementById('pin-input').value === ACCESS_PIN) {
+                // Unlock Audio
+                bell.play().then(() => { bell.pause(); bell.currentTime = 0; }).catch(e=>{});
+                
+                // Wake Lock
+                if ('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(e=>{});
+
+                document.getElementById('pin-overlay').style.display = 'none';
+                initKDS();
+            } else {
+                alert("Incorrect PIN");
+                document.getElementById('pin-input').value = "";
+            }
+        }
+        // Bind Enter key
+        document.getElementById('pin-input').addEventListener("keypress", (e) => {
+            if (e.key === "Enter") checkPin();
+        });
+
+        // --- CLOCK ---
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        }, 1000);
+
+        // --- CORE LOGIC ---
+        function initKDS() {
+            const ordersRef = ref(db, 'orders');
+            
+            onValue(ordersRef, (snapshot) => {
+                const data = snapshot.val();
+                activeOrders = [];
+                
+                if (data) {
+                    Object.entries(data).forEach(([key, order]) => {
+                        // FILTER: Only show 'cooking' orders
+                        if (order.status === 'cooking') {
+                            activeOrders.push({ key, ...order });
+                        }
+                    });
+                }
+
+                // SORT: Oldest first (FIFO)
+                activeOrders.sort((a, b) => a.timestamp - b.timestamp);
+
+                // AUDIO ALERT: If new order added
+                if (!isFirstLoad && activeOrders.length > previousOrderCount) {
+                    bell.currentTime = 0;
+                    bell.play().catch(e => console.log("Audio blocked"));
+                }
+                
+                previousOrderCount = activeOrders.length;
+                isFirstLoad = false;
+
+                renderActiveOrders();
+            });
+        }
+
+        // --- RENDERERS ---
+        function renderActiveOrders() {
+            const container = document.getElementById('active-container');
+            container.innerHTML = "";
+
+            if (activeOrders.length === 0) {
+                container.innerHTML = `<div class="empty-msg">ALL CLEARED<br>WAITING FOR ORDERS</div>`;
+                return;
+            }
+
+            activeOrders.forEach(order => {
+                // Calculate time
+                const elapsedMin = Math.floor((Date.now() - order.timestamp) / 60000);
+                let timerClass = 'timer-fresh';
+                if(elapsedMin > 10) timerClass = 'timer-warn';
+                if(elapsedMin > 20) timerClass = 'timer-late';
+
+                // Customer Info
+                const custName = order.customer ? order.customer.name.split(' ')[0] : 'Guest';
+                const orderType = order.orderType || 'Dine-In';
+
+                // Items HTML
+                let itemsHtml = "";
+                if (order.items) {
+                    order.items.forEach((item, index) => {
+                        const isDone = item.kitchenDone === true ? 'done' : '';
+                        // Special: Check if name includes modifiers (from waiter app logic)
+                        let displayName = item.name;
+                        let mods = "";
+                        
+                        // Waiter app might send name as "Burger [Cheese] (Note: Spicy)"
+                        // Or items array might have 'category'
+                        
+                        // Just display raw name, but if we want to handle modifiers neatly:
+                        if (item.category === "ADD-ON") displayName = `➕ ${displayName}`;
+
+                        itemsHtml += `
+                            <div class="kot-item ${isDone}" onclick="toggleItem('${order.key}', ${index}, ${!item.kitchenDone})">
+                                <span class="item-qty">${item.qty}</span>
+                                <div class="item-name">
+                                    ${displayName}
+                                    ${item.category ? `<span class="item-mods">${item.category}</span>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                // Global Note
+                let noteHtml = "";
+                if(order.globalNote && order.globalNote !== "-" && order.globalNote.trim() !== "") {
+                    noteHtml = `<div class="kot-note">📝 NOTE: ${order.globalNote}</div>`;
+                }
+
+                const card = document.createElement('div');
+                card.className = "kot-card";
+                card.innerHTML = `
+                    <div class="kot-header" onclick="completeOrder('${order.key}')" title="Tap to Complete Full Order">
+                        <span class="kot-id">#${order.orderId}</span>
+                        <div>
+                            <span class="header-hint">TAP TO CLEAR ✓</span>
+                            <span class="kot-timer ${timerClass}">${elapsedMin}m</span>
+                        </div>
+                    </div>
+                    <div class="kot-info">
+                        <span style="font-weight:700">${custName}</span>
+                        <span class="kot-type-badge">${orderType}</span>
+                    </div>
+                    <div class="kot-items">
+                        ${itemsHtml}
+                    </div>
+                    ${noteHtml}
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // --- ACTIONS ---
+        
+        // 1. Toggle Single Item
+        window.toggleItem = (key, index, status) => {
+            // We update the specific item index in the array
+            update(ref(db, `orders/${key}/items/${index}`), { kitchenDone: status });
+        };
+
+        // 2. Complete Order (Card Header Tap)
+        window.completeOrder = (key) => {
+            const order = activeOrders.find(o => o.key === key);
+            if(!order) return;
+
+            if(confirm(`Clear Order #${order.orderId}?`)) {
+                // Add to local history for Undo capability
+                historyOrders.unshift({ ...order, doneTime: new Date() });
+                if(historyOrders.length > 20) historyOrders.pop();
+                renderHistory();
+
+                // Update Firebase: cooking -> done
+                update(ref(db, `orders/${key}`), { status: 'done' });
+            }
+        };
+
+        // 3. Undo (From History)
+        window.undoComplete = (key) => {
+             // We need to check if it still exists in DB as 'done'
+             // If it was picked up/served, it might be gone or status changed.
+             // But usually it's safe to just set back to 'cooking'
+             if(confirm("Move back to Kitchen Active?")) {
+                 update(ref(db, `orders/${key}`), { status: 'cooking' });
+             }
+        };
+
+        // --- HISTORY VIEW ---
+        window.toggleHistory = () => {
+            const view = document.getElementById('history-view');
+            const btn = document.getElementById('toggle-hist-btn');
+            if(view.style.display === 'block') {
+                view.style.display = 'none';
+                btn.classList.remove('active');
+                btn.innerText = "History";
+            } else {
+                view.style.display = 'block';
+                btn.classList.add('active');
+                btn.innerText = "Close";
+                renderHistory();
+            }
+        };
+
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = "";
+            if(historyOrders.length === 0) {
+                list.innerHTML = "<div style='color:#555; text-align:center; margin-top:50px;'>No recently cleared orders</div>";
+                return;
+            }
+
+            historyOrders.forEach(o => {
+                const time = o.doneTime.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                const div = document.createElement('div');
+                div.className = "history-row";
+                div.innerHTML = `
+                    <div>
+                        <div style="font-weight:700; color:white;">#${o.orderId} - ${o.customer.name}</div>
+                        <div style="font-size:0.8rem; color:#888;">Cleared at ${time}</div>
+                    </div>
+                    <button class="btn-undo" onclick="undoComplete('${o.key}')">Undo ↺</button>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+    </script>
+</body>
+</html>
