@@ -743,7 +743,7 @@
             }
         };
 
-        // --- NEW: MERGE & SETTLE WITH 6-DIGIT BILL ID ---
+        // --- UPDATED: SETTLE LOGIC (Clean Name & No Fake Phone) ---
         window.settleAndClear = async () => {
             if(!currentSettleTable || !tableData[currentSettleTable]) return;
             const tData = tableData[currentSettleTable];
@@ -754,16 +754,16 @@
 
             // 2. Create Consolidated Master Bill
             const masterBill = {
-                orderId: billNumber, // Clean 6-digit ID (e.g., 882415)
+                orderId: billNumber, 
                 orderType: 'Dine-In',
                 timestamp: Date.now(),
                 status: 'paid',
                 customer: { 
-                    name: `Table ${currentSettleTable} (Merged)`,
-                    phone: '0000000000',
+                    name: `Table ${currentSettleTable}`, 
+                    phone: '-', 
                     address: 'Dine-In'
                 },
-                items: tData.items, // All items merged into one list
+                items: tData.items, 
                 financials: {
                     subTotal: tData.fins.sub,
                     discountVal: tData.fins.disc,
@@ -771,7 +771,7 @@
                     packingTotal: tData.fins.pack,
                     grandTotal: tData.total
                 },
-                originalOrderKeys: keys // Keep track of which orders made this bill
+                originalOrderKeys: keys 
             };
 
             // 3. Push ONE master bill to history
