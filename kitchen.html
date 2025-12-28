@@ -243,9 +243,27 @@
                 
                 if (data) {
                     Object.entries(data).forEach(([key, order]) => {
-                        if (order.status === 'cooking') {
+                        // FILTER LOGIC UPDATE:
+                        // Show order if:
+                        // 1. It is 'cooking' (Standard active order)
+                        // 2. OR it is 'served'/'done' BUT has new pending items (The "Add-on" case)
+                        
+                        if (order.status === 'completed' || order.status === 'rejected' || order.status === 'pending') return;
+
+                        let hasPending = false;
+                        let rawItemCount = 0;
+                        if (order.items) {
+                            hasPending = order.items.some(i => i.kitchenDone === false && !i.deleted);
+                            rawItemCount = order.items.length;
+                        }
+
+                        const isActive = order.status === 'cooking';
+                        const isRevived = (order.status === 'served' || order.status === 'done') && hasPending;
+
+                        if (isActive || isRevived) {
                             activeOrders.push({ key, ...order });
-                            // Count items to detect new additions
+                            
+                            // Only count items for orders that are displayed to track "New Item" sound
                             if(order.items) currentTotalItems += order.items.length;
                         }
                     });
@@ -291,8 +309,8 @@
 
                 if (order.items) {
                     order.items.forEach((item, index) => {
-                        // LOGIC: HIDE "Done" items to make added items look like a fresh ticket.
-                        // SHOW "Deleted" items so chef knows to stop.
+                        // LOGIC: HIDE "Done" items. 
+                        // This ensures the "Revived" order looks like a brand new ticket with only the new item.
                         if (item.kitchenDone === true && !item.deleted) return; 
 
                         visibleItemCount++;
