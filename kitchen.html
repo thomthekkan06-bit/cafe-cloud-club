@@ -251,10 +251,8 @@
                         if (order.status === 'completed' || order.status === 'rejected' || order.status === 'pending') return;
 
                         let hasPending = false;
-                        let rawItemCount = 0;
                         if (order.items) {
                             hasPending = order.items.some(i => i.kitchenDone === false && !i.deleted);
-                            rawItemCount = order.items.length;
                         }
 
                         const isActive = order.status === 'cooking';
@@ -309,9 +307,13 @@
 
                 if (order.items) {
                     order.items.forEach((item, index) => {
-                        // LOGIC: HIDE "Done" items. 
-                        // This ensures the "Revived" order looks like a brand new ticket with only the new item.
+                        // 1. Hide "Done" items
                         if (item.kitchenDone === true && !item.deleted) return; 
+
+                        // 2. NEW FILTER: Hide standalone "Packing Charge" items
+                        // This prevents billing items from cluttering the Chef's view
+                        const itemNameLower = item.name.toLowerCase();
+                        if (itemNameLower.includes("packing charge") || itemNameLower.includes("parcel charge")) return;
 
                         visibleItemCount++;
                         const isDeleted = item.deleted ? 'deleted-item' : '';
@@ -327,7 +329,7 @@
                     });
                 }
 
-                // If all items are hidden (Done), show a "Ready" message
+                // If all items are hidden (Done or Hidden Charges), show a "Ready" message
                 if (visibleItemCount === 0) {
                     itemsHtml = `<div class="ready-msg">ALL ITEMS PREPARED<br>TAP HEADER TO CLEAR</div>`;
                 }
