@@ -44,7 +44,6 @@
             height: 60px;
         }
 
-        /* Left Section: Menu Toggle + Logo */
         .nav-left {
             display: flex; align-items: center; gap: 12px;
         }
@@ -62,7 +61,6 @@
             border: 1px solid var(--border);
         }
 
-        /* Center Section: Table Info */
         .table-info {
             text-align: center;
             white-space: nowrap;
@@ -125,7 +123,7 @@
         }
         .food-card {
             background: var(--white); border-radius: 12px; padding: 15px;
-            border-left: 4px solid #333; /* Darker Default Border */
+            border-left: 4px solid #333; 
             display: flex; flex-direction: column; justify-content: space-between;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3); position: relative;
         }
@@ -157,7 +155,6 @@
         /* --- RIGHT SIDEBAR (CART) --- */
         .order-sidebar {
             position: fixed; top: 0; right: -100%; width: 100%; max-width: 400px;
-            /* FIX: Use 100dvh to handle mobile browser bars properly */
             height: 100dvh; 
             background: var(--bg); z-index: 2000; padding: 20px; border-left: 1px solid var(--border);
             transition: right 0.3s ease; display: flex; flex-direction: column;
@@ -170,7 +167,7 @@
         
         .cart-items-container { 
             flex: 1; overflow-y: auto; 
-            padding-bottom: 20px; /* Space before summary */
+            padding-bottom: 20px; 
         }
         .cart-item { display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px dashed #333; padding-bottom: 10px; }
         .qty-btn { background: #333; color: white; border: none; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
@@ -179,9 +176,8 @@
             margin-top: auto; 
             border-top: 2px solid var(--border); 
             padding-top: 15px; 
-            /* FIX: Extra padding for safe area on mobile */
             padding-bottom: calc(20px + env(safe-area-inset-bottom)); 
-            background: var(--bg); /* Ensure background covers content behind */
+            background: var(--bg); 
         }
         .summary-row { display: flex; justify-content: space-between; font-weight: 700; font-size: 1.2rem; margin-bottom: 15px; color: white; }
         
@@ -198,11 +194,11 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.6); z-index: 3000; display: none;
             align-items: center; justify-content: center; 
-            backdrop-filter: blur(5px); /* Glass Effect */
+            backdrop-filter: blur(5px);
             -webkit-backdrop-filter: blur(5px);
         }
         .modal-card {
-            background: rgba(24, 27, 33, 0.95); /* Slight transparency */
+            background: rgba(24, 27, 33, 0.95); 
             color: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 350px;
             text-align: center; border: 1px solid var(--border); display: flex; flex-direction: column; max-height: 85vh;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
@@ -211,8 +207,18 @@
         .input-field { width: 100%; padding: 12px; margin: 10px 0 20px 0; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; background: var(--bg); color: white; outline: none; }
         .input-field:focus { border-color: var(--primary); }
         
+        /* FIX: Better Modal List Styling */
         .modal-scroll-area { overflow-y: auto; flex: 1; text-align: left; margin-bottom: 15px; padding-right: 5px; }
-        .custom-option-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px dashed #333; font-size: 0.95rem; }
+        
+        .custom-option-row { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; /* Vertical Center Align */
+            padding: 12px 0; 
+            border-bottom: 1px dashed #333; 
+            font-size: 0.95rem; 
+        }
+
         .modal-footer { border-top: 1px solid var(--border); padding-top: 15px; display: flex; justify-content: space-between; align-items: center; }
 
         /* --- SUCCESS SCREEN --- */
@@ -400,7 +406,6 @@
         let cart = {};
         let selectedItem = null;
 
-        // Filters State
         let currentCat = 'All';
         let currentSort = 'default';
         let currentType = 'all';
@@ -418,7 +423,7 @@
             renderMenu();
         });
 
-        // --- SIDEBAR LOGIC ---
+        // --- SIDEBAR ---
         window.toggleSidebar = () => {
             const sidebar = document.querySelector('.left-sidebar');
             const overlay = document.querySelector('.sidebar-overlay');
@@ -435,7 +440,7 @@
             document.querySelectorAll('.filter-item').forEach(c => c.classList.remove('active'));
             btn.classList.add('active');
             currentCat = cat;
-            toggleSidebar(); // Close sidebar after selection
+            toggleSidebar(); 
             renderMenu();
         }
 
@@ -487,7 +492,7 @@
             });
         }
 
-        // --- CUSTOMIZATION LOGIC ---
+        // --- CUSTOMIZATION ---
         window.checkOptions = (itemName) => {
             const item = menuData.find(i => i.name === itemName);
             if(!item) return;
@@ -495,7 +500,6 @@
             const cat = item.category;
             const name = item.name;
 
-            // Simple rules for add-ons (simplified for brevity)
             if (["Bun-Tastic Burgers", "Italian Indulgence", "Freshly Folded", "Toasty Treats"].includes(cat)) {
                 options.push({ name: "Extra Cheese", price: 15 });
             }
@@ -531,7 +535,7 @@
                 options.forEach(opt => {
                     container.innerHTML += `
                         <div class="custom-option-row">
-                            <label style="display:flex; align-items:center; cursor:pointer; width:100%;">
+                            <label style="display:flex; align-items:center; cursor:pointer; flex:1;">
                                 <input type="checkbox" class="opt-check" data-name="${opt.name}" data-price="${opt.price}" onchange="calcTotal()" style="margin-right:12px; accent-color:var(--primary); transform:scale(1.2);">
                                 ${opt.name}
                             </label>
@@ -572,7 +576,6 @@
             if(cart[name]) cart[name].qty++;
             else cart[name] = { price, qty: 1, type };
             renderCart();
-            // Animation for visual feedback
             const btn = document.querySelector('.mobile-cart-btn');
             btn.style.transform = "scale(1.1)";
             setTimeout(()=> btn.style.transform = "scale(1)", 200);
@@ -611,17 +614,14 @@
             document.getElementById('cart-count').innerText = count;
             document.getElementById('btn-checkout').disabled = (count === 0);
             
-            // Empty state
-            if(count === 0) {
-                list.innerHTML = "<div style='text-align:center; color:#555; margin-top:50px;'>Your cart is empty</div>";
-            }
+            if(count === 0) list.innerHTML = "<div style='text-align:center; color:#555; margin-top:50px;'>Your cart is empty</div>";
         }
 
         window.toggleCart = () => document.getElementById('cart-sidebar').classList.toggle('active');
         window.openCheckout = () => document.getElementById('checkout-modal').style.display = 'flex';
         window.closeCheckout = () => document.getElementById('checkout-modal').style.display = 'none';
 
-        // --- ORDER PLACEMENT ---
+        // --- PLACE ORDER ---
         window.placeOrder = () => {
             const nameInput = document.getElementById('cust-name');
             const nameVal = nameInput.value.trim() || "Guest";
@@ -649,19 +649,13 @@
                 cart = {}; renderCart(); closeCheckout();
                 document.getElementById('cart-sidebar').classList.remove('active');
                 
-                // SHOW SUCCESS AND REDIRECT
                 const succ = document.getElementById('success-view');
                 succ.style.display = 'flex';
                 
                 if(MODE === 'waiter') {
-                    setTimeout(() => {
-                        window.location.href = "waiter.html";
-                    }, 2000);
+                    setTimeout(() => { window.location.href = "waiter.html"; }, 2000);
                 } else {
-                    // Standard Customer behavior (just reload to clear)
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 3000);
+                    setTimeout(() => { window.location.reload(); }, 3000);
                 }
             }).catch(e => { alert("Error: " + e.message); console.error(e); });
         }
