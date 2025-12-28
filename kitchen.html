@@ -290,14 +290,9 @@
                 if (order.items) {
                     order.items.forEach((item, index) => {
                         const isDone = item.kitchenDone === true ? 'done' : '';
-                        // Special: Check if name includes modifiers (from waiter app logic)
+                        
                         let displayName = item.name;
-                        let mods = "";
-                        
-                        // Waiter app might send name as "Burger [Cheese] (Note: Spicy)"
-                        // Or items array might have 'category'
-                        
-                        // Just display raw name, but if we want to handle modifiers neatly:
+                        // Handle Add-ons/Categories
                         if (item.category === "ADD-ON") displayName = `➕ ${displayName}`;
 
                         itemsHtml += `
@@ -367,9 +362,6 @@
 
         // 3. Undo (From History)
         window.undoComplete = (key) => {
-             // We need to check if it still exists in DB as 'done'
-             // If it was picked up/served, it might be gone or status changed.
-             // But usually it's safe to just set back to 'cooking'
              if(confirm("Move back to Kitchen Active?")) {
                  update(ref(db, `orders/${key}`), { status: 'cooking' });
              }
