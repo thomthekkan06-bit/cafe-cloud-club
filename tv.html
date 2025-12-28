@@ -372,7 +372,6 @@
         }, 1000);
 
         // --- AUDIO SYSTEM & WAKE LOCK ---
-        // MODIFICATION 2A: Enable Looping
         const bell = new Audio('bell.mp3');
         bell.loop = true; 
         
@@ -380,7 +379,6 @@
         let wakeLock = null;
 
         window.enableAudio = async function() {
-            // 1. Play Audio
             bell.play().then(() => {
                 bell.pause();
                 bell.currentTime = 0;
@@ -392,12 +390,9 @@
                 document.getElementById('sound-status').style.borderColor = "var(--success)";
             }).catch(e => console.error("Audio blocked", e));
 
-            // 2. Request Wake Lock
             try {
                 if ('wakeLock' in navigator) {
                     wakeLock = await navigator.wakeLock.request('screen');
-                    console.log('Screen Wake Lock active');
-                    
                     document.addEventListener('visibilitychange', async () => {
                         if (wakeLock !== null && document.visibilityState === 'visible') {
                             wakeLock = await navigator.wakeLock.request('screen');
@@ -428,12 +423,9 @@
 
         // --- FIREBASE ORDER LISTENER ---
         const ordersRef = ref(db, 'orders');
-        
-        // REFRESH LOGIC: We render on data change, AND we force re-render every minute to update colors
         let lastSnapshot = null;
 
         function renderOrders() {
-            // 1. Safety Check: If no snapshot yet, do nothing
             if (!lastSnapshot) return;
             const data = lastSnapshot.val();
 
@@ -441,69 +433,74 @@
             const prepContainer = document.getElementById('grid-preparing');
             const readyContainer = document.getElementById('grid-ready');
             
-            // Clear current display
             incContainer.innerHTML = "";
             prepContainer.innerHTML = "";
             readyContainer.innerHTML = "";
 
-            // 2. STOP SOUND DEFAULT: Assume we should stop ringing unless we find a reason to ring
             let shouldRing = false;
 
             if (data) {
-                // Convert to array and sort by time
                 const orders = Object.values(data).sort((a, b) => a.timestamp - b.timestamp);
 
                 orders.forEach(order => {
                     try {
-                        // STRICT VALIDATION
-                        if (!order || !order.status) return;
-                        if (!order.orderId) return; 
-                        if (!order.customer || !order.customer.name) return; 
+                        if (!order || !order.status || !order.orderId || !order.customer) return;
                         
                         const status = order.status;
                         const orderId = order.orderId;
                         const customerName = order.customer.name.split(' ')[0];
                         const type = order.orderType || "Order"; 
 
+                        // --- CHECK FOR PARTIAL READY ITEMS ---
+                        let readyCount = 0;
+                        let totalCount = 0;
+                        if (order.items) {
+                            totalCount = order.items.length;
+                            readyCount = order.items.filter(i => i.kitchenDone).length;
+                        }
+                        const isPartial = (status === 'cooking' && readyCount > 0);
+
                         // --- COLUMN 1: INCOMING (Pending) ---
                         if (status === 'pending') {
-                            shouldRing = true; // FOUND A PENDING ORDER -> RING BELL
+                            shouldRing = true;
                             const mins = getMinutesAgo(order.timestamp);
                             let animClass = 'inc-fresh'; 
-
                             if (mins >= 10) animClass = 'inc-critical'; 
                             else if (mins >= 5) animClass = 'inc-waiting'; 
 
-                            const cardHtml = `
+                            incContainer.innerHTML += `
                                 <div class="order-ticket ${animClass}">
                                     <h2>${orderId}</h2>
                                     <span>${mins}m Ago</span>
                                     <span>${customerName}</span>
                                 </div>
                             `;
-                            incContainer.innerHTML += cardHtml;
                         }
 
-                        // --- COLUMN 2: PREPARING (Cooking) ---
-                        else if (status === 'cooking') {
-                            const cardHtml = `
+                        // --- COLUMN 2: PREPARING (Cooking & Nothing Ready) ---
+                        else if (status === 'cooking' && !isPartial) {
+                            prepContainer.innerHTML += `
                                 <div class="order-ticket">
                                     <h2>${orderId}</h2>
                                     <span>${customerName} (${type})</span>
                                 </div>
                             `;
-                            prepContainer.innerHTML += cardHtml;
                         } 
                         
-                        // --- COLUMN 3: READY (Done) ---
-                        else if (status === 'done') {
-                            const cardHtml = `
+                        // --- COLUMN 3: READY (Done OR Partial) ---
+                        else if (status === 'done' || isPartial) {
+                            let statusText = customerName;
+                            // Update text for partial orders
+                            if (isPartial) {
+                                statusText = `${customerName}<br><span style="font-size:0.75rem; color:#fff; display:block; margin-top:5px;">SERVING ${readyCount}/${totalCount}</span>`;
+                            }
+
+                            readyContainer.innerHTML += `
                                 <div class="order-ticket blink-me">
                                     <h2>${orderId}</h2>
-                                    <span>${customerName}</span>
+                                    <span>${statusText}</span>
                                 </div>
                             `;
-                            readyContainer.innerHTML += cardHtml;
                         }
                     } catch (err) {
                         console.warn("Skipped bad order", err);
@@ -511,29 +508,21 @@
                 });
             }
 
-            // 3. AUDIO CONTROL (EXECUTES ALWAYS)
-            // This is the CRITICAL FIX. It runs regardless of whether data exists or not.
             if (audioEnabled) {
                 if (shouldRing) {
-                    // Only play if it's not already playing
-                    if (bell.paused) {
-                        bell.play().catch(e => console.log("Audio play failed:", e));
-                    }
+                    if (bell.paused) bell.play().catch(e => console.log("Audio play failed:", e));
                 } else {
-                    // FORCE STOP if no pending orders found (or if data was null)
                     bell.pause();
                     bell.currentTime = 0;
                 }
             }
         }
 
-        // LISTENER
         onValue(ordersRef, (snapshot) => {
             lastSnapshot = snapshot;
             renderOrders();
         });
 
-        // FORCE RENDER EVERY 60s TO UPDATE COLORS (Green -> Yellow -> Red)
         setInterval(() => {
             renderOrders();
         }, 60000);
