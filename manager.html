@@ -282,6 +282,11 @@
                 <div style="cursor:pointer;" onclick="closeModal('edit-modal')">&times;</div>
             </div>
             <div class="modal-body">
+                <div style="background:rgba(59, 130, 246, 0.1); padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid var(--primary); display: flex; align-items: center; gap: 10px;">
+                    <label style="font-size:0.75rem; color:var(--primary); font-weight:800; white-space: nowrap;">MOVE TABLE:</label>
+                    <select id="table-transfer-select" class="inp-select" style="border-color:var(--primary);"></select>
+                    <button class="btn-add" onclick="saveTableMove()" style="width:auto; padding:8px 15px; background:var(--primary);">GO</button>
+                </div>
                 <div id="edit-list-container">
                     </div>
 
@@ -344,6 +349,7 @@
         let currentSettleTable = null;
         let currentEditKey = null; 
         let fullMenu = []; 
+        let currentGuestNameSuffix = ""; // Stores "(John)" or "(Guest)"
 
         function loadMenuForEdit() {
             onValue(ref(db, 'menu'), (snapshot) => {
@@ -634,8 +640,61 @@
             const snap = await get(ref(db, 'orders/' + key));
             if(snap.exists()) {
                 const order = snap.val();
+                
+                // --- NEW: Populate Table Dropdown ---
+                const sel = document.getElementById('table-transfer-select');
+                sel.innerHTML = "";
+                
+                let currentTableId = "";
+                currentGuestNameSuffix = ""; // Reset suffix
+
+                // Parse Name: "Table 1 (John)" -> ID="1", Suffix="(John)"
+                if (order.customer && order.customer.name) {
+                    const nameStr = order.customer.name;
+                    if(nameStr.startsWith("Table")) {
+                        const parts = nameStr.split(" "); 
+                        // parts[0] is "Table", parts[1] is ID, rest is Name
+                        if(parts.length >= 2) {
+                            currentTableId = parts[1];
+                            // Join the rest back together (e.g. "(John Doe)")
+                            currentGuestNameSuffix = parts.slice(2).join(" "); 
+                        }
+                    }
+                }
+
+                // Generate Options (1-13)
+                for(let i=1; i<=13; i++) {
+                    const opt = document.createElement('option');
+                    opt.value = i;
+                    opt.text = (i === 8) ? "Table 8 (BAR)" : `Table ${i}`;
+                    
+                    // Pre-select current table
+                    if(i.toString() === currentTableId) opt.selected = true;
+                    
+                    sel.appendChild(opt);
+                }
+                // -------------------------------------
+
                 renderEditList(order.items || []);
             }
+        }
+
+        window.saveTableMove = async () => {
+            if(!currentEditKey) return;
+
+            const newTableId = document.getElementById('table-transfer-select').value;
+            
+            // Reconstruct the name string
+            let newFullName = `Table ${newTableId}`;
+            if(currentGuestNameSuffix) {
+                newFullName += ` ${currentGuestNameSuffix}`;
+            }
+
+            // Update Firebase
+            await update(ref(db, 'orders/' + currentEditKey + '/customer'), { name: newFullName });
+            
+            // Visual feedback and close
+            closeModal('edit-modal');
         }
 
         function renderEditList(items) {
