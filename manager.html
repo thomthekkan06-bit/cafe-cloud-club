@@ -286,7 +286,7 @@
                     </div>
 
                 <div style="margin-top:20px; padding-top:10px; border-top:1px solid #333;">
-                    <label style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">ADD ITEM FROM MENU</label>
+                    <label style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">ADD ITEM FROM MENU (Creates New KOT)</label>
                     <div class="edit-inputs">
                         <select id="menu-select" class="inp-select" onchange="autoFillPrice()">
                             <option value="">-- Loading Menu... --</option>
@@ -486,11 +486,19 @@
 
                 const f = order.financials || {};
                 
+                // --- FINANCIAL BREAKDOWN START ---
+                let discountText = f.discountVal > 0 ? `-₹${f.discountVal}` : '₹0';
+                if(f.couponCode) discountText += ` <span style="font-size:0.7rem; color:var(--text-muted)">(${f.couponCode})</span>`;
+
                 let finHtml = `
                     <div class="fin-box">
-                        <div class="fin-row total"><span>TOTAL</span> <span>₹${f.grandTotal || 0}</span></div>
+                        <div class="fin-row"><span>Subtotal</span> <span>₹${f.subTotal || 0}</span></div>
+                        <div class="fin-row"><span>Discount</span> <span>${discountText}</span></div>
+                        <div class="fin-row"><span>Packing</span> <span>₹${f.packingTotal || 0}</span></div>
+                        <div class="fin-row total"><span>GRAND TOTAL</span> <span>₹${f.grandTotal || 0}</span></div>
                     </div>
                 `;
+                // --- FINANCIAL BREAKDOWN END ---
 
                 let btnHtml = '';
                 let showEdit = true;
