@@ -232,6 +232,25 @@
             margin-bottom: 20px; color: white; font-size: 40px;
             box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
         }
+
+        /* NEW BUTTON STYLE */
+        .btn-back-floor {
+            background: #1e293b; 
+            border: 1px solid var(--primary); 
+            color: var(--primary);
+            padding: 12px 25px; 
+            border-radius: 12px; 
+            margin-top: 25px;
+            cursor: pointer; 
+            font-weight: 600;
+            font-size: 1rem;
+            display: none; /* Hidden by default */
+            transition: all 0.2s;
+        }
+        .btn-back-floor:hover {
+            background: var(--primary);
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -370,6 +389,10 @@
         <div class="success-icon-container"><i class="fas fa-check"></i></div>
         <h1 style="color:white; margin-bottom:10px;">Order Sent!</h1>
         <p id="success-msg" style="color:#aaa; max-width:250px;">The kitchen has received your order.</p>
+        
+        <button id="btn-back-floor" class="btn-back-floor" onclick="window.location.href='waiter.html'">
+            <i class="fas fa-th-large" style="margin-right:8px;"></i> Back to Floor Map
+        </button>
     </div>
 
     <script type="module">
@@ -652,11 +675,14 @@
                 succ.style.display = 'flex';
                 
                 if(MODE === 'waiter') {
-                    // Update text for Waiter
+                    // Show Button for Waiter
                     document.getElementById('success-msg').innerText = "Returning to Floor Map...";
-                    setTimeout(() => { window.location.href = "waiter.html"; }, 700);
+                    document.getElementById('btn-back-floor').style.display = 'inline-block';
+                    
+                    // Backup Redirect (2s)
+                    setTimeout(() => { window.location.href = "waiter.html"; }, 2000);
                 } else {
-                    // Standard text for Customer
+                    // Customer: Standard reload
                     setTimeout(() => { window.location.reload(); }, 3000);
                 }
             }).catch(e => { alert("Error: " + e.message); console.error(e); });
