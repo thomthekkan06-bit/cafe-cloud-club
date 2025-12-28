@@ -743,23 +743,32 @@
             }
         };
 
-        // --- UPDATED: SETTLE LOGIC (Clean Name & No Fake Phone) ---
+        // --- UPDATED: SETTLE WITH NAME EXTRACTION ---
         window.settleAndClear = async () => {
             if(!currentSettleTable || !tableData[currentSettleTable]) return;
             const tData = tableData[currentSettleTable];
             const keys = tData.keys;
 
-            // 1. Generate Unique 6-Digit Bill Number
+            // 1. EXTRACT REAL NAME from the first order of this session
+            let finalCustomerName = `Table ${currentSettleTable}`; // Default
+            if (tData.rawOrders && tData.rawOrders.length > 0) {
+                // Sort by timestamp to find the very first order
+                tData.rawOrders.sort((a,b) => a.timestamp - b.timestamp);
+                // Takes the name from the first order (e.g. "Table 5 (John)")
+                finalCustomerName = tData.rawOrders[0].customer.name;
+            }
+
+            // 2. Generate Unique 6-Digit Bill Number
             const billNumber = Math.floor(100000 + Math.random() * 900000);
 
-            // 2. Create Consolidated Master Bill
+            // 3. Create Consolidated Master Bill
             const masterBill = {
                 orderId: billNumber, 
                 orderType: 'Dine-In',
                 timestamp: Date.now(),
                 status: 'paid',
                 customer: { 
-                    name: `Table ${currentSettleTable}`, 
+                    name: finalCustomerName, // <--- NOW USES THE REAL NAME
                     phone: '-', 
                     address: 'Dine-In'
                 },
@@ -774,10 +783,10 @@
                 originalOrderKeys: keys 
             };
 
-            // 3. Push ONE master bill to history
+            // 4. Push ONE master bill to history
             await push(ref(db, 'history'), masterBill);
 
-            // 4. Delete ALL individual active orders
+            // 5. Delete ALL individual active orders
             for (const key of keys) {
                 await remove(ref(db, 'orders/' + key));
             }
