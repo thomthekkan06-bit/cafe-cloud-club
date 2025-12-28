@@ -11,15 +11,15 @@
     
     <style>
         /* --- CORE STYLES --- */
-        :root {
-            --primary: #3b82f6; 
-            --secondary: #1e293b;
-            --bg: #F8F9FA;
-            --white: #ffffff;
-            --dark-text: #2d3436;
-            --grey-text: #4B5563;
-            --success: #27ae60;
-        }
+:root {
+    --primary: #3b82f6; 
+    --secondary: #f3f4f6;   /* Main Text (Was Dark Slate, now Off-White) */
+    --bg: #0f1115;          /* Background (Matches Manager App) */
+    --white: #181b21;       /* Card Surface (Matches Manager Surface) */
+    --dark-text: #f3f4f6;   /* Secondary Text */
+    --grey-text: #9ca3af;   /* Muted Text */
+    --success: #10b981;
+}
 
         body {
             font-family: 'Poppins', sans-serif;
@@ -64,7 +64,7 @@
             background: var(--white); border-radius: 12px; padding: 15px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
             display: flex; flex-direction: column; justify-content: space-between;
-            border-left: 4px solid #ccc;
+            border-left: 4px solid #333;
         }
         .food-card.veg { border-left-color: var(--success); }
         .food-card.non-veg { border-left-color: #c0392b; }
