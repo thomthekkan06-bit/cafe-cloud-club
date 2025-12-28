@@ -203,7 +203,8 @@
 
         // CONFIG
         const ACCESS_PIN = "2024";
-        const bell = new Audio('bell.mp3');
+        // --- UPDATED SOUND FILE ---
+        const bell = new Audio('kdsound.mp3'); 
         
         let activeOrders = [];
         let historyOrders = []; // Local session history for Undo
@@ -213,7 +214,7 @@
         // --- AUTH ---
         window.checkPin = function() {
             if(document.getElementById('pin-input').value === ACCESS_PIN) {
-                // Unlock Audio
+                // Unlock Audio (Plays once to initialize context)
                 bell.play().then(() => { bell.pause(); bell.currentTime = 0; }).catch(e=>{});
                 
                 // Wake Lock
@@ -256,7 +257,7 @@
                 // SORT: Oldest first (FIFO)
                 activeOrders.sort((a, b) => a.timestamp - b.timestamp);
 
-                // AUDIO ALERT: If new order added
+                // AUDIO ALERT: Play only if a NEW order card appears (count increases)
                 if (!isFirstLoad && activeOrders.length > previousOrderCount) {
                     bell.currentTime = 0;
                     bell.play().catch(e => console.log("Audio blocked"));
@@ -360,8 +361,8 @@
                 if(historyOrders.length > 20) historyOrders.pop();
                 renderHistory();
 
-                // UPDATE STATUS LOGIC:
-                // For Dine-In (Table/Waiter): 'served' (Removes from TV, keeps on Manager Table Map)
+                // UPDATE STATUS LOGIC (Preserved):
+                // For Dine-In: 'served' (Removes from TV, keeps on Manager Map)
                 // For Delivery/Pickup: 'done' (Keeps on TV/Manager Queue)
                 const type = order.orderType || 'Dine-In';
                 const nextStatus = (type === 'Delivery' || type === 'Pickup') ? 'done' : 'served';
