@@ -34,7 +34,7 @@
         .top-bar {
             flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;
             background: var(--surface); padding: 10px 20px; border-bottom: 1px solid var(--border);
-            position: relative; /* For centered clock */
+            position: relative;
         }
         .app-title { 
             margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 10px;
@@ -53,7 +53,6 @@
         .btn-header {
             background: var(--surface-hover); color: var(--text-muted); border: 1px solid var(--border);
             padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; text-decoration: none;
-            display: flex; align-items: center; gap: 6px;
         }
         .btn-swiggy-zomato { background: rgba(252, 128, 25, 0.15); color: #fc8019; border-color: #fc8019; }
         .btn-swiggy-zomato:hover { background: #fc8019; color: white; }
@@ -165,7 +164,7 @@
         
         <div class="header-actions">
             <button class="btn-header btn-swiggy-zomato" onclick="openExtOrderModal()">+ 🛵 Swiggy/Zomato</button>
-            <a href="history.html" class="btn-header">Sales History</a>
+            <a href="history.html" class="btn-header">History</a>
         </div>
     </div>
 
@@ -605,6 +604,8 @@
                 return `<div class="item-row"><div class="item-top"><span><span class="item-qty">${i.qty}x</span>${i.name}</span></div>${v}</div>`;
             }).join('');
 
+            let showEdit = (order.status !== 'done' && order.status !== 'out_for_delivery');
+            
             let btns = '';
             if(order.status==='pending') btns = `<button class="btn-act btn-red" onclick="rejectOrder('${key}')">REJECT</button><button class="btn-act btn-green" onclick="upd('${key}','cooking')">ACCEPT</button>`;
             else if(order.status==='cooking') btns = `<button class="btn-act btn-green" onclick="upd('${key}','done')">READY</button>`;
@@ -612,7 +613,7 @@
                 if(type === 'Delivery') btns = `<button class="btn-act btn-red" disabled>WAIT DRIVER</button>`;
                 else btns = `<button class="btn-act btn-orange" onclick="comp('${key}')">PICKED UP</button>`;
             } 
-            else if(order.status==='out_for_delivery') btns = `<button class="btn-act btn-red" onclick="comp('${key}')">COMPLETE</button>`;
+            else if(order.status==='out_for_delivery') btns = `<button class="btn-act btn-red" onclick="forceComplete('${key}')">COMPLETE</button>`;
 
             container.innerHTML += `
                 <div class="${cls}">
@@ -621,7 +622,10 @@
                         <div class="info-grid"><span class="info-label">Info</span><span>${order.customer.name}</span></div>
                         <div class="items-list">${itemsHtml}</div>
                     </div>
-                    <div class="card-actions">${btns}</div>
+                    <div class="card-actions">
+                         ${showEdit ? `<button class="btn-act btn-blue" style="flex:0.3" onclick="openEditModal('${key}')">EDIT</button>` : ''}
+                        ${btns}
+                    </div>
                 </div>
             `;
         }
@@ -712,7 +716,6 @@
             const snap = await get(ref(db, 'orders/' + key));
             if(snap.exists()) {
                 const order = snap.val();
-                // Populating Transfer Table dropdown
                 const sel = document.getElementById('table-transfer-select');
                 sel.innerHTML = "";
                 let currentTableId = "";
@@ -802,7 +805,6 @@
         };
 
         window.forceComplete = (k) => { if(confirm("Force Complete?")) window.comp(k); };
-
         window.closeModal = (id) => document.getElementById(id).style.display = 'none';
         window.remExt = remExt;
     </script>
