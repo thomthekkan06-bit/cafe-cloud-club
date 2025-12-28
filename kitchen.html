@@ -123,11 +123,6 @@
         .item-name { flex: 1; font-weight: 500; }
         .item-mods { display: block; font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; font-style: italic; }
 
-        /* COMPLETED ITEM STATE */
-        .kot-item.done { opacity: 0.4; }
-        .kot-item.done .item-name { text-decoration: line-through; color: var(--strike-color); }
-        .kot-item.done .item-qty { color: var(--strike-color); }
-
         /* DELETED ITEM STATE */
         .kot-item.deleted-item { opacity: 0.7; pointer-events: none; }
         .kot-item.deleted-item .item-name { text-decoration: line-through; color: var(--danger); }
@@ -137,6 +132,12 @@
             padding: 10px 15px; background: rgba(245, 158, 11, 0.1);
             color: var(--warning); font-size: 0.85rem; font-weight: 600;
             border-top: 1px solid var(--border);
+        }
+
+        /* READY MSG */
+        .ready-msg {
+            padding: 20px; text-align: center; color: var(--success); font-weight: 800;
+            background: rgba(16, 185, 129, 0.1); font-size: 0.9rem;
         }
 
         /* --- HISTORY VIEW --- */
@@ -203,23 +204,18 @@
 
         // CONFIG
         const ACCESS_PIN = "2024";
-        // --- UPDATED SOUND FILE ---
         const bell = new Audio('kdsound.mp3'); 
         
         let activeOrders = [];
-        let historyOrders = []; // Local session history for Undo
-        let previousOrderCount = 0;
+        let historyOrders = []; 
+        let previousTotalItems = 0; // Tracks TOTAL items to detect additions
         let isFirstLoad = true;
 
         // --- AUTH ---
         window.checkPin = function() {
             if(document.getElementById('pin-input').value === ACCESS_PIN) {
-                // Unlock Audio (Plays once to initialize context)
                 bell.play().then(() => { bell.pause(); bell.currentTime = 0; }).catch(e=>{});
-                
-                // Wake Lock
                 if ('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(e=>{});
-
                 document.getElementById('pin-overlay').style.display = 'none';
                 initKDS();
             } else {
@@ -227,7 +223,6 @@
                 document.getElementById('pin-input').value = "";
             }
         }
-        // Bind Enter key
         document.getElementById('pin-input').addEventListener("keypress", (e) => {
             if (e.key === "Enter") checkPin();
         });
@@ -244,26 +239,27 @@
             onValue(ordersRef, (snapshot) => {
                 const data = snapshot.val();
                 activeOrders = [];
+                let currentTotalItems = 0;
                 
                 if (data) {
                     Object.entries(data).forEach(([key, order]) => {
-                        // FILTER: Only show 'cooking' orders
                         if (order.status === 'cooking') {
                             activeOrders.push({ key, ...order });
+                            // Count items to detect new additions
+                            if(order.items) currentTotalItems += order.items.length;
                         }
                     });
                 }
 
-                // SORT: Oldest first (FIFO)
                 activeOrders.sort((a, b) => a.timestamp - b.timestamp);
 
-                // AUDIO ALERT: Play only if a NEW order card appears (count increases)
-                if (!isFirstLoad && activeOrders.length > previousOrderCount) {
+                // AUDIO ALERT: Triggers if Item Count Increases (New Order OR Added Item)
+                if (!isFirstLoad && currentTotalItems > previousTotalItems) {
                     bell.currentTime = 0;
                     bell.play().catch(e => console.log("Audio blocked"));
                 }
                 
-                previousOrderCount = activeOrders.length;
+                previousTotalItems = currentTotalItems;
                 isFirstLoad = false;
 
                 renderActiveOrders();
@@ -281,39 +277,43 @@
             }
 
             activeOrders.forEach(order => {
-                // Calculate time
                 const elapsedMin = Math.floor((Date.now() - order.timestamp) / 60000);
                 let timerClass = 'timer-fresh';
                 if(elapsedMin > 10) timerClass = 'timer-warn';
                 if(elapsedMin > 20) timerClass = 'timer-late';
 
-                // Customer Info
-                const custName = order.customer ? order.customer.name.split(' ')[0] : 'Guest';
+                const custName = order.customer ? order.customer.name : 'Guest';
                 const orderType = order.orderType || 'Dine-In';
 
                 // Items HTML
                 let itemsHtml = "";
+                let visibleItemCount = 0;
+
                 if (order.items) {
                     order.items.forEach((item, index) => {
-                        // Check if deleted
-                        const isDeleted = item.deleted ? 'deleted-item' : '';
-                        const isDone = item.kitchenDone === true ? 'done' : '';
-                        
-                        let displayName = item.name;
-                        if (item.category === "ADD-ON") displayName = `➕ ${displayName}`;
+                        // LOGIC: HIDE "Done" items to make added items look like a fresh ticket.
+                        // SHOW "Deleted" items so chef knows to stop.
+                        if (item.kitchenDone === true && !item.deleted) return; 
 
+                        visibleItemCount++;
+                        const isDeleted = item.deleted ? 'deleted-item' : '';
+                        
                         itemsHtml += `
-                            <div class="kot-item ${isDeleted} ${isDone}" onclick="toggleItem('${order.key}', ${index}, ${!item.kitchenDone})">
+                            <div class="kot-item ${isDeleted}" onclick="toggleItem('${order.key}', ${index}, ${!item.kitchenDone})">
                                 <span class="item-qty">${item.qty}</span>
                                 <div class="item-name">
-                                    ${displayName}
+                                    ${item.name}
                                 </div>
                             </div>
                         `;
                     });
                 }
 
-                // Global Note
+                // If all items are hidden (Done), show a "Ready" message
+                if (visibleItemCount === 0) {
+                    itemsHtml = `<div class="ready-msg">ALL ITEMS PREPARED<br>TAP HEADER TO CLEAR</div>`;
+                }
+
                 let noteHtml = "";
                 if(order.globalNote && order.globalNote !== "-" && order.globalNote.trim() !== "") {
                     noteHtml = `<div class="kot-note">📝 NOTE: ${order.globalNote}</div>`;
@@ -343,35 +343,27 @@
         }
 
         // --- ACTIONS ---
-        
-        // 1. Toggle Single Item
         window.toggleItem = (key, index, status) => {
-            // We update the specific item index in the array
             update(ref(db, `orders/${key}/items/${index}`), { kitchenDone: status });
         };
 
-        // 2. Complete Order (Card Header Tap)
         window.completeOrder = (key) => {
             const order = activeOrders.find(o => o.key === key);
             if(!order) return;
 
+            // Confirm Completion
             if(confirm(`Clear Order #${order.orderId}?`)) {
-                // Add to local history for Undo capability
                 historyOrders.unshift({ ...order, doneTime: new Date() });
                 if(historyOrders.length > 20) historyOrders.pop();
                 renderHistory();
 
-                // UPDATE STATUS LOGIC (Preserved):
-                // For Dine-In: 'served' (Removes from TV, keeps on Manager Map)
-                // For Delivery/Pickup: 'done' (Keeps on TV/Manager Queue)
+                // Status Logic: Dine-In -> Served (To clear from TV), Delivery -> Done
                 const type = order.orderType || 'Dine-In';
                 const nextStatus = (type === 'Delivery' || type === 'Pickup') ? 'done' : 'served';
-
                 update(ref(db, `orders/${key}`), { status: nextStatus });
             }
         };
 
-        // 3. Undo (From History)
         window.undoComplete = (key) => {
              if(confirm("Move back to Kitchen Active?")) {
                  update(ref(db, `orders/${key}`), { status: 'cooking' });
@@ -416,7 +408,6 @@
                 list.appendChild(div);
             });
         }
-
     </script>
 </body>
 </html>
