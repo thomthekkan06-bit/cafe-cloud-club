@@ -261,12 +261,7 @@
                 <div id="edit-list-container"></div>
 
                 <div style="margin-top:20px; padding-top:10px; border-top:1px solid #333;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                        <label style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">ADD ITEM</label>
-                        <button class="btn-modal-action" style="background:var(--warning); width:auto; padding:4px 10px; font-size:0.7rem;" onclick="addParcelToEdit()">
-                            📦 Add Packing
-                        </button>
-                    </div>
+                    <label style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">ADD ITEM</label>
                     <div class="row-inputs" style="grid-template-columns: 2fr 1fr 0.8fr auto; gap:5px;">
                         <select id="menu-select" class="inp-select" style="margin:0;" onchange="autoFillPrice()">
                             <option value="">-- Select --</option>
@@ -372,6 +367,15 @@
 
             // 6. Shakes
             if (item.category === "Whipped Wonders") opts.push({ name: "Extra Ice Cream", price: 30 });
+
+            // --- MANAGER PACKING OPTION ---
+            let packPrice = 10;
+            if (fiveRsCats.includes(item.category)) packPrice = 5;
+            if (item.category === 'ADD-ON') packPrice = item.name.startsWith("Hummus") ? 7 : 5;
+            if (item.name.includes("Tossed Rice") || item.name.includes("Sorted Vegges")) packPrice = 7;
+            
+            opts.push({ name: "Packing", price: packPrice });
+            // -----------------------------
 
             return opts;
         }
@@ -749,25 +753,6 @@
                     </div>`;
             });
         }
-
-        // --- NEW FUNCTION: ADD PARCEL TO EDIT ---
-        window.addParcelToEdit = async () => {
-            const packingItem = fullMenu.find(i => 
-                i.name.toLowerCase().includes("packing") || 
-                i.name.toLowerCase().includes("parcel")
-            );
-
-            if (!packingItem) {
-                alert("❌ Error: 'Packing Charge' item not found in Menu.\nPlease add an item named 'Packing Charge' in Admin.");
-                return;
-            }
-
-            document.getElementById('menu-select').value = packingItem.name;
-            document.getElementById('new-item-price').value = packingItem.price;
-            document.getElementById('new-item-qty').value = 1;
-            
-            await addNewItemToOrder();
-        };
 
         window.addNewItemToOrder = async () => {
             const select = document.getElementById('menu-select');
