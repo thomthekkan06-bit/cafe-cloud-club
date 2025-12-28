@@ -360,9 +360,9 @@
                 if(historyOrders.length > 20) historyOrders.pop();
                 renderHistory();
 
-                // LOGIC UPDATE: 
-                // - Dine-In: Set to 'served' (Removes from TV, keeps on Table Billing)
-                // - Delivery/Pickup: Set to 'done' (Keeps on TV/Manager Queue for handoff)
+                // UPDATE STATUS LOGIC:
+                // For Dine-In (Table/Waiter): 'served' (Removes from TV, keeps on Manager Table Map)
+                // For Delivery/Pickup: 'done' (Keeps on TV/Manager Queue)
                 const type = order.orderType || 'Dine-In';
                 const nextStatus = (type === 'Delivery' || type === 'Pickup') ? 'done' : 'served';
 
