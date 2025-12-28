@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Table Ordering | Cafe Cloud Club</title>
     
     <link rel="icon" type="image/png" href="icon.png">
@@ -29,26 +29,48 @@
             padding-bottom: 80px; 
             color: var(--secondary);
             overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* NAVBAR */
+        /* --- NAVBAR --- */
         .table-navbar {
             background: #181b21;
             border-bottom: 1px solid var(--border);
-            padding: 15px 20px;
+            padding: 10px 15px;
             position: sticky; top: 0; z-index: 1000;
-            display: flex; justify-content: space-between; align-items: center;
+            display: grid; 
+            grid-template-columns: 1fr auto 1fr; /* Left, Center, Right (empty) */
+            align-items: center;
+            height: 60px;
         }
-        .table-info h1 { margin: 0; font-size: 1.2rem; font-weight: 700; color: var(--primary); }
-        .table-info span { font-size: 0.8rem; opacity: 0.8; }
+
+        /* Left Section: Menu Toggle + Logo */
+        .nav-left {
+            display: flex; align-items: center; gap: 12px;
+        }
         
         .menu-toggle-btn {
             background: none; border: 1px solid var(--border); color: var(--primary);
-            width: 40px; height: 40px; border-radius: 8px; font-size: 1.2rem; cursor: pointer;
+            width: 38px; height: 38px; border-radius: 8px; font-size: 1.1rem; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s;
+        }
+        .menu-toggle-btn:active { background: rgba(59, 130, 246, 0.1); }
+
+        .nav-logo {
+            height: 38px; width: auto; border-radius: 6px;
+            border: 1px solid var(--border);
         }
 
-        /* SIDEBAR (SLIDING TRAY) */
+        /* Center Section: Table Info */
+        .table-info {
+            text-align: center;
+            white-space: nowrap;
+        }
+        .table-info h1 { margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--primary); letter-spacing: 0.5px; }
+        .table-info span { font-size: 0.75rem; opacity: 0.8; display: block; margin-top: -2px; }
+
+        /* --- SIDEBAR (CATEGORIES) --- */
         .sidebar-overlay { 
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(0,0,0,0.5); z-index: 11000; backdrop-filter: blur(2px); 
@@ -66,7 +88,7 @@
         .filter-item { 
             padding: 12px 15px; border-radius: 8px; font-size: 0.9rem; cursor: pointer;
             margin-bottom: 5px; color: var(--grey-text); font-weight: 500;
-            transition: 0.2s; border: 1px solid transparent;
+            transition: 0.2s; border: 1px solid transparent; display: flex; align-items: center; justify-content: space-between;
         }
         .filter-item:hover { background: #333; color: var(--primary); }
         .filter-item.active { 
@@ -74,7 +96,7 @@
             border: 1px solid var(--primary); font-weight: 700; 
         }
 
-        /* SEARCH & FILTERS */
+        /* --- SEARCH & FILTERS --- */
         .filter-bar {
             padding: 15px; display: flex; flex-direction: column; gap: 10px;
         }
@@ -83,18 +105,20 @@
             padding: 10px 15px; display: flex; align-items: center; gap: 10px;
         }
         .search-box input {
-            background: transparent; border: none; color: white; width: 100%; font-family: inherit; outline: none;
+            background: transparent; border: none; color: white; width: 100%; font-family: inherit; outline: none; font-size: 0.95rem;
         }
         .advanced-filters {
-            display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px;
+            display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none;
         }
+        .advanced-filters::-webkit-scrollbar { display: none; }
+        
         .adv-select {
             padding: 8px 12px; border-radius: 20px; border: 1px solid var(--border);
             background: var(--white); color: var(--secondary); font-size: 0.85rem;
             cursor: pointer; min-width: 100px;
         }
 
-        /* MENU GRID */
+        /* --- MENU GRID --- */
         .menu-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
             gap: 15px; padding: 0 15px 15px 15px;
@@ -103,7 +127,7 @@
             background: var(--white); border-radius: 12px; padding: 15px;
             border-left: 4px solid #333; /* Darker Default Border */
             display: flex; flex-direction: column; justify-content: space-between;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3); position: relative;
         }
         .food-card.veg { border-left-color: var(--success); }
         .food-card.non-veg { border-left-color: #c0392b; }
@@ -115,53 +139,83 @@
         .price-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
         .price { font-weight: 700; font-size: 1rem; color: white; }
         .add-btn-mini {
-            background: #334155; color: white; padding: 6px 12px;
+            background: #334155; color: white; padding: 8px 14px;
             border-radius: 20px; border: none; cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: 0.2s;
         }
-        .add-btn-mini:hover { background: var(--primary); }
+        .add-btn-mini:active { transform: scale(0.95); background: var(--primary); }
 
-        /* FLOATING CART */
+        /* --- FLOATING CART BTN --- */
         .mobile-cart-btn {
-            position: fixed; bottom: 20px; right: 20px;
+            position: fixed; bottom: 25px; right: 20px;
             background: var(--primary); color: white; border: none;
-            padding: 12px 25px; border-radius: 50px; cursor: pointer; font-weight: 600;
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); z-index: 100;
+            padding: 14px 25px; border-radius: 50px; cursor: pointer; font-weight: 600;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.5); z-index: 100;
             display: flex; align-items: center; gap: 10px; transition: transform 0.2s;
+            font-size: 1rem;
         }
 
-        /* RIGHT SIDEBAR (CART) */
+        /* --- RIGHT SIDEBAR (CART) --- */
         .order-sidebar {
-            position: fixed; top: 0; right: -100%; width: 100%; max-width: 400px; height: 100%;
+            position: fixed; top: 0; right: -100%; width: 100%; max-width: 400px;
+            /* FIX: Use 100dvh to handle mobile browser bars properly */
+            height: 100dvh; 
             background: var(--bg); z-index: 2000; padding: 20px; border-left: 1px solid var(--border);
             transition: right 0.3s ease; display: flex; flex-direction: column;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.5);
         }
         .order-sidebar.active { right: 0; }
-        .cart-header-mobile { display: flex; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
-        .back-btn { background: none; border: none; font-size: 1rem; color: var(--primary); cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 5px;}
-        .cart-items-container { flex: 1; overflow-y: auto; }
+        
+        .cart-header-mobile { display: flex; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+        .back-btn { background: none; border: none; font-size: 1rem; color: var(--primary); cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px;}
+        
+        .cart-items-container { 
+            flex: 1; overflow-y: auto; 
+            padding-bottom: 20px; /* Space before summary */
+        }
         .cart-item { display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px dashed #333; padding-bottom: 10px; }
-        .qty-btn { background: #333; color: white; border: none; width: 25px; height: 25px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .cart-summary { margin-top: auto; border-top: 2px solid var(--border); padding-top: 15px; }
-        .summary-row { display: flex; justify-content: space-between; font-weight: 700; font-size: 1.2rem; margin-bottom: 15px; color: white; }
-        .checkout-btn { width: 100%; background: var(--primary); color: white; padding: 15px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; }
-        .checkout-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+        .qty-btn { background: #333; color: white; border: none; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
 
-        /* MODALS */
+        .cart-summary { 
+            margin-top: auto; 
+            border-top: 2px solid var(--border); 
+            padding-top: 15px; 
+            /* FIX: Extra padding for safe area on mobile */
+            padding-bottom: calc(20px + env(safe-area-inset-bottom)); 
+            background: var(--bg); /* Ensure background covers content behind */
+        }
+        .summary-row { display: flex; justify-content: space-between; font-weight: 700; font-size: 1.2rem; margin-bottom: 15px; color: white; }
+        
+        .checkout-btn { 
+            width: 100%; background: var(--primary); color: white; 
+            padding: 16px; border: none; border-radius: 12px; 
+            font-size: 1.1rem; font-weight: 700; cursor: pointer; 
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+        }
+        .checkout-btn:disabled { background: #333; color: #666; cursor: not-allowed; box-shadow: none; }
+
+        /* --- MODALS (Glass Effect) --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.6); z-index: 3000; display: none;
-            align-items: center; justify-content: center; backdrop-filter: blur(4px);
+            align-items: center; justify-content: center; 
+            backdrop-filter: blur(5px); /* Glass Effect */
+            -webkit-backdrop-filter: blur(5px);
         }
         .modal-card {
-            background: var(--surface); color: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 350px;
-            text-align: center; border: 1px solid var(--border); display: flex; flex-direction: column; max-height: 80vh;
+            background: rgba(24, 27, 33, 0.95); /* Slight transparency */
+            color: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 350px;
+            text-align: center; border: 1px solid var(--border); display: flex; flex-direction: column; max-height: 85vh;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .input-field { width: 100%; padding: 12px; margin: 10px 0 20px 0; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; background: var(--bg); color: white; }
+        
+        .input-field { width: 100%; padding: 12px; margin: 10px 0 20px 0; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; background: var(--bg); color: white; outline: none; }
+        .input-field:focus { border-color: var(--primary); }
         
         .modal-scroll-area { overflow-y: auto; flex: 1; text-align: left; margin-bottom: 15px; padding-right: 5px; }
-        .custom-option-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #333; font-size: 0.9rem; }
+        .custom-option-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px dashed #333; font-size: 0.95rem; }
         .modal-footer { border-top: 1px solid var(--border); padding-top: 15px; display: flex; justify-content: space-between; align-items: center; }
 
+        /* --- SUCCESS SCREEN --- */
         .success-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg); z-index: 4000; display: none;
@@ -171,47 +225,58 @@
             width: 80px; height: 80px; background: var(--success);
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             margin-bottom: 20px; color: white; font-size: 40px;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
         }
     </style>
 </head>
 <body>
 
     <div class="table-navbar">
+        <div class="nav-left">
+            <button class="menu-toggle-btn" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <img src="og-image.jpg" alt="Logo" class="nav-logo">
+        </div>
+
         <div class="table-info">
             <h1 id="header-table-num">Table --</h1>
-            <span><span id="waiter-badge" style="display:none; color:var(--warning); font-weight:bold;">WAITER MODE</span> &bull; Dine-In</span>
+            <span>Dine-In <span id="waiter-badge" style="display:none; color:var(--warning);">• WAITER</span></span>
         </div>
-        <button class="menu-toggle-btn" onclick="toggleSidebar()">
-            <i class="fas fa-bars"></i>
-        </button>
+        
+        <div></div> 
     </div>
 
     <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
     <div class="left-sidebar">
-        <h3 style="margin-top:0; color:var(--primary);">Menu Categories</h3>
-        <div class="filter-item active" onclick="filterCat('All', this)">All Items</div>
-        <div class="filter-item" onclick="filterCat('Bun-Tastic Burgers', this)">Bun-Tastic Burgers</div>
-        <div class="filter-item" onclick="filterCat('Butcher\'s Best', this)">Butcher's Best</div>
-        <div class="filter-item" onclick="filterCat('Italian Indulgence', this)">Italian Indulgence</div>
-        <div class="filter-item" onclick="filterCat('Freshly Folded', this)">Freshly Folded</div>
-        <div class="filter-item" onclick="filterCat('Rice Harmony', this)">Rice Harmony</div>
-        <div class="filter-item" onclick="filterCat('Salad Symphony', this)">Salad Symphony</div>
-        <div class="filter-item" onclick="filterCat('Toasty Treats', this)">Toasty Treats</div>
-        <div class="filter-item" onclick="filterCat('Warm Whispers', this)">Warm Whispers</div>
-        <div class="filter-item" onclick="filterCat('Nibbles & Bits', this)">Nibbles & Bits</div>
-        <div class="filter-item" onclick="filterCat('Whipped Wonders', this)">Whipped Wonders</div>
-        <div class="filter-item" onclick="filterCat('Mojito Magic', this)">Mojito Magic</div>
-        <div class="filter-item" onclick="filterCat('Icy Sips', this)">Icy Sips</div>
-        <div class="filter-item" onclick="filterCat('Nature\'s Nectar', this)">Nature's Nectar</div>
-        <div class="filter-item" onclick="filterCat('Frosted Leaf', this)">Frosted Leaf</div>
-        <div class="filter-item" onclick="filterCat('ADD-ON', this)">ADD-ON</div>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid var(--border);">
+            <img src="og-image.jpg" style="height:30px; border-radius:4px;">
+            <h3 style="margin:0; color:white; font-size:1.1rem;">Menu</h3>
+        </div>
+        
+        <div class="filter-item active" onclick="filterCat('All', this)"><span>All Items</span> <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i></div>
+        <div class="filter-item" onclick="filterCat('Bun-Tastic Burgers', this)"><span>Burgers</span> <i class="fas fa-hamburger" style="font-size:0.8rem;"></i></div>
+        <div class="filter-item" onclick="filterCat('Butcher\'s Best', this)"><span>Steaks</span> <i class="fas fa-drumstick-bite" style="font-size:0.8rem;"></i></div>
+        <div class="filter-item" onclick="filterCat('Italian Indulgence', this)"><span>Pastas</span> <i class="fas fa-utensils" style="font-size:0.8rem;"></i></div>
+        <div class="filter-item" onclick="filterCat('Freshly Folded', this)"><span>Wraps</span> <i class="fas fa-scroll" style="font-size:0.8rem;"></i></div>
+        <div class="filter-item" onclick="filterCat('Rice Harmony', this)"><span>Rice Bowls</span> <i class="fas fa-bowl-rice" style="font-size:0.8rem;"></i></div>
+        <div class="filter-item" onclick="filterCat('Salad Symphony', this)"><span>Salads</span> <i class="fas fa-leaf" style="font-size:0.8rem;"></i></div>
+        <div class="filter-item" onclick="filterCat('Toasty Treats', this)"><span>Sandwiches</span> <i class="fas fa-bread-slice" style="font-size:0.8rem;"></i></div>
+        <div class="filter-item" onclick="filterCat('Warm Whispers', this)"><span>Soups</span> <i class="fas fa-mug-hot" style="font-size:0.8rem;"></i></div>
+        <div class="filter-item" onclick="filterCat('Nibbles & Bits', this)"><span>Fries/Sides</span> <i class="fas fa-bacon" style="font-size:0.8rem;"></i></div>
+        <div class="filter-item" onclick="filterCat('Whipped Wonders', this)"><span>Shakes</span> <i class="fas fa-ice-cream" style="font-size:0.8rem;"></i></div>
+        <div class="filter-item" onclick="filterCat('Mojito Magic', this)"><span>Mojitos</span> <i class="fas fa-cocktail" style="font-size:0.8rem;"></i></div>
+        <div class="filter-item" onclick="filterCat('Icy Sips', this)"><span>Cold Drinks</span> <i class="fas fa-glass-whiskey" style="font-size:0.8rem;"></i></div>
+        <div class="filter-item" onclick="filterCat('Nature\'s Nectar', this)"><span>Juices</span> <i class="fas fa-apple-alt" style="font-size:0.8rem;"></i></div>
+        <div class="filter-item" onclick="filterCat('Frosted Leaf', this)"><span>Ice Teas</span> <i class="fas fa-glass-martini" style="font-size:0.8rem;"></i></div>
+        <div class="filter-item" onclick="filterCat('ADD-ON', this)"><span>Add-Ons</span> <i class="fas fa-plus-circle" style="font-size:0.8rem;"></i></div>
     </div>
 
     <div class="filter-bar">
         <div class="search-box">
             <i class="fas fa-search" style="color: #666;"></i>
-            <input type="text" id="search-input" placeholder="Search items..." onkeyup="renderMenu()">
+            <input type="text" id="search-input" placeholder="Search for food..." onkeyup="renderMenu()">
         </div>
         <div class="advanced-filters">
             <select class="adv-select" onchange="setSort(this.value)" id="sort-select">
@@ -235,22 +300,27 @@
     </div>
 
     <div class="menu-grid" id="menu-root">
-        <div style="text-align:center; width:100%; padding:40px; color:#999;">Loading Menu...</div>
+        <div style="text-align:center; width:100%; padding:40px; color:#666;">
+            <i class="fas fa-circle-notch fa-spin" style="font-size:2rem; margin-bottom:10px;"></i><br>
+            Loading Menu...
+        </div>
     </div>
 
     <button class="mobile-cart-btn" onclick="toggleCart()">
-        <i class="fas fa-utensils"></i> View Order <span id="cart-count">(0)</span>
+        <i class="fas fa-utensils"></i> View Order <span id="cart-count" style="background:white; color:var(--primary); padding:2px 6px; border-radius:10px; font-size:0.8rem; margin-left:5px;">0</span>
     </button>
 
     <div class="order-sidebar" id="cart-sidebar">
         <div class="cart-header-mobile">
-            <button class="back-btn" onclick="toggleCart()"><i class="fas fa-chevron-down"></i> Close Cart</button>
+            <button class="back-btn" onclick="toggleCart()"><i class="fas fa-chevron-right"></i> Continue Ordering</button>
+            <span style="margin-left:auto; font-weight:700;">Cart</span>
         </div>
-        <h3 style="margin-top:0;">Your Order</h3>
+        
         <div class="cart-items-container" id="cart-list"></div>
+        
         <div class="cart-summary">
             <div class="summary-row">
-                <span>Total</span>
+                <span>Total Bill</span>
                 <span id="cart-total">₹0</span>
             </div>
             <button class="checkout-btn" id="btn-checkout" onclick="openCheckout()" disabled>Place Order</button>
@@ -260,41 +330,41 @@
     <div class="modal-overlay" id="checkout-modal">
         <div class="modal-card">
             <h3 style="margin-top:0; color:var(--primary);">Confirm Order</h3>
-            <p id="modal-table-txt" style="font-weight:bold; color:#aaa;"></p>
+            <p id="modal-table-txt" style="font-weight:bold; color:#aaa; font-size:0.9rem;"></p>
             <div style="text-align:left; margin-top:15px;">
                 <label style="font-size:0.8rem; color:#888;">Guest Name (Optional)</label>
                 <input type="text" class="input-field" id="cust-name" placeholder="Enter Name">
             </div>
             <button class="checkout-btn" onclick="placeOrder()">SEND TO KITCHEN 👨‍🍳</button>
-            <button style="width:100%; background:none; border:none; padding:15px; color:#777; cursor:pointer; margin-top:5px;" onclick="closeCheckout()">Cancel</button>
+            <button style="width:100%; background:none; border:none; padding:15px; color:#777; cursor:pointer; margin-top:5px; font-size:0.9rem;" onclick="closeCheckout()">Cancel</button>
         </div>
     </div>
 
     <div class="modal-overlay" id="customization-modal">
         <div class="modal-card">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; padding-bottom:10px; margin-bottom:15px;">
-                <h3 id="cust-title" style="margin:0; font-size:1.1rem; text-align:left;">Item Name</h3>
-                <div style="font-size:1.5rem; cursor:pointer;" onclick="closeCustomization()">&times;</div>
+                <h3 id="cust-title" style="margin:0; font-size:1.1rem; text-align:left; color:white;">Item Name</h3>
+                <div style="font-size:1.5rem; cursor:pointer; color:#888;" onclick="closeCustomization()">&times;</div>
             </div>
             
             <div id="cust-options" class="modal-scroll-area"></div>
             
             <div style="text-align:left; margin-bottom:10px;">
                 <label style="font-size:0.8rem; color:#888;">Note (Optional)</label>
-                <input type="text" id="cust-note" class="input-field" style="margin:5px 0 10px 0; padding:8px;" placeholder="e.g. Less Spicy">
+                <input type="text" id="cust-note" class="input-field" style="margin:5px 0 10px 0; padding:10px;" placeholder="e.g. Less Spicy">
             </div>
 
             <div class="modal-footer">
-                <div style="font-weight:700; color:var(--primary);" id="cust-total">₹0</div>
-                <button class="checkout-btn" style="width:auto; padding:10px 25px;" onclick="addCustomizedItem()">Add +</button>
+                <div style="font-weight:700; color:var(--primary); font-size:1.2rem;" id="cust-total">₹0</div>
+                <button class="checkout-btn" style="width:auto; padding:10px 25px;" onclick="addCustomizedItem()">Add to Order</button>
             </div>
         </div>
     </div>
 
     <div class="success-screen" id="success-view">
         <div class="success-icon-container"><i class="fas fa-check"></i></div>
-        <h1 style="color:white;">Order Sent!</h1>
-        <p style="color:#aaa; margin-bottom:30px;">Redirecting back to Waiter Deck...</p>
+        <h1 style="color:white; margin-bottom:10px;">Order Sent!</h1>
+        <p style="color:#aaa; max-width:250px;">The kitchen has received your order.</p>
     </div>
 
     <script type="module">
@@ -417,7 +487,7 @@
             });
         }
 
-        // --- CUSTOMIZATION LOGIC (Same as before) ---
+        // --- CUSTOMIZATION LOGIC ---
         window.checkOptions = (itemName) => {
             const item = menuData.find(i => i.name === itemName);
             if(!item) return;
@@ -425,7 +495,7 @@
             const cat = item.category;
             const name = item.name;
 
-            // Simple rules for add-ons (simplified for brevity, adjust as needed)
+            // Simple rules for add-ons (simplified for brevity)
             if (["Bun-Tastic Burgers", "Italian Indulgence", "Freshly Folded", "Toasty Treats"].includes(cat)) {
                 options.push({ name: "Extra Cheese", price: 15 });
             }
@@ -461,11 +531,11 @@
                 options.forEach(opt => {
                     container.innerHTML += `
                         <div class="custom-option-row">
-                            <label style="display:flex; align-items:center; cursor:pointer;">
-                                <input type="checkbox" class="opt-check" data-name="${opt.name}" data-price="${opt.price}" onchange="calcTotal()" style="margin-right:10px;">
+                            <label style="display:flex; align-items:center; cursor:pointer; width:100%;">
+                                <input type="checkbox" class="opt-check" data-name="${opt.name}" data-price="${opt.price}" onchange="calcTotal()" style="margin-right:12px; accent-color:var(--primary); transform:scale(1.2);">
                                 ${opt.name}
                             </label>
-                            <span>+₹${opt.price}</span>
+                            <span style="color:var(--primary); font-weight:600;">+₹${opt.price}</span>
                         </div>`;
                 });
             }
@@ -502,6 +572,7 @@
             if(cart[name]) cart[name].qty++;
             else cart[name] = { price, qty: 1, type };
             renderCart();
+            // Animation for visual feedback
             const btn = document.querySelector('.mobile-cart-btn');
             btn.style.transform = "scale(1.1)";
             setTimeout(()=> btn.style.transform = "scale(1)", 200);
@@ -526,19 +597,24 @@
                 list.innerHTML += `
                     <div class="cart-item">
                         <div class="cart-details">
-                            <span class="cart-name" style="font-weight:600; display:block; color:white;">${key}</span>
-                            <div style="font-size:0.8rem; color:#888;">₹${item.price}</div>
+                            <span class="cart-name" style="font-weight:600; display:block; color:white; font-size:0.95rem;">${key}</span>
+                            <div style="font-size:0.85rem; color:#888;">₹${item.price} x ${item.qty}</div>
                         </div>
                         <div style="display:flex; align-items:center; gap:10px;">
-                            <button class="qty-btn" onclick="updateQty('${key}', -1)">-</button>
-                            <span style="font-weight:bold; color:white;">${item.qty}</span>
+                            <button class="qty-btn" onclick="updateQty('${key}', -1)">−</button>
+                            <span style="font-weight:bold; color:white; min-width:20px; text-align:center;">${item.qty}</span>
                             <button class="qty-btn" onclick="updateQty('${key}', 1)">+</button>
                         </div>
                     </div>`;
             }
             document.getElementById('cart-total').innerText = "₹" + total;
-            document.getElementById('cart-count').innerText = `(${count})`;
+            document.getElementById('cart-count').innerText = count;
             document.getElementById('btn-checkout').disabled = (count === 0);
+            
+            // Empty state
+            if(count === 0) {
+                list.innerHTML = "<div style='text-align:center; color:#555; margin-top:50px;'>Your cart is empty</div>";
+            }
         }
 
         window.toggleCart = () => document.getElementById('cart-sidebar').classList.toggle('active');
@@ -566,7 +642,7 @@
                 customer: { name: finalName, phone: '0000000000', address: 'Dine-In', email: '-' },
                 items: items,
                 financials: { subTotal: total, discountVal: 0, couponCode: "NONE", packingTotal: 0, grandTotal: total },
-                globalNote: `Table ${TABLE_ID} - Waiter`
+                globalNote: `Table ${TABLE_ID} - ${MODE === 'waiter' ? 'Waiter' : 'Customer'}`
             };
 
             push(ref(db, 'orders'), order).then(() => {
@@ -582,7 +658,7 @@
                         window.location.href = "waiter.html";
                     }, 2000);
                 } else {
-                    // Standard Customer behavior (just reload)
+                    // Standard Customer behavior (just reload to clear)
                     setTimeout(() => {
                         window.location.reload();
                     }, 3000);
