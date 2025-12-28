@@ -116,7 +116,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        // ADDED 'push' to imports
+        import { getDatabase, ref, onValue, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
@@ -131,7 +132,6 @@
         const db = getDatabase(app);
 
         // --- AUTH LOGIC START ---
-        // Check if already logged in
         if(localStorage.getItem('waiter_auth') === 'true') {
             document.getElementById('pin-overlay').style.display = 'none';
             loadTables();
@@ -139,7 +139,7 @@
 
         window.checkPin = () => {
             if(document.getElementById('pin-input').value === '2024') {
-                localStorage.setItem('waiter_auth', 'true'); // Save login state
+                localStorage.setItem('waiter_auth', 'true'); 
                 document.getElementById('pin-overlay').style.display = 'none';
                 loadTables();
             } else alert("Wrong PIN");
@@ -152,6 +152,19 @@
         // --- AUTH LOGIC END ---
 
         let liveTableData = {};
+        let packingItem = null;
+
+        // 1. FETCH MENU TO FIND "PACKING" ITEM
+        onValue(ref(db, 'menu'), (snap) => {
+            const data = snap.val();
+            if(data) {
+                // Finds item with "packing" or "parcel" in the name
+                packingItem = Object.values(data).find(i => 
+                    i.name.toLowerCase().includes("packing") || 
+                    i.name.toLowerCase().includes("parcel")
+                );
+            }
+        });
 
         function loadTables() {
             onValue(ref(db, 'orders'), (snapshot) => {
@@ -159,7 +172,6 @@
                 liveTableData = {}; 
 
                 Object.values(orders).forEach(o => {
-                    // Ignore Pending/Rejected/Completed
                     if (o.status !== 'completed' && o.status !== 'rejected' && o.status !== 'delivered' && o.status !== 'pending') {
                         const customerName = (o.customer && o.customer.name) ? o.customer.name : "";
                         const match = customerName.match(/Table (\w+)/i);
@@ -204,6 +216,7 @@
             let timeText = ''; 
             let totalText = ''; 
             let statusLabel = 'FREE';
+            let actionBtn = ''; // New Action Button
 
             if (data) {
                 const diff = Date.now() - data.timestamp;
@@ -217,10 +230,18 @@
                 if (totalMinutes < 60) statusClass = 'status-fresh';
                 else if (totalMinutes < 90) statusClass = 'status-warning';
                 else statusClass = 'status-camper';
+
+                // 2. INJECT PACKING BUTTON
+                // Stops propagation to prevent opening the table page
+                actionBtn = `
+                    <button onclick="event.stopPropagation(); quickAddParcel('${id}')" 
+                        style="position:absolute; bottom:10px; right:10px; background:#333; border:1px solid #555; color:white; border-radius:50%; width:32px; height:32px; cursor:pointer; font-size:1.2rem; display:flex; align-items:center; justify-content:center; z-index:10;" title="Add Packing Charge">
+                        📦
+                    </button>
+                `;
             }
 
             div.className = `table-card ${statusClass} ${isBar ? 'is-bar' : ''}`;
-            // Added ?mode=waiter to the URL so table.html knows who is ordering
             div.onclick = () => window.location.href = `table.html?table=${id}&mode=waiter`;
             
             const timerHtml = data ? `<div class="timer-display">${timeText}</div>` : '';
@@ -233,8 +254,42 @@
                 </div>
                 ${timerHtml}
                 <div class="status-text">${statusLabel}</div>
+                ${actionBtn}
             `;
             container.appendChild(div);
+        }
+
+        // 3. QUICK ADD PARCEL FUNCTION
+        window.quickAddParcel = function(tableId) {
+            if(!packingItem) {
+                alert("⚠️ 'Packing Charge' item not found in Menu. Please add it via Admin.");
+                return;
+            }
+            
+            if(!confirm(`Add '${packingItem.name}' (₹${packingItem.price}) to Table ${tableId}?`)) return;
+
+            // Create a mini-order. Status 'cooking' ensures it is picked up by Manager and Waiter logic as an active order.
+            const order = {
+                orderId: Math.floor(100000 + Math.random() * 900000),
+                orderType: 'Dine-In',
+                timestamp: Date.now(),
+                status: 'cooking', 
+                customer: { name: `Table ${tableId} (Packing)`, phone: '-', address: 'Dine-In' },
+                items: [{
+                    name: packingItem.name,
+                    price: parseInt(packingItem.price),
+                    qty: 1,
+                    kitchenDone: true // Auto-mark as done
+                }],
+                financials: {
+                    subTotal: parseInt(packingItem.price),
+                    discountVal: 0,
+                    packingTotal: 0,
+                    grandTotal: parseInt(packingItem.price)
+                }
+            };
+
+            push(ref(db, 'orders'), order).catch(e => alert("Error: " + e.message));
         }
 
         setInterval(() => { renderGrid(); document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }, 60000);
