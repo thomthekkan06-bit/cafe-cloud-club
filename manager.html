@@ -520,7 +520,8 @@
                          btnHtml = `<button class="btn-act btn-grey" disabled>Waiting for Partner...</button>`;
                          showEdit = false;
                     } else if (type === 'Pickup') {
-                         btnHtml = `<button class="btn-act btn-green" onclick="updateStatus('${order.key}', 'served')">Mark Picked Up</button>`;
+                         // CHANGED: Use completeOrderSingle to move to history immediately
+                         btnHtml = `<button class="btn-act btn-green" onclick="completeOrderSingle('${order.key}')">Mark Picked Up</button>`;
                          showEdit = false;
                     }
                 } else if (order.status === 'out_for_delivery') {
