@@ -116,6 +116,7 @@
         .item-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 4px; }
         .item-qty { color: var(--primary); font-weight: 700; margin-right: 5px; }
         .item-price { font-family: 'JetBrains Mono'; color: var(--text-muted); }
+        .item-void { text-decoration: line-through; color: var(--danger); opacity: 0.7; }
 
         /* Financials Section */
         .fin-box { 
@@ -201,6 +202,8 @@
         
         /* EDIT MODAL SPECIFIC */
         .edit-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #333; }
+        .edit-row.is-deleted { opacity: 0.5; }
+        .edit-row.is-deleted div { text-decoration: line-through; color: var(--danger); }
         .edit-inputs { display: grid; grid-template-columns: 2fr 1fr 0.8fr auto; gap: 5px; margin-top: 15px; }
         .inp, .inp-select { background: var(--bg); border: 1px solid var(--border); color: white; padding: 8px; border-radius: 4px; width: 100%; }
         .btn-icon { background: none; border: none; cursor: pointer; font-size: 1.2rem; }
@@ -283,7 +286,7 @@
                     </div>
 
                 <div style="margin-top:20px; padding-top:10px; border-top:1px solid #333;">
-                    <label style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">ADD ITEM FROM MENU</label>
+                    <label style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">ADD ITEM FROM MENU (Creates New KOT)</label>
                     <div class="edit-inputs">
                         <select id="menu-select" class="inp-select" onchange="autoFillPrice()">
                             <option value="">-- Loading Menu... --</option>
@@ -380,35 +383,43 @@
                     if (!order || !order.status) return;
                     if (order.status === 'completed' || order.status === 'rejected') return;
 
+                    const type = order.orderType || 'Dine-In';
+
                     // SOUND CHECK
                     if(order.status === 'pending') {
                         hasPendingOrders = true;
                     }
 
-                    // 1. KITCHEN QUEUE: Ignore 'served'
-                    if (order.status !== 'served') {
+                    // 1. KITCHEN QUEUE LOGIC
+                    // FILTER: 
+                    // - Hide 'served'
+                    // - Hide 'done' if it is Dine-In (User wants it to vanish and wait at table)
+                    let showInQueue = true;
+                    if (order.status === 'served') showInQueue = false;
+                    if (order.status === 'done' && type !== 'Delivery' && type !== 'Pickup') showInQueue = false;
+
+                    if (showInQueue) {
                         onlineOrders.push({ key, ...order });
                     }
 
-                    // 2. TABLE MAP: 'served' counts here
-                    const type = order.orderType || 'Dine-In';
+                    // 2. TABLE MAP: 'served' and 'done' counts here
                     if (type !== 'Delivery' && type !== 'Pickup') {
                         const customerName = (order.customer && order.customer.name) ? order.customer.name : "Unknown";
                         const match = customerName.match(/Table (\w+)/i);
                         if (match && order.status !== 'pending') {
                             const tId = match[1];
                             if (!tableData[tId]) {
-                                // Important: We store the raw 'order' objects to merge later
                                 tableData[tId] = { 
                                     total: 0, 
                                     timestamp: order.timestamp, 
                                     keys: [], 
                                     items: [],
                                     fins: { sub:0, disc:0, pack:0 },
-                                    rawOrders: [] // NEW: Store raw orders for merging
+                                    rawOrders: []
                                 };
                             }
                             
+                            // CALCULATE FINANCIALS (Ignoring Deleted Items)
                             const f = order.financials || {};
                             tableData[tId].total += (f.grandTotal || 0);
                             tableData[tId].fins.sub += (f.subTotal || 0);
@@ -419,7 +430,12 @@
                             
                             tableData[tId].keys.push(key);
                             tableData[tId].rawOrders.push(order);
-                            if(order.items) tableData[tId].items.push(...order.items);
+                            if(order.items) {
+                                // Filter out deleted items for display in Settle Modal? 
+                                // Actually we can show them or hide them. Let's filter them out for clean bill.
+                                const activeItems = order.items.filter(i => !i.deleted);
+                                tableData[tId].items.push(...activeItems);
+                            }
                         }
                     }
                 });
@@ -462,12 +478,16 @@
                     `;
                 }
 
-                let itemsHtml = (order.items || []).map(i => `
+                let itemsHtml = (order.items || []).map(i => {
+                    if(i.deleted) {
+                         return `<div class="item-row item-void"><span>${i.qty}x ${i.name}</span><span>VOID</span></div>`;
+                    }
+                    return `
                     <div class="item-row">
                         <span><span class="item-qty">${i.qty}x</span> ${i.name}</span>
                         <span class="item-price">₹${i.price * i.qty}</span>
-                    </div>
-                `).join('');
+                    </div>`;
+                }).join('');
 
                 const f = order.financials || {};
                 
@@ -484,14 +504,16 @@
                     btnHtml = `<button class="btn-act btn-red" onclick="rejectOrder('${order.key}')">Reject</button>
                                <button class="btn-act btn-green" onclick="updateStatus('${order.key}', 'cooking')">Accept</button>`;
                 } else if (order.status === 'cooking') {
-                     btnHtml = `<button class="btn-act btn-yellow" onclick="updateStatus('${order.key}', 'done')">Mark Ready</button>`;
+                     // NEW REQ: No buttons except Edit
+                     btnHtml = ''; 
                 } else if (order.status === 'done') {
+                    // Logic for Delivery/Pickup (Since Dine-In is hidden)
                     if (type === 'Delivery') {
                          btnHtml = `<button class="btn-act btn-grey" disabled>Waiting for Partner...</button>`;
                          showEdit = false;
-                    } else {
-                         btnHtml = `<button class="btn-act btn-green" onclick="updateStatus('${order.key}', 'served')">Mark Served</button>`;
-                         showEdit = false; 
+                    } else if (type === 'Pickup') {
+                         btnHtml = `<button class="btn-act btn-green" onclick="updateStatus('${order.key}', 'served')">Mark Picked Up</button>`;
+                         showEdit = false;
                     }
                 } else if (order.status === 'out_for_delivery') {
                      btnHtml = `<button class="btn-act btn-purple" onclick="forceComplete('${order.key}')">Out For Delivery</button>`;
@@ -576,6 +598,7 @@
             document.getElementById('modal-table-id').innerText = tableId;
             
             const list = document.getElementById('modal-items-list');
+            // Items are already filtered of deleted ones in initData
             list.innerHTML = data.items.map(i => 
                 `<div style="display:flex; justify-content:space-between; margin-bottom:5px; color:#aaa;">
                     <span>${i.qty}x ${i.name}</span> <span>₹${i.price * i.qty}</span>
@@ -618,8 +641,9 @@
             const container = document.getElementById('edit-list-container');
             container.innerHTML = "";
             items.forEach((item, index) => {
+                const isDel = item.deleted ? 'is-deleted' : '';
                 container.innerHTML += `
-                    <div class="edit-row">
+                    <div class="edit-row ${isDel}">
                         <button class="btn-icon btn-trash" onclick="deleteItem(${index})">🗑</button>
                         <div style="flex:1">
                             <div style="font-weight:bold">${item.name}</div>
@@ -631,6 +655,7 @@
             });
         }
 
+        // NEW LOGIC: Delete just marks it void
         window.deleteItem = async (index) => {
             if(!currentEditKey) return;
             const orderRef = ref(db, 'orders/' + currentEditKey);
@@ -639,12 +664,21 @@
 
             let order = snap.val();
             let items = order.items || [];
-            items.splice(index, 1);
+            
+            // Mark as deleted instead of removing
+            if(!items[index].deleted) {
+                items[index].deleted = true;
+            } else {
+                // Optional: Undo delete if tapped again? Let's assume just delete for now.
+                // return; 
+            }
+
             updateOrderFinancials(order, items);
             await update(orderRef, order);
             renderEditList(items);
         }
 
+        // NEW LOGIC: Create NEW KOT for added items
         window.addNewItemToOrder = async () => {
             if(!currentEditKey) {
                 alert("Error: No order selected.");
@@ -664,25 +698,49 @@
                 return alert("Select item and ensure price/qty are valid");
             }
 
-            const orderRef = ref(db, 'orders/' + currentEditKey);
-            const snap = await get(orderRef);
-            if(!snap.exists()) {
-                alert("Order not found!");
-                return;
-            }
+            // 1. Get Parent Info
+            const parentRef = ref(db, 'orders/' + currentEditKey);
+            const parentSnap = await get(parentRef);
+            if(!parentSnap.exists()) { alert("Original order lost."); return; }
+            const parentOrder = parentSnap.val();
 
-            let order = snap.val();
-            let items = order.items || [];
+            // 2. Create NEW SPLIT ORDER (KOT)
+            const newOrder = {
+                orderId: Math.floor(1000 + Math.random() * 9000), // New Short ID
+                status: 'cooking', // Directly to Kitchen
+                orderType: parentOrder.orderType,
+                customer: parentOrder.customer,
+                timestamp: Date.now(),
+                globalNote: "Added Item",
+                items: [{ 
+                    name, price, qty, category,
+                    kitchenDone: false 
+                }],
+                financials: {
+                    subTotal: 0, discountVal: 0, packingTotal: 0, grandTotal: 0
+                }
+            };
             
-            items.push({ name, price, qty, category: category });
-            
-            updateOrderFinancials(order, items);
-            await update(orderRef, order);
-            renderEditList(items);
-            
-            select.value = "";
-            document.getElementById('new-item-price').value = "";
-            document.getElementById('new-item-qty').value = "1";
+            // Calc financials for this new mini-order
+            let sub = price * qty;
+            let pack = 0;
+            // Simplified packing logic for single add
+            let charge = 10;
+            const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
+            if(category === 'ADD-ON') charge = name.startsWith("Hummus") ? 7 : 5;
+            else if (fiveRsCats.includes(category)) charge = 5;
+            if (name.includes("Tossed Rice") || name.includes("Sorted / Boiled")) pack = (7 * qty);
+            else pack = (charge * qty);
+
+            newOrder.financials.subTotal = sub;
+            newOrder.financials.packingTotal = pack;
+            newOrder.financials.grandTotal = sub + pack;
+
+            // 3. Push New Order
+            await push(ref(db, 'orders'), newOrder);
+
+            alert("New Kitchen Ticket Created for " + name);
+            closeModal('edit-modal');
         }
 
         function updateOrderFinancials(order, items) {
@@ -693,6 +751,8 @@
             const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
             
             items.forEach(i => {
+                if(i.deleted) return; // IGNORE DELETED ITEMS IN BILL
+
                 sub += (i.price * i.qty);
                 let charge = 10;
                 if(i.category) {
@@ -732,43 +792,36 @@
             }
         }
         
-        // FOR DELIVERY/PICKUP SINGLE ORDERS
         window.completeOrderSingle = async (key) => {
             const r = ref(db, 'orders/'+key);
             const s = await get(r);
             if(s.exists()){
                 const d = s.val(); d.status='completed'; d.completedAt=Date.now();
-                await push(ref(db, 'history'), d); // Push individual order
+                await push(ref(db, 'history'), d); 
                 await remove(r);
             }
         };
 
-        // --- UPDATED: SETTLE WITH NAME EXTRACTION ---
         window.settleAndClear = async () => {
             if(!currentSettleTable || !tableData[currentSettleTable]) return;
             const tData = tableData[currentSettleTable];
             const keys = tData.keys;
 
-            // 1. EXTRACT REAL NAME from the first order of this session
-            let finalCustomerName = `Table ${currentSettleTable}`; // Default
+            let finalCustomerName = `Table ${currentSettleTable}`; 
             if (tData.rawOrders && tData.rawOrders.length > 0) {
-                // Sort by timestamp to find the very first order
                 tData.rawOrders.sort((a,b) => a.timestamp - b.timestamp);
-                // Takes the name from the first order (e.g. "Table 5 (John)")
                 finalCustomerName = tData.rawOrders[0].customer.name;
             }
 
-            // 2. Generate Unique 6-Digit Bill Number
             const billNumber = Math.floor(100000 + Math.random() * 900000);
 
-            // 3. Create Consolidated Master Bill
             const masterBill = {
                 orderId: billNumber, 
                 orderType: 'Dine-In',
                 timestamp: Date.now(),
                 status: 'paid',
                 customer: { 
-                    name: finalCustomerName, // <--- NOW USES THE REAL NAME
+                    name: finalCustomerName,
                     phone: '-', 
                     address: 'Dine-In'
                 },
@@ -783,10 +836,8 @@
                 originalOrderKeys: keys 
             };
 
-            // 4. Push ONE master bill to history
             await push(ref(db, 'history'), masterBill);
 
-            // 5. Delete ALL individual active orders
             for (const key of keys) {
                 await remove(ref(db, 'orders/' + key));
             }
