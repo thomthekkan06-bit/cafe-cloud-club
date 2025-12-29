@@ -249,19 +249,19 @@
                     ⚠️ CUSTOMER REQUESTED BILL
                 </div>
 
-<div id="m-i-list"></div>
+                <div id="m-i-list"></div>
 
-<div id="loyalty-section" style="margin: 15px 0; padding: 10px; background: rgba(59, 130, 246, 0.1); border-radius: 6px; border: 1px solid var(--primary); display:none;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <span style="font-size:0.8rem; font-weight:bold; color:var(--primary);">👑 LOYALTY PROGRAM</span>
-        <span id="loyalty-balance" style="font-size:0.8rem; color:white;">Checking...</span>
-    </div>
-    <div style="display:flex; gap:10px; align-items:center;">
-        <label style="font-size:0.75rem; color:#aaa;">Redeem Points (1 Pt = ₹1):</label>
-        <input type="number" id="redeem-points" class="inp" placeholder="0" style="margin:0; width:80px;" oninput="calcSettleTotal()">
-    </div>
-</div>
-<div style="margin: 15px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 6px; border: 1px dashed var(--border);">
+                <div id="loyalty-section" style="margin: 15px 0; padding: 10px; background: rgba(59, 130, 246, 0.1); border-radius: 6px; border: 1px solid var(--primary); display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <span style="font-size:0.8rem; font-weight:bold; color:var(--primary);">👑 LOYALTY PROGRAM</span>
+                        <span id="loyalty-balance" style="font-size:0.8rem; color:white;">Checking...</span>
+                    </div>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <label style="font-size:0.75rem; color:#aaa;">Redeem Points (1 Pt = ₹1):</label>
+                        <input type="number" id="redeem-points" class="inp" placeholder="0" style="margin:0; width:80px;" oninput="calcSettleTotal()">
+                    </div>
+                </div>
+                <div style="margin: 15px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 6px; border: 1px dashed var(--border);">
                     <label style="font-size:0.7rem; color:#aaa; font-weight:bold; letter-spacing:1px;">APPLY MANAGER DISCOUNT</label>
                     <div style="display:flex; gap:10px; margin-top:5px;">
                         <select id="disc-type" class="inp-select" style="width:100px; margin:0;" onchange="calcSettleTotal()">
@@ -273,12 +273,13 @@
                 </div>
                 <div class="fin-box">
                      <div class="fin-row"><span>Subtotal</span><span id="m-sub">₹0</span></div>
-<div class="fin-row"><span>Discount</span><span id="m-disc">₹0</span></div>
-<div class="fin-row" id="loyalty-row" style="display:none; color:var(--primary);"><span>Loyalty Redeem</span><span id="m-loyalty">-₹0</span></div>
+                     <div class="fin-row"><span>Discount</span><span id="m-disc">₹0</span></div>
+                     
+                     <div class="fin-row" id="loyalty-row" style="display:none; color:var(--primary);"><span>Loyalty Redeem</span><span id="m-loyalty">-₹0</span></div>
 
-<div class="fin-row"><span>Packing</span><span id="m-pack">₹0</span></div>
-<div class="fin-row total"><span>TOTAL</span><span id="m-tot">₹0</span></div>
-<div style="text-align:right; font-size:0.7rem; color:#aaa; margin-top:5px;">Points to Earn: <span id="earn-preview">0</span></div>
+                     <div class="fin-row"><span>Packing</span><span id="m-pack">₹0</span></div>
+                     <div class="fin-row total"><span>TOTAL</span><span id="m-tot">₹0</span></div>
+                     <div style="text-align:right; font-size:0.7rem; color:#aaa; margin-top:5px;">Points to Earn: <span id="earn-preview">0</span></div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -450,16 +451,17 @@
                     if(order.status === 'pending') pending = true;
                     if(order.orderType === 'Dine-In' && order.customer && order.customer.name.startsWith('Table')) {
                         const tId = order.customer.name.split(' ')[1];
-if(!tableData[tId]) tableData[tId] = { 
-    total:0, items:[], keys:[], timestamp: order.timestamp,
-    fins: { sub:0, disc:0, pack:0 },
-    phone: null // Initialize phone
-};
+                        if(!tableData[tId]) tableData[tId] = { 
+                            total:0, items:[], keys:[], timestamp: order.timestamp,
+                            fins: { sub:0, disc:0, pack:0 },
+                            phone: null
+                        };
+                        
+                        // Capture Phone for Loyalty
+                        if(order.customer.phone && order.customer.phone.length >= 10 && order.customer.phone !== '0000000000') {
+                            tableData[tId].phone = order.customer.phone;
+                        }
 
-// NEW: Capture phone for loyalty
-if(order.customer.phone && order.customer.phone.length === 10 && order.customer.phone !== '0000000000') {
-    tableData[tId].phone = order.customer.phone;
-}
                         const f = order.financials || {grandTotal:0, subTotal:0, discountVal:0, packingTotal:0};
                         tableData[tId].total += (f.grandTotal || 0);
                         tableData[tId].fins.sub += (f.subTotal || 0);
@@ -697,93 +699,91 @@ if(order.customer.phone && order.customer.phone.length === 10 && order.customer.
             for(let i=9; i<=13; i++) make(i, a);
         }
 
-// PASTE THIS NEW VERSION:
-async function renderSettle() {
-    const d = tableData[currentSettleTable];
-    const hasReq = activeBillRequests[currentSettleTable];
-    document.getElementById('bill-req-alert').style.display = hasReq ? 'block' : 'none';
-    document.getElementById('m-t-id').innerText = currentSettleTable;
-    document.getElementById('m-i-list').innerHTML = d.items.map(i => {
-        if(i.deleted) return '';
-        return `<div style="display:flex;justify-content:space-between;margin-bottom:5px;color:#aaa"><span>${i.qty}x ${i.name}</span><span>₹${i.price*i.qty}</span></div>`;
-    }).join('');
-    
-    document.getElementById('disc-type').value = 'flat';
-    document.getElementById('disc-val').value = '';
-    document.getElementById('m-sub').innerText = `₹${d.fins.sub}`;
-    document.getElementById('m-disc').innerText = `-₹${d.fins.disc}`;
-    document.getElementById('m-pack').innerText = `₹${d.fins.pack}`;
-    document.getElementById('m-tot').innerText = `₹${d.total}`;
+        async function renderSettle() {
+            const d = tableData[currentSettleTable];
+            const hasReq = activeBillRequests[currentSettleTable];
+            document.getElementById('bill-req-alert').style.display = hasReq ? 'block' : 'none';
+            document.getElementById('m-t-id').innerText = currentSettleTable;
+            document.getElementById('m-i-list').innerHTML = d.items.map(i => {
+                if(i.deleted) return '';
+                return `<div style="display:flex;justify-content:space-between;margin-bottom:5px;color:#aaa"><span>${i.qty}x ${i.name}</span><span>₹${i.price*i.qty}</span></div>`;
+            }).join('');
+            
+            document.getElementById('disc-type').value = 'flat';
+            document.getElementById('disc-val').value = '';
+            document.getElementById('m-sub').innerText = `₹${d.fins.sub}`;
+            document.getElementById('m-disc').innerText = `-₹${d.fins.disc}`;
+            document.getElementById('m-pack').innerText = `₹${d.fins.pack}`;
+            document.getElementById('m-tot').innerText = `₹${d.total}`;
 
-    // --- NEW LOYALTY LOGIC ---
-    const loyaltySec = document.getElementById('loyalty-section');
-    const redeemInput = document.getElementById('redeem-points');
-    loyaltySec.style.display = 'none';
-    redeemInput.value = '';
-    redeemInput.dataset.max = 0;
+            // --- NEW LOYALTY LOGIC ---
+            const loyaltySec = document.getElementById('loyalty-section');
+            const redeemInput = document.getElementById('redeem-points');
+            loyaltySec.style.display = 'none';
+            redeemInput.value = '';
+            redeemInput.dataset.max = 0;
 
-    if(d.phone) {
-        loyaltySec.style.display = 'block';
-        document.getElementById('loyalty-balance').innerText = "Loading...";
-        try {
-            const snap = await get(ref(db, `loyalty/${d.phone}`));
-            const pts = snap.val() ? snap.val().points : 0;
-            redeemInput.dataset.max = pts;
-            document.getElementById('loyalty-balance').innerText = `Available: ${pts} Pts`;
-        } catch(e) { console.error(e); }
-    }
-    calcSettleTotal();
-}
+            if(d.phone) {
+                loyaltySec.style.display = 'block';
+                document.getElementById('loyalty-balance').innerText = "Loading...";
+                try {
+                    const snap = await get(ref(db, `loyalty/${d.phone}`));
+                    const pts = snap.val() ? snap.val().points : 0;
+                    redeemInput.dataset.max = pts;
+                    document.getElementById('loyalty-balance').innerText = `Available: ${pts} Pts`;
+                } catch(e) { console.error(e); }
+            }
+            calcSettleTotal();
+        }
 
-// PASTE THIS NEW VERSION:
-window.calcSettleTotal = () => {
-    const d = tableData[currentSettleTable];
-    if(!d) return;
+        window.calcSettleTotal = () => {
+            const d = tableData[currentSettleTable];
+            if(!d) return;
 
-    // 1. Manager Discount Logic
-    const type = document.getElementById('disc-type').value;
-    const val = parseFloat(document.getElementById('disc-val').value) || 0;
-    let managerDisc = 0;
-    if(type === 'flat') managerDisc = val;
-    else managerDisc = Math.round(d.total * (val / 100));
+            // 1. Manager Discount Logic
+            const type = document.getElementById('disc-type').value;
+            const val = parseFloat(document.getElementById('disc-val').value) || 0;
+            let managerDisc = 0;
+            if(type === 'flat') managerDisc = val;
+            else managerDisc = Math.round(d.total * (val / 100));
 
-    // 2. Loyalty Redemption Logic (NEW)
-    const redeemInput = document.getElementById('redeem-points');
-    let redeemVal = parseInt(redeemInput.value) || 0;
-    const maxPoints = parseInt(redeemInput.dataset.max) || 0;
-    
-    // Validation: Don't allow redeeming more than owned or more than the bill amount
-    const tempTotal = d.total - managerDisc;
-    if(redeemVal > maxPoints) redeemVal = maxPoints;
-    if(redeemVal > tempTotal) redeemVal = tempTotal;
-    if(redeemVal < 0) redeemVal = 0;
-    
-    // Auto-correct the input field if the number was too high
-    if(redeemInput.value != redeemVal && redeemInput.value != '') redeemInput.value = redeemVal;
+            // 2. Loyalty Redemption Logic (NEW)
+            const redeemInput = document.getElementById('redeem-points');
+            let redeemVal = parseInt(redeemInput.value) || 0;
+            const maxPoints = parseInt(redeemInput.dataset.max) || 0;
+            
+            // Validation: Don't allow redeeming more than owned or more than the bill amount
+            const tempTotal = d.total - managerDisc;
+            if(redeemVal > maxPoints) redeemVal = maxPoints;
+            if(redeemVal > tempTotal) redeemVal = tempTotal;
+            if(redeemVal < 0) redeemVal = 0;
+            
+            // Auto-correct the input field if the number was too high
+            if(redeemInput.value != redeemVal && redeemInput.value != '') redeemInput.value = redeemVal;
 
-    // 3. Final Calculations
-    const finalTotal = d.total - managerDisc - redeemVal;
-    const totalDisc = d.fins.disc + managerDisc;
+            // 3. Final Calculations
+            const finalTotal = d.total - managerDisc - redeemVal;
+            const totalDisc = d.fins.disc + managerDisc;
 
-    // UI Updates
-    document.getElementById('m-disc').innerText = `-₹${totalDisc}`;
-    
-    // Show/Hide Loyalty Deduction Row
-    const loyRow = document.getElementById('loyalty-row');
-    if(redeemVal > 0) {
-        loyRow.style.display = 'flex';
-        document.getElementById('m-loyalty').innerText = `-₹${redeemVal}`;
-    } else {
-        loyRow.style.display = 'none';
-    }
+            // UI Updates
+            document.getElementById('m-disc').innerText = `-₹${totalDisc}`;
+            
+            // Show/Hide Loyalty Deduction Row
+            const loyRow = document.getElementById('loyalty-row');
+            if(redeemVal > 0) {
+                loyRow.style.display = 'flex';
+                document.getElementById('m-loyalty').innerText = `-₹${redeemVal}`;
+            } else {
+                loyRow.style.display = 'none';
+            }
 
-    // Update Grand Total
-    document.getElementById('m-tot').innerText = `₹${finalTotal > 0 ? finalTotal : 0}`;
-    
-    // Update Points Preview (1 pt per ₹100 on Food/Bev subtotal)
-    const pointsToEarn = Math.floor(d.fins.sub / 100);
-    document.getElementById('earn-preview').innerText = `+${pointsToEarn} Pts`;
-}
+            // Update Grand Total
+            document.getElementById('m-tot').innerText = `₹${finalTotal > 0 ? finalTotal : 0}`;
+            
+            // Update Points Preview (1 pt per ₹100 on Food/Bev subtotal)
+            const pointsToEarn = Math.floor(d.fins.sub / 100);
+            document.getElementById('earn-preview').innerText = `+${pointsToEarn} Pts`;
+        }
 
         // --- UPDATED WHATSAPP BILL (Fully Compatible) ---
         window.whatsappBill = () => {
@@ -799,18 +799,21 @@ window.calcSettleTotal = () => {
                     return;
                 }
 
+                // Recalculate totals for Bill
                 const type = document.getElementById('disc-type').value;
                 const val = parseFloat(document.getElementById('disc-val').value) || 0;
                 let managerDisc = 0;
                 if(type === 'flat') managerDisc = val;
                 else managerDisc = Math.round(d.total * (val / 100));
+                
+                const redeemVal = parseInt(document.getElementById('redeem-points').value) || 0;
+                
+                const finalGrand = (d.total - managerDisc - redeemVal) > 0 ? (d.total - managerDisc - redeemVal) : 0;
                 const finalTotalDisc = d.fins.disc + managerDisc;
-                const finalGrand = (d.total - managerDisc) > 0 ? (d.total - managerDisc) : 0;
                 
                 const phone = prompt("Enter Customer WhatsApp Number (e.g., 919876543210):", "91");
                 if(!phone) return;
 
-                // Use the bridge we created
                 const doc = new window.jsPDF();
                 
                 if (typeof doc.autoTable !== 'function') {
@@ -849,6 +852,7 @@ window.calcSettleTotal = () => {
                 doc.text(`Packing:`, 140, finalY);
                 doc.text(`${d.fins.pack}`, 190, finalY, {align: 'right'});
                 finalY += 6;
+                
                 if(finalTotalDisc > 0) {
                     doc.setTextColor(255, 0, 0);
                     doc.text(`Discount:`, 140, finalY);
@@ -856,6 +860,15 @@ window.calcSettleTotal = () => {
                     doc.setTextColor(0, 0, 0);
                     finalY += 6;
                 }
+                
+                if(redeemVal > 0) {
+                    doc.setTextColor(59, 130, 246);
+                    doc.text(`Loyalty Points:`, 140, finalY);
+                    doc.text(`-${redeemVal}`, 190, finalY, {align: 'right'});
+                    doc.setTextColor(0, 0, 0);
+                    finalY += 6;
+                }
+
                 doc.setFontSize(16); doc.setFont("helvetica", "bold");
                 doc.text(`TOTAL:`, 140, finalY + 5);
                 doc.text(`Rs. ${finalGrand}`, 190, finalY + 5, {align: 'right'});
@@ -876,7 +889,6 @@ window.calcSettleTotal = () => {
                     doc.save(`Bill_Table${currentSettleTable}.pdf`);
                     alert("Bill Downloaded!\nOpening WhatsApp...\nPlease attach the file manually.");
                     
-                    // Use API link instead of WEB link for better mobile compatibility
                     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
                     const baseUrl = isMobile ? "https://api.whatsapp.com/send" : "https://web.whatsapp.com/send";
                     
@@ -891,68 +903,67 @@ window.calcSettleTotal = () => {
             }
         };
 
-// PASTE THIS NEW VERSION:
-window.settleAndClear = async () => {
-    const d = tableData[currentSettleTable];
-    
-    // 1. Re-calculate Financials (Safety Check)
-    const type = document.getElementById('disc-type').value;
-    const val = parseFloat(document.getElementById('disc-val').value) || 0;
-    let managerDisc = (type === 'flat') ? val : Math.round(d.total * (val / 100));
-    
-    const redeemVal = parseInt(document.getElementById('redeem-points').value) || 0;
-    
-    // Ensure total doesn't go below zero
-    const finalGrand = (d.total - managerDisc - redeemVal) > 0 ? (d.total - managerDisc - redeemVal) : 0;
-    const finalTotalDisc = d.fins.disc + managerDisc;
+        window.settleAndClear = async () => {
+            const d = tableData[currentSettleTable];
+            
+            // 1. Re-calculate Financials (Safety Check)
+            const type = document.getElementById('disc-type').value;
+            const val = parseFloat(document.getElementById('disc-val').value) || 0;
+            let managerDisc = (type === 'flat') ? val : Math.round(d.total * (val / 100));
+            
+            const redeemVal = parseInt(document.getElementById('redeem-points').value) || 0;
+            
+            // Ensure total doesn't go below zero
+            const finalGrand = (d.total - managerDisc - redeemVal) > 0 ? (d.total - managerDisc - redeemVal) : 0;
+            const finalTotalDisc = d.fins.disc + managerDisc;
 
-    // 2. Create History Record
-    const master = {
-        orderId: Math.floor(100000 + Math.random() * 900000),
-        orderType: 'Dine-In', timestamp: Date.now(), status: 'paid',
-        customer: { name: `Table ${currentSettleTable}`, phone: d.phone || '-', address:'Dine-In' },
-        items: d.items, 
-        financials: { 
-            subTotal: d.fins.sub, 
-            discountVal: finalTotalDisc, 
-            loyaltyRedeemed: redeemVal, // Record how many points were used
-            packingTotal: d.fins.pack, 
-            grandTotal: finalGrand 
-        }
-    };
+            // 2. Create History Record
+            const master = {
+                orderId: Math.floor(100000 + Math.random() * 900000),
+                orderType: 'Dine-In', timestamp: Date.now(), status: 'paid',
+                customer: { name: `Table ${currentSettleTable}`, phone: d.phone || '-', address:'Dine-In' },
+                items: d.items, 
+                financials: { 
+                    subTotal: d.fins.sub, 
+                    discountVal: finalTotalDisc, 
+                    loyaltyRedeemed: redeemVal, // Record how many points were used
+                    packingTotal: d.fins.pack, 
+                    grandTotal: finalGrand 
+                }
+            };
 
-    // 3. PROCESS LOYALTY TRANSACTION (Update Database)
-    // Rule: Earn 1 Point per ₹100 of Food/Bev Subtotal
-    const pointsToEarn = Math.floor(d.fins.sub / 100);
-    
-    if(d.phone) {
-        const loyaltyRef = ref(db, `loyalty/${d.phone}`);
-        await runTransaction(loyaltyRef, (currentData) => {
-            if (currentData === null) {
-                // User doesn't exist yet, create them
-                return { points: pointsToEarn, lastUpdated: Date.now() };
-            } else {
-                // User exists: Deduct used points, Add new earned points
-                let newPts = (currentData.points || 0) - redeemVal + pointsToEarn;
-                if(newPts < 0) newPts = 0; // Prevent negative points
-                return { ...currentData, points: newPts, lastUpdated: Date.now() };
+            // 3. PROCESS LOYALTY TRANSACTION (Update Database)
+            // Rule: Earn 1 Point per ₹100 of Food/Bev Subtotal
+            const pointsToEarn = Math.floor(d.fins.sub / 100);
+            
+            if(d.phone) {
+                const loyaltyRef = ref(db, `loyalty/${d.phone}`);
+                await runTransaction(loyaltyRef, (currentData) => {
+                    if (currentData === null) {
+                        // User doesn't exist yet, create them
+                        return { points: pointsToEarn, lastUpdated: Date.now() };
+                    } else {
+                        // User exists: Deduct used points, Add new earned points
+                        let newPts = (currentData.points || 0) - redeemVal + pointsToEarn;
+                        if(newPts < 0) newPts = 0; // Prevent negative points
+                        return { ...currentData, points: newPts, lastUpdated: Date.now() };
+                    }
+                });
             }
-        });
-    }
 
-    // 4. Save to History & Clear Table
-    await push(ref(db, 'history'), master);
-    
-    // Remove individual order items from 'orders' node
-    for(const k of d.keys) await remove(ref(db, `orders/${k}`));
-    
-    // Remove bill request if it exists
-    if(activeBillRequests[currentSettleTable]) {
-        await remove(ref(db, `bill_requests/${currentSettleTable}`));
-    }
-    
-    closeModal('settle-modal');
-};
+            // 4. Save to History & Clear Table
+            await push(ref(db, 'history'), master);
+            
+            // Remove individual order items from 'orders' node
+            for(const k of d.keys) await remove(ref(db, `orders/${k}`));
+            
+            // Remove bill request if it exists
+            if(activeBillRequests[currentSettleTable]) {
+                await remove(ref(db, `bill_requests/${currentSettleTable}`));
+            }
+            
+            closeModal('settle-modal');
+        };
 
         window.autoFillPrice = () => {
             const select = document.getElementById('menu-select');
@@ -1054,7 +1065,24 @@ window.settleAndClear = async () => {
         window.comp = (k) => {
             get(ref(db, `orders/${k}`)).then(s => {
                 if(s.exists()) {
-                    let d = s.val(); d.status='completed'; d.completedAt=Date.now();
+                    let d = s.val(); 
+                    
+                    // FIXED: Changed .length === 10 to .length >= 10
+                    // This ensures web orders with 11 digits (e.g. 098...) also get points
+                    if(d.customer && d.customer.phone && d.customer.phone.length >= 10) {
+                        const subTotal = d.financials ? d.financials.subTotal : 0;
+                        const pointsToEarn = Math.floor(subTotal / 100);
+                        
+                        if(pointsToEarn > 0) {
+                            const loyaltyRef = ref(db, `loyalty/${d.customer.phone}`);
+                            runTransaction(loyaltyRef, (current) => {
+                                if(!current) return { points: pointsToEarn, lastUpdated: Date.now() };
+                                return { ...current, points: (current.points||0) + pointsToEarn, lastUpdated: Date.now() };
+                            });
+                        }
+                    }
+
+                    d.status='completed'; d.completedAt=Date.now();
                     push(ref(db, 'history'), d);
                     remove(ref(db, `orders/${k}`));
                 }
