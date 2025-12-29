@@ -261,15 +261,15 @@
         
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-<div class="sidebar-brand">
-    <img src="og-image.jpg" alt="Logo" style="height: 30px; border-radius: 6px; margin-right: 10px;">
-    <span>Cloud Club Admin</span>
-</div>
+                <div class="sidebar-brand">
+                    <img src="og-image.jpg" alt="Logo" style="height: 30px; border-radius: 6px; margin-right: 10px;">
+                    <span>Cloud Club Admin</span>
+                </div>
             </div>
             <div class="nav-scroll" id="nav-list">
                 </div>
             <div style="padding: 20px; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--text-muted); text-align: center;">
-                v2.1 System Ready
+                v2.2 System Ready
             </div>
         </aside>
 
@@ -307,7 +307,21 @@
                     <div id="stock-watch-list" class="alert-grid"></div>
                 </div>
 
+                <div id="section-loyalty" style="display:none; padding-bottom:50px;">
+                    <div style="margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:15px;">
+                        <h2 style="margin-top:0;">Loyalty Management</h2>
+                        <div style="display:flex; gap:10px;">
+                            <input type="tel" id="loyalty-search" class="search-input" placeholder="Search Phone Number..." style="flex:1;">
+                            <button onclick="searchLoyalty()" class="btn-new">Search</button>
+                        </div>
+                    </div>
+
+                    <div id="loyalty-results" class="items-grid">
+                        </div>
+                </div>
+
                 <div id="menu-root"></div>
+
             </div>
         </main>
     </div>
@@ -371,6 +385,28 @@
         </div>
     </div>
 
+    <div id="loyalty-modal" class="modal-overlay">
+        <div class="modal-card">
+            <h3 class="modal-title">Adjust Points</h3>
+            <input type="hidden" id="edit-loyalty-phone">
+            
+            <div class="form-group">
+                <label class="form-label">Customer Phone</label>
+                <input type="text" id="disp-loyalty-phone" class="form-input" disabled style="opacity:0.6;">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Total Points</label>
+                <input type="number" id="inp-loyalty-points" class="form-input">
+            </div>
+
+            <div class="modal-actions">
+                <button onclick="document.getElementById('loyalty-modal').style.display='none'" class="btn-cancel">Cancel</button>
+                <button onclick="saveLoyalty()" class="btn-save">Update Points</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -387,13 +423,10 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-// --- AUTH ---
+        // --- AUTH ---
         window.checkPin = function() {
-            // .trim() removes any accidental spaces you might type
             const input = document.getElementById('pin').value.trim();
-            
-            // "MjAyMQ==" is the secret code for "2021" 
-            // It prevents people from reading the PIN in the code.
+            // "MjAyMQ==" is "2021"
             if (btoa(input) === "MjAyMQ==") {
                 document.getElementById('pin-overlay').style.display = 'none';
                 document.getElementById('app').style.display = 'flex'; 
@@ -420,6 +453,35 @@
             renderMenu(filtered);
         }
 
+        // --- SECTION SWITCHER (NEW) ---
+        window.showSection = (sec) => {
+            const menuRoot = document.getElementById('menu-root');
+            const stockWatch = document.getElementById('stock-watch');
+            const loyaltySec = document.getElementById('section-loyalty');
+            const searchInput = document.getElementById('search-input');
+            
+            // Default hidden
+            menuRoot.style.display = 'none';
+            stockWatch.style.display = 'none';
+            loyaltySec.style.display = 'none';
+            
+            if(sec === 'loyalty') {
+                loyaltySec.style.display = 'block';
+                searchInput.placeholder = "Search (Disabled in Loyalty View)...";
+                searchInput.disabled = true;
+                loadAllLoyalty();
+            } else {
+                // Menu View
+                menuRoot.style.display = 'block';
+                searchInput.placeholder = "Search menu items...";
+                searchInput.disabled = false;
+                
+                // Show stock watch if relevant
+                const outOfStockCount = parseInt(document.getElementById('count-off').innerText) || 0;
+                if(outOfStockCount > 0) stockWatch.style.display = 'block';
+            }
+        }
+
         // --- CORE DATA LOADING ---
         function loadMenu() {
             onValue(ref(db, 'menu'), (snap) => {
@@ -430,7 +492,7 @@
                 allItems = Object.entries(data).map(([key, val]) => ({ ...val, key }));
                 
                 // Initial Render
-                filterItems(); // Handles rendering
+                filterItems(); 
             });
         }
 
@@ -454,15 +516,18 @@
                 return acc;
             }, {});
 
-            // Sort Categories Alphabetically
+            // Sort Categories Alphabetically and Build Sidebar
             Object.keys(grouped).sort().forEach(cat => {
                 // 1. Sidebar Link
                 const navBtn = document.createElement('div');
                 navBtn.className = 'nav-item';
                 navBtn.innerHTML = `<span>${cat}</span> <span style="font-size:0.8rem; opacity:0.5;">${grouped[cat].length}</span>`;
                 navBtn.onclick = () => {
+                    // Ensure we are in menu view
+                    showSection('menu');
                     const target = document.getElementById(`cat-${cat}`);
                     if(target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    
                     document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
                     navBtn.classList.add('active');
                     if(window.innerWidth <= 800) window.toggleSidebar();
@@ -544,7 +609,28 @@
             document.getElementById('count-total').innerText = itemsToRender.length;
             document.getElementById('count-off').innerText = outOfStockCount;
 
-            stockWatch.style.display = outOfStockCount > 0 ? 'block' : 'none';
+            // Only show stock watch if we are NOT in loyalty view
+            // But since this function rebuilds the menu, we assume we want menu view logic
+            const loyaltySec = document.getElementById('section-loyalty');
+            if(loyaltySec.style.display === 'none') {
+                 stockWatch.style.display = outOfStockCount > 0 ? 'block' : 'none';
+            }
+
+            // NEW: Add Loyalty Link to Sidebar (After Categories)
+            const loyaltyBtn = document.createElement('div');
+            loyaltyBtn.className = 'nav-item';
+            loyaltyBtn.style.marginTop = '20px';
+            loyaltyBtn.style.borderTop = '1px solid var(--border)';
+            loyaltyBtn.style.borderRadius = '0';
+            loyaltyBtn.style.paddingTop = '15px';
+            loyaltyBtn.innerHTML = `<span>👑 Loyalty Points</span>`;
+            loyaltyBtn.onclick = () => {
+                document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+                loyaltyBtn.classList.add('active');
+                showSection('loyalty');
+                if(window.innerWidth <= 800) window.toggleSidebar();
+            };
+            navList.appendChild(loyaltyBtn);
         }
 
         // --- STOCK LOGIC ---
@@ -600,8 +686,7 @@
         window.saveItem = () => {
             const key = document.getElementById('edit-key').value;
             
-            // --- UPDATED LOGIC: Preserve Stock Status if Editing ---
-            let currentStockStatus = 'ACTIVE'; // Default for new items
+            let currentStockStatus = 'ACTIVE'; 
             if (key) {
                 const existingItem = allItems.find(i => i.key === key);
                 if (existingItem && existingItem.stockStatus) {
@@ -643,6 +728,70 @@
             if(confirm("Are you sure? This will delete the item permanently.")) {
                 remove(ref(db, 'menu/' + document.getElementById('edit-key').value)).then(hideForm);
             }
+        }
+
+        // --- NEW LOYALTY FUNCTIONS ---
+        window.loadAllLoyalty = () => {
+            onValue(ref(db, 'loyalty'), (snap) => {
+                renderLoyaltyList(snap.val());
+            }, {onlyOnce: true});
+        }
+
+        window.searchLoyalty = () => {
+            const query = document.getElementById('loyalty-search').value.trim();
+            onValue(ref(db, 'loyalty'), (snap) => {
+                const data = snap.val();
+                if(!query) { renderLoyaltyList(data); return; }
+                
+                const filtered = {};
+                if(data) {
+                    Object.keys(data).forEach(key => {
+                        if(key.includes(query)) filtered[key] = data[key];
+                    });
+                }
+                renderLoyaltyList(filtered);
+            }, {onlyOnce: true});
+        }
+
+        function renderLoyaltyList(data) {
+            const root = document.getElementById('loyalty-results');
+            root.innerHTML = "";
+            if(!data) { root.innerHTML = "<p style='color:#777; grid-column:1/-1; text-align:center;'>No records found.</p>"; return; }
+
+            Object.entries(data).forEach(([phone, val]) => {
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                card.innerHTML = `
+                    <div style="margin-bottom:10px;">
+                        <div style="font-weight:800; font-size:1.5rem; color:var(--primary);">${val.points} <span style="font-size:0.8rem; color:#888;">Pts</span></div>
+                        <div style="color:var(--text-muted); font-family:'JetBrains Mono'; margin-top:5px;">📱 ${phone}</div>
+                        <div style="font-size:0.75rem; color:#555; margin-top:5px;">Last Active: ${val.lastUpdated ? new Date(val.lastUpdated).toLocaleDateString() : 'N/A'}</div>
+                    </div>
+                    <div class="card-footer" style="margin-top:auto;">
+                        <button class="btn-cat-opt" style="width:100%; text-align:center;" onclick="editLoyalty('${phone}', ${val.points})">Adjust Balance</button>
+                    </div>
+                `;
+                root.appendChild(card);
+            });
+        }
+
+        window.editLoyalty = (phone, pts) => {
+            document.getElementById('loyalty-modal').style.display = 'flex';
+            document.getElementById('edit-loyalty-phone').value = phone;
+            document.getElementById('disp-loyalty-phone').value = phone;
+            document.getElementById('inp-loyalty-points').value = pts;
+        }
+
+        window.saveLoyalty = () => {
+            const phone = document.getElementById('edit-loyalty-phone').value;
+            const newPts = parseInt(document.getElementById('inp-loyalty-points').value);
+            
+            if(isNaN(newPts) || !phone) return;
+
+            update(ref(db, `loyalty/${phone}`), { points: newPts }).then(() => {
+                document.getElementById('loyalty-modal').style.display = 'none';
+                searchLoyalty(); 
+            });
         }
     </script>
 </body>
