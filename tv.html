@@ -462,16 +462,14 @@
                             spanText = "Delivery";
                         } 
                         else if (type === 'Pickup') {
-                            // Rule: "Customer Name only displayed"
-                            h2Text = rawName;
-                            spanText = ""; 
+                            // Rule: "Customer First Name only displayed + Label 'Pickup'"
+                            h2Text = rawName.split(' ')[0]; // Take only the first part of the name
+                            spanText = "Pickup"; 
                         } 
                         else {
                             // Rule: "Dine-In" -> "Customer Name and Table No"
-                            // Attempt to parse standard format: "Table 5 (John)"
                             if (rawName.toLowerCase().startsWith('table')) {
                                 const parts = rawName.split(' ');
-                                // parts[0]="Table", parts[1]="5", rest...
                                 if(parts.length >= 2) {
                                     h2Text = `${parts[0]} ${parts[1]}`; // "Table 5"
                                     const guestName = parts.slice(2).join(' ').replace(/[()]/g, ''); // "John"
@@ -481,7 +479,6 @@
                                     spanText = `#${orderId}`;
                                 }
                             } else {
-                                // Fallback for non-table strings
                                 h2Text = rawName;
                                 spanText = `Order #${orderId}`;
                             }
