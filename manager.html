@@ -450,10 +450,16 @@
                     if(order.status === 'pending') pending = true;
                     if(order.orderType === 'Dine-In' && order.customer && order.customer.name.startsWith('Table')) {
                         const tId = order.customer.name.split(' ')[1];
-                        if(!tableData[tId]) tableData[tId] = { 
-                            total:0, items:[], keys:[], timestamp: order.timestamp,
-                            fins: { sub:0, disc:0, pack:0 } 
-                        };
+if(!tableData[tId]) tableData[tId] = { 
+    total:0, items:[], keys:[], timestamp: order.timestamp,
+    fins: { sub:0, disc:0, pack:0 },
+    phone: null // Initialize phone
+};
+
+// NEW: Capture phone for loyalty
+if(order.customer.phone && order.customer.phone.length === 10 && order.customer.phone !== '0000000000') {
+    tableData[tId].phone = order.customer.phone;
+}
                         const f = order.financials || {grandTotal:0, subTotal:0, discountVal:0, packingTotal:0};
                         tableData[tId].total += (f.grandTotal || 0);
                         tableData[tId].fins.sub += (f.subTotal || 0);
