@@ -697,37 +697,93 @@ if(order.customer.phone && order.customer.phone.length === 10 && order.customer.
             for(let i=9; i<=13; i++) make(i, a);
         }
 
-        function renderSettle() {
-            const d = tableData[currentSettleTable];
-            const hasReq = activeBillRequests[currentSettleTable];
-            document.getElementById('bill-req-alert').style.display = hasReq ? 'block' : 'none';
-            document.getElementById('m-t-id').innerText = currentSettleTable;
-            document.getElementById('m-i-list').innerHTML = d.items.map(i => {
-                if(i.deleted) return '';
-                return `<div style="display:flex;justify-content:space-between;margin-bottom:5px;color:#aaa"><span>${i.qty}x ${i.name}</span><span>₹${i.price*i.qty}</span></div>`;
-            }).join('');
-            document.getElementById('disc-type').value = 'flat';
-            document.getElementById('disc-val').value = '';
-            document.getElementById('m-sub').innerText = `₹${d.fins.sub}`;
-            document.getElementById('m-disc').innerText = `-₹${d.fins.disc}`;
-            document.getElementById('m-pack').innerText = `₹${d.fins.pack}`;
-            document.getElementById('m-tot').innerText = `₹${d.total}`;
-        }
+// PASTE THIS NEW VERSION:
+async function renderSettle() {
+    const d = tableData[currentSettleTable];
+    const hasReq = activeBillRequests[currentSettleTable];
+    document.getElementById('bill-req-alert').style.display = hasReq ? 'block' : 'none';
+    document.getElementById('m-t-id').innerText = currentSettleTable;
+    document.getElementById('m-i-list').innerHTML = d.items.map(i => {
+        if(i.deleted) return '';
+        return `<div style="display:flex;justify-content:space-between;margin-bottom:5px;color:#aaa"><span>${i.qty}x ${i.name}</span><span>₹${i.price*i.qty}</span></div>`;
+    }).join('');
+    
+    document.getElementById('disc-type').value = 'flat';
+    document.getElementById('disc-val').value = '';
+    document.getElementById('m-sub').innerText = `₹${d.fins.sub}`;
+    document.getElementById('m-disc').innerText = `-₹${d.fins.disc}`;
+    document.getElementById('m-pack').innerText = `₹${d.fins.pack}`;
+    document.getElementById('m-tot').innerText = `₹${d.total}`;
 
-        window.calcSettleTotal = () => {
-            const d = tableData[currentSettleTable];
-            if(!d) return;
-            let currentGrand = d.total; 
-            const type = document.getElementById('disc-type').value;
-            const val = parseFloat(document.getElementById('disc-val').value) || 0;
-            let managerDisc = 0;
-            if(type === 'flat') managerDisc = val;
-            else managerDisc = Math.round(currentGrand * (val / 100));
-            const finalTotal = currentGrand - managerDisc;
-            const totalDisc = d.fins.disc + managerDisc;
-            document.getElementById('m-disc').innerText = `-₹${totalDisc} (${d.fins.disc} + ${managerDisc})`;
-            document.getElementById('m-tot').innerText = `₹${finalTotal > 0 ? finalTotal : 0}`;
-        }
+    // --- NEW LOYALTY LOGIC ---
+    const loyaltySec = document.getElementById('loyalty-section');
+    const redeemInput = document.getElementById('redeem-points');
+    loyaltySec.style.display = 'none';
+    redeemInput.value = '';
+    redeemInput.dataset.max = 0;
+
+    if(d.phone) {
+        loyaltySec.style.display = 'block';
+        document.getElementById('loyalty-balance').innerText = "Loading...";
+        try {
+            const snap = await get(ref(db, `loyalty/${d.phone}`));
+            const pts = snap.val() ? snap.val().points : 0;
+            redeemInput.dataset.max = pts;
+            document.getElementById('loyalty-balance').innerText = `Available: ${pts} Pts`;
+        } catch(e) { console.error(e); }
+    }
+    calcSettleTotal();
+}
+
+// PASTE THIS NEW VERSION:
+window.calcSettleTotal = () => {
+    const d = tableData[currentSettleTable];
+    if(!d) return;
+
+    // 1. Manager Discount Logic
+    const type = document.getElementById('disc-type').value;
+    const val = parseFloat(document.getElementById('disc-val').value) || 0;
+    let managerDisc = 0;
+    if(type === 'flat') managerDisc = val;
+    else managerDisc = Math.round(d.total * (val / 100));
+
+    // 2. Loyalty Redemption Logic (NEW)
+    const redeemInput = document.getElementById('redeem-points');
+    let redeemVal = parseInt(redeemInput.value) || 0;
+    const maxPoints = parseInt(redeemInput.dataset.max) || 0;
+    
+    // Validation: Don't allow redeeming more than owned or more than the bill amount
+    const tempTotal = d.total - managerDisc;
+    if(redeemVal > maxPoints) redeemVal = maxPoints;
+    if(redeemVal > tempTotal) redeemVal = tempTotal;
+    if(redeemVal < 0) redeemVal = 0;
+    
+    // Auto-correct the input field if the number was too high
+    if(redeemInput.value != redeemVal && redeemInput.value != '') redeemInput.value = redeemVal;
+
+    // 3. Final Calculations
+    const finalTotal = d.total - managerDisc - redeemVal;
+    const totalDisc = d.fins.disc + managerDisc;
+
+    // UI Updates
+    document.getElementById('m-disc').innerText = `-₹${totalDisc}`;
+    
+    // Show/Hide Loyalty Deduction Row
+    const loyRow = document.getElementById('loyalty-row');
+    if(redeemVal > 0) {
+        loyRow.style.display = 'flex';
+        document.getElementById('m-loyalty').innerText = `-₹${redeemVal}`;
+    } else {
+        loyRow.style.display = 'none';
+    }
+
+    // Update Grand Total
+    document.getElementById('m-tot').innerText = `₹${finalTotal > 0 ? finalTotal : 0}`;
+    
+    // Update Points Preview (1 pt per ₹100 on Food/Bev subtotal)
+    const pointsToEarn = Math.floor(d.fins.sub / 100);
+    document.getElementById('earn-preview').innerText = `+${pointsToEarn} Pts`;
+}
 
         // --- UPDATED WHATSAPP BILL (Fully Compatible) ---
         window.whatsappBill = () => {
