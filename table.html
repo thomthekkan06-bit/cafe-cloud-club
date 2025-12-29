@@ -676,49 +676,56 @@
         window.closeCheckout = () => document.getElementById('checkout-modal').style.display = 'none';
 
         // --- PLACE ORDER ---
-        window.placeOrder = () => {
-            const nameInput = document.getElementById('cust-name');
-            const nameVal = nameInput.value.trim() || "Guest";
-            const finalName = `Table ${TABLE_ID} (${nameVal})`;
-            
-            let total = 0;
-            const items = [];
-            for(let key in cart) {
-                total += cart[key].price * cart[key].qty;
-                items.push({ name: key, qty: cart[key].qty, price: cart[key].price, type: cart[key].type });
-            }
+window.placeOrder = () => {
+    const nameInput = document.getElementById('cust-name');
+    
+    // NEW: Get phone input
+    const phoneInput = document.getElementById('cust-phone');
+    
+    const nameVal = nameInput.value.trim() || "Guest";
+    
+    // NEW: Validation to ensure we send a valid phone number or default string
+    const phoneVal = (phoneInput && phoneInput.value.trim().length === 10) 
+                     ? phoneInput.value.trim() 
+                     : '0000000000';
 
-            const order = {
-                orderId: Math.floor(100000 + Math.random() * 900000),
-                orderType: 'Dine-In',
-                timestamp: Date.now(),
-                status: 'pending',
-                customer: { name: finalName, phone: '0000000000', address: 'Dine-In', email: '-' },
-                items: items,
-                financials: { subTotal: total, discountVal: 0, couponCode: "NONE", packingTotal: 0, grandTotal: total },
-                globalNote: `Table ${TABLE_ID} - ${MODE === 'waiter' ? 'Waiter' : 'Customer'}`
-            };
+    const finalName = `Table ${TABLE_ID} (${nameVal})`;
+    
+    let total = 0;
+    const items = [];
+    for(let key in cart) {
+        total += cart[key].price * cart[key].qty;
+        items.push({ name: key, qty: cart[key].qty, price: cart[key].price, type: cart[key].type });
+    }
 
-            push(ref(db, 'orders'), order).then(() => {
-                cart = {}; renderCart(); closeCheckout();
-                document.getElementById('cart-sidebar').classList.remove('active');
-                
-                const succ = document.getElementById('success-view');
-                succ.style.display = 'flex';
-                
-                if(MODE === 'waiter') {
-                    // Show Button for Waiter
-                    document.getElementById('success-msg').innerText = "Returning to Floor Map...";
-                    document.getElementById('btn-back-floor').style.display = 'inline-block';
-                    
-                    // Backup Redirect (2s)
-                    setTimeout(() => { window.location.href = "waiter.html"; }, 2000);
-                } else {
-                    // Customer: Standard reload
-                    setTimeout(() => { window.location.reload(); }, 3000);
-                }
-            }).catch(e => { alert("Error: " + e.message); console.error(e); });
+    const order = {
+        orderId: Math.floor(100000 + Math.random() * 900000),
+        orderType: 'Dine-In',
+        timestamp: Date.now(),
+        status: 'pending',
+        // UPDATE: Use the captured phoneVal variable here
+        customer: { name: finalName, phone: phoneVal, address: 'Dine-In', email: '-' },
+        items: items,
+        financials: { subTotal: total, discountVal: 0, couponCode: "NONE", packingTotal: 0, grandTotal: total },
+        globalNote: `Table ${TABLE_ID} - ${MODE === 'waiter' ? 'Waiter' : 'Customer'}`
+    };
+
+    push(ref(db, 'orders'), order).then(() => {
+        cart = {}; renderCart(); closeCheckout();
+        document.getElementById('cart-sidebar').classList.remove('active');
+        
+        const succ = document.getElementById('success-view');
+        succ.style.display = 'flex';
+        
+        if(MODE === 'waiter') {
+            document.getElementById('success-msg').innerText = "Returning to Floor Map...";
+            document.getElementById('btn-back-floor').style.display = 'inline-block';
+            setTimeout(() => { window.location.href = "waiter.html"; }, 2000);
+        } else {
+            setTimeout(() => { window.location.reload(); }, 3000);
         }
+    }).catch(e => { alert("Error: " + e.message); console.error(e); });
+}
     </script>
 </body>
 </html>
