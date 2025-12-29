@@ -329,11 +329,17 @@
         <div class="modal-card">
             <h3 style="margin-top:0; color:var(--primary);">Confirm Order</h3>
             <p id="modal-table-txt" style="font-weight:bold; color:#aaa; font-size:0.9rem;"></p>
-            <div style="text-align:left; margin-top:15px;">
-                <label style="font-size:0.8rem; color:#888;">Guest Name (Optional)</label>
-                <input type="text" class="input-field" id="cust-name" placeholder="Enter Name">
-            </div>
-            <button class="checkout-btn" onclick="placeOrder()">SEND TO KITCHEN 👨‍🍳</button>
+<div style="text-align:left; margin-top:15px;">
+    <label style="font-size:0.8rem; color:#888;">Guest Name (Optional)</label>
+    <input type="text" class="input-field" id="cust-name" placeholder="Enter Name">
+</div>
+
+<div style="text-align:left; margin-top:10px;">
+    <label style="font-size:0.8rem; color:#888;">Phone Number (For Loyalty Points)</label>
+    <input type="tel" class="input-field" id="cust-phone" placeholder="10-digit Mobile Number" maxlength="10">
+</div>
+
+<button class="checkout-btn" onclick="placeOrder()">SEND TO KITCHEN 👨‍🍳</button>
             <button style="width:100%; background:none; border:none; padding:15px; color:#777; cursor:pointer; margin-top:5px; font-size:0.9rem;" onclick="closeCheckout()">Cancel</button>
         </div>
     </div>
