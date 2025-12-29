@@ -891,34 +891,68 @@ window.calcSettleTotal = () => {
             }
         };
 
-        window.settleAndClear = async () => {
-            const d = tableData[currentSettleTable];
-            const type = document.getElementById('disc-type').value;
-            const val = parseFloat(document.getElementById('disc-val').value) || 0;
-            let managerDisc = 0;
-            if(type === 'flat') managerDisc = val;
-            else managerDisc = Math.round(d.total * (val / 100));
-            const finalGrand = (d.total - managerDisc) > 0 ? (d.total - managerDisc) : 0;
-            const finalTotalDisc = d.fins.disc + managerDisc;
-            const master = {
-                orderId: Math.floor(100000 + Math.random() * 900000),
-                orderType: 'Dine-In', timestamp: Date.now(), status: 'paid',
-                customer: { name: `Table ${currentSettleTable}`, phone:'-', address:'Dine-In' },
-                items: d.items, 
-                financials: { 
-                    subTotal: d.fins.sub, 
-                    discountVal: finalTotalDisc, 
-                    packingTotal: d.fins.pack, 
-                    grandTotal: finalGrand 
-                }
-            };
-            await push(ref(db, 'history'), master);
-            for(const k of d.keys) await remove(ref(db, `orders/${k}`));
-            if(activeBillRequests[currentSettleTable]) {
-                await remove(ref(db, `bill_requests/${currentSettleTable}`));
+// PASTE THIS NEW VERSION:
+window.settleAndClear = async () => {
+    const d = tableData[currentSettleTable];
+    
+    // 1. Re-calculate Financials (Safety Check)
+    const type = document.getElementById('disc-type').value;
+    const val = parseFloat(document.getElementById('disc-val').value) || 0;
+    let managerDisc = (type === 'flat') ? val : Math.round(d.total * (val / 100));
+    
+    const redeemVal = parseInt(document.getElementById('redeem-points').value) || 0;
+    
+    // Ensure total doesn't go below zero
+    const finalGrand = (d.total - managerDisc - redeemVal) > 0 ? (d.total - managerDisc - redeemVal) : 0;
+    const finalTotalDisc = d.fins.disc + managerDisc;
+
+    // 2. Create History Record
+    const master = {
+        orderId: Math.floor(100000 + Math.random() * 900000),
+        orderType: 'Dine-In', timestamp: Date.now(), status: 'paid',
+        customer: { name: `Table ${currentSettleTable}`, phone: d.phone || '-', address:'Dine-In' },
+        items: d.items, 
+        financials: { 
+            subTotal: d.fins.sub, 
+            discountVal: finalTotalDisc, 
+            loyaltyRedeemed: redeemVal, // Record how many points were used
+            packingTotal: d.fins.pack, 
+            grandTotal: finalGrand 
+        }
+    };
+
+    // 3. PROCESS LOYALTY TRANSACTION (Update Database)
+    // Rule: Earn 1 Point per ₹100 of Food/Bev Subtotal
+    const pointsToEarn = Math.floor(d.fins.sub / 100);
+    
+    if(d.phone) {
+        const loyaltyRef = ref(db, `loyalty/${d.phone}`);
+        await runTransaction(loyaltyRef, (currentData) => {
+            if (currentData === null) {
+                // User doesn't exist yet, create them
+                return { points: pointsToEarn, lastUpdated: Date.now() };
+            } else {
+                // User exists: Deduct used points, Add new earned points
+                let newPts = (currentData.points || 0) - redeemVal + pointsToEarn;
+                if(newPts < 0) newPts = 0; // Prevent negative points
+                return { ...currentData, points: newPts, lastUpdated: Date.now() };
             }
-            closeModal('settle-modal');
-        };
+        });
+    }
+
+    // 4. Save to History & Clear Table
+    await push(ref(db, 'history'), master);
+    
+    // Remove individual order items from 'orders' node
+    for(const k of d.keys) await remove(ref(db, `orders/${k}`));
+    
+    // Remove bill request if it exists
+    if(activeBillRequests[currentSettleTable]) {
+        await remove(ref(db, `bill_requests/${currentSettleTable}`));
+    }
+    
+    closeModal('settle-modal');
+};
 
         window.autoFillPrice = () => {
             const select = document.getElementById('menu-select');
