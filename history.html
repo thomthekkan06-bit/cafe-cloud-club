@@ -158,7 +158,6 @@
         .total-row { font-size: 1.2rem; font-weight: 800; border-top: 2px dashed var(--border); padding-top: 15px; margin-top: 15px; }
         .close-modal { position: absolute; top: 20px; right: 25px; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); z-index: 20; }
 
-        /* --- MOBILE OPTIMIZATION --- */
         @media (max-width: 768px) {
             body { height: auto; overflow-y: auto; display: block; padding: 15px; padding-bottom: 30px; }
             .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -170,7 +169,6 @@
             .date-group { width: 100%; }
             .input-field { width: 100%; }
         }
-
     </style>
 </head>
 <body>
@@ -214,6 +212,12 @@
                     <span>Delivery Fee</span>
                     <span class="mono" id="m-fee">₹0</span>
                 </div>
+                
+                <div class="receipt-row" id="row-loyalty" style="display:none; color:var(--primary);">
+                    <span>Loyalty Discount</span>
+                    <span class="mono" id="m-loyalty">-₹0</span>
+                </div>
+
                 <div class="receipt-row total-row">
                     <span>TOTAL PAID</span>
                     <span class="mono" style="color:var(--success);" id="m-total">₹0</span>
@@ -307,7 +311,7 @@
         
         let allOrders = [];
 
-        // --- PIN LOGIC (FIXED: Handles Enter Key) ---
+        // --- PIN LOGIC ---
         const pinInput = document.getElementById('pin-input');
         const unlockBtn = document.getElementById('unlock-btn');
 
@@ -331,16 +335,14 @@
         function loadHistory() {
             document.getElementById('table-body').innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px;">Loading full history...</td></tr>`;
             
-            // FETCH EVERYTHING (No Limit)
             const historyQuery = query(ref(db, 'history'));
 
             onValue(historyQuery, (snapshot) => {
                 const data = snapshot.val();
                 if (!data) { renderTable([]); return; }
                 
-                // --- FIX: defensive coding to ignore broken orders ---
                 allOrders = Object.entries(data)
-                    .filter(([key, val]) => val && val.customer) // Only keep valid orders
+                    .filter(([key, val]) => val && val.customer) 
                     .map(([key, val]) => ({
                         key: key, ...val
                     }))
@@ -362,7 +364,6 @@
             }
 
             ordersData.forEach(order => {
-                // Defensive Check: Ensure customer exists before trying to access .name
                 const customerName = (order.customer && order.customer.name) ? order.customer.name : "Unknown";
                 const customerPhone = (order.customer && order.customer.phone) ? order.customer.phone : "--";
 
@@ -370,6 +371,9 @@
                 const fins = order.financials || { grandTotal: 0, deliveryFee: 0 };
                 const total = fins.grandTotal || 0;
                 const fee = fins.deliveryFee || 0;
+                
+                // For Stats: Kitchen = Total - Fee + LoyaltyRedeemed (Technically kitchen earned the value of the food, but cash collected is less)
+                // However, simpler is Kitchen = Cash Collected - Delivery Fee. 
                 const kitchen = total - fee;
 
                 if(!isRejected) { sumKitchen += kitchen; sumFees += fee; sumTotal += total; count++; }
@@ -425,7 +429,6 @@
                 if(start && oDate < start) dateMatch = false;
                 if(end && oDate > end) dateMatch = false;
                 
-                // Safe search
                 let searchMatch = true;
                 if(search) {
                     const cName = o.customer ? o.customer.name : "";
@@ -471,10 +474,34 @@
                     `;
                 });
             }
+            
             const fins = order.financials || {grandTotal:0, deliveryFee:0};
-            document.getElementById('m-kitchen').innerText = "₹" + (fins.grandTotal - (fins.deliveryFee||0));
-            document.getElementById('m-fee').innerText = "₹" + (fins.deliveryFee||0);
-            document.getElementById('m-total').innerText = "₹" + fins.grandTotal;
+            
+            // Financials Logic
+            const total = fins.grandTotal;
+            const fee = fins.deliveryFee || 0;
+            const loyalty = fins.loyaltyRedeemed || 0;
+            
+            // Subtotal is approximate here because we don't store raw subtotal in older records sometimes.
+            // Formula: Total = Subtotal + Fee - Loyalty - Discount.
+            // So Subtotal = Total - Fee + Loyalty + Discount.
+            // But simplifying display:
+            
+            const subCalc = total - fee + loyalty + (fins.discountVal || 0);
+
+            document.getElementById('m-kitchen').innerText = "₹" + subCalc;
+            document.getElementById('m-fee').innerText = "₹" + fee;
+            
+            // NEW: Show Loyalty
+            const loyRow = document.getElementById('row-loyalty');
+            if(loyalty > 0) {
+                loyRow.style.display = 'flex';
+                document.getElementById('m-loyalty').innerText = "-₹" + loyalty;
+            } else {
+                loyRow.style.display = 'none';
+            }
+
+            document.getElementById('m-total').innerText = "₹" + total;
             document.getElementById('details-modal').style.display = 'flex';
         }
 
