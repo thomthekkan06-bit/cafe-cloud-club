@@ -8,6 +8,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <script>
+        // Forces the plugin to find the main library
+        window.jsPDF = window.jspdf.jsPDF;
+    </script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
 
     <style>
@@ -360,23 +366,15 @@
 
         function getOptionsForItem(item) {
             let opts = [];
-            
-            // 1. Extra Cheese
             if (cheeseCats.includes(item.category)) opts.push({ name: "Extra Cheese", price: 15 });
-            
-            // 2. Fried Egg
             if (item.category === "Bun-Tastic Burgers" && friedEggEligible.includes(item.name)) {
                 opts.push({ name: "Add Fried Egg", price: 20 });
             }
-
-            // 3. Italian Extras
             if (item.category === "Italian Indulgence") {
                 opts.push({ name: "Garlic Bread", price: 40 });
                 if (item.name.toLowerCase().includes('chicken')) opts.push({ name: "Extra Chicken", price: 60 });
                 if (item.name.toLowerCase().includes('shrimp')) opts.push({ name: "Extra Shrimp", price: 90 });
             }
-
-            // 4. Butcher's Best
             if (item.category === "Butcher's Best") {
                 opts.push({ name: "Extra Hashbrown", price: 40 });
                 opts.push({ name: "Tossed Rice", price: 40 });
@@ -384,17 +382,12 @@
                 opts.push({ name: "Sunny Sideup", price: 25 });
                 if (!item.name.toLowerCase().includes('fish')) opts.push({ name: "Hummus", price: 40 });
             }
-
-            // 5. Rice Harmony
             if (item.category === "Rice Harmony") {
                 if (item.name.toLowerCase().includes('chicken')) opts.push({ name: "Extra Chicken", price: 40 });
                 if (item.type === 'veg') opts.push({ name: "Extra Paneer", price: 30 });
             }
-
-            // 6. Shakes
             if (item.category === "Whipped Wonders") opts.push({ name: "Extra Ice Cream", price: 30 });
-
-            // --- MANAGER PACKING OPTION ---
+            
             let packPrice = 10;
             if (fiveRsCats.includes(item.category)) packPrice = 5;
             if (item.category === 'ADD-ON') packPrice = item.name.startsWith("Hummus") ? 7 : 5;
@@ -407,22 +400,18 @@
 
         // --- INITIALIZATION ---
         function init() {
-            // 1. Load Menu
             onValue(ref(db, 'menu'), snap => {
                 const data = snap.val() || {};
                 fullMenu = Object.values(data).sort((a,b) => a.name.localeCompare(b.name));
-                
                 const sel = document.getElementById('ext-menu-select');
                 const standardSel = document.getElementById('menu-select');
                 sel.innerHTML = '<option value="">-- Select Item --</option>';
                 standardSel.innerHTML = '<option value="">-- Select Item --</option>';
-
                 fullMenu.forEach((item, idx) => {
                     const opt = document.createElement('option');
                     opt.value = idx; 
                     opt.text = item.name;
                     sel.appendChild(opt);
-
                     const stdOpt = document.createElement('option');
                     stdOpt.value = item.name;
                     stdOpt.dataset.price = item.price;
@@ -431,13 +420,11 @@
                 });
             });
 
-            // 2. Listen for Bill Requests
             onValue(ref(db, 'bill_requests'), snap => {
                 activeBillRequests = snap.val() || {};
-                renderTables(); // Re-render tables to show badges
+                renderTables();
             });
 
-            // 3. Load Orders
             onValue(ref(db, 'orders'), snap => {
                 const data = snap.val() || {};
                 const list = document.getElementById('online-list');
@@ -445,45 +432,34 @@
                 tableData = {};
                 let pending = false;
                 let count = 0;
-
                 Object.entries(data).forEach(([key, order]) => {
                     if(order.status === 'completed' || order.status === 'rejected') return;
-                    
                     if(order.status === 'pending') pending = true;
-
-                    // Table Data Logic
                     if(order.orderType === 'Dine-In' && order.customer && order.customer.name.startsWith('Table')) {
                         const tId = order.customer.name.split(' ')[1];
                         if(!tableData[tId]) tableData[tId] = { 
                             total:0, items:[], keys:[], timestamp: order.timestamp,
                             fins: { sub:0, disc:0, pack:0 } 
                         };
-                        
                         const f = order.financials || {grandTotal:0, subTotal:0, discountVal:0, packingTotal:0};
                         tableData[tId].total += (f.grandTotal || 0);
                         tableData[tId].fins.sub += (f.subTotal || 0);
                         tableData[tId].fins.disc += (f.discountVal || 0);
                         tableData[tId].fins.pack += (f.packingTotal || 0);
-                        
                         if(order.timestamp < tableData[tId].timestamp) tableData[tId].timestamp = order.timestamp;
-                        
                         tableData[tId].items.push(...(order.items||[]));
                         tableData[tId].keys.push(key);
                     } 
-                    
                     let showInQueue = true;
                     if (order.status === 'served') showInQueue = false;
                     if (order.status === 'done' && order.orderType === 'Dine-In') showInQueue = false;
-
                     if(showInQueue) {
                         count++;
                         renderOrderCard(key, order, list);
                     }
                 });
-
                 document.getElementById('online-count').innerText = count;
                 renderTables();
-                
                 if(pending) {
                     if(bell.paused) bell.play().catch(e => console.log("Sound blocked"));
                 } else {
@@ -505,12 +481,9 @@
             const container = document.getElementById('ext-options-container');
             container.innerHTML = "";
             container.style.display = "none";
-
             if(idx === "") return;
-            
             const item = fullMenu[idx];
             const options = getOptionsForItem(item);
-
             if(options.length > 0) {
                 container.style.display = "block";
                 options.forEach(opt => {
@@ -532,20 +505,16 @@
             if(idx === "") return;
             const item = fullMenu[idx];
             const qty = parseInt(document.getElementById('ext-qty').value) || 1;
-
             let finalPrice = item.price;
             let modNames = [];
-            
             document.querySelectorAll('.ext-opt-cb:checked').forEach(cb => {
                 finalPrice += parseInt(cb.dataset.price);
                 modNames.push(cb.value);
             });
-
             let packCost = 10;
             if (item.category === 'ADD-ON') packCost = item.name.startsWith("Hummus") ? 7 : 5;
             else if (fiveRsCats.includes(item.category)) packCost = 5;
             if (modNames.includes("Tossed Rice") || modNames.includes("Sorted Vegges")) packCost += 7;
-
             extOrderItems.push({
                 name: item.name,
                 category: item.category,
@@ -555,7 +524,6 @@
                 variant: modNames.join(", "),
                 packingInfo: packCost
             });
-
             renderExtList();
             document.getElementById('ext-menu-select').value = "";
             document.getElementById('ext-qty').value = "1";
@@ -568,15 +536,12 @@
             list.innerHTML = "";
             let itemTotal = 0;
             let packTotal = 0;
-
             extOrderItems.forEach((item, i) => {
                 const rowTotal = item.price * item.qty;
                 const rowPack = item.packingInfo * item.qty;
                 itemTotal += rowTotal;
                 packTotal += rowPack;
-
                 let desc = item.variant ? `<div class="ext-mods">${item.variant}</div>` : '';
-
                 list.innerHTML += `
                     <div class="ext-item-row">
                         <div class="ext-item-details">
@@ -591,7 +556,6 @@
                     </div>
                 `;
             });
-
             document.getElementById('ext-sub').innerText = `₹${itemTotal}`;
             document.getElementById('ext-pack').innerText = `₹${packTotal}`;
             document.getElementById('ext-grand').innerText = `₹${itemTotal + packTotal}`;
@@ -603,20 +567,17 @@
             const pid = document.getElementById('ext-id').value;
             if(!pid || extOrderItems.length === 0) return alert("Missing ID or Items");
             const plat = document.getElementById('ext-platform').value;
-
             let sub = 0; let pack = 0;
             extOrderItems.forEach(i => {
                 sub += (i.price * i.qty);
                 pack += (i.packingInfo * i.qty);
             });
-
             const order = {
                 orderId: pid, orderType: plat, timestamp: Date.now(), status: 'cooking',
                 customer: { name: `${plat} #${pid}`, phone:'-', address:'Pickup' },
                 items: extOrderItems,
                 financials: { subTotal: sub, discountVal: 0, packingTotal: pack, grandTotal: sub + pack }
             };
-
             push(ref(db, 'orders'), order).then(() => closeModal('ext-order-modal'));
         };
 
@@ -626,15 +587,11 @@
             let cls = `order-card status-${order.status}`;
             if(type==='Swiggy') cls += ' type-swiggy';
             if(type==='Zomato') cls += ' type-zomato';
-
             const f = order.financials || { subTotal: 0, packingTotal: 0, discountVal: 0, grandTotal: 0 };
-
             let itemsHtml = (order.items||[]).map(i => {
                 if(i.deleted) return `<div class="item-row item-void"><span>${i.qty}x ${i.name}</span><span>VOID</span></div>`;
-                
                 let v = i.variant ? `<div class="item-custom">${i.variant}</div>` : '';
                 let lineTotal = i.price * i.qty; 
-                
                 return `
                     <div class="item-row">
                         <div class="item-top">
@@ -644,9 +601,7 @@
                         ${v}
                     </div>`;
             }).join('');
-
             let showEdit = (order.status !== 'done' && order.status !== 'out_for_delivery');
-            
             let btns = '';
             if(order.status==='pending') btns = `<button class="btn-act btn-red" onclick="rejectOrder('${key}')">REJECT</button><button class="btn-act btn-green" onclick="upd('${key}','cooking')">ACCEPT</button>`;
             else if(order.status==='cooking') btns = `<button class="btn-act btn-green" onclick="upd('${key}','done')">READY</button>`;
@@ -655,7 +610,6 @@
                 else btns = `<button class="btn-act btn-orange" onclick="comp('${key}')">PICKED UP</button>`;
             } 
             else if(order.status==='out_for_delivery') btns = `<button class="btn-act btn-red" onclick="forceComplete('${key}')">COMPLETE</button>`;
-
             container.innerHTML += `
                 <div class="${cls}">
                     <div class="card-top">
@@ -668,9 +622,7 @@
                             <span class="info-label">Phone</span><span><a href="tel:${order.customer.phone}" style="color:var(--primary);text-decoration:none;">${order.customer.phone || '-'}</a></span>
                             <span class="info-label">Addr</span><span style="font-size:0.85rem; line-height:1.2;">${order.customer.address || '-'}</span>
                         </div>
-
                         <div class="items-list">${itemsHtml}</div>
-                        
                         <div class="fin-box">
                              <div class="fin-row"><span>Sub Total</span><span>₹${f.subTotal}</span></div>
                              <div class="fin-row"><span>Packing</span><span>₹${f.packingTotal}</span></div>
@@ -691,30 +643,23 @@
             const a = document.getElementById('grid-ac');
             m.innerHTML=""; a.innerHTML="";
             document.getElementById('dinein-count').innerText = Object.keys(tableData).length;
-
             const make = (id, dest, label) => {
                 const d = tableData[id];
                 const hasReq = activeBillRequests[id]; 
-                
                 let cls = 'table-card status-free';
                 if (hasReq) cls += ' status-bill-req'; 
-
                 let txt = `<div class="t-num">${label || id}</div><div style="color:#666;font-size:0.8rem">Free</div>`;
-                
                 if(d) {
                     const diff = Date.now() - d.timestamp;
                     const mins = Math.floor(diff/60000);
                     if(mins < 60) cls = 'table-card status-fresh';
                     else if(mins < 90) cls = 'table-card status-warning';
                     else cls = 'table-card status-camper';
-                    
                     if(hasReq) cls += ' status-bill-req';
-
                     const h = Math.floor(mins/60);
                     const tm = mins%60;
                     const timeStr = `${h}:${tm.toString().padStart(2,'0')}`;
                     const billReqLabel = hasReq ? `<div style="color:black; background:#FFD700; border-radius:4px; padding:2px; font-size:0.7rem; text-align:center; font-weight:bold;">BILL REQ</div>` : '';
-
                     txt = `
                         <div style="display:flex;justify-content:space-between"><div class="t-num">${label || id}</div><div style="font-weight:bold;color:#aaa">₹${d.total}</div></div>
                         ${billReqLabel}
@@ -728,7 +673,6 @@
                 if(d) div.onclick = () => { currentSettleTable=id; document.getElementById('settle-modal').style.display='flex'; renderSettle(); };
                 dest.appendChild(div);
             };
-
             for(let i=1; i<=7; i++) make(i, m);
             make(8, m, "BAR");
             for(let i=9; i<=13; i++) make(i, a);
@@ -737,17 +681,14 @@
         function renderSettle() {
             const d = tableData[currentSettleTable];
             const hasReq = activeBillRequests[currentSettleTable];
-            
             document.getElementById('bill-req-alert').style.display = hasReq ? 'block' : 'none';
             document.getElementById('m-t-id').innerText = currentSettleTable;
             document.getElementById('m-i-list').innerHTML = d.items.map(i => {
                 if(i.deleted) return '';
                 return `<div style="display:flex;justify-content:space-between;margin-bottom:5px;color:#aaa"><span>${i.qty}x ${i.name}</span><span>₹${i.price*i.qty}</span></div>`;
             }).join('');
-            
             document.getElementById('disc-type').value = 'flat';
             document.getElementById('disc-val').value = '';
-
             document.getElementById('m-sub').innerText = `₹${d.fins.sub}`;
             document.getElementById('m-disc').innerText = `-₹${d.fins.disc}`;
             document.getElementById('m-pack').innerText = `₹${d.fins.pack}`;
@@ -757,40 +698,32 @@
         window.calcSettleTotal = () => {
             const d = tableData[currentSettleTable];
             if(!d) return;
-
             let currentGrand = d.total; 
-            
             const type = document.getElementById('disc-type').value;
             const val = parseFloat(document.getElementById('disc-val').value) || 0;
-            
             let managerDisc = 0;
             if(type === 'flat') managerDisc = val;
             else managerDisc = Math.round(currentGrand * (val / 100));
-
             const finalTotal = currentGrand - managerDisc;
-            
             const totalDisc = d.fins.disc + managerDisc;
             document.getElementById('m-disc').innerText = `-₹${totalDisc} (${d.fins.disc} + ${managerDisc})`;
             document.getElementById('m-tot').innerText = `₹${finalTotal > 0 ? finalTotal : 0}`;
         }
 
-        // --- UPDATED WHATSAPP BILL (Error Proof) ---
+        // --- UPDATED WHATSAPP BILL (Fully Compatible) ---
         window.whatsappBill = () => {
             try {
-                // 1. Data Check
                 if (!currentSettleTable || !tableData[currentSettleTable]) {
                     alert("Error: No active table data found. Please select a table first.");
                     return;
                 }
                 const d = tableData[currentSettleTable];
 
-                // 2. Library Check
                 if (!window.jspdf) {
                     alert("Error: PDF Library (jspdf) not loaded. Please check your internet connection and refresh.");
                     return;
                 }
 
-                // 3. Totals Calculation
                 const type = document.getElementById('disc-type').value;
                 const val = parseFloat(document.getElementById('disc-val').value) || 0;
                 let managerDisc = 0;
@@ -802,20 +735,17 @@
                 const phone = prompt("Enter Customer WhatsApp Number (e.g., 919876543210):", "91");
                 if(!phone) return;
 
-                // 4. Generate PDF
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
+                // Use the bridge we created
+                const doc = new window.jsPDF();
                 
-                // Plugin Check
                 if (typeof doc.autoTable !== 'function') {
-                    alert("Error: AutoTable plugin not loaded. Please refresh.");
+                    alert("Error: AutoTable plugin still not loaded. The 'Bridge Script' in the HTML head failed. Please refresh.");
                     return;
                 }
 
                 // Header
                 doc.setFontSize(22); doc.setFont("helvetica", "bold");
                 doc.text("CAFE CLOUD CLUB", 105, 20, { align: "center" });
-                
                 doc.setFontSize(10); doc.setFont("helvetica", "normal");
                 doc.text("Tasty & Fresh", 105, 26, { align: "center" });
                 doc.text("Date: " + new Date().toLocaleString(), 105, 32, { align: "center" });
@@ -837,16 +767,13 @@
 
                 // Footer Totals
                 let finalY = doc.lastAutoTable.finalY + 10;
-                
                 doc.setFontSize(12);
                 doc.text(`Sub Total:`, 140, finalY);
                 doc.text(`${d.fins.sub}`, 190, finalY, {align: 'right'});
                 finalY += 6;
-                
                 doc.text(`Packing:`, 140, finalY);
                 doc.text(`${d.fins.pack}`, 190, finalY, {align: 'right'});
                 finalY += 6;
-                
                 if(finalTotalDisc > 0) {
                     doc.setTextColor(255, 0, 0);
                     doc.text(`Discount:`, 140, finalY);
@@ -854,53 +781,50 @@
                     doc.setTextColor(0, 0, 0);
                     finalY += 6;
                 }
-                
                 doc.setFontSize(16); doc.setFont("helvetica", "bold");
                 doc.text(`TOTAL:`, 140, finalY + 5);
                 doc.text(`Rs. ${finalGrand}`, 190, finalY + 5, {align: 'right'});
-
                 doc.setFontSize(10); doc.setFont("helvetica", "italic");
                 doc.text("Thank you for visiting!", 105, finalY + 30, { align: "center" });
 
-                // 5. Output
+                // Share Logic
                 const pdfBlob = doc.output('blob');
                 const file = new File([pdfBlob], `Bill_Table${currentSettleTable}.pdf`, { type: 'application/pdf' });
 
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                    // Mobile Share
                     navigator.share({
                         files: [file],
                         title: 'Bill Receipt',
                         text: 'Here is your bill from Cafe Cloud Club.'
                     }).catch(err => alert("Share failed: " + err.message));
                 } else {
-                    // Desktop Fallback
                     doc.save(`Bill_Table${currentSettleTable}.pdf`);
-                    alert("Bill Downloaded!\nOpening WhatsApp Web...\nPlease attach the file manually.");
+                    alert("Bill Downloaded!\nOpening WhatsApp...\nPlease attach the file manually.");
                     
-                    const url = `https://web.whatsapp.com/send?phone=${phone}&text=Please+find+attached+your+bill+PDF`;
+                    // Use API link instead of WEB link for better mobile compatibility
+                    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                    const baseUrl = isMobile ? "https://api.whatsapp.com/send" : "https://web.whatsapp.com/send";
+                    
+                    const url = `${baseUrl}?phone=${phone}&text=Please+find+attached+your+bill+PDF`;
                     const win = window.open(url, '_blank');
-                    if(!win) alert("Pop-up blocked! Please allow pop-ups to open WhatsApp Web.");
+                    if(!win) alert("Pop-up blocked! Please allow pop-ups to open WhatsApp.");
                 }
 
             } catch (err) {
-                alert("CRITICAL ERROR: " + err.message);
+                alert("CRITICAL ERROR: " + err.message + "\n" + err.stack);
                 console.error(err);
             }
         };
 
         window.settleAndClear = async () => {
             const d = tableData[currentSettleTable];
-            
             const type = document.getElementById('disc-type').value;
             const val = parseFloat(document.getElementById('disc-val').value) || 0;
             let managerDisc = 0;
             if(type === 'flat') managerDisc = val;
             else managerDisc = Math.round(d.total * (val / 100));
-            
             const finalGrand = (d.total - managerDisc) > 0 ? (d.total - managerDisc) : 0;
             const finalTotalDisc = d.fins.disc + managerDisc;
-
             const master = {
                 orderId: Math.floor(100000 + Math.random() * 900000),
                 orderType: 'Dine-In', timestamp: Date.now(), status: 'paid',
@@ -913,14 +837,11 @@
                     grandTotal: finalGrand 
                 }
             };
-            
             await push(ref(db, 'history'), master);
             for(const k of d.keys) await remove(ref(db, `orders/${k}`));
-            
             if(activeBillRequests[currentSettleTable]) {
                 await remove(ref(db, `bill_requests/${currentSettleTable}`));
             }
-
             closeModal('settle-modal');
         };
 
@@ -980,13 +901,11 @@
             const name = select.value; 
             const price = parseFloat(document.getElementById('new-item-price').value);
             const qty = parseInt(document.getElementById('new-item-qty').value);
-            
             if(!name || isNaN(price)) return;
             const snap = await get(ref(db, 'orders/' + currentEditKey));
             let order = snap.val();
             let items = order.items || [];
             items.push({ name, price, qty, kitchenDone: false });
-            
             updateOrderFinancials(order, items);
             await update(ref(db, 'orders/' + currentEditKey), order);
             renderEditList(items);
@@ -1016,7 +935,6 @@
             items.forEach(i => {
                 if(i.deleted) return;
                 sub += (i.price * i.qty);
-                // Simple packing logic for demo
                 pack += (5 * i.qty); 
             });
             order.financials = { subTotal: sub, discountVal: 0, packingTotal: pack, grandTotal: sub + pack };
