@@ -213,7 +213,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue, update, get, set, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue, update, get, set, remove, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
@@ -456,21 +456,44 @@
             update(ref(db, 'orders/' + key), { status: 'out_for_delivery' });
         }
 
-        window.completeDelivery = (key) => {
-            stopAlarm();
-            if(!confirm("Confirm CASH Collected & Delivered?")) return;
+window.completeDelivery = (key) => {
+    stopAlarm();
+    if(!confirm("Confirm CASH Collected & Delivered?")) return;
 
-            const orderRef = ref(db, 'orders/' + key);
-            get(orderRef).then((snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    data.completedAt = Date.now(); 
-                    data.status = 'delivered'; 
+    const orderRef = ref(db, 'orders/' + key);
+    get(orderRef).then((snapshot) => {
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            data.completedAt = Date.now(); 
+            data.status = 'delivered'; 
 
-                    set(ref(db, 'history/' + key), data).then(() => { remove(orderRef); });
+            // --- LOYALTY CREDIT START ---
+            if(data.customer && data.customer.phone && data.customer.phone.length === 10) {
+                // Rule: 1 Point per ₹100 of Food/Bev (SubTotal)
+                const subTotal = data.financials ? data.financials.subTotal : 0;
+                const pointsToEarn = Math.floor(subTotal / 100);
+                
+                if(pointsToEarn > 0) {
+                    const loyaltyRef = ref(db, `loyalty/${data.customer.phone}`);
+                    runTransaction(loyaltyRef, (currentData) => {
+                        if (currentData === null) {
+                            return { points: pointsToEarn, lastUpdated: Date.now() };
+                        } else {
+                            return { 
+                                ...currentData, 
+                                points: (currentData.points || 0) + pointsToEarn,
+                                lastUpdated: Date.now() 
+                            };
+                        }
+                    });
                 }
-            });
+            }
+            // --- LOYALTY CREDIT END ---
+
+            set(ref(db, 'history/' + key), data).then(() => { remove(orderRef); });
         }
+    });
+}
 
         // --- ALARM UTILS ---
         function playAlarm() {
