@@ -323,8 +323,22 @@
                         <button onclick="searchLoyalty()" class="btn-new">Search</button>
                     </div>
 
-                    <div id="loyalty-results" class="items-grid">
-                        </div>
+                    <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow-x:auto;">
+                        <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+                            <thead>
+                                <tr style="background:rgba(255,255,255,0.05); color:var(--text-muted); text-align:left;">
+                                    <th style="padding:15px; white-space:nowrap;">Last Purchase</th>
+                                    <th style="padding:15px; white-space:nowrap;">Phone Number</th>
+                                    <th style="padding:15px; white-space:nowrap;">Total Orders</th>
+                                    <th style="padding:15px; white-space:nowrap;">Total Spent</th>
+                                    <th style="padding:15px; white-space:nowrap;">Total Points</th>
+                                    <th style="padding:15px; text-align:right;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="loyalty-table-body">
+                                </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div id="menu-root"></div>
@@ -760,24 +774,36 @@
         }
 
         function renderLoyaltyList(data) {
-            const root = document.getElementById('loyalty-results');
-            root.innerHTML = "";
-            if(!data) { root.innerHTML = "<p style='color:#777; grid-column:1/-1; text-align:center;'>No records found.</p>"; return; }
+            const tbody = document.getElementById('loyalty-table-body');
+            tbody.innerHTML = "";
 
-            Object.entries(data).forEach(([phone, val]) => {
-                const card = document.createElement('div');
-                card.className = 'item-card';
-                card.innerHTML = `
-                    <div style="margin-bottom:10px;">
-                        <div style="font-weight:800; font-size:1.5rem; color:var(--primary);">${val.points} <span style="font-size:0.8rem; color:#888;">Pts</span></div>
-                        <div style="color:var(--text-muted); font-family:'JetBrains Mono'; margin-top:5px;">📱 ${phone}</div>
-                        <div style="font-size:0.75rem; color:#555; margin-top:5px;">Last Active: ${val.lastUpdated ? new Date(val.lastUpdated).toLocaleDateString() : 'N/A'}</div>
-                    </div>
-                    <div class="card-footer" style="margin-top:auto;">
-                        <button class="btn-cat-opt" style="width:100%; text-align:center;" onclick="editLoyalty('${phone}', ${val.points})">Adjust Balance</button>
-                    </div>
+            if(!data || Object.keys(data).length === 0) { 
+                tbody.innerHTML = "<tr><td colspan='6' style='padding:20px; text-align:center; color:#777;'>No records found. Try Syncing History.</td></tr>"; 
+                return; 
+            }
+
+            // Sort by Points (Highest First)
+            const sorted = Object.entries(data).sort((a,b) => b[1].points - a[1].points);
+
+            sorted.forEach(([phone, val]) => {
+                const lastDate = val.lastDate ? new Date(val.lastDate).toLocaleDateString('en-IN') : '-';
+                const count = val.totalOrders || 0;
+                const spent = val.totalSpent || 0;
+                const points = val.points || 0;
+
+                const row = document.createElement('tr');
+                row.style.borderBottom = "1px solid var(--border)";
+                row.innerHTML = `
+                    <td style="padding:15px; color:var(--text-muted);">${lastDate}</td>
+                    <td style="padding:15px; font-family:'JetBrains Mono';">${phone}</td>
+                    <td style="padding:15px;">${count}</td>
+                    <td style="padding:15px;">₹${spent.toLocaleString('en-IN')}</td>
+                    <td style="padding:15px; font-weight:bold; color:var(--primary);">${points} Pts</td>
+                    <td style="padding:15px; text-align:right;">
+                        <button class="btn-cat-opt" style="padding:5px 15px;" onclick="editLoyalty('${phone}', ${points})">Adjust</button>
+                    </td>
                 `;
-                root.appendChild(card);
+                tbody.appendChild(row);
             });
         }
 
@@ -800,48 +826,64 @@
             });
         }
 
-        // --- NEW: BACKFILL FUNCTION ---
         window.syncHistoryPoints = async () => {
-            if(!confirm("⚠️ START SYNC?\n\nThis will scan ALL past orders in history and update loyalty points for every customer based on their spending.\n\nOnly proceed if you haven't done this before.")) return;
+            if(!confirm("⚠️ START SYNC?\n\nThis will scan ALL past orders to calculate:\n- Total Spend\n- Order Count\n- Last Purchase Date\n- Loyalty Points\n\nProceed?")) return;
 
             const snap = await get(ref(db, 'history'));
             const history = snap.val();
             
             if(!history) return alert("No history data found.");
 
-            const calculatedPoints = {}; // { phone: points }
+            const customerStats = {}; 
 
             Object.values(history).forEach(order => {
-                // Ensure valid customer phone
+                // Valid Phone Check
                 if(order.customer && order.customer.phone && order.customer.phone.length >= 10) {
                     const phone = order.customer.phone;
-                    const subTotal = order.financials ? (order.financials.subTotal || 0) : 0;
-                    
-                    // Rule: 1 Point per 100
-                    const earned = Math.floor(subTotal / 100);
-                    
-                    // Subtract any points they might have redeemed in that order
+                    const sub = order.financials ? (order.financials.subTotal || 0) : 0;
+                    const grand = order.financials ? (order.financials.grandTotal || 0) : 0;
                     const redeemed = order.financials ? (order.financials.loyaltyRedeemed || 0) : 0;
+                    const date = order.completedAt || order.timestamp;
+
+                    if(!customerStats[phone]) {
+                        customerStats[phone] = { 
+                            points: 0, 
+                            totalOrders: 0, 
+                            totalSpent: 0, 
+                            lastDate: 0 
+                        };
+                    }
+
+                    // 1. Calculate Points (1 pt per ₹100 Subtotal)
+                    const earned = Math.floor(sub / 100);
                     
-                    if(!calculatedPoints[phone]) calculatedPoints[phone] = 0;
-                    calculatedPoints[phone] += (earned - redeemed);
+                    // 2. Accumulate Stats
+                    customerStats[phone].points += (earned - redeemed);
+                    customerStats[phone].totalOrders += 1;
+                    customerStats[phone].totalSpent += grand;
+                    
+                    // 3. Track Last Purchase
+                    if(date > customerStats[phone].lastDate) {
+                        customerStats[phone].lastDate = date;
+                    }
                 }
             });
 
-            // Update Database
+            // Prepare Updates
             let updates = {};
-            Object.entries(calculatedPoints).forEach(([phone, pts]) => {
-                if(pts < 0) pts = 0; // Safety check
-                updates[`loyalty/${phone}/points`] = pts;
-                updates[`loyalty/${phone}/lastUpdated`] = Date.now();
+            let count = 0;
+            Object.entries(customerStats).forEach(([phone, stats]) => {
+                if(stats.points < 0) stats.points = 0; // No negative points
+                updates[`loyalty/${phone}`] = stats;
+                count++;
             });
 
-            if(Object.keys(updates).length > 0) {
+            if(count > 0) {
                 await update(ref(db), updates);
-                alert(`✅ Sync Complete!\nUpdated records for ${Object.keys(updates).length} customers.`);
+                alert(`✅ Sync Complete!\nUpdated ${count} customer records.`);
                 loadAllLoyalty();
             } else {
-                alert("No valid loyalty data found in history.");
+                alert("No valid customer data found in history.");
             }
         }
     </script>
