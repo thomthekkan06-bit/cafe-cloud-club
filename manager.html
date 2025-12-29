@@ -249,9 +249,19 @@
                     ⚠️ CUSTOMER REQUESTED BILL
                 </div>
 
-                <div id="m-i-list"></div>
-                
-                <div style="margin: 15px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 6px; border: 1px dashed var(--border);">
+<div id="m-i-list"></div>
+
+<div id="loyalty-section" style="margin: 15px 0; padding: 10px; background: rgba(59, 130, 246, 0.1); border-radius: 6px; border: 1px solid var(--primary); display:none;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span style="font-size:0.8rem; font-weight:bold; color:var(--primary);">👑 LOYALTY PROGRAM</span>
+        <span id="loyalty-balance" style="font-size:0.8rem; color:white;">Checking...</span>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center;">
+        <label style="font-size:0.75rem; color:#aaa;">Redeem Points (1 Pt = ₹1):</label>
+        <input type="number" id="redeem-points" class="inp" placeholder="0" style="margin:0; width:80px;" oninput="calcSettleTotal()">
+    </div>
+</div>
+<div style="margin: 15px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 6px; border: 1px dashed var(--border);">
                     <label style="font-size:0.7rem; color:#aaa; font-weight:bold; letter-spacing:1px;">APPLY MANAGER DISCOUNT</label>
                     <div style="display:flex; gap:10px; margin-top:5px;">
                         <select id="disc-type" class="inp-select" style="width:100px; margin:0;" onchange="calcSettleTotal()">
