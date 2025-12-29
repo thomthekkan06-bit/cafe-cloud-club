@@ -6,6 +6,10 @@
     <title>Manager POS | Cafe Cloud Club</title>
     <link rel="icon" type="image/png" href="icon.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+
     <style>
         :root {
             --bg: #0f1115;
@@ -120,6 +124,11 @@
         .status-camper .t-num { color: var(--danger); }
         @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
+        /* BILL REQUEST ANIMATION */
+        .status-bill-req { border: 2px solid #FFD700; background: rgba(255, 215, 0, 0.1); animation: flashYellow 1.5s infinite; }
+        .status-bill-req .t-num { color: #FFD700; }
+        @keyframes flashYellow { 0% { box-shadow: 0 0 5px rgba(255,215,0,0.5); } 50% { box-shadow: 0 0 15px rgba(255,215,0,0.8); } 100% { box-shadow: 0 0 5px rgba(255,215,0,0.5); } }
+
         /* --- MODALS --- */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 5000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
         .modal-card { background: var(--surface); width: 450px; max-width: 90%; border-radius: 16px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
@@ -230,7 +239,22 @@
         <div class="modal-card">
             <div class="modal-header"><h3 style="margin:0;">Settle Table <span id="m-t-id"></span></h3><div onclick="closeModal('settle-modal')" style="cursor:pointer">&times;</div></div>
             <div class="modal-body">
+                <div id="bill-req-alert" style="display:none; background:#FFD700; color:black; padding:10px; text-align:center; border-radius:8px; margin-bottom:15px; font-weight:bold;">
+                    ⚠️ CUSTOMER REQUESTED BILL
+                </div>
+
                 <div id="m-i-list"></div>
+                
+                <div style="margin: 15px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 6px; border: 1px dashed var(--border);">
+                    <label style="font-size:0.7rem; color:#aaa; font-weight:bold; letter-spacing:1px;">APPLY MANAGER DISCOUNT</label>
+                    <div style="display:flex; gap:10px; margin-top:5px;">
+                        <select id="disc-type" class="inp-select" style="width:100px; margin:0;" onchange="calcSettleTotal()">
+                            <option value="flat">₹ (Flat)</option>
+                            <option value="percent">% (Percent)</option>
+                        </select>
+                        <input type="number" id="disc-val" class="inp" placeholder="0" style="margin:0;" oninput="calcSettleTotal()">
+                    </div>
+                </div>
                 <div class="fin-box">
                      <div class="fin-row"><span>Subtotal</span><span id="m-sub">₹0</span></div>
                      <div class="fin-row"><span>Discount</span><span id="m-disc">₹0</span></div>
@@ -239,7 +263,8 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn-modal-cancel" onclick="openEditFromTable()">EDIT ORDER ✏️</button>
+                <button class="btn-modal-cancel" onclick="openEditFromTable()">EDIT</button>
+                <button class="btn-modal-cancel" style="border-color:#25D366; color:#25D366;" onclick="whatsappBill()">WhatsApp 📱</button>
                 <button class="btn-modal-action" style="background:var(--success)" onclick="settleAndClear()">PAID & CLEAR</button>
             </div>
         </div>
@@ -301,6 +326,7 @@
         let tableData = {};
         let currentSettleTable = null;
         let currentEditKey = null;
+        let activeBillRequests = {};
 
         // --- CLOCK FUNCTION ---
         function startClock() {
@@ -382,7 +408,7 @@
 
         // --- INITIALIZATION ---
         function init() {
-            // Load Menu
+            // 1. Load Menu
             onValue(ref(db, 'menu'), snap => {
                 const data = snap.val() || {};
                 fullMenu = Object.values(data).sort((a,b) => a.name.localeCompare(b.name));
@@ -408,7 +434,13 @@
                 });
             });
 
-            // Load Orders
+            // 2. Listen for Bill Requests
+            onValue(ref(db, 'bill_requests'), snap => {
+                activeBillRequests = snap.val() || {};
+                renderTables(); // Re-render tables to show badges
+            });
+
+            // 3. Load Orders
             onValue(ref(db, 'orders'), snap => {
                 const data = snap.val() || {};
                 const list = document.getElementById('online-list');
@@ -678,7 +710,11 @@
 
             const make = (id, dest, label) => {
                 const d = tableData[id];
+                const hasReq = activeBillRequests[id]; // CHECK IF BILL REQUESTED
+                
                 let cls = 'table-card status-free';
+                if (hasReq) cls += ' status-bill-req'; // Add flash class
+
                 let txt = `<div class="t-num">${label || id}</div><div style="color:#666;font-size:0.8rem">Free</div>`;
                 
                 if(d) {
@@ -688,12 +724,16 @@
                     else if(mins < 90) cls = 'table-card status-warning';
                     else cls = 'table-card status-camper';
                     
+                    if(hasReq) cls += ' status-bill-req'; // Override/Add request style
+
                     const h = Math.floor(mins/60);
                     const tm = mins%60;
                     const timeStr = `${h}:${tm.toString().padStart(2,'0')}`;
+                    const billReqLabel = hasReq ? `<div style="color:black; background:#FFD700; border-radius:4px; padding:2px; font-size:0.7rem; text-align:center; font-weight:bold;">BILL REQ</div>` : '';
 
                     txt = `
                         <div style="display:flex;justify-content:space-between"><div class="t-num">${label || id}</div><div style="font-weight:bold;color:#aaa">₹${d.total}</div></div>
+                        ${billReqLabel}
                         <div style="text-align:center; font-family:'JetBrains Mono'; font-size:1.4rem; font-weight:bold; margin-top:10px;">${timeStr}</div>
                         <div style="text-align:center; font-size:0.7rem; font-weight:bold; opacity:0.7;">OCCUPIED</div>
                     `;
@@ -712,25 +752,184 @@
 
         function renderSettle() {
             const d = tableData[currentSettleTable];
-            document.getElementById('m-t-id').innerText = currentSettleTable;
-            document.getElementById('m-i-list').innerHTML = d.items.map(i => `<div style="display:flex;justify-content:space-between;margin-bottom:5px;color:#aaa"><span>${i.qty}x ${i.name}</span><span>₹${i.price*i.qty}</span></div>`).join('');
+            const hasReq = activeBillRequests[currentSettleTable];
             
+            document.getElementById('bill-req-alert').style.display = hasReq ? 'block' : 'none';
+            document.getElementById('m-t-id').innerText = currentSettleTable;
+            document.getElementById('m-i-list').innerHTML = d.items.map(i => {
+                if(i.deleted) return '';
+                return `<div style="display:flex;justify-content:space-between;margin-bottom:5px;color:#aaa"><span>${i.qty}x ${i.name}</span><span>₹${i.price*i.qty}</span></div>`;
+            }).join('');
+            
+            // RESET INPUTS
+            document.getElementById('disc-type').value = 'flat';
+            document.getElementById('disc-val').value = '';
+
             document.getElementById('m-sub').innerText = `₹${d.fins.sub}`;
             document.getElementById('m-disc').innerText = `-₹${d.fins.disc}`;
             document.getElementById('m-pack').innerText = `₹${d.fins.pack}`;
             document.getElementById('m-tot').innerText = `₹${d.total}`;
         }
 
+        // --- NEW: Calculate Discount Dynamically ---
+        window.calcSettleTotal = () => {
+            const d = tableData[currentSettleTable];
+            if(!d) return;
+
+            // Base total derived from current order state (Sub + Pack - Existing Coupon Disc)
+            let currentGrand = d.total; 
+            
+            const type = document.getElementById('disc-type').value;
+            const val = parseFloat(document.getElementById('disc-val').value) || 0;
+            
+            let managerDisc = 0;
+            if(type === 'flat') managerDisc = val;
+            else managerDisc = Math.round(currentGrand * (val / 100));
+
+            const finalTotal = currentGrand - managerDisc;
+            
+            const totalDisc = d.fins.disc + managerDisc;
+            document.getElementById('m-disc').innerText = `-₹${totalDisc} (${d.fins.disc} + ${managerDisc})`;
+            document.getElementById('m-tot').innerText = `₹${finalTotal > 0 ? finalTotal : 0}`;
+        }
+
+        // --- NEW: WHATSAPP PDF BILL FUNCTION ---
+        window.whatsappBill = () => {
+            const d = tableData[currentSettleTable];
+            if(!d) return;
+
+            // 1. Get Totals
+            const type = document.getElementById('disc-type').value;
+            const val = parseFloat(document.getElementById('disc-val').value) || 0;
+            let managerDisc = 0;
+            if(type === 'flat') managerDisc = val;
+            else managerDisc = Math.round(d.total * (val / 100));
+            const finalTotalDisc = d.fins.disc + managerDisc;
+            const finalGrand = (d.total - managerDisc) > 0 ? (d.total - managerDisc) : 0;
+            
+            const phone = prompt("Enter Customer WhatsApp Number (without +):", "91");
+            if(!phone) return;
+
+            // 2. GENERATE PDF
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // -- PDF HEADER --
+            doc.setFontSize(22);
+            doc.setFont("helvetica", "bold");
+            doc.text("CAFE CLOUD CLUB", 105, 20, { align: "center" });
+            
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            doc.text("Tasty & Fresh", 105, 26, { align: "center" });
+            doc.text("Date: " + new Date().toLocaleString(), 105, 32, { align: "center" });
+            
+            doc.setLineWidth(0.5);
+            doc.line(10, 36, 200, 36);
+
+            // -- TABLE DATA --
+            const tableBody = d.items.filter(i => !i.deleted).map(i => [
+                i.name,
+                i.qty.toString(),
+                (i.price * i.qty).toFixed(2)
+            ]);
+
+            // -- TABLE --
+            doc.autoTable({
+                startY: 40,
+                head: [['Item', 'Qty', 'Amount']],
+                body: tableBody,
+                theme: 'plain',
+                styles: { fontSize: 12 },
+                headStyles: { fontStyle: 'bold', fillColor: [200, 200, 200] }
+            });
+
+            // -- TOTALS --
+            let finalY = doc.lastAutoTable.finalY + 10;
+            
+            doc.setFontSize(12);
+            doc.text(`Sub Total:`, 140, finalY);
+            doc.text(`${d.fins.sub}`, 190, finalY, {align: 'right'});
+            finalY += 6;
+            
+            doc.text(`Packing:`, 140, finalY);
+            doc.text(`${d.fins.pack}`, 190, finalY, {align: 'right'});
+            finalY += 6;
+            
+            if(finalTotalDisc > 0) {
+                doc.setTextColor(255, 0, 0);
+                doc.text(`Discount:`, 140, finalY);
+                doc.text(`-${finalTotalDisc}`, 190, finalY, {align: 'right'});
+                doc.setTextColor(0, 0, 0);
+                finalY += 6;
+            }
+            
+            doc.setFontSize(16);
+            doc.setFont("helvetica", "bold");
+            doc.text(`TOTAL:`, 140, finalY + 5);
+            doc.text(`Rs. ${finalGrand}`, 190, finalY + 5, {align: 'right'});
+
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "italic");
+            doc.text("Thank you for visiting!", 105, finalY + 30, { align: "center" });
+
+            // 3. SHARE OR DOWNLOAD
+            const pdfBlob = doc.output('blob');
+            const file = new File([pdfBlob], `Bill_Table${currentSettleTable}.pdf`, { type: 'application/pdf' });
+
+            // -- CHECK IF MOBILE SHARE IS SUPPORTED --
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                navigator.share({
+                    files: [file],
+                    title: 'Bill Receipt',
+                    text: 'Here is your bill from Cafe Cloud Club.'
+                }).catch(err => console.log('Share failed', err));
+            } else {
+                // -- DESKTOP FALLBACK: DOWNLOAD + OPEN WHATSAPP WEB --
+                doc.save(`Bill_Table${currentSettleTable}.pdf`);
+                
+                // Open WhatsApp Web
+                const url = `https://web.whatsapp.com/send?phone=${phone}&text=Please+find+attached+your+bill+PDF`;
+                window.open(url, '_blank');
+                
+                alert("PDF Downloaded! \nPlease attach the file manually in WhatsApp Web.");
+            }
+        };
+
         window.settleAndClear = async () => {
             const d = tableData[currentSettleTable];
+            
+            // Recalculate Final Logic
+            const type = document.getElementById('disc-type').value;
+            const val = parseFloat(document.getElementById('disc-val').value) || 0;
+            let managerDisc = 0;
+            if(type === 'flat') managerDisc = val;
+            else managerDisc = Math.round(d.total * (val / 100));
+            
+            const finalGrand = (d.total - managerDisc) > 0 ? (d.total - managerDisc) : 0;
+            const finalTotalDisc = d.fins.disc + managerDisc;
+
             const master = {
                 orderId: Math.floor(100000 + Math.random() * 900000),
                 orderType: 'Dine-In', timestamp: Date.now(), status: 'paid',
                 customer: { name: `Table ${currentSettleTable}`, phone:'-', address:'Dine-In' },
-                items: d.items, financials: { grandTotal: d.total }
+                items: d.items, 
+                financials: { 
+                    subTotal: d.fins.sub, 
+                    discountVal: finalTotalDisc, 
+                    packingTotal: d.fins.pack, 
+                    grandTotal: finalGrand 
+                }
             };
+            
             await push(ref(db, 'history'), master);
             for(const k of d.keys) await remove(ref(db, `orders/${k}`));
+            
+            // REMOVE BILL REQUEST IF EXISTS
+            if(activeBillRequests[currentSettleTable]) {
+                await remove(ref(db, `bill_requests/${currentSettleTable}`));
+            }
+
             closeModal('settle-modal');
         };
 
