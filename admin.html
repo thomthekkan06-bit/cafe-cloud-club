@@ -308,19 +308,14 @@
                 </div>
 
                 <div id="section-loyalty" style="display:none; padding-bottom:50px;">
-                    <div style="margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:15px; display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between; align-items:center;">
+                    <div style="margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
                         <div>
                             <h2 style="margin:0;">Loyalty Management</h2>
                             <p style="margin:5px 0 0 0; font-size:0.8rem; color:var(--text-muted);">Manage customer points and balances</p>
                         </div>
-                        <div style="display:flex; gap:10px;">
-                            <button class="btn-new" style="background:var(--warning); color:black;" onclick="importLegacyData()">
-                                📥 Import Loyverse Data
-                            </button>
-                            <button class="btn-new" style="background:var(--surface-hover); border:1px solid var(--border);" onclick="syncHistoryPoints()">
-                                🔄 Sync History
-                            </button>
-                        </div>
+                        <button class="btn-new" style="background:var(--warning); color:black;" onclick="syncHistoryPoints()">
+                            🔄 Sync from History
+                        </button>
                     </div>
                     
                     <div style="display:flex; gap:10px; margin-bottom:20px;">
@@ -332,9 +327,8 @@
                         <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
                             <thead>
                                 <tr style="background:rgba(255,255,255,0.05); color:var(--text-muted); text-align:left;">
-                                    <th style="padding:15px; white-space:nowrap;">Customer</th>
-                                    <th style="padding:15px; white-space:nowrap;">Phone Number</th>
                                     <th style="padding:15px; white-space:nowrap;">Last Purchase</th>
+                                    <th style="padding:15px; white-space:nowrap;">Phone Number</th>
                                     <th style="padding:15px; white-space:nowrap;">Total Orders</th>
                                     <th style="padding:15px; white-space:nowrap;">Total Spent</th>
                                     <th style="padding:15px; white-space:nowrap;">Total Points</th>
@@ -779,13 +773,12 @@
             }, {onlyOnce: true});
         }
 
-        // UPDATED: Render Table Rows
         function renderLoyaltyList(data) {
             const tbody = document.getElementById('loyalty-table-body');
             tbody.innerHTML = "";
 
             if(!data || Object.keys(data).length === 0) { 
-                tbody.innerHTML = "<tr><td colspan='7' style='padding:20px; text-align:center; color:#777;'>No records found. Try Syncing History.</td></tr>"; 
+                tbody.innerHTML = "<tr><td colspan='6' style='padding:20px; text-align:center; color:#777;'>No records found. Try Syncing History.</td></tr>"; 
                 return; 
             }
 
@@ -797,14 +790,12 @@
                 const count = val.totalOrders || 0;
                 const spent = val.totalSpent || 0;
                 const points = val.points || 0;
-                const name = val.name || '-';
 
                 const row = document.createElement('tr');
                 row.style.borderBottom = "1px solid var(--border)";
                 row.innerHTML = `
-                    <td style="padding:15px; font-weight:600;">${name}</td>
-                    <td style="padding:15px; font-family:'JetBrains Mono'; color:var(--text-muted);">${phone}</td>
                     <td style="padding:15px; color:var(--text-muted);">${lastDate}</td>
+                    <td style="padding:15px; font-family:'JetBrains Mono';">${phone}</td>
                     <td style="padding:15px;">${count}</td>
                     <td style="padding:15px;">₹${spent.toLocaleString('en-IN')}</td>
                     <td style="padding:15px; font-weight:bold; color:var(--primary);">${points} Pts</td>
@@ -849,7 +840,6 @@
                 // Valid Phone Check
                 if(order.customer && order.customer.phone && order.customer.phone.length >= 10) {
                     const phone = order.customer.phone;
-                    const name = order.customer.name;
                     const sub = order.financials ? (order.financials.subTotal || 0) : 0;
                     const grand = order.financials ? (order.financials.grandTotal || 0) : 0;
                     const redeemed = order.financials ? (order.financials.loyaltyRedeemed || 0) : 0;
@@ -860,8 +850,7 @@
                             points: 0, 
                             totalOrders: 0, 
                             totalSpent: 0, 
-                            lastDate: 0,
-                            name: name
+                            lastDate: 0 
                         };
                     }
 
@@ -895,168 +884,6 @@
                 loadAllLoyalty();
             } else {
                 alert("No valid customer data found in history.");
-            }
-        }
-
-        // --- IMPORT FUNCTIONALITY ---
-        // Raw Data from PDF
-        const rawPdfData = `
-"Dileep","$9.54E+09$","1020","########\n\n########","77","102000"
-"Kenith","$9.5E+09$","13.33","########\n\n########","159","76829.02"
-"Jerin","$7.42E+09$","633.49","########\n\n########","74","63349"
-"CR7","$7.91E+09$","76.16","########\n\n########","92","48483.48"
-"Basil","$8.92E+09$","145.57","######## ########","63","42778.58"
-"LINTO THO","$7.8E+09$","85.96","########\n\n########","187","41357.11"
-"Kattanum F","$9.85E+09$","82.39","########\n\n########","70","34680.59"
-"Aswin","$9.5E+09$","77.79","######## ########","46","30450.29"
-"Hari","$8.28E+09$","41.51","########\n\n########","50","27714.37"
-"Jorn","$8.29E+09$","39.35","########\n\n########","23","27578.56"
-"Rathul","$9.85E+09$","271.54","########\n\n########","69","27154"
-"Joyel Jimso","$8.85E+09$","254.15","########\n\n########","60","24749"
-"Jinoop Ajitl","$9.95E+0\Omega$","11.03","########\n\n########","22","24024.28"
-"Viswajith","$7.36E+09$","117.74","########\n\n########","32","21984.89"
-"Dr Shikku P","$8.92E+09$","65.37","########\n\n########","23","21984.53"
-"Amal VR","$8.59E+09$","57.14","########\n\n########","50","21650.63"
-"Nirmal","$8.13E+09$","23.16","########\n\n########","39","19912.78"
-"Agil","$9.4E+09$","181.5","########\n\n########","47","18150"
-"Vishnu Km","$8.14E+09$","4.17","######## ########","41","16686.31"
-"Chandik Sh","$9.75E+09$","10.33","######## ########","21","16147.86"
-"Nihal","$7.9E+09$","39.6","######## ########","17","14999.6"
-"Abhishek","$7.59E+09$","144.65","######## ########","16","14465"
-"Aslam Shei","$9.9E+09$","141.22","######## ########","22","14122"
-"Jefy","$9.95E+09$","8.73","########\n\n########","45","13558.15"
-"Joel","$8.79E+09$","13.99","########\n\n########","23","13464.35"
-"Varghese","$9.05E+09$","20.38","######## ########","21","13438"
-"Pious","$9.75E+09$","142.53","########\n\n########","39","13242"
-"Justin","$9.06E+09$","42.18","########\n\n########","15","12352.65"
-"Rwithik","$9.54F+09$","5.02","########\n\n########","13","12219.82"
-"Karthik","$8.85E+09$","21.81","########\n\n########","27","12209.71"
-"Sharath","$9.45E+09$","42.62","########\n\n########","12","11654.08"
-"Ajesh","$7.01E+09$","12.61","########\n\n########","23","11192.68"
-"Tom","$9.9E+09$","38.85","########\n\n########","16","10911.73"
-"Sandeep","$8.92E+09$","25.37","########\n\n########","7","10876.6"
-"Pijo","$9.57E+09$","62.8","########\n\n########","9","10745.35"
-"Jibin","$7.03E+09$","24.07","########\n\n########","45","10586.2"
-"Glen","$8.09E+09$","104.07","########\n\n########","22","10407"
-"Dayfour","$9.63E+09$","102.35","########\n\n########","31","10235"
-"Anathakrisl","$6.24E+09$","55.89","########\n\n########","18","10108.8"
-"Kozhi","$8.59E+09$","101.05","########\n\n########","44","10105"
-"Babu","$9.45F+09$","98.4","########\n\n########","8","9840"
-"Mahadevar","$7.03E+0\Omega$","97.26","########\n\n########","22","9726"
-"Senil","$9.05E+09$","19.24","########\n\n########","17","9541.72"
-"Joshua","$8.13E+09$","94.26","########\n\n########","27","9426"
-"Aswin","$9.07E+09$","93.74","########\n\n########","13","9374"
-"Yadhav","$8.09E+09$","32.4","########\n\n########","10","9207.33"
-"Angelin","$7.31E+09$","89.42","######## ########","16","8942"
-"Jeffrey Jais","$7.36E+09$","28.5","######## ########","16","8835.15"
-"Vivek","$7.59E+09$","36.07","######## ########","12","8582.25"
-"Alok","$9.65E+09$","29.35","########\n\n########","23","8439.95"
-"Adwn","$9.07E+09$","4.84","########\n\n########","28","8409.25"
-"Tom","$8.55E+09$","13.55","########\n\n########","23","8397.57"
-"Antin","$9.45E+09$","83.41","########\n\n########","9","8341"
-"Amith","$6.28E+09$","82.87","########\n\n########","24","8287"
-"Solomon","$9.5E+09$","81.95","######## ########","7","8195"
-"Santosh Kf","$9.74E+09$","3.97","########\n\n########","30","8187.1"
-"Thousaf","$8.94E+09$","11.5","########\n\n########","9","8070.79"
-"Doctor","$9.5E+09$","78.8","########\n\n########","5","7880"
-"Tinto Thor","$8.09E+09$","4.12","########\n\n########","24","7749.55"
-"Gopakuma","$9.63E+09$","76.52","########\n\n########","14","7652"
-"Felix","$9.57E+09$","75.93","########\n\n########","12","7593"
-"Arun Vakke","$9.45E+09$","12.33","########\n\n########","11","7442.9"
-"Cristeena","$9.45E+09$","13.89","########\n\n########","15","7343.85"
-"Hisham","$9.05F+09$","9.33","########\n\n########","3","7164.68"
-"Ken","$9.66E+09$","71.54","########\n\n########","12","7154"
-"Ajal","$8.85E+09$","17.95","########\n\n########","19","7133.61"
-"Sooraj","$7.74E+09$","40","########\n\n########","13","7029.7"
-"Ashish","$8.16E+09$","11.52","########\n\n########","14","6891.6"
-"Kanthari Hotel",,"68.79","######## ########","13","6879"
-"Vinod","$9.75E+09$","68.2","######## ########","1","6820"
-"Ebin","$8.71E+09$","67.95","######## ########","5","6795"
-"Ambu","$8.94E+09$","70","########\n\n########","9","6600"
-"Renjith","$8.09E+09$","3.87","######## ########","13","6582.39"
-"Nihad","$7.03E+09$","64.25","######## ########","14","6425"
-"Glisten","$8.59E+09$","24.38","########\n\n########","11","6344.43"
-"Dr.Shiku","$8.92E+09$","9.57","######## ########","6","6296.6"
-"Nikhil","$9.65E+09$","62.51","########\n\n########","6","6251"
-"Kiran","$8.61E+09$","14.22","########\n\n########","11","6207.15"
-"Rajath","$9.21F+09$","61.9","########\n\n########","12","6190"
-"Tomin","$8.08E+09$","5.86","########\n\n########","13","6189.96"
-"Subi","$8.59E+09$","7.29","########\n\n########","16","6150.78"
-"Jerrin","$1E+10$","22.78","######## ########","5","6017.6"
-"Tejas","$6.24E+09$","59.67","######## ########","11","5967"
-"John Frank","$8.3F+09$","58.96","######## ########","7","5895.5"
-"Arjun","$9.96E+09$","8.38","######## ########","7","5855.82"
-"DEEPAN","$9.85F+09$","23.77","########\n\n########","5","5677"
-"Vivek","$9.54E+09$","25.55","########\n\n########","9","5474.8"
-"Amal","$8.13E+09$","6.57","########\n\n########","10","5448.09"
-"Milen","$7.9E+09$","24.2","########\n\n########","9","5380.4"
-"Bastin Paul","$9.85E+09$","32.31","########\n\n########","4","5175.55"
-"Varun","$9.57F+09$","25.4","########\n\n########","8","5149.9"
-"Jefry","$9.07E+09$","50.8","########\n\n########","10","5080"
-"Hrishwan","$8.09E+09$","50.76","########\n\n########","4","5075.84"
-"Aadhithya","$9.9E+09$","50.5","########\n\n########","8","5050"
-"Anson","$7.59E+09$","50.25","########\n\n########","14","5025"
-"Praveen","$9.45E+09$","11.57","########\n\n########","5","5006.5"
-"Yadhin","$8.59E+09$","49.95","########\n\n########","14","4995"
-"Raees","$7.74E+09$","49.8","######## ########","4","4980"
-"Willyams","$9.07E+09$","20.01","######## ########","11","4882.19"
-`;
-
-        window.importLegacyData = async () => {
-            if(!confirm("Start importing customers from Loyverse PDF data?")) return;
-            
-            // Clean and Parse Data
-            const rows = rawPdfData.split('\n');
-            const updates = {};
-            let count = 0;
-
-            rows.forEach(row => {
-                // Regex to split by "," ignoring newlines inside quotes
-                const match = row.match(/"([^"]*)"/g);
-                if(match && match.length >= 6) {
-                    const name = match[0].replace(/"/g, '').trim();
-                    let rawPhone = match[1].replace(/"/g, '').trim();
-                    const points = parseFloat(match[2].replace(/"/g, '').trim()) || 0;
-                    const orders = parseInt(match[4].replace(/"/g, '').trim()) || 0;
-                    const spent = parseFloat(match[5].replace(/"/g, '').trim()) || 0;
-
-                    // Parse Scientific Notation Phone
-                    // e.g. $9.54E+09$ -> 9540000000
-                    let phone = '';
-                    if(rawPhone.includes('E+')) {
-                        rawPhone = rawPhone.replace(/\$/g, '').replace('F+', 'E+').replace(/\\Omega/, '9'); 
-                        // Fix common OCR errors
-                        if(rawPhone.includes('F+')) rawPhone = rawPhone.replace('F+', 'E+');
-                        
-                        try {
-                            const number = Number(rawPhone);
-                            if(!isNaN(number)) phone = number.toString();
-                        } catch(e) {}
-                    } else {
-                        // Regular phone cleanup
-                        phone = rawPhone.replace(/[^0-9]/g, '');
-                    }
-
-                    // Validate
-                    if(phone.length >= 10) {
-                        updates[`loyalty/${phone}`] = {
-                            name: name,
-                            points: Math.round(points), // Loyalty points are usually ints
-                            totalOrders: orders,
-                            totalSpent: spent,
-                            lastDate: 0 // No date available in export
-                        };
-                        count++;
-                    }
-                }
-            });
-
-            if(count > 0) {
-                await update(ref(db), updates);
-                alert(`✅ SUCCESS: Imported ${count} customers from Loyverse!`);
-                loadAllLoyalty();
-            } else {
-                alert("No valid data found to import.");
             }
         }
     </script>
