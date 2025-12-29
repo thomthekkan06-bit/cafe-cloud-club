@@ -348,7 +348,7 @@
             } else alert("Wrong PIN");
         };
 
-        // --- LOGIC: Customization Rules (Replicated from app.js) ---
+        // --- LOGIC: Customization Rules ---
         const cheeseCats = ["Bun-Tastic Burgers", "Italian Indulgence", "Freshly Folded", "Toasty Treats"];
         const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
         const friedEggEligible = [
@@ -401,8 +401,7 @@
             if (item.name.includes("Tossed Rice") || item.name.includes("Sorted Vegges")) packPrice = 7;
             
             opts.push({ name: "Packing", price: packPrice });
-            // -----------------------------
-
+            
             return opts;
         }
 
@@ -419,13 +418,11 @@
                 standardSel.innerHTML = '<option value="">-- Select Item --</option>';
 
                 fullMenu.forEach((item, idx) => {
-                    // Populate EXT modal (store Index to lookup later)
                     const opt = document.createElement('option');
                     opt.value = idx; 
                     opt.text = item.name;
                     sel.appendChild(opt);
 
-                    // Populate EDIT modal (store Name)
                     const stdOpt = document.createElement('option');
                     stdOpt.value = item.name;
                     stdOpt.dataset.price = item.price;
@@ -452,7 +449,6 @@
                 Object.entries(data).forEach(([key, order]) => {
                     if(order.status === 'completed' || order.status === 'rejected') return;
                     
-                    // Sound Trigger
                     if(order.status === 'pending') pending = true;
 
                     // Table Data Logic
@@ -469,14 +465,12 @@
                         tableData[tId].fins.disc += (f.discountVal || 0);
                         tableData[tId].fins.pack += (f.packingTotal || 0);
                         
-                        // Keep oldest timestamp for timer
                         if(order.timestamp < tableData[tId].timestamp) tableData[tId].timestamp = order.timestamp;
                         
                         tableData[tId].items.push(...(order.items||[]));
                         tableData[tId].keys.push(key);
                     } 
                     
-                    // Render Queue Card (Everything except served Dine-in)
                     let showInQueue = true;
                     if (order.status === 'served') showInQueue = false;
                     if (order.status === 'done' && order.orderType === 'Dine-In') showInQueue = false;
@@ -539,7 +533,6 @@
             const item = fullMenu[idx];
             const qty = parseInt(document.getElementById('ext-qty').value) || 1;
 
-            // Calculate Base + Mods
             let finalPrice = item.price;
             let modNames = [];
             
@@ -548,26 +541,22 @@
                 modNames.push(cb.value);
             });
 
-            // Calculate Packing (Same logic as app.js)
             let packCost = 10;
             if (item.category === 'ADD-ON') packCost = item.name.startsWith("Hummus") ? 7 : 5;
             else if (fiveRsCats.includes(item.category)) packCost = 5;
-            // Extra packing logic for specific addons
             if (modNames.includes("Tossed Rice") || modNames.includes("Sorted Vegges")) packCost += 7;
 
             extOrderItems.push({
                 name: item.name,
                 category: item.category,
-                price: finalPrice, // Unit Price including mods
+                price: finalPrice,
                 basePrice: item.price,
                 qty: qty,
                 variant: modNames.join(", "),
-                packingInfo: packCost // Store unit packing cost
+                packingInfo: packCost
             });
 
             renderExtList();
-            
-            // Reset UI
             document.getElementById('ext-menu-select').value = "";
             document.getElementById('ext-qty').value = "1";
             document.getElementById('ext-options-container').innerHTML = "";
@@ -615,7 +604,6 @@
             if(!pid || extOrderItems.length === 0) return alert("Missing ID or Items");
             const plat = document.getElementById('ext-platform').value;
 
-            // Calculate totals from the items list
             let sub = 0; let pack = 0;
             extOrderItems.forEach(i => {
                 sub += (i.price * i.qty);
@@ -639,15 +627,13 @@
             if(type==='Swiggy') cls += ' type-swiggy';
             if(type==='Zomato') cls += ' type-zomato';
 
-            // 1. GET FINANCIALS (Safely fallback to 0 if missing)
             const f = order.financials || { subTotal: 0, packingTotal: 0, discountVal: 0, grandTotal: 0 };
 
-            // 2. BUILD ITEMS LIST (With Prices)
             let itemsHtml = (order.items||[]).map(i => {
                 if(i.deleted) return `<div class="item-row item-void"><span>${i.qty}x ${i.name}</span><span>VOID</span></div>`;
                 
                 let v = i.variant ? `<div class="item-custom">${i.variant}</div>` : '';
-                let lineTotal = i.price * i.qty; // Calculate line total
+                let lineTotal = i.price * i.qty; 
                 
                 return `
                     <div class="item-row">
@@ -661,7 +647,6 @@
 
             let showEdit = (order.status !== 'done' && order.status !== 'out_for_delivery');
             
-            // 3. BUTTONS LOGIC
             let btns = '';
             if(order.status==='pending') btns = `<button class="btn-act btn-red" onclick="rejectOrder('${key}')">REJECT</button><button class="btn-act btn-green" onclick="upd('${key}','cooking')">ACCEPT</button>`;
             else if(order.status==='cooking') btns = `<button class="btn-act btn-green" onclick="upd('${key}','done')">READY</button>`;
@@ -671,7 +656,6 @@
             } 
             else if(order.status==='out_for_delivery') btns = `<button class="btn-act btn-red" onclick="forceComplete('${key}')">COMPLETE</button>`;
 
-            // 4. RENDER FULL CARD
             container.innerHTML += `
                 <div class="${cls}">
                     <div class="card-top">
@@ -710,10 +694,10 @@
 
             const make = (id, dest, label) => {
                 const d = tableData[id];
-                const hasReq = activeBillRequests[id]; // CHECK IF BILL REQUESTED
+                const hasReq = activeBillRequests[id]; 
                 
                 let cls = 'table-card status-free';
-                if (hasReq) cls += ' status-bill-req'; // Add flash class
+                if (hasReq) cls += ' status-bill-req'; 
 
                 let txt = `<div class="t-num">${label || id}</div><div style="color:#666;font-size:0.8rem">Free</div>`;
                 
@@ -724,7 +708,7 @@
                     else if(mins < 90) cls = 'table-card status-warning';
                     else cls = 'table-card status-camper';
                     
-                    if(hasReq) cls += ' status-bill-req'; // Override/Add request style
+                    if(hasReq) cls += ' status-bill-req';
 
                     const h = Math.floor(mins/60);
                     const tm = mins%60;
@@ -761,7 +745,6 @@
                 return `<div style="display:flex;justify-content:space-between;margin-bottom:5px;color:#aaa"><span>${i.qty}x ${i.name}</span><span>₹${i.price*i.qty}</span></div>`;
             }).join('');
             
-            // RESET INPUTS
             document.getElementById('disc-type').value = 'flat';
             document.getElementById('disc-val').value = '';
 
@@ -771,12 +754,10 @@
             document.getElementById('m-tot').innerText = `₹${d.total}`;
         }
 
-        // --- NEW: Calculate Discount Dynamically ---
         window.calcSettleTotal = () => {
             const d = tableData[currentSettleTable];
             if(!d) return;
 
-            // Base total derived from current order state (Sub + Pack - Existing Coupon Disc)
             let currentGrand = d.total; 
             
             const type = document.getElementById('disc-type').value;
@@ -793,113 +774,124 @@
             document.getElementById('m-tot').innerText = `₹${finalTotal > 0 ? finalTotal : 0}`;
         }
 
-        // --- NEW: WHATSAPP PDF BILL FUNCTION ---
+        // --- UPDATED WHATSAPP BILL (Error Proof) ---
         window.whatsappBill = () => {
-            const d = tableData[currentSettleTable];
-            if(!d) return;
+            try {
+                // 1. Data Check
+                if (!currentSettleTable || !tableData[currentSettleTable]) {
+                    alert("Error: No active table data found. Please select a table first.");
+                    return;
+                }
+                const d = tableData[currentSettleTable];
 
-            // 1. Get Totals
-            const type = document.getElementById('disc-type').value;
-            const val = parseFloat(document.getElementById('disc-val').value) || 0;
-            let managerDisc = 0;
-            if(type === 'flat') managerDisc = val;
-            else managerDisc = Math.round(d.total * (val / 100));
-            const finalTotalDisc = d.fins.disc + managerDisc;
-            const finalGrand = (d.total - managerDisc) > 0 ? (d.total - managerDisc) : 0;
-            
-            const phone = prompt("Enter Customer WhatsApp Number (without +):", "91");
-            if(!phone) return;
+                // 2. Library Check
+                if (!window.jspdf) {
+                    alert("Error: PDF Library (jspdf) not loaded. Please check your internet connection and refresh.");
+                    return;
+                }
 
-            // 2. GENERATE PDF
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
+                // 3. Totals Calculation
+                const type = document.getElementById('disc-type').value;
+                const val = parseFloat(document.getElementById('disc-val').value) || 0;
+                let managerDisc = 0;
+                if(type === 'flat') managerDisc = val;
+                else managerDisc = Math.round(d.total * (val / 100));
+                const finalTotalDisc = d.fins.disc + managerDisc;
+                const finalGrand = (d.total - managerDisc) > 0 ? (d.total - managerDisc) : 0;
+                
+                const phone = prompt("Enter Customer WhatsApp Number (e.g., 919876543210):", "91");
+                if(!phone) return;
 
-            // -- PDF HEADER --
-            doc.setFontSize(22);
-            doc.setFont("helvetica", "bold");
-            doc.text("CAFE CLOUD CLUB", 105, 20, { align: "center" });
-            
-            doc.setFontSize(10);
-            doc.setFont("helvetica", "normal");
-            doc.text("Tasty & Fresh", 105, 26, { align: "center" });
-            doc.text("Date: " + new Date().toLocaleString(), 105, 32, { align: "center" });
-            
-            doc.setLineWidth(0.5);
-            doc.line(10, 36, 200, 36);
+                // 4. Generate PDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Plugin Check
+                if (typeof doc.autoTable !== 'function') {
+                    alert("Error: AutoTable plugin not loaded. Please refresh.");
+                    return;
+                }
 
-            // -- TABLE DATA --
-            const tableBody = d.items.filter(i => !i.deleted).map(i => [
-                i.name,
-                i.qty.toString(),
-                (i.price * i.qty).toFixed(2)
-            ]);
+                // Header
+                doc.setFontSize(22); doc.setFont("helvetica", "bold");
+                doc.text("CAFE CLOUD CLUB", 105, 20, { align: "center" });
+                
+                doc.setFontSize(10); doc.setFont("helvetica", "normal");
+                doc.text("Tasty & Fresh", 105, 26, { align: "center" });
+                doc.text("Date: " + new Date().toLocaleString(), 105, 32, { align: "center" });
+                doc.setLineWidth(0.5); doc.line(10, 36, 200, 36);
 
-            // -- TABLE --
-            doc.autoTable({
-                startY: 40,
-                head: [['Item', 'Qty', 'Amount']],
-                body: tableBody,
-                theme: 'plain',
-                styles: { fontSize: 12 },
-                headStyles: { fontStyle: 'bold', fillColor: [200, 200, 200] }
-            });
+                // Table
+                const tableBody = d.items.filter(i => !i.deleted).map(i => [
+                    i.name, i.qty.toString(), (i.price * i.qty).toFixed(2)
+                ]);
 
-            // -- TOTALS --
-            let finalY = doc.lastAutoTable.finalY + 10;
-            
-            doc.setFontSize(12);
-            doc.text(`Sub Total:`, 140, finalY);
-            doc.text(`${d.fins.sub}`, 190, finalY, {align: 'right'});
-            finalY += 6;
-            
-            doc.text(`Packing:`, 140, finalY);
-            doc.text(`${d.fins.pack}`, 190, finalY, {align: 'right'});
-            finalY += 6;
-            
-            if(finalTotalDisc > 0) {
-                doc.setTextColor(255, 0, 0);
-                doc.text(`Discount:`, 140, finalY);
-                doc.text(`-${finalTotalDisc}`, 190, finalY, {align: 'right'});
-                doc.setTextColor(0, 0, 0);
+                doc.autoTable({
+                    startY: 40,
+                    head: [['Item', 'Qty', 'Amount']],
+                    body: tableBody,
+                    theme: 'plain',
+                    styles: { fontSize: 12 },
+                    headStyles: { fontStyle: 'bold', fillColor: [200, 200, 200] }
+                });
+
+                // Footer Totals
+                let finalY = doc.lastAutoTable.finalY + 10;
+                
+                doc.setFontSize(12);
+                doc.text(`Sub Total:`, 140, finalY);
+                doc.text(`${d.fins.sub}`, 190, finalY, {align: 'right'});
                 finalY += 6;
-            }
-            
-            doc.setFontSize(16);
-            doc.setFont("helvetica", "bold");
-            doc.text(`TOTAL:`, 140, finalY + 5);
-            doc.text(`Rs. ${finalGrand}`, 190, finalY + 5, {align: 'right'});
-
-            doc.setFontSize(10);
-            doc.setFont("helvetica", "italic");
-            doc.text("Thank you for visiting!", 105, finalY + 30, { align: "center" });
-
-            // 3. SHARE OR DOWNLOAD
-            const pdfBlob = doc.output('blob');
-            const file = new File([pdfBlob], `Bill_Table${currentSettleTable}.pdf`, { type: 'application/pdf' });
-
-            // -- CHECK IF MOBILE SHARE IS SUPPORTED --
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                navigator.share({
-                    files: [file],
-                    title: 'Bill Receipt',
-                    text: 'Here is your bill from Cafe Cloud Club.'
-                }).catch(err => console.log('Share failed', err));
-            } else {
-                // -- DESKTOP FALLBACK: DOWNLOAD + OPEN WHATSAPP WEB --
-                doc.save(`Bill_Table${currentSettleTable}.pdf`);
                 
-                // Open WhatsApp Web
-                const url = `https://web.whatsapp.com/send?phone=${phone}&text=Please+find+attached+your+bill+PDF`;
-                window.open(url, '_blank');
+                doc.text(`Packing:`, 140, finalY);
+                doc.text(`${d.fins.pack}`, 190, finalY, {align: 'right'});
+                finalY += 6;
                 
-                alert("PDF Downloaded! \nPlease attach the file manually in WhatsApp Web.");
+                if(finalTotalDisc > 0) {
+                    doc.setTextColor(255, 0, 0);
+                    doc.text(`Discount:`, 140, finalY);
+                    doc.text(`-${finalTotalDisc}`, 190, finalY, {align: 'right'});
+                    doc.setTextColor(0, 0, 0);
+                    finalY += 6;
+                }
+                
+                doc.setFontSize(16); doc.setFont("helvetica", "bold");
+                doc.text(`TOTAL:`, 140, finalY + 5);
+                doc.text(`Rs. ${finalGrand}`, 190, finalY + 5, {align: 'right'});
+
+                doc.setFontSize(10); doc.setFont("helvetica", "italic");
+                doc.text("Thank you for visiting!", 105, finalY + 30, { align: "center" });
+
+                // 5. Output
+                const pdfBlob = doc.output('blob');
+                const file = new File([pdfBlob], `Bill_Table${currentSettleTable}.pdf`, { type: 'application/pdf' });
+
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    // Mobile Share
+                    navigator.share({
+                        files: [file],
+                        title: 'Bill Receipt',
+                        text: 'Here is your bill from Cafe Cloud Club.'
+                    }).catch(err => alert("Share failed: " + err.message));
+                } else {
+                    // Desktop Fallback
+                    doc.save(`Bill_Table${currentSettleTable}.pdf`);
+                    alert("Bill Downloaded!\nOpening WhatsApp Web...\nPlease attach the file manually.");
+                    
+                    const url = `https://web.whatsapp.com/send?phone=${phone}&text=Please+find+attached+your+bill+PDF`;
+                    const win = window.open(url, '_blank');
+                    if(!win) alert("Pop-up blocked! Please allow pop-ups to open WhatsApp Web.");
+                }
+
+            } catch (err) {
+                alert("CRITICAL ERROR: " + err.message);
+                console.error(err);
             }
         };
 
         window.settleAndClear = async () => {
             const d = tableData[currentSettleTable];
             
-            // Recalculate Final Logic
             const type = document.getElementById('disc-type').value;
             const val = parseFloat(document.getElementById('disc-val').value) || 0;
             let managerDisc = 0;
@@ -925,7 +917,6 @@
             await push(ref(db, 'history'), master);
             for(const k of d.keys) await remove(ref(db, `orders/${k}`));
             
-            // REMOVE BILL REQUEST IF EXISTS
             if(activeBillRequests[currentSettleTable]) {
                 await remove(ref(db, `bill_requests/${currentSettleTable}`));
             }
