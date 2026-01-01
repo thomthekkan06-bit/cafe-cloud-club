@@ -77,7 +77,6 @@
         .left-sidebar { 
             position: fixed; top: 0; left: 0; width: 280px; height: 100%; background: var(--white);
             z-index: 12000; 
-            /* Use Transform instead of Left/Right to prevent layout breaking */
             transform: translateX(-100%); 
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 2px 0 10px rgba(0,0,0,0.5); border-right: 1px solid var(--border);
@@ -101,7 +100,6 @@
             position: fixed; top: 0; right: 0; width: 100%; max-width: 400px;
             height: 100dvh; 
             background: var(--bg); z-index: 12000; padding: 20px; border-left: 1px solid var(--border);
-            /* Use Transform instead of Right to prevent layout breaking */
             transform: translateX(100%);
             transition: transform 0.3s ease; display: flex; flex-direction: column;
             box-shadow: -5px 0 15px rgba(0,0,0,0.5);
@@ -201,8 +199,16 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         
-        .input-field { width: 100%; padding: 12px; margin: 10px 0 20px 0; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; background: var(--bg); color: white; outline: none; }
+        /* FIX: Better Input Alignment */
+        .input-group { text-align: left; margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 0.85rem; color: #aaa; margin-bottom: 6px; font-weight: 500; }
+
+        .input-field { 
+            width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; 
+            font-family: inherit; background: var(--bg); color: white; outline: none; font-size: 1rem;
+        }
         .input-field:focus { border-color: var(--primary); }
+        
         .modal-scroll-area { overflow-y: auto; flex: 1; text-align: left; margin-bottom: 15px; padding-right: 5px; }
         .custom-option-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px dashed #333; font-size: 0.95rem; }
         .modal-footer { border-top: 1px solid var(--border); padding-top: 15px; display: flex; justify-content: space-between; align-items: center; }
@@ -328,18 +334,19 @@
     <div class="modal-overlay" id="checkout-modal">
         <div class="modal-card">
             <h3 style="margin-top:0; color:var(--primary);">Confirm Order</h3>
-            <p id="modal-table-txt" style="font-weight:bold; color:#aaa; font-size:0.9rem;"></p>
-<div style="text-align:left; margin-top:15px;">
-    <label style="font-size:0.8rem; color:#888;">Guest Name (Optional)</label>
-    <input type="text" class="input-field" id="cust-name" placeholder="Enter Name">
-</div>
+            <p id="modal-table-txt" style="font-weight:bold; color:#aaa; font-size:0.9rem; margin-bottom:20px;"></p>
+            
+            <div class="input-group">
+                <label>Guest Name (Required)</label>
+                <input type="text" class="input-field" id="cust-name" placeholder="Enter Name">
+            </div>
 
-<div style="text-align:left; margin-top:10px;">
-    <label style="font-size:0.8rem; color:#888;">Phone Number (For Loyalty Points)</label>
-    <input type="tel" class="input-field" id="cust-phone" placeholder="10-digit Mobile Number" maxlength="10">
-</div>
+            <div class="input-group">
+                <label>Phone Number (10 Digits)</label>
+                <input type="tel" class="input-field" id="cust-phone" placeholder="Mobile Number" maxlength="10" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+            </div>
 
-<button class="checkout-btn" onclick="placeOrder()">SEND TO KITCHEN 👨‍🍳</button>
+            <button class="checkout-btn" onclick="placeOrder()">SEND TO KITCHEN 👨‍🍳</button>
             <button style="width:100%; background:none; border:none; padding:15px; color:#777; cursor:pointer; margin-top:5px; font-size:0.9rem;" onclick="closeCheckout()">Cancel</button>
         </div>
     </div>
@@ -675,57 +682,63 @@
         window.openCheckout = () => document.getElementById('checkout-modal').style.display = 'flex';
         window.closeCheckout = () => document.getElementById('checkout-modal').style.display = 'none';
 
-        // --- PLACE ORDER ---
-window.placeOrder = () => {
-    const nameInput = document.getElementById('cust-name');
-    
-    // NEW: Get phone input
-    const phoneInput = document.getElementById('cust-phone');
-    
-    const nameVal = nameInput.value.trim() || "Guest";
-    
-    // NEW: Validation to ensure we send a valid phone number or default string
-    const phoneVal = (phoneInput && phoneInput.value.trim().length === 10) 
-                     ? phoneInput.value.trim() 
-                     : '0000000000';
+        // --- FIX: PLACE ORDER WITH VALIDATION ---
+        window.placeOrder = () => {
+            const nameInput = document.getElementById('cust-name');
+            const phoneInput = document.getElementById('cust-phone');
+            
+            const nameVal = nameInput.value.trim();
+            const phoneVal = phoneInput.value.trim();
 
-    const finalName = `Table ${TABLE_ID} (${nameVal})`;
-    
-    let total = 0;
-    const items = [];
-    for(let key in cart) {
-        total += cart[key].price * cart[key].qty;
-        items.push({ name: key, qty: cart[key].qty, price: cart[key].price, type: cart[key].type });
-    }
+            // Strict Validation
+            if(nameVal.length < 2) {
+                alert("Please enter a valid Guest Name.");
+                nameInput.focus();
+                return;
+            }
 
-    const order = {
-        orderId: Math.floor(100000 + Math.random() * 900000),
-        orderType: 'Dine-In',
-        timestamp: Date.now(),
-        status: 'pending',
-        // UPDATE: Use the captured phoneVal variable here
-        customer: { name: finalName, phone: phoneVal, address: 'Dine-In', email: '-' },
-        items: items,
-        financials: { subTotal: total, discountVal: 0, couponCode: "NONE", packingTotal: 0, grandTotal: total },
-        globalNote: `Table ${TABLE_ID} - ${MODE === 'waiter' ? 'Waiter' : 'Customer'}`
-    };
+            if(phoneVal.length !== 10) {
+                alert("Please enter a valid 10-digit Phone Number.");
+                phoneInput.focus();
+                return;
+            }
 
-    push(ref(db, 'orders'), order).then(() => {
-        cart = {}; renderCart(); closeCheckout();
-        document.getElementById('cart-sidebar').classList.remove('active');
-        
-        const succ = document.getElementById('success-view');
-        succ.style.display = 'flex';
-        
-        if(MODE === 'waiter') {
-            document.getElementById('success-msg').innerText = "Returning to Floor Map...";
-            document.getElementById('btn-back-floor').style.display = 'inline-block';
-            setTimeout(() => { window.location.href = "waiter.html"; }, 2000);
-        } else {
-            setTimeout(() => { window.location.reload(); }, 3000);
+            const finalName = `Table ${TABLE_ID} (${nameVal})`;
+            
+            let total = 0;
+            const items = [];
+            for(let key in cart) {
+                total += cart[key].price * cart[key].qty;
+                items.push({ name: key, qty: cart[key].qty, price: cart[key].price, type: cart[key].type });
+            }
+
+            const order = {
+                orderId: Math.floor(100000 + Math.random() * 900000),
+                orderType: 'Dine-In',
+                timestamp: Date.now(),
+                status: 'pending',
+                customer: { name: finalName, phone: phoneVal, address: 'Dine-In', email: '-' },
+                items: items,
+                financials: { subTotal: total, discountVal: 0, couponCode: "NONE", packingTotal: 0, grandTotal: total },
+                globalNote: `Table ${TABLE_ID} - ${MODE === 'waiter' ? 'Waiter' : 'Customer'}`
+            };
+
+            push(ref(db, 'orders'), order).then(() => {
+                cart = {}; renderCart(); closeCheckout();
+                document.getElementById('cart-sidebar').classList.remove('active');
+                
+                const succ = document.getElementById('success-view');
+                succ.style.display = 'flex';
+                
+                if(MODE === 'waiter') {
+                    document.getElementById('success-msg').innerText = "Returning to Floor Map...";
+                    document.getElementById('btn-back-floor').style.display = 'inline-block';
+                    setTimeout(() => { window.location.href = "waiter.html"; }, 2000);
+                } else {
+                    setTimeout(() => { window.location.reload(); }, 3000);
+                }
+            }).catch(e => { alert("Error: " + e.message); console.error(e); });
         }
-    }).catch(e => { alert("Error: " + e.message); console.error(e); });
-}
     </script>
 </body>
 </html>
