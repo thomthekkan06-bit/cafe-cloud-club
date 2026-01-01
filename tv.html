@@ -358,6 +358,36 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // --- ROBUST WAKE LOCK (PREVENT SLEEP) ---
+        let wakeLock = null;
+
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log("Screen Wake Lock: Active");
+                }
+            } catch (err) {
+                // This usually happens if the user hasn't interacted with the page yet
+                console.log("Wake Lock request failed (usually needs a click):", err.name);
+            }
+        }
+
+        // 1. Try to request immediately (often blocked by browser until click)
+        requestWakeLock();
+
+        // 2. Request on FIRST interaction (Guaranteed to work)
+        document.addEventListener('click', () => {
+            requestWakeLock();
+        }, { once: true }); 
+
+        // 3. Re-acquire automatically if tab becomes visible again (Crucial!)
+        document.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState === 'visible') {
+                requestWakeLock();
+            }
+        });
+
         // --- TIME HELPER ---
         function getMinutesAgo(timestamp) {
             if(!timestamp) return 0;
@@ -372,12 +402,11 @@
             });
         }, 1000);
 
-        // --- AUDIO SYSTEM & WAKE LOCK ---
+        // --- AUDIO SYSTEM ---
         const bell = new Audio('bell.mp3');
         bell.loop = true; 
         
         let audioEnabled = false;
-        let wakeLock = null;
 
         window.enableAudio = async function() {
             bell.play().then(() => {
@@ -390,19 +419,6 @@
                 document.getElementById('sound-status').style.color = "var(--success)";
                 document.getElementById('sound-status').style.borderColor = "var(--success)";
             }).catch(e => console.error("Audio blocked", e));
-
-            try {
-                if ('wakeLock' in navigator) {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                    document.addEventListener('visibilitychange', async () => {
-                        if (wakeLock !== null && document.visibilityState === 'visible') {
-                            wakeLock = await navigator.wakeLock.request('screen');
-                        }
-                    });
-                }
-            } catch (err) {
-                console.error(`Wake Lock failed: ${err.name}, ${err.message}`);
-            }
         };
 
         // --- DAILY OFFERS LOGIC ---
