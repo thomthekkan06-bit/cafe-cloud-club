@@ -290,7 +290,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue, remove, query } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        // MODIFIED: Added 'update' to imports
+        import { getDatabase, ref, onValue, remove, update, query } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
@@ -372,8 +373,7 @@
                 const total = fins.grandTotal || 0;
                 const fee = fins.deliveryFee || 0;
                 
-                // For Stats: Kitchen = Total - Fee + LoyaltyRedeemed (Technically kitchen earned the value of the food, but cash collected is less)
-                // However, simpler is Kitchen = Cash Collected - Delivery Fee. 
+                // For Stats: Kitchen = Total - Fee.
                 const kitchen = total - fee;
 
                 if(!isRejected) { sumKitchen += kitchen; sumFees += fee; sumTotal += total; count++; }
@@ -401,7 +401,7 @@
                         <td class="mono" style="font-weight:bold;">₹${total}</td>
                         <td style="text-align:right;">
                             <button class="btn-icon btn-view" onclick='viewDetails("${order.key}")' title="View Receipt">📄</button>
-                            <button class="btn-icon btn-trash" onclick="deleteOrder('${order.key}')" title="Delete Record">🗑</button>
+                            <button class="btn-icon btn-trash" onclick="deleteOrder('${order.key}')" title="Void/Cancel Order">🗑</button>
                         </td>
                     </tr>
                 `;
@@ -476,23 +476,14 @@
             }
             
             const fins = order.financials || {grandTotal:0, deliveryFee:0};
-            
-            // Financials Logic
             const total = fins.grandTotal;
             const fee = fins.deliveryFee || 0;
             const loyalty = fins.loyaltyRedeemed || 0;
-            
-            // Subtotal is approximate here because we don't store raw subtotal in older records sometimes.
-            // Formula: Total = Subtotal + Fee - Loyalty - Discount.
-            // So Subtotal = Total - Fee + Loyalty + Discount.
-            // But simplifying display:
-            
             const subCalc = total - fee + loyalty + (fins.discountVal || 0);
 
             document.getElementById('m-kitchen').innerText = "₹" + subCalc;
             document.getElementById('m-fee').innerText = "₹" + fee;
             
-            // NEW: Show Loyalty
             const loyRow = document.getElementById('row-loyalty');
             if(loyalty > 0) {
                 loyRow.style.display = 'flex';
@@ -511,11 +502,17 @@
             if (event.target == modal) { modal.style.display = "none"; }
         }
 
+        // --- MODIFIED DELETE FUNCTION: NOW PERFORMS "CANCEL/VOID" (Soft Delete) ---
         window.deleteOrder = function(key) {
-            const password = prompt("⚠ DELETE CONFIRMATION ⚠\nEnter Admin Password:");
+            const password = prompt("⚠ VOID/CANCEL ORDER ⚠\nEnter Admin Password:");
             if (password === DELETE_PIN) {
-                if(confirm("Are you sure? This cannot be undone.")) {
-                    remove(ref(db, 'history/' + key)).then(() => alert("Record deleted.")).catch(err => alert("Error: " + err));
+                if(confirm("Are you sure you want to CANCEL this bill? It will be marked as Rejected.")) {
+                    // CHANGED: Instead of remove(), we use update() to set status to 'rejected'
+                    update(ref(db, 'history/' + key), { 
+                        status: 'rejected'
+                    })
+                    .then(() => alert("Order marked as Cancelled/Rejected."))
+                    .catch(err => alert("Error: " + err));
                 }
             } else if (password !== null) { alert("❌ WRONG PASSWORD."); }
         }
@@ -523,16 +520,18 @@
         window.exportToCSV = function() {
             if(allOrders.length === 0) return alert("No data to export.");
             let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Date,Time,OrderID,Customer,Phone,Type,KitchenRevenue,DeliveryFee,TotalAmount\n";
+            csvContent += "Date,Time,OrderID,Customer,Phone,Type,Status,KitchenRevenue,DeliveryFee,TotalAmount\n";
             allOrders.forEach(o => {
                 const d = new Date(o.completedAt || o.timestamp);
                 const fins = o.financials || {grandTotal:0, deliveryFee:0};
                 const cName = o.customer ? o.customer.name : "Unknown";
                 const cPhone = o.customer ? o.customer.phone : "--";
+                const isRejected = o.status === 'rejected';
                 
                 const row = [
                     d.toLocaleDateString(), d.toLocaleTimeString(), o.orderId,
                     cName, cPhone, o.orderType,
+                    isRejected ? "REJECTED" : "COMPLETED",
                     (fins.grandTotal - (fins.deliveryFee||0)), (fins.deliveryFee||0), fins.grandTotal
                 ].join(",");
                 csvContent += row + "\n";
