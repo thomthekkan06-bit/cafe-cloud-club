@@ -210,6 +210,13 @@
             font-family: inherit; background: var(--bg); color: white; outline: none; font-size: 1rem;
         }
         .input-field:focus { border-color: var(--primary); }
+        /* Style for locked input fields */
+        .input-field:read-only {
+            background-color: #2f3542;
+            color: #888;
+            cursor: not-allowed;
+            border-color: #444;
+        }
         
         .modal-scroll-area { overflow-y: auto; flex: 1; text-align: left; margin-bottom: 15px; padding-right: 5px; }
         .custom-option-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px dashed #333; font-size: 0.95rem; }
@@ -410,6 +417,29 @@
         
         if(MODE === 'waiter') {
             document.getElementById('waiter-badge').style.display = 'inline';
+        }
+
+        // --- AUTO-FILL & LOCK DETAILS (NEW) ---
+        // Checks if user already ordered on this device and locks the fields
+        const savedTableUser = localStorage.getItem('ccc_table_user');
+        if (savedTableUser) {
+            try {
+                const userData = JSON.parse(savedTableUser);
+                const nameField = document.getElementById('cust-name');
+                const phoneField = document.getElementById('cust-phone');
+                
+                if (nameField && userData.name) {
+                    nameField.value = userData.name;
+                    nameField.readOnly = true; 
+                }
+                
+                if (phoneField && userData.phone) {
+                    phoneField.value = userData.phone;
+                    phoneField.readOnly = true;
+                }
+            } catch (e) {
+                console.error("Error loading saved user details", e);
+            }
         }
 
         // --- DATA ---
@@ -704,6 +734,13 @@
                 phoneInput.focus();
                 return;
             }
+
+            // --- SAVE IDENTIY TO STORAGE (NEW) ---
+            // Stores user details and effectively locks them for the next session
+            localStorage.setItem('ccc_table_user', JSON.stringify({
+                name: nameVal,
+                phone: phoneVal
+            }));
 
             const finalName = `Table ${TABLE_ID} (${nameVal})`;
             
