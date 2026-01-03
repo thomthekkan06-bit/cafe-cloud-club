@@ -161,7 +161,7 @@
 
     <div id="pin-overlay">
         <div class="pin-box">
-            <h2 style="margin-top:0;">👨‍🍳 Kitchen Display</h2>
+            <h2 style="margin-top:0;">👨‍🍳 Chef KDS</h2>
             <input type="password" id="pin-input" class="pin-input" placeholder="••••" maxlength="4" inputmode="numeric" autofocus>
             <button class="btn-unlock" onclick="checkPin()">ENTER KITCHEN</button>
         </div>
@@ -202,6 +202,10 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // --- FILTER CONFIGURATION ---
+        // Chef KDS shows EVERYTHING EXCEPT Botanical Brews
+        const EXCLUDED_CATEGORY = "Café Botanical Brews";
+
         // --- ROBUST WAKE LOCK (PREVENT SLEEP) ---
         let wakeLock = null;
 
@@ -212,24 +216,14 @@
                     console.log("Screen Wake Lock: Active");
                 }
             } catch (err) {
-                // This usually happens if the user hasn't interacted with the page yet
                 console.log("Wake Lock request failed (usually needs a click):", err.name);
             }
         }
 
-        // 1. Try to request immediately (often blocked by browser until click)
         requestWakeLock();
-
-        // 2. Request on FIRST interaction (Guaranteed to work)
-        document.addEventListener('click', () => {
-            requestWakeLock();
-        }, { once: true }); // Only runs once to avoid spamming
-
-        // 3. Re-acquire automatically if tab becomes visible again (Crucial!)
+        document.addEventListener('click', () => { requestWakeLock(); }, { once: true }); 
         document.addEventListener('visibilitychange', async () => {
-            if (document.visibilityState === 'visible') {
-                requestWakeLock();
-            }
+            if (document.visibilityState === 'visible') { requestWakeLock(); }
         });
 
 
@@ -239,14 +233,13 @@
         
         let activeOrders = [];
         let historyOrders = []; 
-        let previousTotalItems = 0; // Tracks TOTAL items to detect additions
+        let previousTotalItems = 0; 
         let isFirstLoad = true;
 
         // --- AUTH ---
         window.checkPin = function() {
             if(document.getElementById('pin-input').value === ACCESS_PIN) {
                 bell.play().then(() => { bell.pause(); bell.currentTime = 0; }).catch(e=>{});
-                // Note: The global click listener handles the Wake Lock now
                 document.getElementById('pin-overlay').style.display = 'none';
                 initKDS();
             } else {
@@ -274,33 +267,30 @@
                 
                 if (data) {
                     Object.entries(data).forEach(([key, order]) => {
-                        // FILTER LOGIC UPDATE:
-                        // Show order if:
-                        // 1. It is 'cooking' (Standard active order)
-                        // 2. OR it is 'served'/'done' BUT has new pending items (The "Add-on" case)
-                        
                         if (order.status === 'completed' || order.status === 'rejected' || order.status === 'pending') return;
 
-                        let hasPending = false;
+                        // NEW FILTER: Check if there are any NON-BREW items
+                        let relevantItems = [];
                         if (order.items) {
-                            hasPending = order.items.some(i => i.kitchenDone === false && !i.deleted);
+                            relevantItems = order.items.filter(i => i.category !== EXCLUDED_CATEGORY);
                         }
 
-                        const isActive = order.status === 'cooking';
-                        const isRevived = (order.status === 'served' || order.status === 'done') && hasPending;
+                        if (relevantItems.length > 0) {
+                            const isActive = order.status === 'cooking';
+                            // Logic: If served/done but Chef items are still pending, show it
+                            const hasRelevantPending = relevantItems.some(i => i.kitchenDone === false && !i.deleted);
+                            const isRevived = (order.status === 'served' || order.status === 'done') && hasRelevantPending;
 
-                        if (isActive || isRevived) {
-                            activeOrders.push({ key, ...order });
-                            
-                            // Only count items for orders that are displayed to track "New Item" sound
-                            if(order.items) currentTotalItems += order.items.length;
+                            if (isActive || isRevived) {
+                                activeOrders.push({ key, ...order });
+                                currentTotalItems += relevantItems.length;
+                            }
                         }
                     });
                 }
 
                 activeOrders.sort((a, b) => a.timestamp - b.timestamp);
 
-                // AUDIO ALERT: Triggers if Item Count Increases (New Order OR Added Item)
                 if (!isFirstLoad && currentTotalItems > previousTotalItems) {
                     bell.currentTime = 0;
                     bell.play().catch(e => console.log("Audio blocked"));
@@ -332,17 +322,18 @@
                 const custName = order.customer ? order.customer.name : 'Guest';
                 const orderType = order.orderType || 'Dine-In';
 
-                // Items HTML
                 let itemsHtml = "";
                 let visibleItemCount = 0;
 
                 if (order.items) {
                     order.items.forEach((item, index) => {
-                        // 1. Hide "Done" items
+                        // 1. FILTER: EXCLUDE BREWS
+                        if (item.category === EXCLUDED_CATEGORY) return;
+
+                        // 2. Hide "Done" items
                         if (item.kitchenDone === true && !item.deleted) return; 
 
-                        // 2. NEW FILTER: Hide standalone "Packing Charge" items
-                        // This prevents billing items from cluttering the Chef's view
+                        // 3. Hide Packing Charges
                         const itemNameLower = item.name.toLowerCase();
                         if (itemNameLower.includes("packing charge") || itemNameLower.includes("parcel charge")) return;
 
@@ -360,7 +351,6 @@
                     });
                 }
 
-                // If all items are hidden (Done or Hidden Charges), show a "Ready" message
                 if (visibleItemCount === 0) {
                     itemsHtml = `<div class="ready-msg">ALL ITEMS PREPARED<br>TAP HEADER TO CLEAR</div>`;
                 }
@@ -402,16 +392,40 @@
             const order = activeOrders.find(o => o.key === key);
             if(!order) return;
 
-            // Confirm Completion
-            if(confirm(`Clear Order #${order.orderId}?`)) {
-                historyOrders.unshift({ ...order, doneTime: new Date() });
-                if(historyOrders.length > 20) historyOrders.pop();
-                renderHistory();
+            if(confirm(`Mark all Chef Items for Order #${order.orderId} as DONE?`)) {
+                
+                const updates = {};
+                let allItemsWillBeDone = true;
 
-                // Status Logic: Dine-In -> Served (To clear from TV), Delivery -> Done
-                const type = order.orderType || 'Dine-In';
-                const nextStatus = (type === 'Delivery' || type === 'Pickup') ? 'done' : 'served';
-                update(ref(db, `orders/${key}`), { status: nextStatus });
+                // 1. Loop through all items to update Chef items and check global status
+                if (order.items) {
+                    order.items.forEach((item, index) => {
+                        // If it is a Chef Item...
+                        if (item.category !== EXCLUDED_CATEGORY) {
+                            updates[`items/${index}/kitchenDone`] = true;
+                        } else {
+                            // If it is a T-Shop Item, check if it's done
+                            if (!item.kitchenDone && !item.deleted) {
+                                allItemsWillBeDone = false;
+                            }
+                        }
+                    });
+                }
+
+                // 2. If T-Shop items are also done (or don't exist), we can move status to 'served'/'done'
+                if (allItemsWillBeDone) {
+                    const type = order.orderType || 'Dine-In';
+                    const nextStatus = (type === 'Delivery' || type === 'Pickup') ? 'done' : 'served';
+                    updates['status'] = nextStatus;
+                    
+                    // Add to local history for display
+                    historyOrders.unshift({ ...order, doneTime: new Date() });
+                    if(historyOrders.length > 20) historyOrders.pop();
+                    renderHistory();
+                }
+
+                // 3. Perform Updates
+                update(ref(db, `orders/${key}`), updates);
             }
         };
 
