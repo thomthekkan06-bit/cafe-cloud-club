@@ -401,7 +401,7 @@
                         <td class="mono" style="font-weight:bold;">₹${total}</td>
                         <td style="text-align:right;">
                             <button class="btn-icon btn-view" onclick='viewDetails("${order.key}")' title="View Receipt">📄</button>
-                            <button class="btn-icon btn-trash" onclick="deleteOrder('${order.key}')" title="Void/Cancel Order">🗑</button>
+                            <button class="btn-icon btn-trash" onclick="deleteOrder('${order.key}')" title="Permanently Delete">🗑</button>
                         </td>
                     </tr>
                 `;
@@ -502,16 +502,14 @@
             if (event.target == modal) { modal.style.display = "none"; }
         }
 
-        // --- MODIFIED DELETE FUNCTION: NOW PERFORMS "CANCEL/VOID" (Soft Delete) ---
+        // --- MODIFIED DELETE FUNCTION: NOW PERMANENT DELETE ---
         window.deleteOrder = function(key) {
-            const password = prompt("⚠ VOID/CANCEL ORDER ⚠\nEnter Admin Password:");
+            const password = prompt("⚠ PERMANENTLY DELETE ⚠\nEnter Admin Password:");
             if (password === DELETE_PIN) {
-                if(confirm("Are you sure you want to CANCEL this bill? It will be marked as Rejected.")) {
-                    // CHANGED: Instead of remove(), we use update() to set status to 'rejected'
-                    update(ref(db, 'history/' + key), { 
-                        status: 'rejected'
-                    })
-                    .then(() => alert("Order marked as Cancelled/Rejected."))
+                if(confirm("Are you sure you want to PERMANENTLY DELETE this record? It will not be shown anywhere.")) {
+                    // Use remove() to completely delete the node from Firebase
+                    remove(ref(db, 'history/' + key))
+                    .then(() => alert("Record permanently deleted."))
                     .catch(err => alert("Error: " + err));
                 }
             } else if (password !== null) { alert("❌ WRONG PASSWORD."); }
