@@ -1092,7 +1092,23 @@
         }
 
         window.upd = (k,s) => update(ref(db, `orders/${k}`), {status:s});
-        window.rejectOrder = (k) => remove(ref(db, `orders/${k}`));
+
+        // REPLACED: NEW REJECT FUNCTION (Moves to History first)
+        window.rejectOrder = (k) => {
+            get(ref(db, `orders/${k}`)).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    data.status = 'rejected';
+                    data.completedAt = Date.now();
+                    push(ref(db, 'history'), data).then(() => {
+                        remove(ref(db, `orders/${k}`));
+                    });
+                } else {
+                    remove(ref(db, `orders/${k}`));
+                }
+            }).catch(err => console.error(err));
+        };
+
         window.comp = (k) => {
             get(ref(db, `orders/${k}`)).then(s => {
                 if(s.exists()) {
