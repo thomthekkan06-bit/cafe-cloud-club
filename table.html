@@ -1,3 +1,7 @@
+{
+type: uploaded file
+fileName: thomthekkan06-bit/cafe-cloud-club/cafe-cloud-club-6fb771261375c8edf65ad51cc9467f1cdd78180b/table.html
+fullContent:
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -213,7 +217,7 @@
         /* Style for locked input fields */
         .input-field:read-only {
             background-color: #2f3542;
-            color: #888;
+            color: #ccc;
             cursor: not-allowed;
             border-color: #444;
         }
@@ -394,7 +398,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, push, onValue, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
@@ -420,28 +424,65 @@
             document.getElementById('waiter-badge').style.display = 'inline';
         }
 
-        // --- AUTO-FILL & LOCK DETAILS (NEW) ---
-        // Checks if user already ordered on this device and locks the fields
-        const savedTableUser = localStorage.getItem('ccc_table_user');
-        if (savedTableUser) {
+        // --- SMART SESSION MANAGEMENT (NEW) ---
+        // Checks local storage and Firebase to determine if the table session is active
+        async function initSession() {
+            const savedRaw = localStorage.getItem('ccc_table_user');
+            if (!savedRaw) return;
+
             try {
-                const userData = JSON.parse(savedTableUser);
-                const nameField = document.getElementById('cust-name');
-                const phoneField = document.getElementById('cust-phone');
+                const savedData = JSON.parse(savedRaw);
                 
-                if (nameField && userData.name) {
-                    nameField.value = userData.name;
-                    // nameField.readOnly = true; [FIX: DISABLED LOCK]
+                // 1. Check Table ID Match
+                // If user is scanning a different table, we should NOT auto-fill
+                if (savedData.tableId !== TABLE_ID) {
+                    // Mismatch: This is a new session on a different table.
+                    // We simply ignore the stored data (effectively cleared for this view)
+                    return; 
                 }
+
+                // 2. Check Firebase for Active Status (Has the manager settled?)
+                // We fetch the active orders list to see if this table is still "occupied"
+                const snapshot = await get(ref(db, 'orders'));
+                let isActive = false;
                 
-                if (phoneField && userData.phone) {
-                    phoneField.value = userData.phone;
-                    // phoneField.readOnly = true; [FIX: DISABLED LOCK]
+                if (snapshot.exists()) {
+                    const orders = snapshot.val();
+                    // Check if any active order belongs to this Table ID
+                    isActive = Object.values(orders).some(o => 
+                        o.customer && 
+                        o.customer.name && 
+                        o.customer.name.startsWith(`Table ${TABLE_ID}`)
+                    );
                 }
+
+                if (isActive) {
+                    // Session is Active: Auto-fill and LOCK the fields
+                    const nameField = document.getElementById('cust-name');
+                    const phoneField = document.getElementById('cust-phone');
+                    
+                    if (nameField && savedData.name) {
+                        nameField.value = savedData.name;
+                        nameField.readOnly = true;
+                    }
+                    if (phoneField && savedData.phone) {
+                        phoneField.value = savedData.phone;
+                        phoneField.readOnly = true;
+                    }
+                    console.log("Session restored and locked for Table", TABLE_ID);
+                } else {
+                    // Session is Inactive (Manager Settled): Clear storage
+                    localStorage.removeItem('ccc_table_user');
+                    console.log("Previous session settled. Starting fresh.");
+                }
+
             } catch (e) {
-                console.error("Error loading saved user details", e);
+                console.error("Error checking session:", e);
             }
         }
+
+        // Run the check immediately
+        initSession();
 
         // --- DATA ---
         let menuData = [];
@@ -737,10 +778,11 @@
             }
 
             // --- SAVE IDENTIY TO STORAGE (NEW) ---
-            // Stores user details and effectively locks them for the next session
+            // Stores user details and lock information (tableId) for this session
             localStorage.setItem('ccc_table_user', JSON.stringify({
                 name: nameVal,
-                phone: phoneVal
+                phone: phoneVal,
+                tableId: TABLE_ID // Saves the table ID to ensure we only lock for THIS table
             }));
 
             const finalName = `Table ${TABLE_ID} (${nameVal})`;
