@@ -205,6 +205,12 @@
             <div class="tables-grid" id="grid-main"></div>
             <div class="section-label">AC Room</div>
             <div class="tables-grid" id="grid-ac"></div>
+            
+            <div class="section-label">Delivery (Phone/Manual)</div>
+            <div class="tables-grid" id="grid-delivery"></div>
+            
+            <div class="section-label">Takeaway (Pickup)</div>
+            <div class="tables-grid" id="grid-takeaway"></div>
         </div>
     </div>
 
@@ -972,8 +978,12 @@
         function renderTables() {
             const m = document.getElementById('grid-main');
             const a = document.getElementById('grid-ac');
-            m.innerHTML=""; a.innerHTML="";
+            const d = document.getElementById('grid-delivery');
+            const t = document.getElementById('grid-takeaway');
+
+            m.innerHTML=""; a.innerHTML=""; d.innerHTML=""; t.innerHTML="";
             document.getElementById('dinein-count').innerText = Object.keys(tableData).length;
+            
             const make = (id, dest, label) => {
                 const d = tableData[id];
                 const hasReq = activeBillRequests[id]; 
@@ -1004,9 +1014,22 @@
                 if(d) div.onclick = () => { currentSettleTable=id; document.getElementById('settle-modal').style.display='flex'; renderSettle(); };
                 dest.appendChild(div);
             };
+            
+            // Indoor: 1-7, then Bar 1 (id 8), then new Bars (ids 14,15,16)
             for(let i=1; i<=7; i++) make(i, m);
-            make(8, m, "BAR");
+            make(8, m, "BAR 1");
+            make(14, m, "BAR 2");
+            make(15, m, "BAR 3");
+            make(16, m, "BAR 4");
+
+            // AC Room: 9-13
             for(let i=9; i<=13; i++) make(i, a);
+
+            // Delivery Boxes (Phone/Manual)
+            for(let i=1; i<=10; i++) make(`D${i}`, d, `DEL ${i}`);
+
+            // Takeaway Boxes (Pickup)
+            for(let i=1; i<=10; i++) make(`T${i}`, t, `PKP ${i}`);
         }
 
         async function renderSettle() {
