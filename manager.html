@@ -25,6 +25,7 @@
             --zomato: #cb202d;
             --text-main: #f3f4f6;
             --text-muted: #9ca3af;
+            --purple: #8b5cf6;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -128,6 +129,10 @@
         .status-camper { border: 1px solid var(--danger); background: rgba(239, 68, 68, 0.15); animation: pulseRed 2s infinite; }
         .status-camper .t-num { color: var(--danger); }
         @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        
+        /* DELIVERY STATUS COLORS */
+        .status-out { border: 1px solid var(--purple); background: rgba(139, 92, 246, 0.15); }
+        .status-out .t-num { color: var(--purple); }
 
         /* BILL REQUEST ANIMATION */
         .status-bill-req { border: 2px solid #FFD700; background: rgba(255, 215, 0, 0.1); animation: flashYellow 1.5s infinite; }
@@ -142,6 +147,7 @@
         .modal-footer { padding: 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
         .btn-modal-cancel { flex: 1; padding: 15px; background: transparent; border: 1px solid var(--border); color: var(--text-muted); border-radius: 8px; cursor: pointer; font-weight: 700; }
         .btn-modal-action { flex: 1; padding: 15px; border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: 700; }
+        .btn-modal-action:disabled { opacity: 0.5; cursor: not-allowed; }
         
         .inp, .inp-select { background: var(--bg); border: 1px solid var(--border); color: white; padding: 10px; border-radius: 6px; width: 100%; margin-bottom: 10px; }
         .row-inputs { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
@@ -231,9 +237,7 @@
 
                 <div style="border-top:1px solid var(--border); margin:15px 0; padding-top:10px;">
                     <label style="font-size:0.8rem; color:var(--text-muted);">ADD ITEM</label>
-                    
                     <input type="text" id="ext-search" class="inp" placeholder="🔍 Search item..." style="margin-bottom: 5px; font-size: 0.9rem;" onkeyup="filterMenuSelect('ext-search', 'ext-menu-select')">
-
                     <select id="ext-menu-select" class="inp-select" onchange="extAutoFill()">
                         <option value="">-- Select Item --</option>
                     </select>
@@ -285,17 +289,12 @@
             <div class="modal-body">
                 <div style="border-bottom:1px solid var(--border); margin-bottom:15px; padding-bottom:10px;">
                     <label style="font-size:0.8rem; color:var(--text-muted);">SELECT ITEM</label>
-                    
                     <input type="text" id="parcel-search" class="inp" placeholder="🔍 Search item..." style="margin-bottom: 5px; font-size: 0.9rem;" onkeyup="filterMenuSelect('parcel-search', 'parcel-menu-select')">
-
                     <select id="parcel-menu-select" class="inp-select" onchange="parcelAutoFill()">
                         <option value="">-- Select Item --</option>
                     </select>
-                    
                     <div id="parcel-options-container" class="auto-options-container" style="display:none;"></div>
-
                     <input type="text" id="parcel-item-note" class="inp" placeholder="Item Note (e.g. Less Spicy, No Mayo)" style="margin-bottom:10px; font-size:0.9rem;">
-
                     <div style="display:grid; grid-template-columns: 1fr 2fr; gap:10px;">
                         <input type="number" id="parcel-qty" class="inp" value="1" placeholder="Qty">
                         <button class="btn-modal-action" style="background:var(--primary);" onclick="addParcelItem()">ADD ITEM +</button>
@@ -437,7 +436,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- ROBUST WAKE LOCK (PREVENT SLEEP) ---
+        // --- ROBUST WAKE LOCK ---
         let wakeLock = null;
         async function requestWakeLock() {
             try {
@@ -464,7 +463,7 @@
         
         // --- NEW PARCEL VARIABLES ---
         let parcelItems = [];
-        let currentParcelType = 'Pickup'; // Default internal type matching TV/Kitchen
+        let currentParcelType = 'Pickup'; 
 
         // --- NEW SEARCH FILTER LOGIC ---
         window.filterMenuSelect = (inputId, selectId) => {
@@ -584,7 +583,7 @@
                 let count = 0;
 
                 Object.entries(data).forEach(([key, order]) => {
-                    if(order.status === 'completed' || order.status === 'rejected') return;
+                    if(order.status === 'completed' || order.status === 'rejected' || order.status === 'delivered') return;
                     
                     // 1. DINE-IN LOGIC
                     if(order.orderType === 'Dine-In' && order.customer && order.customer.name.startsWith('Table')) {
@@ -592,7 +591,8 @@
                         if(!tableData[tId]) tableData[tId] = { 
                             total:0, items:[], keys:[], timestamp: order.timestamp,
                             fins: { sub:0, disc:0, pack:0 }, phone: null,
-                            orderType: 'Dine-In' // Explicitly set Dine-In
+                            orderType: 'Dine-In',
+                            status: order.status
                         };
                         if(order.customer.phone && order.customer.phone.length >= 10 && order.customer.phone !== '0000000000') {
                             tableData[tId].phone = order.customer.phone;
@@ -608,20 +608,16 @@
                     }
 
                     // 2. PARCEL LOGIC (Collection for Right Pane Slots)
-                    // If accepted (not pending), they go to slots
                     if (order.status !== 'pending') {
                         if (order.orderType === 'Pickup') pickupList.push({key, ...order});
                         if (order.orderType === 'Delivery') deliveryList.push({key, ...order});
                     }
 
                     // 3. QUEUE VISIBILITY (Left Pane)
-                    // Hide Parcel orders from queue if they are accepted (cooking/done) to move them to slots
-                    // Show Dine-In orders until 'served' or 'done'
                     let showInQueue = true;
                     if (order.status === 'served') showInQueue = false;
                     if (order.status === 'done' && order.orderType === 'Dine-In') showInQueue = false;
                     
-                    // HIDE accepted parcels from Queue (they move to grid)
                     if ((order.orderType === 'Pickup' || order.orderType === 'Delivery') && order.status !== 'pending') {
                          showInQueue = false;
                     }
@@ -651,8 +647,9 @@
                             timestamp: order.timestamp,
                             fins: { sub: f.subTotal||0, disc: f.discountVal||0, pack: f.packingTotal||0 },
                             phone: order.customer.phone,
-                            customerName: order.customer.name, // Storing name for grid display
-                            orderType: order.orderType // Store dynamic type
+                            customerName: order.customer.name, 
+                            orderType: order.orderType,
+                            status: order.status // SAVING STATUS FOR UI LOGIC
                         };
                     });
                 };
@@ -679,25 +676,18 @@
         };
 
         window.selectParcelType = (type) => {
-            currentParcelType = type; // 'Pickup' or 'Delivery'
+            currentParcelType = type; 
             document.getElementById('parcel-type-modal').style.display = 'none';
-            
-            // Update UI
             document.getElementById('parcel-mode-badge').innerText = (type === 'Pickup') ? 'TAKEAWAY (PICKUP)' : 'DELIVERY';
-            
-            // CLEAR SEARCH
             document.getElementById('parcel-search').value = "";
             filterMenuSelect('parcel-search', 'parcel-menu-select');
-
             parcelItems = [];
             renderParcelList();
-            
             document.getElementById('parcel-menu-select').value = "";
             document.getElementById('parcel-qty').value = "1";
             document.getElementById('parcel-item-note').value = "";
             document.getElementById('parcel-options-container').innerHTML = "";
             document.getElementById('parcel-options-container').style.display = "none";
-            
             document.getElementById('parcel-step1-modal').style.display = 'flex';
         };
 
@@ -707,7 +697,6 @@
             container.innerHTML = "";
             container.style.display = "none";
             if(idx === "") return;
-            
             const item = fullMenu[idx];
             const options = getOptionsForItem(item); 
             if(options.length > 0) {
@@ -734,7 +723,6 @@
 
             let finalPrice = item.price;
             let modNames = [];
-            
             document.querySelectorAll('.parcel-opt-cb:checked').forEach(cb => {
                 finalPrice += parseInt(cb.dataset.price);
                 modNames.push(cb.value);
@@ -758,7 +746,8 @@
                 basePrice: item.price,
                 qty: qty,
                 variant: variantStr,
-                packingInfo: packCost
+                packingInfo: packCost,
+                kitchenDone: false // VITAL FOR KDS
             });
 
             renderParcelList();
@@ -799,11 +788,9 @@
             let count = 0; let total = 0;
             parcelItems.forEach(i => { count += i.qty; total += ((i.price + i.packingInfo)*i.qty); });
             document.getElementById('parcel-summary-text').innerText = `${count} Items | Total Estimate: ₹${total}`;
-            
             const addrDiv = document.getElementById('parcel-addr-group');
             if(currentParcelType === 'Delivery') addrDiv.style.display = 'block';
             else addrDiv.style.display = 'none';
-
             document.getElementById('parcel-step1-modal').style.display = 'none';
             document.getElementById('parcel-step2-modal').style.display = 'flex';
             setTimeout(() => document.getElementById('parcel-c-name').focus(), 100);
@@ -829,12 +816,11 @@
             });
 
             const orderId = Math.floor(100000 + Math.random() * 900000);
-            
             const finalAddr = (currentParcelType === 'Delivery') ? addr : 'Pickup / Takeaway';
 
             const order = {
                 orderId: orderId,
-                orderType: currentParcelType, // 'Pickup' or 'Delivery'
+                orderType: currentParcelType, 
                 timestamp: Date.now(),
                 status: 'pending',
                 customer: { name: name, phone: phone, address: finalAddr },
@@ -843,7 +829,6 @@
             };
 
             await push(ref(db, 'orders'), order);
-            
             document.getElementById('parcel-c-name').value = "";
             document.getElementById('parcel-c-phone').value = "";
             document.getElementById('parcel-c-addr').value = "";
@@ -901,7 +886,8 @@
             if (modNames.includes("Tossed Rice") || modNames.includes("Sorted Vegges")) packCost += 7;
             extOrderItems.push({
                 name: item.name, category: item.category, price: finalPrice, basePrice: item.price,
-                qty: qty, variant: modNames.join(", "), packingInfo: packCost
+                qty: qty, variant: modNames.join(", "), packingInfo: packCost,
+                kitchenDone: false // VITAL FOR KDS
             });
             renderExtList();
             document.getElementById('ext-menu-select').value = "";
@@ -957,7 +943,7 @@
             let cls = `order-card status-${order.status}`;
             if(type==='Swiggy') cls += ' type-swiggy';
             else if(type==='Zomato') cls += ' type-zomato';
-            else if(type==='Pickup') cls += ' type-pickup'; // Updated class for Pickup
+            else if(type==='Pickup') cls += ' type-pickup'; 
             else if(type==='Delivery') cls += ' type-delivery';
 
             const f = order.financials || { subTotal: 0, packingTotal: 0, discountVal: 0, grandTotal: 0 };
@@ -1030,26 +1016,31 @@
                 if(d) {
                     const diff = Date.now() - d.timestamp;
                     const mins = Math.floor(diff/60000);
-                    if(mins < 60) cls = 'table-card status-fresh';
+                    
+                    if(d.status === 'out_for_delivery') cls = 'table-card status-out';
+                    else if(mins < 60) cls = 'table-card status-fresh';
                     else if(mins < 90) cls = 'table-card status-warning';
                     else cls = 'table-card status-camper';
+                    
                     if(hasReq) cls += ' status-bill-req';
                     const h = Math.floor(mins/60);
                     const tm = mins%60;
                     const timeStr = `${h}:${tm.toString().padStart(2,'0')}`;
                     const billReqLabel = hasReq ? `<div style="color:black; background:#FFD700; border-radius:4px; padding:2px; font-size:0.7rem; text-align:center; font-weight:bold;">BILL REQ</div>` : '';
                     
-                    // Display Customer Name for Parcel orders
                     let displayLabel = label || id;
                     if(id.toString().startsWith('T') || id.toString().startsWith('D')) {
-                        if(d.customerName) displayLabel = d.customerName.split(' ')[0]; // Show First Name
+                        if(d.customerName) displayLabel = d.customerName.split(' ')[0]; 
                     }
+
+                    let statusText = "OCCUPIED";
+                    if(d.status === 'out_for_delivery') statusText = "OUT FOR DELIVERY";
 
                     txt = `
                         <div style="display:flex;justify-content:space-between"><div class="t-num">${displayLabel}</div><div style="font-weight:bold;color:#aaa">₹${d.total}</div></div>
                         ${billReqLabel}
                         <div style="text-align:center; font-family:'JetBrains Mono'; font-size:1.4rem; font-weight:bold; margin-top:10px;">${timeStr}</div>
-                        <div style="text-align:center; font-size:0.7rem; font-weight:bold; opacity:0.7;">OCCUPIED</div>
+                        <div style="text-align:center; font-size:0.7rem; font-weight:bold; opacity:0.7;">${statusText}</div>
                     `;
                 }
                 const div = document.createElement('div');
@@ -1088,14 +1079,33 @@
             document.getElementById('m-pack').innerText = `₹${d.fins.pack}`;
             document.getElementById('m-tot').innerText = `₹${d.total}`;
             
-            // Dynamic Button Text for Parcels
             const btn = document.getElementById('btn-settle-action');
+            btn.disabled = false;
+            
+            // Logic for Delivery/Pickup Slot Buttons
             if(currentSettleTable.toString().startsWith('T')) {
-                btn.innerText = "✅ PICKED UP";
+                if(d.status === 'done') {
+                    btn.innerText = "✅ PICKED UP";
+                    btn.disabled = false;
+                } else {
+                    btn.innerText = "Cooking...";
+                    btn.disabled = true;
+                }
             } else if(currentSettleTable.toString().startsWith('D')) {
-                btn.innerText = "🛵 DISPATCHED";
+                // DELIVERY LOGIC
+                if(d.status === 'done') {
+                    btn.innerText = "Waiting for Agent";
+                    btn.disabled = true; 
+                } else if(d.status === 'out_for_delivery') {
+                    btn.innerText = "🛵 Out for Delivery";
+                    btn.disabled = true;
+                } else {
+                    btn.innerText = "Cooking...";
+                    btn.disabled = true;
+                }
             } else {
                 btn.innerText = "PAID & CLEAR";
+                btn.disabled = false;
             }
 
             const loyaltySec = document.getElementById('loyalty-section');
@@ -1216,6 +1226,17 @@
         };
 
         window.settleAndClear = async () => {
+            // SAFETY CHECK: Prevent Manager from deleting Delivery/Pickup orders in "Waiting" or "Out" states
+            const tableStr = currentSettleTable.toString();
+            if(tableStr.startsWith('D')) {
+                const d = tableData[currentSettleTable];
+                if(d.status === 'done' || d.status === 'out_for_delivery') {
+                    alert("This order is managed by the Delivery Agent.");
+                    return; 
+                }
+            }
+            // ------------------------------------------------------------------------------------------------
+
             const d = tableData[currentSettleTable];
             const type = document.getElementById('disc-type').value;
             const val = parseFloat(document.getElementById('disc-val').value) || 0;
@@ -1226,7 +1247,7 @@
 
             const master = {
                 orderId: Math.floor(100000 + Math.random() * 900000),
-                orderType: d.orderType || 'Dine-In', // FIX: Use dynamic type instead of hardcoded 'Dine-In'
+                orderType: d.orderType || 'Dine-In', 
                 timestamp: Date.now(), status: 'paid',
                 customer: { name: `Table ${currentSettleTable}`, phone: d.phone || '-', address:'Dine-In' },
                 items: d.items, 
