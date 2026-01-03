@@ -591,7 +591,8 @@
                         const tId = order.customer.name.split(' ')[1];
                         if(!tableData[tId]) tableData[tId] = { 
                             total:0, items:[], keys:[], timestamp: order.timestamp,
-                            fins: { sub:0, disc:0, pack:0 }, phone: null
+                            fins: { sub:0, disc:0, pack:0 }, phone: null,
+                            orderType: 'Dine-In' // Explicitly set Dine-In
                         };
                         if(order.customer.phone && order.customer.phone.length >= 10 && order.customer.phone !== '0000000000') {
                             tableData[tId].phone = order.customer.phone;
@@ -650,7 +651,8 @@
                             timestamp: order.timestamp,
                             fins: { sub: f.subTotal||0, disc: f.discountVal||0, pack: f.packingTotal||0 },
                             phone: order.customer.phone,
-                            customerName: order.customer.name // Storing name for grid display
+                            customerName: order.customer.name, // Storing name for grid display
+                            orderType: order.orderType // Store dynamic type
                         };
                     });
                 };
@@ -1224,7 +1226,8 @@
 
             const master = {
                 orderId: Math.floor(100000 + Math.random() * 900000),
-                orderType: 'Dine-In', timestamp: Date.now(), status: 'paid',
+                orderType: d.orderType || 'Dine-In', // FIX: Use dynamic type instead of hardcoded 'Dine-In'
+                timestamp: Date.now(), status: 'paid',
                 customer: { name: `Table ${currentSettleTable}`, phone: d.phone || '-', address:'Dine-In' },
                 items: d.items, 
                 financials: { subTotal: d.fins.sub, discountVal: finalTotalDisc, loyaltyRedeemed: redeemVal, packingTotal: d.fins.pack, grandTotal: finalGrand }
