@@ -448,7 +448,8 @@
                     isActive = Object.values(orders).some(o => 
                         o.customer && 
                         o.customer.name && 
-                        o.customer.name.startsWith(`Table ${TABLE_ID}`)
+                        o.customer.name.startsWith(`Table ${TABLE_ID}`) && 
+                        o.status !== 'completed' && o.status !== 'paid'
                     );
                 }
 
@@ -636,7 +637,8 @@
             if (options.length > 0 || cat === "ADD-ON" || MODE === 'waiter') {
                 openCustomization(item, options);
             } else {
-                addToCartLogic(item.name, item.price, item.type);
+                // FIXED: Pass category here for filtering
+                addToCartLogic(item.name, item.price, item.type, item.category);
             }
         }
 
@@ -683,15 +685,18 @@
             let displayName = selectedItem.name;
             if(mods.length > 0) displayName += ` [${mods.join(', ')}]`;
             if(note) displayName += ` (Note: ${note})`;
-            addToCartLogic(displayName, finalPrice, selectedItem.type);
+            
+            // FIXED: Pass category here for filtering
+            addToCartLogic(displayName, finalPrice, selectedItem.type, selectedItem.category);
             closeCustomization();
         }
 
         window.closeCustomization = () => document.getElementById('customization-modal').style.display = 'none';
 
-        function addToCartLogic(name, price, type) {
+        // FIXED: Added category parameter to save it in cart
+        function addToCartLogic(name, price, type, category) {
             if(cart[name]) cart[name].qty++;
-            else cart[name] = { price, qty: 1, type };
+            else cart[name] = { price, qty: 1, type, category: category || 'General' }; // Save Category
             renderCart();
             const btn = document.querySelector('.mobile-cart-btn');
             btn.style.transform = "scale(1.1)";
@@ -787,7 +792,14 @@
             const items = [];
             for(let key in cart) {
                 total += cart[key].price * cart[key].qty;
-                items.push({ name: key, qty: cart[key].qty, price: cart[key].price, type: cart[key].type });
+                // FIXED: Include category in the pushed items so KDS can filter
+                items.push({ 
+                    name: key, 
+                    qty: cart[key].qty, 
+                    price: cart[key].price, 
+                    type: cart[key].type,
+                    category: cart[key].category || 'General' 
+                });
             }
 
             const order = {
