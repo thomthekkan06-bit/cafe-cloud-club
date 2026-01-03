@@ -431,12 +431,12 @@
                 
                 if (nameField && userData.name) {
                     nameField.value = userData.name;
-                    nameField.readOnly = true; 
+                    // nameField.readOnly = true; [FIX: DISABLED LOCK]
                 }
                 
                 if (phoneField && userData.phone) {
                     phoneField.value = userData.phone;
-                    phoneField.readOnly = true;
+                    // phoneField.readOnly = true; [FIX: DISABLED LOCK]
                 }
             } catch (e) {
                 console.error("Error loading saved user details", e);
