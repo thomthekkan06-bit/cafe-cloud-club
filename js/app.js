@@ -192,9 +192,7 @@ const vegIcon = decodeURIComponent('%F0%9F%9F%A2');
 const nonVegIcon = decodeURIComponent('%F0%9F%94%B4');
 const rupeeSign = decodeURIComponent('%E2%82%B9');
 
-/* --- DYNAMIC FIREBASE MENU --- */
-let menuData = [];
-const menuRef = ref(db, 'menu');
+/* --- REPLACE THE EXISTING onValue BLOCK WITH THIS --- */
 
 onValue(menuRef, (snapshot) => {
     const data = snapshot.val();
@@ -205,11 +203,18 @@ onValue(menuRef, (snapshot) => {
             const item = data[key];
             let isAvailable = true;
 
+            // --- FILTER: HIDE DINE-IN EXCLUSIVES FROM ONLINE STORE ---
+            if (item.isDineInOnly === true) {
+                return; // Skips this item so it doesn't show in the online app
+            }
+            // ---------------------------------------------------------
+
             if (item.stockStatus === 'MANUAL_OFF') isAvailable = false;
             else if (item.stockStatus === 'TEMP_OFF') {
                 if (item.stockReturnTime && Date.now() < item.stockReturnTime) isAvailable = false;
             }
             if (item.inStock === false) isAvailable = false;
+            
             if (isAvailable) menuData.push(item);
         });
 
@@ -219,7 +224,6 @@ onValue(menuRef, (snapshot) => {
     }
     renderMenu();
 });
-
 let cart = {};
 let activeCoupon = null; 
 let favorites = JSON.parse(localStorage.getItem('ccc_favorites')) || [];
