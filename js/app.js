@@ -192,7 +192,9 @@ const vegIcon = decodeURIComponent('%F0%9F%9F%A2');
 const nonVegIcon = decodeURIComponent('%F0%9F%94%B4');
 const rupeeSign = decodeURIComponent('%E2%82%B9');
 
-/* --- REPLACE THE EXISTING onValue BLOCK WITH THIS --- */
+/* --- DYNAMIC FIREBASE MENU --- */
+let menuData = [];
+const menuRef = ref(db, 'menu');
 
 onValue(menuRef, (snapshot) => {
     const data = snapshot.val();
@@ -224,6 +226,7 @@ onValue(menuRef, (snapshot) => {
     }
     renderMenu();
 });
+
 let cart = {};
 let activeCoupon = null; 
 let favorites = JSON.parse(localStorage.getItem('ccc_favorites')) || [];
