@@ -82,7 +82,7 @@
         .order-card.status-done { border-left-color: var(--success); }
         .order-card.type-swiggy { border-left-color: var(--swiggy); }
         .order-card.type-zomato { border-left-color: var(--zomato); }
-        .order-card.type-takeaway { border-left-color: #10b981; } 
+        .order-card.type-pickup { border-left-color: #10b981; } 
         .order-card.type-delivery { border-left-color: #8b5cf6; }
 
         .card-top { padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.2); }
@@ -266,7 +266,7 @@
                 <div style="cursor:pointer;" onclick="closeModal('parcel-type-modal')">&times;</div>
             </div>
             <div class="modal-body" style="display:flex; flex-direction:column; gap:15px;">
-                <button class="parcel-type-btn" onclick="selectParcelType('Takeaway')">
+                <button class="parcel-type-btn" onclick="selectParcelType('Pickup')">
                     🛍️ Takeaway (Pickup)
                 </button>
                 <button class="parcel-type-btn" onclick="selectParcelType('Delivery')">
@@ -348,7 +348,7 @@
 
     <div class="modal-overlay" id="settle-modal">
         <div class="modal-card">
-            <div class="modal-header"><h3 style="margin:0;">Settle Table <span id="m-t-id"></span></h3><div onclick="closeModal('settle-modal')" style="cursor:pointer">&times;</div></div>
+            <div class="modal-header"><h3 style="margin:0;">Settle / Action <span id="m-t-id"></span></h3><div onclick="closeModal('settle-modal')" style="cursor:pointer">&times;</div></div>
             <div class="modal-body">
                 <div id="bill-req-alert" style="display:none; background:#FFD700; color:black; padding:10px; text-align:center; border-radius:8px; margin-bottom:15px; font-weight:bold;">
                     ⚠️ CUSTOMER REQUESTED BILL
@@ -386,7 +386,7 @@
             <div class="modal-footer">
                 <button class="btn-modal-cancel" onclick="openEditFromTable()">EDIT</button>
                 <button class="btn-modal-cancel" style="border-color:#25D366; color:#25D366;" onclick="whatsappBill()">WhatsApp 📱</button>
-                <button class="btn-modal-action" style="background:var(--success)" onclick="settleAndClear()">PAID & CLEAR</button>
+                <button class="btn-modal-action" id="btn-settle-action" style="background:var(--success)" onclick="settleAndClear()">PAID & CLEAR</button>
             </div>
         </div>
     </div>
@@ -464,7 +464,7 @@
         
         // --- NEW PARCEL VARIABLES ---
         let parcelItems = [];
-        let currentParcelType = 'Takeaway';
+        let currentParcelType = 'Pickup'; // Default internal type matching TV/Kitchen
 
         // --- NEW SEARCH FILTER LOGIC ---
         window.filterMenuSelect = (inputId, selectId) => {
@@ -534,8 +534,6 @@
                 if (item.type === 'veg') opts.push({ name: "Extra Paneer", price: 30 });
             }
             if (item.category === "Whipped Wonders") opts.push({ name: "Extra Ice Cream", price: 30 });
-            
-            // NOTE: Auto-Packing cost logic handled in add functions, not here
             return opts;
         }
 
@@ -576,12 +574,19 @@
                 const data = snap.val() || {};
                 const list = document.getElementById('online-list');
                 list.innerHTML = "";
-                tableData = {};
+                tableData = {}; // Clear previous table data
+                
+                // Track parcels to assign to slots
+                let pickupList = [];
+                let deliveryList = [];
+
                 let pending = false;
                 let count = 0;
+
                 Object.entries(data).forEach(([key, order]) => {
                     if(order.status === 'completed' || order.status === 'rejected') return;
-                    if(order.status === 'pending') pending = true;
+                    
+                    // 1. DINE-IN LOGIC
                     if(order.orderType === 'Dine-In' && order.customer && order.customer.name.startsWith('Table')) {
                         const tId = order.customer.name.split(' ')[1];
                         if(!tableData[tId]) tableData[tId] = { 
@@ -599,15 +604,60 @@
                         if(order.timestamp < tableData[tId].timestamp) tableData[tId].timestamp = order.timestamp;
                         tableData[tId].items.push(...(order.items||[]));
                         tableData[tId].keys.push(key);
-                    } 
+                    }
+
+                    // 2. PARCEL LOGIC (Collection for Right Pane Slots)
+                    // If accepted (not pending), they go to slots
+                    if (order.status !== 'pending') {
+                        if (order.orderType === 'Pickup') pickupList.push({key, ...order});
+                        if (order.orderType === 'Delivery') deliveryList.push({key, ...order});
+                    }
+
+                    // 3. QUEUE VISIBILITY (Left Pane)
+                    // Hide Parcel orders from queue if they are accepted (cooking/done) to move them to slots
+                    // Show Dine-In orders until 'served' or 'done'
                     let showInQueue = true;
                     if (order.status === 'served') showInQueue = false;
                     if (order.status === 'done' && order.orderType === 'Dine-In') showInQueue = false;
+                    
+                    // HIDE accepted parcels from Queue (they move to grid)
+                    if ((order.orderType === 'Pickup' || order.orderType === 'Delivery') && order.status !== 'pending') {
+                         showInQueue = false;
+                    }
+
+                    if(order.status === 'pending') pending = true;
+
                     if(showInQueue) {
                         count++;
                         renderOrderCard(key, order, list);
                     }
                 });
+
+                // 4. MAP PARCELS TO SLOTS
+                pickupList.sort((a,b) => a.timestamp - b.timestamp);
+                deliveryList.sort((a,b) => a.timestamp - b.timestamp);
+
+                const mapToSlot = (prefix, list) => {
+                    list.forEach((order, index) => {
+                        if(index >= 10) return; // Limit to 10 slots
+                        const slotId = `${prefix}${index+1}`;
+                        const f = order.financials || {grandTotal:0, subTotal:0, discountVal:0, packingTotal:0};
+                        
+                        tableData[slotId] = {
+                            total: f.grandTotal || 0,
+                            items: order.items || [],
+                            keys: [order.key],
+                            timestamp: order.timestamp,
+                            fins: { sub: f.subTotal||0, disc: f.discountVal||0, pack: f.packingTotal||0 },
+                            phone: order.customer.phone,
+                            customerName: order.customer.name // Storing name for grid display
+                        };
+                    });
+                };
+
+                mapToSlot('T', pickupList); // T1...T10
+                mapToSlot('D', deliveryList); // D1...D10
+
                 document.getElementById('online-count').innerText = count;
                 renderTables();
                 if(pending) {
@@ -622,18 +672,16 @@
            NEW PARCEL LOGIC (DELIVERY / TAKEAWAY)
         ------------------------------------------- */
         
-        // Step 0: Open Type Selector
         window.openParcelTypeModal = () => {
              document.getElementById('parcel-type-modal').style.display = 'flex';
         };
 
-        // Step 1: Set Type and Open Item Selector
         window.selectParcelType = (type) => {
-            currentParcelType = type;
+            currentParcelType = type; // 'Pickup' or 'Delivery'
             document.getElementById('parcel-type-modal').style.display = 'none';
             
-            // Update UI in Step 1
-            document.getElementById('parcel-mode-badge').innerText = type.toUpperCase();
+            // Update UI
+            document.getElementById('parcel-mode-badge').innerText = (type === 'Pickup') ? 'TAKEAWAY (PICKUP)' : 'DELIVERY';
             
             // CLEAR SEARCH
             document.getElementById('parcel-search').value = "";
@@ -642,7 +690,6 @@
             parcelItems = [];
             renderParcelList();
             
-            // Reset fields
             document.getElementById('parcel-menu-select').value = "";
             document.getElementById('parcel-qty').value = "1";
             document.getElementById('parcel-item-note').value = "";
@@ -652,7 +699,6 @@
             document.getElementById('parcel-step1-modal').style.display = 'flex';
         };
 
-        // Step 1 Helper: Auto Fill Options
         window.parcelAutoFill = () => {
             const idx = document.getElementById('parcel-menu-select').value;
             const container = document.getElementById('parcel-options-container');
@@ -677,7 +723,6 @@
             }
         };
 
-        // Step 1 Helper: Add Item
         window.addParcelItem = () => {
             const idx = document.getElementById('parcel-menu-select').value;
             if(idx === "") return;
@@ -688,19 +733,16 @@
             let finalPrice = item.price;
             let modNames = [];
             
-            // Options Calculation
             document.querySelectorAll('.parcel-opt-cb:checked').forEach(cb => {
                 finalPrice += parseInt(cb.dataset.price);
                 modNames.push(cb.value);
             });
 
-            // Packing Calculation (Auto)
             let packCost = 10;
             if (item.category === 'ADD-ON') packCost = item.name.startsWith("Hummus") ? 7 : 5;
             else if (fiveRsCats.includes(item.category)) packCost = 5;
             if (modNames.includes("Tossed Rice") || modNames.includes("Sorted Vegges")) packCost += 7;
 
-            // Combine Note into Variant string for display
             let variantStr = modNames.join(", ");
             if (note) {
                 if(variantStr) variantStr += ` | Note: ${note}`;
@@ -719,7 +761,6 @@
 
             renderParcelList();
             
-            // Reset Inputs for next item
             document.getElementById('parcel-menu-select').value = "";
             document.getElementById('parcel-qty').value = "1";
             document.getElementById('parcel-item-note').value = "";
@@ -751,14 +792,12 @@
         }
         window.remParcel = (i) => { parcelItems.splice(i,1); renderParcelList(); };
 
-        // Step 2: Go to Details
         window.goToParcelStep2 = () => {
             if(parcelItems.length === 0) return alert("Please add at least one item.");
             let count = 0; let total = 0;
             parcelItems.forEach(i => { count += i.qty; total += ((i.price + i.packingInfo)*i.qty); });
             document.getElementById('parcel-summary-text').innerText = `${count} Items | Total Estimate: ₹${total}`;
             
-            // Toggle Address Field
             const addrDiv = document.getElementById('parcel-addr-group');
             if(currentParcelType === 'Delivery') addrDiv.style.display = 'block';
             else addrDiv.style.display = 'none';
@@ -773,7 +812,6 @@
             document.getElementById('parcel-step1-modal').style.display = 'flex';
         };
 
-        // Step 3: Final Submit
         window.submitParcelOrder = async () => {
             const name = document.getElementById('parcel-c-name').value.trim();
             const phone = document.getElementById('parcel-c-phone').value.trim();
@@ -794,7 +832,7 @@
 
             const order = {
                 orderId: orderId,
-                orderType: currentParcelType, // 'Takeaway' or 'Delivery'
+                orderType: currentParcelType, // 'Pickup' or 'Delivery'
                 timestamp: Date.now(),
                 status: 'pending',
                 customer: { name: name, phone: phone, address: finalAddr },
@@ -815,11 +853,8 @@
         ------------------------------------------- */
         window.openExtOrderModal = () => {
             document.getElementById('ext-order-modal').style.display = 'flex';
-            
-            // CLEAR SEARCH
             document.getElementById('ext-search').value = "";
             filterMenuSelect('ext-search', 'ext-menu-select');
-
             extOrderItems = [];
             document.getElementById('ext-id').value = "";
             renderExtList();
@@ -920,7 +955,7 @@
             let cls = `order-card status-${order.status}`;
             if(type==='Swiggy') cls += ' type-swiggy';
             else if(type==='Zomato') cls += ' type-zomato';
-            else if(type==='Takeaway') cls += ' type-takeaway';
+            else if(type==='Pickup') cls += ' type-pickup'; // Updated class for Pickup
             else if(type==='Delivery') cls += ' type-delivery';
 
             const f = order.financials || { subTotal: 0, packingTotal: 0, discountVal: 0, grandTotal: 0 };
@@ -1001,8 +1036,15 @@
                     const tm = mins%60;
                     const timeStr = `${h}:${tm.toString().padStart(2,'0')}`;
                     const billReqLabel = hasReq ? `<div style="color:black; background:#FFD700; border-radius:4px; padding:2px; font-size:0.7rem; text-align:center; font-weight:bold;">BILL REQ</div>` : '';
+                    
+                    // Display Customer Name for Parcel orders
+                    let displayLabel = label || id;
+                    if(id.toString().startsWith('T') || id.toString().startsWith('D')) {
+                        if(d.customerName) displayLabel = d.customerName.split(' ')[0]; // Show First Name
+                    }
+
                     txt = `
-                        <div style="display:flex;justify-content:space-between"><div class="t-num">${label || id}</div><div style="font-weight:bold;color:#aaa">₹${d.total}</div></div>
+                        <div style="display:flex;justify-content:space-between"><div class="t-num">${displayLabel}</div><div style="font-weight:bold;color:#aaa">₹${d.total}</div></div>
                         ${billReqLabel}
                         <div style="text-align:center; font-family:'JetBrains Mono'; font-size:1.4rem; font-weight:bold; margin-top:10px;">${timeStr}</div>
                         <div style="text-align:center; font-size:0.7rem; font-weight:bold; opacity:0.7;">OCCUPIED</div>
@@ -1015,20 +1057,15 @@
                 dest.appendChild(div);
             };
             
-            // Indoor: 1-7, then Bar 1 (id 8), then new Bars (ids 14,15,16)
             for(let i=1; i<=7; i++) make(i, m);
             make(8, m, "BAR 1");
             make(14, m, "BAR 2");
             make(15, m, "BAR 3");
             make(16, m, "BAR 4");
 
-            // AC Room: 9-13
             for(let i=9; i<=13; i++) make(i, a);
 
-            // Delivery Boxes (Phone/Manual)
             for(let i=1; i<=10; i++) make(`D${i}`, d, `DEL ${i}`);
-
-            // Takeaway Boxes (Pickup)
             for(let i=1; i<=10; i++) make(`T${i}`, t, `PKP ${i}`);
         }
 
@@ -1048,6 +1085,16 @@
             document.getElementById('m-disc').innerText = `-₹${d.fins.disc}`;
             document.getElementById('m-pack').innerText = `₹${d.fins.pack}`;
             document.getElementById('m-tot').innerText = `₹${d.total}`;
+            
+            // Dynamic Button Text for Parcels
+            const btn = document.getElementById('btn-settle-action');
+            if(currentSettleTable.toString().startsWith('T')) {
+                btn.innerText = "✅ PICKED UP";
+            } else if(currentSettleTable.toString().startsWith('D')) {
+                btn.innerText = "🛵 DISPATCHED";
+            } else {
+                btn.innerText = "PAID & CLEAR";
+            }
 
             const loyaltySec = document.getElementById('loyalty-section');
             const redeemInput = document.getElementById('redeem-points');
