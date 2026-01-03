@@ -225,6 +225,9 @@
 
                 <div style="border-top:1px solid var(--border); margin:15px 0; padding-top:10px;">
                     <label style="font-size:0.8rem; color:var(--text-muted);">ADD ITEM</label>
+                    
+                    <input type="text" id="ext-search" class="inp" placeholder="🔍 Search item..." style="margin-bottom: 5px; font-size: 0.9rem;" onkeyup="filterMenuSelect('ext-search', 'ext-menu-select')">
+
                     <select id="ext-menu-select" class="inp-select" onchange="extAutoFill()">
                         <option value="">-- Select Item --</option>
                     </select>
@@ -276,6 +279,9 @@
             <div class="modal-body">
                 <div style="border-bottom:1px solid var(--border); margin-bottom:15px; padding-bottom:10px;">
                     <label style="font-size:0.8rem; color:var(--text-muted);">SELECT ITEM</label>
+                    
+                    <input type="text" id="parcel-search" class="inp" placeholder="🔍 Search item..." style="margin-bottom: 5px; font-size: 0.9rem;" onkeyup="filterMenuSelect('parcel-search', 'parcel-menu-select')">
+
                     <select id="parcel-menu-select" class="inp-select" onchange="parcelAutoFill()">
                         <option value="">-- Select Item --</option>
                     </select>
@@ -454,6 +460,21 @@
         let parcelItems = [];
         let currentParcelType = 'Takeaway';
 
+        // --- NEW SEARCH FILTER LOGIC ---
+        window.filterMenuSelect = (inputId, selectId) => {
+            const query = document.getElementById(inputId).value.toLowerCase();
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">-- Select Item --</option>';
+            fullMenu.forEach((item, index) => {
+                if (item.name.toLowerCase().includes(query)) {
+                    const opt = document.createElement('option');
+                    opt.value = index; 
+                    opt.text = item.name;
+                    select.appendChild(opt);
+                }
+            });
+        };
+
         // --- CLOCK FUNCTION ---
         function startClock() {
             const update = () => {
@@ -608,6 +629,10 @@
             // Update UI in Step 1
             document.getElementById('parcel-mode-badge').innerText = type.toUpperCase();
             
+            // CLEAR SEARCH
+            document.getElementById('parcel-search').value = "";
+            filterMenuSelect('parcel-search', 'parcel-menu-select');
+
             parcelItems = [];
             renderParcelList();
             
@@ -784,6 +809,11 @@
         ------------------------------------------- */
         window.openExtOrderModal = () => {
             document.getElementById('ext-order-modal').style.display = 'flex';
+            
+            // CLEAR SEARCH
+            document.getElementById('ext-search').value = "";
+            filterMenuSelect('ext-search', 'ext-menu-select');
+
             extOrderItems = [];
             document.getElementById('ext-id').value = "";
             renderExtList();
