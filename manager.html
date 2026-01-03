@@ -8,12 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    
-    <script>
-        // Forces the plugin to find the main library
-        window.jsPDF = window.jspdf.jsPDF;
-    </script>
-    
+    <script>window.jsPDF = window.jspdf.jsPDF;</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
 
     <style>
@@ -51,8 +46,6 @@
             background: linear-gradient(135deg, #3b82f6, #60a5fa);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
-
-        /* CENTERED CLOCK */
         .clock-container {
             position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
             background: rgba(0,0,0,0.4); padding: 5px 15px; border-radius: 8px; border: 1px solid var(--border);
@@ -66,6 +59,10 @@
         }
         .btn-swiggy-zomato { background: rgba(252, 128, 25, 0.15); color: #fc8019; border-color: #fc8019; }
         .btn-swiggy-zomato:hover { background: #fc8019; color: white; }
+        
+        /* PARCEL BUTTON STYLE */
+        .btn-parcel { background: rgba(16, 185, 129, 0.15); color: #10b981; border-color: #10b981; }
+        .btn-parcel:hover { background: #10b981; color: white; }
 
         /* --- LAYOUT --- */
         .main-container { display: flex; flex: 1; overflow: hidden; }
@@ -85,6 +82,8 @@
         .order-card.status-done { border-left-color: var(--success); }
         .order-card.type-swiggy { border-left-color: var(--swiggy); }
         .order-card.type-zomato { border-left-color: var(--zomato); }
+        .order-card.type-takeaway { border-left-color: #10b981; } 
+        .order-card.type-delivery { border-left-color: #8b5cf6; }
 
         .card-top { padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.2); }
         .card-id { font-family: 'JetBrains Mono'; font-weight: 800; color: var(--text-muted); }
@@ -160,6 +159,17 @@
         .ext-item-row { display: flex; justify-content: space-between; align-items: flex-start; background: rgba(255,255,255,0.05); padding: 8px; margin-bottom: 5px; border-radius: 4px; }
         .ext-item-details { font-size: 0.9rem; }
         .ext-mods { font-size: 0.75rem; color: #aaa; margin-top: 2px; }
+        
+        /* PARCEL TYPE BUTTONS */
+        .parcel-type-btn {
+            width: 100%; padding: 20px; border-radius: 12px; border: 2px solid var(--border);
+            background: var(--surface); color: white; font-size: 1.1rem; font-weight: 800;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+            transition: 0.2s;
+        }
+        .parcel-type-btn:hover { border-color: var(--primary); background: rgba(59, 130, 246, 0.1); }
+        .parcel-type-btn.selected { border-color: var(--success); background: rgba(16, 185, 129, 0.1); }
+
     </style>
 </head>
 <body>
@@ -178,6 +188,7 @@
         </div>
         
         <div class="header-actions">
+            <button class="btn-header btn-parcel" onclick="openParcelTypeModal()">+ 🛍️ Parcel</button>
             <button class="btn-header btn-swiggy-zomato" onclick="openExtOrderModal()">+ 🛵 Swiggy/Zomato</button>
             <a href="history.html" class="btn-header">History</a>
         </div>
@@ -217,9 +228,7 @@
                     <select id="ext-menu-select" class="inp-select" onchange="extAutoFill()">
                         <option value="">-- Select Item --</option>
                     </select>
-                    
                     <div id="ext-options-container" class="auto-options-container" style="display:none;"></div>
-
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                         <input type="number" id="ext-qty" class="inp" value="1" placeholder="Qty">
                         <button class="btn-modal-action" style="background:var(--primary);" onclick="addExtItem()">ADD +</button>
@@ -241,6 +250,90 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="parcel-type-modal">
+        <div class="modal-card" style="width: 400px;">
+            <div class="modal-header">
+                <h3 style="margin:0;">Select Parcel Type</h3>
+                <div style="cursor:pointer;" onclick="closeModal('parcel-type-modal')">&times;</div>
+            </div>
+            <div class="modal-body" style="display:flex; flex-direction:column; gap:15px;">
+                <button class="parcel-type-btn" onclick="selectParcelType('Takeaway')">
+                    🛍️ Takeaway (Pickup)
+                </button>
+                <button class="parcel-type-btn" onclick="selectParcelType('Delivery')">
+                    🛵 Delivery (Phone/Manual)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="parcel-step1-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 style="margin:0;">Add Items <span id="parcel-mode-badge" style="font-size:0.7rem; background:#333; padding:2px 6px; border-radius:4px;"></span></h3>
+                <div style="cursor:pointer;" onclick="closeModal('parcel-step1-modal')">&times;</div>
+            </div>
+            <div class="modal-body">
+                <div style="border-bottom:1px solid var(--border); margin-bottom:15px; padding-bottom:10px;">
+                    <label style="font-size:0.8rem; color:var(--text-muted);">SELECT ITEM</label>
+                    <select id="parcel-menu-select" class="inp-select" onchange="parcelAutoFill()">
+                        <option value="">-- Select Item --</option>
+                    </select>
+                    
+                    <div id="parcel-options-container" class="auto-options-container" style="display:none;"></div>
+
+                    <input type="text" id="parcel-item-note" class="inp" placeholder="Item Note (e.g. Less Spicy, No Mayo)" style="margin-bottom:10px; font-size:0.9rem;">
+
+                    <div style="display:grid; grid-template-columns: 1fr 2fr; gap:10px;">
+                        <input type="number" id="parcel-qty" class="inp" value="1" placeholder="Qty">
+                        <button class="btn-modal-action" style="background:var(--primary);" onclick="addParcelItem()">ADD ITEM +</button>
+                    </div>
+                </div>
+
+                <div id="parcel-items-list" style="max-height:200px; overflow-y:auto; margin-bottom:10px; border: 1px dashed #333; padding: 5px;"></div>
+                
+                <div class="fin-box">
+                    <div class="fin-row total"><span>ESTIMATED TOTAL</span><span id="parcel-grand">₹0</span></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal-cancel" onclick="closeModal('parcel-step1-modal')">Cancel</button>
+                <button class="btn-modal-action" style="background:var(--success)" onclick="goToParcelStep2()">NEXT &rarr;</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="parcel-step2-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 style="margin:0;">Customer Details</h3>
+                <div style="cursor:pointer;" onclick="closeModal('parcel-step2-modal')">&times;</div>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 15px; background: rgba(59, 130, 246, 0.1); padding: 10px; border-radius: 6px;">
+                    <label style="font-size:0.7rem; color:var(--primary); font-weight:bold;">ORDER SUMMARY</label>
+                    <div id="parcel-summary-text" style="font-size: 0.9rem; color: white;">0 Items</div>
+                </div>
+
+                <label style="font-size:0.8rem; color:#aaa;">Customer Name <span style="color:red">*</span></label>
+                <input type="text" id="parcel-c-name" class="inp" placeholder="e.g. John Doe">
+
+                <label style="font-size:0.8rem; color:#aaa;">Phone Number <span style="color:red">*</span></label>
+                <input type="number" id="parcel-c-phone" class="inp" placeholder="e.g. 9876543210">
+
+                <div id="parcel-addr-group" style="display:none;">
+                    <label style="font-size:0.8rem; color:#aaa;">Delivery Address <span style="color:red">*</span></label>
+                    <textarea id="parcel-c-addr" class="inp" rows="3" placeholder="Enter full delivery address..."></textarea>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal-cancel" onclick="backToParcelStep1()">&larr; Back</button>
+                <button class="btn-modal-action" style="background:var(--success)" onclick="submitParcelOrder()">CONFIRM & SENT</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="settle-modal">
         <div class="modal-card">
             <div class="modal-header"><h3 style="margin:0;">Settle Table <span id="m-t-id"></span></h3><div onclick="closeModal('settle-modal')" style="cursor:pointer">&times;</div></div>
@@ -248,9 +341,7 @@
                 <div id="bill-req-alert" style="display:none; background:#FFD700; color:black; padding:10px; text-align:center; border-radius:8px; margin-bottom:15px; font-weight:bold;">
                     ⚠️ CUSTOMER REQUESTED BILL
                 </div>
-
                 <div id="m-i-list"></div>
-
                 <div id="loyalty-section" style="margin: 15px 0; padding: 10px; background: rgba(59, 130, 246, 0.1); border-radius: 6px; border: 1px solid var(--primary); display:none;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                         <span style="font-size:0.8rem; font-weight:bold; color:var(--primary);">👑 LOYALTY PROGRAM</span>
@@ -274,9 +365,7 @@
                 <div class="fin-box">
                      <div class="fin-row"><span>Subtotal</span><span id="m-sub">₹0</span></div>
                      <div class="fin-row"><span>Discount</span><span id="m-disc">₹0</span></div>
-                     
                      <div class="fin-row" id="loyalty-row" style="display:none; color:var(--primary);"><span>Loyalty Redeem</span><span id="m-loyalty">-₹0</span></div>
-
                      <div class="fin-row"><span>Packing</span><span id="m-pack">₹0</span></div>
                      <div class="fin-row total"><span>TOTAL</span><span id="m-tot">₹0</span></div>
                      <div style="text-align:right; font-size:0.7rem; color:#aaa; margin-top:5px;">Points to Earn: <span id="earn-preview">0</span></div>
@@ -302,9 +391,7 @@
                     <select id="table-transfer-select" class="inp-select" style="border-color:var(--primary); margin:0;"></select>
                     <button class="btn-modal-action" onclick="saveTableMove()" style="width:auto; padding:8px 15px; background:var(--primary);">GO</button>
                 </div>
-
                 <div id="edit-list-container"></div>
-
                 <div style="margin-top:20px; padding-top:10px; border-top:1px solid #333;">
                     <label style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">ADD ITEM</label>
                     <div class="row-inputs" style="grid-template-columns: 2fr 1fr 0.8fr auto; gap:5px;">
@@ -340,33 +427,17 @@
 
         // --- ROBUST WAKE LOCK (PREVENT SLEEP) ---
         let wakeLock = null;
-
         async function requestWakeLock() {
             try {
                 if ('wakeLock' in navigator) {
                     wakeLock = await navigator.wakeLock.request('screen');
                     console.log("Screen Wake Lock: Active");
                 }
-            } catch (err) {
-                // This usually happens if the user hasn't interacted with the page yet
-                console.log("Wake Lock request failed (usually needs a click):", err.name);
-            }
+            } catch (err) { console.log("Wake Lock request failed:", err.name); }
         }
-
-        // 1. Try to request immediately (often blocked by browser until click)
         requestWakeLock();
-
-        // 2. Request on FIRST interaction (Guaranteed to work)
-        document.addEventListener('click', () => {
-            requestWakeLock();
-        }, { once: true }); 
-
-        // 3. Re-acquire automatically if tab becomes visible again (Crucial!)
-        document.addEventListener('visibilitychange', async () => {
-            if (document.visibilityState === 'visible') {
-                requestWakeLock();
-            }
-        });
+        document.addEventListener('click', () => { requestWakeLock(); }, { once: true }); 
+        document.addEventListener('visibilitychange', async () => { if (document.visibilityState === 'visible') requestWakeLock(); });
 
         const bell = new Audio('bell.mp3');
         bell.loop = true;
@@ -378,6 +449,10 @@
         let currentSettleTable = null;
         let currentEditKey = null;
         let activeBillRequests = {};
+        
+        // --- NEW PARCEL VARIABLES ---
+        let parcelItems = [];
+        let currentParcelType = 'Takeaway';
 
         // --- CLOCK FUNCTION ---
         function startClock() {
@@ -433,13 +508,7 @@
             }
             if (item.category === "Whipped Wonders") opts.push({ name: "Extra Ice Cream", price: 30 });
             
-            let packPrice = 10;
-            if (fiveRsCats.includes(item.category)) packPrice = 5;
-            if (item.category === 'ADD-ON') packPrice = item.name.startsWith("Hummus") ? 7 : 5;
-            if (item.name.includes("Tossed Rice") || item.name.includes("Sorted Vegges")) packPrice = 7;
-            
-            opts.push({ name: "Packing", price: packPrice });
-            
+            // NOTE: Auto-Packing cost logic handled in add functions, not here
             return opts;
         }
 
@@ -450,17 +519,23 @@
                 fullMenu = Object.values(data).sort((a,b) => a.name.localeCompare(b.name));
                 const sel = document.getElementById('ext-menu-select');
                 const standardSel = document.getElementById('menu-select');
+                const parcelSel = document.getElementById('parcel-menu-select');
+                
                 sel.innerHTML = '<option value="">-- Select Item --</option>';
                 standardSel.innerHTML = '<option value="">-- Select Item --</option>';
+                parcelSel.innerHTML = '<option value="">-- Select Item --</option>';
+                
                 fullMenu.forEach((item, idx) => {
                     const opt = document.createElement('option');
-                    opt.value = idx; 
-                    opt.text = item.name;
+                    opt.value = idx; opt.text = item.name;
                     sel.appendChild(opt);
+                    
+                    const pOpt = document.createElement('option');
+                    pOpt.value = idx; pOpt.text = item.name;
+                    parcelSel.appendChild(pOpt);
+
                     const stdOpt = document.createElement('option');
-                    stdOpt.value = item.name;
-                    stdOpt.dataset.price = item.price;
-                    stdOpt.text = item.name;
+                    stdOpt.value = item.name; stdOpt.dataset.price = item.price; stdOpt.text = item.name;
                     standardSel.appendChild(stdOpt);
                 });
             });
@@ -484,15 +559,11 @@
                         const tId = order.customer.name.split(' ')[1];
                         if(!tableData[tId]) tableData[tId] = { 
                             total:0, items:[], keys:[], timestamp: order.timestamp,
-                            fins: { sub:0, disc:0, pack:0 },
-                            phone: null
+                            fins: { sub:0, disc:0, pack:0 }, phone: null
                         };
-                        
-                        // Capture Phone for Loyalty
                         if(order.customer.phone && order.customer.phone.length >= 10 && order.customer.phone !== '0000000000') {
                             tableData[tId].phone = order.customer.phone;
                         }
-
                         const f = order.financials || {grandTotal:0, subTotal:0, discountVal:0, packingTotal:0};
                         tableData[tId].total += (f.grandTotal || 0);
                         tableData[tId].fins.sub += (f.subTotal || 0);
@@ -520,7 +591,197 @@
             });
         }
 
-        // --- EXTERNAL ORDER MODAL FUNCTIONS ---
+        /* -------------------------------------------
+           NEW PARCEL LOGIC (DELIVERY / TAKEAWAY)
+        ------------------------------------------- */
+        
+        // Step 0: Open Type Selector
+        window.openParcelTypeModal = () => {
+             document.getElementById('parcel-type-modal').style.display = 'flex';
+        };
+
+        // Step 1: Set Type and Open Item Selector
+        window.selectParcelType = (type) => {
+            currentParcelType = type;
+            document.getElementById('parcel-type-modal').style.display = 'none';
+            
+            // Update UI in Step 1
+            document.getElementById('parcel-mode-badge').innerText = type.toUpperCase();
+            
+            parcelItems = [];
+            renderParcelList();
+            
+            // Reset fields
+            document.getElementById('parcel-menu-select').value = "";
+            document.getElementById('parcel-qty').value = "1";
+            document.getElementById('parcel-item-note').value = "";
+            document.getElementById('parcel-options-container').innerHTML = "";
+            document.getElementById('parcel-options-container').style.display = "none";
+            
+            document.getElementById('parcel-step1-modal').style.display = 'flex';
+        };
+
+        // Step 1 Helper: Auto Fill Options
+        window.parcelAutoFill = () => {
+            const idx = document.getElementById('parcel-menu-select').value;
+            const container = document.getElementById('parcel-options-container');
+            container.innerHTML = "";
+            container.style.display = "none";
+            if(idx === "") return;
+            
+            const item = fullMenu[idx];
+            const options = getOptionsForItem(item); 
+            if(options.length > 0) {
+                container.style.display = "block";
+                options.forEach(opt => {
+                    container.innerHTML += `
+                        <div class="opt-row">
+                            <label class="opt-label">
+                                <input type="checkbox" class="parcel-opt-cb" value="${opt.name}" data-price="${opt.price}">
+                                ${opt.name}
+                            </label>
+                            <span class="opt-price">+₹${opt.price}</span>
+                        </div>`;
+                });
+            }
+        };
+
+        // Step 1 Helper: Add Item
+        window.addParcelItem = () => {
+            const idx = document.getElementById('parcel-menu-select').value;
+            if(idx === "") return;
+            const item = fullMenu[idx];
+            const qty = parseInt(document.getElementById('parcel-qty').value) || 1;
+            const note = document.getElementById('parcel-item-note').value.trim();
+
+            let finalPrice = item.price;
+            let modNames = [];
+            
+            // Options Calculation
+            document.querySelectorAll('.parcel-opt-cb:checked').forEach(cb => {
+                finalPrice += parseInt(cb.dataset.price);
+                modNames.push(cb.value);
+            });
+
+            // Packing Calculation (Auto)
+            let packCost = 10;
+            if (item.category === 'ADD-ON') packCost = item.name.startsWith("Hummus") ? 7 : 5;
+            else if (fiveRsCats.includes(item.category)) packCost = 5;
+            if (modNames.includes("Tossed Rice") || modNames.includes("Sorted Vegges")) packCost += 7;
+
+            // Combine Note into Variant string for display
+            let variantStr = modNames.join(", ");
+            if (note) {
+                if(variantStr) variantStr += ` | Note: ${note}`;
+                else variantStr = `Note: ${note}`;
+            }
+
+            parcelItems.push({
+                name: item.name,
+                category: item.category,
+                price: finalPrice,
+                basePrice: item.price,
+                qty: qty,
+                variant: variantStr,
+                packingInfo: packCost
+            });
+
+            renderParcelList();
+            
+            // Reset Inputs for next item
+            document.getElementById('parcel-menu-select').value = "";
+            document.getElementById('parcel-qty').value = "1";
+            document.getElementById('parcel-item-note').value = "";
+            document.getElementById('parcel-options-container').innerHTML = "";
+            document.getElementById('parcel-options-container').style.display = "none";
+        };
+
+        function renderParcelList() {
+            const list = document.getElementById('parcel-items-list');
+            list.innerHTML = "";
+            let grand = 0;
+            parcelItems.forEach((item, i) => {
+                const total = (item.price + item.packingInfo) * item.qty;
+                grand += total;
+                list.innerHTML += `
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px dashed #444; padding:5px 0;">
+                        <div>
+                            <b>${item.qty}x ${item.name}</b>
+                            <div style="font-size:0.7rem; color:#aaa;">${item.variant}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div>₹${total}</div>
+                            <div style="font-size:0.7rem; color:red; cursor:pointer;" onclick="remParcel(${i})">Remove</div>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('parcel-grand').innerText = `₹${grand}`;
+        }
+        window.remParcel = (i) => { parcelItems.splice(i,1); renderParcelList(); };
+
+        // Step 2: Go to Details
+        window.goToParcelStep2 = () => {
+            if(parcelItems.length === 0) return alert("Please add at least one item.");
+            let count = 0; let total = 0;
+            parcelItems.forEach(i => { count += i.qty; total += ((i.price + i.packingInfo)*i.qty); });
+            document.getElementById('parcel-summary-text').innerText = `${count} Items | Total Estimate: ₹${total}`;
+            
+            // Toggle Address Field
+            const addrDiv = document.getElementById('parcel-addr-group');
+            if(currentParcelType === 'Delivery') addrDiv.style.display = 'block';
+            else addrDiv.style.display = 'none';
+
+            document.getElementById('parcel-step1-modal').style.display = 'none';
+            document.getElementById('parcel-step2-modal').style.display = 'flex';
+            setTimeout(() => document.getElementById('parcel-c-name').focus(), 100);
+        };
+
+        window.backToParcelStep1 = () => {
+            document.getElementById('parcel-step2-modal').style.display = 'none';
+            document.getElementById('parcel-step1-modal').style.display = 'flex';
+        };
+
+        // Step 3: Final Submit
+        window.submitParcelOrder = async () => {
+            const name = document.getElementById('parcel-c-name').value.trim();
+            const phone = document.getElementById('parcel-c-phone').value.trim();
+            const addr = document.getElementById('parcel-c-addr').value.trim();
+
+            if(!name || !phone) return alert("Name and Phone are MANDATORY.");
+            if(currentParcelType === 'Delivery' && !addr) return alert("Delivery Address is MANDATORY.");
+
+            let sub = 0; let pack = 0;
+            parcelItems.forEach(i => {
+                sub += (i.price * i.qty);
+                pack += (i.packingInfo * i.qty);
+            });
+
+            const orderId = Math.floor(100000 + Math.random() * 900000);
+            
+            const finalAddr = (currentParcelType === 'Delivery') ? addr : 'Pickup / Takeaway';
+
+            const order = {
+                orderId: orderId,
+                orderType: currentParcelType, // 'Takeaway' or 'Delivery'
+                timestamp: Date.now(),
+                status: 'pending',
+                customer: { name: name, phone: phone, address: finalAddr },
+                items: parcelItems,
+                financials: { subTotal: sub, discountVal: 0, packingTotal: pack, grandTotal: sub + pack }
+            };
+
+            await push(ref(db, 'orders'), order);
+            
+            document.getElementById('parcel-c-name').value = "";
+            document.getElementById('parcel-c-phone').value = "";
+            document.getElementById('parcel-c-addr').value = "";
+            closeModal('parcel-step2-modal');
+        };
+
+        /* -------------------------------------------
+           EXISTING SWIGGY/ZOMATO LOGIC
+        ------------------------------------------- */
         window.openExtOrderModal = () => {
             document.getElementById('ext-order-modal').style.display = 'flex';
             extOrderItems = [];
@@ -531,8 +792,7 @@
         window.extAutoFill = () => {
             const idx = document.getElementById('ext-menu-select').value;
             const container = document.getElementById('ext-options-container');
-            container.innerHTML = "";
-            container.style.display = "none";
+            container.innerHTML = ""; container.style.display = "none";
             if(idx === "") return;
             const item = fullMenu[idx];
             const options = getOptionsForItem(item);
@@ -546,8 +806,7 @@
                                 ${opt.name}
                             </label>
                             <span class="opt-price">+₹${opt.price}</span>
-                        </div>
-                    `;
+                        </div>`;
                 });
             }
         };
@@ -568,13 +827,8 @@
             else if (fiveRsCats.includes(item.category)) packCost = 5;
             if (modNames.includes("Tossed Rice") || modNames.includes("Sorted Vegges")) packCost += 7;
             extOrderItems.push({
-                name: item.name,
-                category: item.category,
-                price: finalPrice,
-                basePrice: item.price,
-                qty: qty,
-                variant: modNames.join(", "),
-                packingInfo: packCost
+                name: item.name, category: item.category, price: finalPrice, basePrice: item.price,
+                qty: qty, variant: modNames.join(", "), packingInfo: packCost
             });
             renderExtList();
             document.getElementById('ext-menu-select').value = "";
@@ -586,27 +840,21 @@
         function renderExtList() {
             const list = document.getElementById('ext-items-list');
             list.innerHTML = "";
-            let itemTotal = 0;
-            let packTotal = 0;
+            let itemTotal = 0; let packTotal = 0;
             extOrderItems.forEach((item, i) => {
                 const rowTotal = item.price * item.qty;
                 const rowPack = item.packingInfo * item.qty;
-                itemTotal += rowTotal;
-                packTotal += rowPack;
+                itemTotal += rowTotal; packTotal += rowPack;
                 let desc = item.variant ? `<div class="ext-mods">${item.variant}</div>` : '';
                 list.innerHTML += `
                     <div class="ext-item-row">
-                        <div class="ext-item-details">
-                            <b>${item.qty}x ${item.name}</b>
-                            ${desc}
-                        </div>
+                        <div class="ext-item-details"><b>${item.qty}x ${item.name}</b>${desc}</div>
                         <div style="text-align:right">
                             <div style="font-weight:bold">₹${rowTotal}</div>
                             <div style="font-size:0.7rem; color:#888;">+Pack ₹${rowPack}</div>
                             <button style="color:red;border:none;background:none;cursor:pointer;margin-top:5px;" onclick="remExt(${i})">REMOVE</button>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             });
             document.getElementById('ext-sub').innerText = `₹${itemTotal}`;
             document.getElementById('ext-pack').innerText = `₹${packTotal}`;
@@ -620,10 +868,7 @@
             if(!pid || extOrderItems.length === 0) return alert("Missing ID or Items");
             const plat = document.getElementById('ext-platform').value;
             let sub = 0; let pack = 0;
-            extOrderItems.forEach(i => {
-                sub += (i.price * i.qty);
-                pack += (i.packingInfo * i.qty);
-            });
+            extOrderItems.forEach(i => { sub += (i.price * i.qty); pack += (i.packingInfo * i.qty); });
             const order = {
                 orderId: pid, orderType: plat, timestamp: Date.now(), status: 'cooking',
                 customer: { name: `${plat} #${pid}`, phone:'-', address:'Pickup' },
@@ -638,7 +883,10 @@
             const type = order.orderType;
             let cls = `order-card status-${order.status}`;
             if(type==='Swiggy') cls += ' type-swiggy';
-            if(type==='Zomato') cls += ' type-zomato';
+            else if(type==='Zomato') cls += ' type-zomato';
+            else if(type==='Takeaway') cls += ' type-takeaway';
+            else if(type==='Delivery') cls += ' type-delivery';
+
             const f = order.financials || { subTotal: 0, packingTotal: 0, discountVal: 0, grandTotal: 0 };
             let itemsHtml = (order.items||[]).map(i => {
                 if(i.deleted) return `<div class="item-row item-void"><span>${i.qty}x ${i.name}</span><span>VOID</span></div>`;
@@ -658,10 +906,11 @@
             if(order.status==='pending') btns = `<button class="btn-act btn-red" onclick="rejectOrder('${key}')">REJECT</button><button class="btn-act btn-green" onclick="upd('${key}','cooking')">ACCEPT</button>`;
             else if(order.status==='cooking') btns = `<button class="btn-act btn-green" onclick="upd('${key}','done')">READY</button>`;
             else if(order.status==='done') {
-                if(type === 'Delivery') btns = `<button class="btn-act btn-red" disabled>WAIT DRIVER</button>`;
+                if(type === 'Delivery' && order.customer.address !== 'Pickup') btns = `<button class="btn-act btn-orange" onclick="upd('${key}', 'out_for_delivery')">DISPATCH</button>`;
                 else btns = `<button class="btn-act btn-orange" onclick="comp('${key}')">PICKED UP</button>`;
             } 
-            else if(order.status==='out_for_delivery') btns = `<button class="btn-act btn-red" onclick="forceComplete('${key}')">COMPLETE</button>`;
+            else if(order.status==='out_for_delivery') btns = `<button class="btn-act btn-green" onclick="comp('${key}')">COMPLETE</button>`;
+            
             container.innerHTML += `
                 <div class="${cls}">
                     <div class="card-top">
@@ -747,7 +996,6 @@
             document.getElementById('m-pack').innerText = `₹${d.fins.pack}`;
             document.getElementById('m-tot').innerText = `₹${d.total}`;
 
-            // --- NEW LOYALTY LOGIC ---
             const loyaltySec = document.getElementById('loyalty-section');
             const redeemInput = document.getElementById('redeem-points');
             loyaltySec.style.display = 'none';
@@ -770,89 +1018,55 @@
         window.calcSettleTotal = () => {
             const d = tableData[currentSettleTable];
             if(!d) return;
-
-            // 1. Manager Discount Logic
             const type = document.getElementById('disc-type').value;
             const val = parseFloat(document.getElementById('disc-val').value) || 0;
             let managerDisc = 0;
             if(type === 'flat') managerDisc = val;
             else managerDisc = Math.round(d.total * (val / 100));
 
-            // 2. Loyalty Redemption Logic (NEW)
             const redeemInput = document.getElementById('redeem-points');
             let redeemVal = parseInt(redeemInput.value) || 0;
             const maxPoints = parseInt(redeemInput.dataset.max) || 0;
-            
-            // Validation: Don't allow redeeming more than owned or more than the bill amount
             const tempTotal = d.total - managerDisc;
             if(redeemVal > maxPoints) redeemVal = maxPoints;
             if(redeemVal > tempTotal) redeemVal = tempTotal;
             if(redeemVal < 0) redeemVal = 0;
-            
-            // Auto-correct the input field if the number was too high
             if(redeemInput.value != redeemVal && redeemInput.value != '') redeemInput.value = redeemVal;
 
-            // 3. Final Calculations
             const finalTotal = d.total - managerDisc - redeemVal;
             const totalDisc = d.fins.disc + managerDisc;
 
-            // UI Updates
             document.getElementById('m-disc').innerText = `-₹${totalDisc}`;
-            
-            // Show/Hide Loyalty Deduction Row
             const loyRow = document.getElementById('loyalty-row');
             if(redeemVal > 0) {
                 loyRow.style.display = 'flex';
                 document.getElementById('m-loyalty').innerText = `-₹${redeemVal}`;
-            } else {
-                loyRow.style.display = 'none';
-            }
+            } else loyRow.style.display = 'none';
 
-            // Update Grand Total
             document.getElementById('m-tot').innerText = `₹${finalTotal > 0 ? finalTotal : 0}`;
-            
-            // Update Points Preview (1 pt per ₹100 on Food/Bev subtotal)
             const pointsToEarn = Math.floor(d.fins.sub / 100);
             document.getElementById('earn-preview').innerText = `+${pointsToEarn} Pts`;
         }
 
-        // --- UPDATED WHATSAPP BILL (Fully Compatible) ---
         window.whatsappBill = () => {
             try {
-                if (!currentSettleTable || !tableData[currentSettleTable]) {
-                    alert("Error: No active table data found. Please select a table first.");
-                    return;
-                }
+                if (!currentSettleTable || !tableData[currentSettleTable]) return alert("Select a table first.");
                 const d = tableData[currentSettleTable];
+                if (!window.jspdf) return alert("PDF Library not loaded.");
 
-                if (!window.jspdf) {
-                    alert("Error: PDF Library (jspdf) not loaded. Please check your internet connection and refresh.");
-                    return;
-                }
-
-                // Recalculate totals for Bill
                 const type = document.getElementById('disc-type').value;
                 const val = parseFloat(document.getElementById('disc-val').value) || 0;
-                let managerDisc = 0;
-                if(type === 'flat') managerDisc = val;
-                else managerDisc = Math.round(d.total * (val / 100));
-                
+                let managerDisc = (type === 'flat') ? val : Math.round(d.total * (val / 100));
                 const redeemVal = parseInt(document.getElementById('redeem-points').value) || 0;
-                
                 const finalGrand = (d.total - managerDisc - redeemVal) > 0 ? (d.total - managerDisc - redeemVal) : 0;
                 const finalTotalDisc = d.fins.disc + managerDisc;
                 
-                const phone = prompt("Enter Customer WhatsApp Number (e.g., 919876543210):", "91");
+                const phone = prompt("Enter Customer WhatsApp Number:", "91");
                 if(!phone) return;
 
                 const doc = new window.jsPDF();
-                
-                if (typeof doc.autoTable !== 'function') {
-                    alert("Error: AutoTable plugin still not loaded. The 'Bridge Script' in the HTML head failed. Please refresh.");
-                    return;
-                }
+                if (typeof doc.autoTable !== 'function') return alert("AutoTable plugin not loaded.");
 
-                // Header
                 doc.setFontSize(22); doc.setFont("helvetica", "bold");
                 doc.text("CAFE CLOUD CLUB", 105, 20, { align: "center" });
                 doc.setFontSize(10); doc.setFont("helvetica", "normal");
@@ -860,139 +1074,76 @@
                 doc.text("Date: " + new Date().toLocaleString(), 105, 32, { align: "center" });
                 doc.setLineWidth(0.5); doc.line(10, 36, 200, 36);
 
-                // Table
                 const tableBody = d.items.filter(i => !i.deleted).map(i => [
                     i.name, i.qty.toString(), (i.price * i.qty).toFixed(2)
                 ]);
 
                 doc.autoTable({
-                    startY: 40,
-                    head: [['Item', 'Qty', 'Amount']],
-                    body: tableBody,
-                    theme: 'plain',
-                    styles: { fontSize: 12 },
-                    headStyles: { fontStyle: 'bold', fillColor: [200, 200, 200] }
+                    startY: 40, head: [['Item', 'Qty', 'Amount']], body: tableBody,
+                    theme: 'plain', styles: { fontSize: 12 }, headStyles: { fontStyle: 'bold', fillColor: [200, 200, 200] }
                 });
 
-                // Footer Totals
                 let finalY = doc.lastAutoTable.finalY + 10;
                 doc.setFontSize(12);
-                doc.text(`Sub Total:`, 140, finalY);
-                doc.text(`${d.fins.sub}`, 190, finalY, {align: 'right'});
-                finalY += 6;
-                doc.text(`Packing:`, 140, finalY);
-                doc.text(`${d.fins.pack}`, 190, finalY, {align: 'right'});
-                finalY += 6;
-                
+                doc.text(`Sub Total:`, 140, finalY); doc.text(`${d.fins.sub}`, 190, finalY, {align: 'right'}); finalY += 6;
+                doc.text(`Packing:`, 140, finalY); doc.text(`${d.fins.pack}`, 190, finalY, {align: 'right'}); finalY += 6;
                 if(finalTotalDisc > 0) {
-                    doc.setTextColor(255, 0, 0);
-                    doc.text(`Discount:`, 140, finalY);
-                    doc.text(`-${finalTotalDisc}`, 190, finalY, {align: 'right'});
-                    doc.setTextColor(0, 0, 0);
-                    finalY += 6;
+                    doc.setTextColor(255, 0, 0); doc.text(`Discount:`, 140, finalY); doc.text(`-${finalTotalDisc}`, 190, finalY, {align: 'right'}); doc.setTextColor(0, 0, 0); finalY += 6;
                 }
-                
                 if(redeemVal > 0) {
-                    doc.setTextColor(59, 130, 246);
-                    doc.text(`Loyalty Points:`, 140, finalY);
-                    doc.text(`-${redeemVal}`, 190, finalY, {align: 'right'});
-                    doc.setTextColor(0, 0, 0);
-                    finalY += 6;
+                    doc.setTextColor(59, 130, 246); doc.text(`Loyalty Points:`, 140, finalY); doc.text(`-${redeemVal}`, 190, finalY, {align: 'right'}); doc.setTextColor(0, 0, 0); finalY += 6;
                 }
-
                 doc.setFontSize(16); doc.setFont("helvetica", "bold");
-                doc.text(`TOTAL:`, 140, finalY + 5);
-                doc.text(`Rs. ${finalGrand}`, 190, finalY + 5, {align: 'right'});
+                doc.text(`TOTAL:`, 140, finalY + 5); doc.text(`Rs. ${finalGrand}`, 190, finalY + 5, {align: 'right'});
                 doc.setFontSize(10); doc.setFont("helvetica", "italic");
                 doc.text("Thank you for visiting!", 105, finalY + 30, { align: "center" });
 
-                // Share Logic
                 const pdfBlob = doc.output('blob');
                 const file = new File([pdfBlob], `Bill_Table${currentSettleTable}.pdf`, { type: 'application/pdf' });
 
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                    navigator.share({
-                        files: [file],
-                        title: 'Bill Receipt',
-                        text: 'Here is your bill from Cafe Cloud Club.'
-                    }).catch(err => alert("Share failed: " + err.message));
+                    navigator.share({ files: [file], title: 'Bill Receipt', text: 'Here is your bill.' }).catch(err => alert("Share failed"));
                 } else {
                     doc.save(`Bill_Table${currentSettleTable}.pdf`);
-                    alert("Bill Downloaded!\nOpening WhatsApp...\nPlease attach the file manually.");
-                    
+                    alert("Bill Downloaded! Opening WhatsApp...");
                     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
                     const baseUrl = isMobile ? "https://api.whatsapp.com/send" : "https://web.whatsapp.com/send";
-                    
-                    const url = `${baseUrl}?phone=${phone}&text=Please+find+attached+your+bill+PDF`;
-                    const win = window.open(url, '_blank');
-                    if(!win) alert("Pop-up blocked! Please allow pop-ups to open WhatsApp.");
+                    window.open(`${baseUrl}?phone=${phone}&text=Please+find+attached+your+bill+PDF`, '_blank');
                 }
-
-            } catch (err) {
-                alert("CRITICAL ERROR: " + err.message + "\n" + err.stack);
-                console.error(err);
-            }
+            } catch (err) { alert(err.message); }
         };
 
         window.settleAndClear = async () => {
             const d = tableData[currentSettleTable];
-            
-            // 1. Re-calculate Financials (Safety Check)
             const type = document.getElementById('disc-type').value;
             const val = parseFloat(document.getElementById('disc-val').value) || 0;
             let managerDisc = (type === 'flat') ? val : Math.round(d.total * (val / 100));
-            
             const redeemVal = parseInt(document.getElementById('redeem-points').value) || 0;
-            
-            // Ensure total doesn't go below zero
             const finalGrand = (d.total - managerDisc - redeemVal) > 0 ? (d.total - managerDisc - redeemVal) : 0;
             const finalTotalDisc = d.fins.disc + managerDisc;
 
-            // 2. Create History Record
             const master = {
                 orderId: Math.floor(100000 + Math.random() * 900000),
                 orderType: 'Dine-In', timestamp: Date.now(), status: 'paid',
                 customer: { name: `Table ${currentSettleTable}`, phone: d.phone || '-', address:'Dine-In' },
                 items: d.items, 
-                financials: { 
-                    subTotal: d.fins.sub, 
-                    discountVal: finalTotalDisc, 
-                    loyaltyRedeemed: redeemVal, // Record how many points were used
-                    packingTotal: d.fins.pack, 
-                    grandTotal: finalGrand 
-                }
+                financials: { subTotal: d.fins.sub, discountVal: finalTotalDisc, loyaltyRedeemed: redeemVal, packingTotal: d.fins.pack, grandTotal: finalGrand }
             };
 
-            // 3. PROCESS LOYALTY TRANSACTION (Update Database)
-            // Rule: Earn 1 Point per ₹100 of Food/Bev Subtotal
             const pointsToEarn = Math.floor(d.fins.sub / 100);
-            
             if(d.phone) {
                 const loyaltyRef = ref(db, `loyalty/${d.phone}`);
                 await runTransaction(loyaltyRef, (currentData) => {
-                    if (currentData === null) {
-                        // User doesn't exist yet, create them
-                        return { points: pointsToEarn, lastUpdated: Date.now() };
-                    } else {
-                        // User exists: Deduct used points, Add new earned points
-                        let newPts = (currentData.points || 0) - redeemVal + pointsToEarn;
-                        if(newPts < 0) newPts = 0; // Prevent negative points
-                        return { ...currentData, points: newPts, lastUpdated: Date.now() };
-                    }
+                    if (currentData === null) return { points: pointsToEarn, lastUpdated: Date.now() };
+                    let newPts = (currentData.points || 0) - redeemVal + pointsToEarn;
+                    if(newPts < 0) newPts = 0;
+                    return { ...currentData, points: newPts, lastUpdated: Date.now() };
                 });
             }
 
-            // 4. Save to History & Clear Table
             await push(ref(db, 'history'), master);
-            
-            // Remove individual order items from 'orders' node
             for(const k of d.keys) await remove(ref(db, `orders/${k}`));
-            
-            // Remove bill request if it exists
-            if(activeBillRequests[currentSettleTable]) {
-                await remove(ref(db, `bill_requests/${currentSettleTable}`));
-            }
-            
+            if(activeBillRequests[currentSettleTable]) await remove(ref(db, `bill_requests/${currentSettleTable}`));
             closeModal('settle-modal');
         };
 
@@ -1006,10 +1157,7 @@
         window.openEditFromTable = () => {
             if(!currentSettleTable || !tableData[currentSettleTable]) return;
             const keys = tableData[currentSettleTable].keys;
-            if(keys.length > 0) {
-                closeModal('settle-modal');
-                openEditModal(keys[keys.length - 1]);
-            }
+            if(keys.length > 0) { closeModal('settle-modal'); openEditModal(keys[keys.length - 1]); }
         }
 
         window.openEditModal = async (key) => {
@@ -1093,19 +1241,13 @@
 
         window.upd = (k,s) => update(ref(db, `orders/${k}`), {status:s});
 
-        // REPLACED: NEW REJECT FUNCTION (Moves to History first)
         window.rejectOrder = (k) => {
             get(ref(db, `orders/${k}`)).then((snapshot) => {
                 if (snapshot.exists()) {
                     const data = snapshot.val();
-                    data.status = 'rejected';
-                    data.completedAt = Date.now();
-                    push(ref(db, 'history'), data).then(() => {
-                        remove(ref(db, `orders/${k}`));
-                    });
-                } else {
-                    remove(ref(db, `orders/${k}`));
-                }
+                    data.status = 'rejected'; data.completedAt = Date.now();
+                    push(ref(db, 'history'), data).then(() => { remove(ref(db, `orders/${k}`)); });
+                } else remove(ref(db, `orders/${k}`));
             }).catch(err => console.error(err));
         };
 
@@ -1113,13 +1255,9 @@
             get(ref(db, `orders/${k}`)).then(s => {
                 if(s.exists()) {
                     let d = s.val(); 
-                    
-                    // FIXED: Changed .length === 10 to .length >= 10
-                    // This ensures web orders with 11 digits (e.g. 098...) also get points
                     if(d.customer && d.customer.phone && d.customer.phone.length >= 10) {
                         const subTotal = d.financials ? d.financials.subTotal : 0;
                         const pointsToEarn = Math.floor(subTotal / 100);
-                        
                         if(pointsToEarn > 0) {
                             const loyaltyRef = ref(db, `loyalty/${d.customer.phone}`);
                             runTransaction(loyaltyRef, (current) => {
@@ -1128,7 +1266,6 @@
                             });
                         }
                     }
-
                     d.status='completed'; d.completedAt=Date.now();
                     push(ref(db, 'history'), d);
                     remove(ref(db, `orders/${k}`));
@@ -1136,9 +1273,7 @@
             });
         };
 
-        window.forceComplete = (k) => { if(confirm("Force Complete?")) window.comp(k); };
         window.closeModal = (id) => document.getElementById(id).style.display = 'none';
-        window.remExt = remExt;
     </script>
 </body>
 </html>
