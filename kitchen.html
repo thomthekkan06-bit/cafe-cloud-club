@@ -121,7 +121,7 @@
         
         .item-qty { font-weight: 800; color: var(--primary); margin-right: 10px; min-width: 25px; }
         .item-name { flex: 1; font-weight: 500; }
-        .item-mods { display: block; font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; font-style: italic; }
+        .item-mods { display: block; font-size: 0.85rem; color: var(--success); margin-top: 4px; font-weight: 600; }
 
         /* DELETED ITEM STATE */
         .kot-item.deleted-item { opacity: 0.7; pointer-events: none; }
@@ -340,11 +340,18 @@
                         visibleItemCount++;
                         const isDeleted = item.deleted ? 'deleted-item' : '';
                         
+                        // --- UPDATED: Display Variants/Notes in Green ---
+                        let variantHtml = '';
+                        if(item.variant && item.variant.trim() !== "") {
+                            variantHtml = `<div class="item-mods" style="color:var(--success); font-weight:600; font-style:normal;">${item.variant}</div>`;
+                        }
+
                         itemsHtml += `
                             <div class="kot-item ${isDeleted}" onclick="toggleItem('${order.key}', ${index}, ${!item.kitchenDone})">
                                 <span class="item-qty">${item.qty}</span>
                                 <div class="item-name">
                                     ${item.name}
+                                    ${variantHtml}
                                 </div>
                             </div>
                         `;
