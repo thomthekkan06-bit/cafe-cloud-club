@@ -616,7 +616,10 @@
                     // 3. QUEUE VISIBILITY (Left Pane)
                     let showInQueue = true;
                     if (order.status === 'served') showInQueue = false;
-                    if (order.status === 'done' && order.orderType === 'Dine-In') showInQueue = false;
+                    
+                    // FIXED: Removed the logic that hid "done" Dine-In orders, 
+                    // so Manager can see them to mark as Served.
+                    // if (order.status === 'done' && order.orderType === 'Dine-In') showInQueue = false;
                     
                     if ((order.orderType === 'Pickup' || order.orderType === 'Delivery') && order.status !== 'pending') {
                          showInQueue = false;
@@ -962,13 +965,29 @@
             }).join('');
             let showEdit = (order.status !== 'done' && order.status !== 'out_for_delivery');
             let btns = '';
-            if(order.status==='pending') btns = `<button class="btn-act btn-red" onclick="rejectOrder('${key}')">REJECT</button><button class="btn-act btn-green" onclick="upd('${key}','cooking')">ACCEPT</button>`;
-            else if(order.status==='cooking') btns = `<button class="btn-act btn-green" onclick="upd('${key}','done')">READY</button>`;
+            
+            // FIXED: LOGIC FOR BUTTONS
+            if(order.status==='pending') {
+                btns = `<button class="btn-act btn-red" onclick="rejectOrder('${key}')">REJECT</button><button class="btn-act btn-green" onclick="upd('${key}','cooking')">ACCEPT</button>`;
+            }
+            else if(order.status==='cooking') {
+                btns = `<button class="btn-act btn-green" onclick="upd('${key}','done')">READY</button>`;
+            }
             else if(order.status==='done') {
-                if(type === 'Delivery' && order.customer.address !== 'Pickup') btns = `<button class="btn-act btn-orange" onclick="upd('${key}', 'out_for_delivery')">DISPATCH</button>`;
-                else btns = `<button class="btn-act btn-orange" onclick="comp('${key}')">PICKED UP</button>`;
+                if(type === 'Delivery' && order.customer.address !== 'Pickup') {
+                    btns = `<button class="btn-act btn-orange" onclick="upd('${key}', 'out_for_delivery')">DISPATCH</button>`;
+                } 
+                else if (type === 'Dine-In') {
+                    // NEW: SERVED BUTTON FOR TABLE ORDERS
+                    btns = `<button class="btn-act btn-green" onclick="upd('${key}', 'served')">SERVED</button>`;
+                }
+                else {
+                    btns = `<button class="btn-act btn-orange" onclick="comp('${key}')">PICKED UP</button>`;
+                }
             } 
-            else if(order.status==='out_for_delivery') btns = `<button class="btn-act btn-green" onclick="comp('${key}')">COMPLETE</button>`;
+            else if(order.status==='out_for_delivery') {
+                btns = `<button class="btn-act btn-green" onclick="comp('${key}')">COMPLETE</button>`;
+            }
             
             container.innerHTML += `
                 <div class="${cls}">
