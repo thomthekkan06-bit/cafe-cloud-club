@@ -82,6 +82,9 @@
             height: fit-content;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
+        
+        /* Highlight cards that are fully ready but waiting for pickup/serving */
+        .kot-card.card-done { border: 2px solid var(--success); opacity: 0.8; }
 
         @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -101,6 +104,9 @@
         .timer-fresh { color: var(--success); }
         .timer-warn { color: var(--warning); }
         .timer-late { color: var(--danger); animation: pulse 2s infinite; }
+        
+        /* Timer style for ready orders */
+        .timer-done { color: var(--text-main); background: var(--success); }
 
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
@@ -138,6 +144,10 @@
         .ready-msg {
             padding: 20px; text-align: center; color: var(--success); font-weight: 800;
             background: rgba(16, 185, 129, 0.1); font-size: 0.9rem;
+        }
+        .waiting-msg {
+            padding: 20px; text-align: center; color: var(--warning); font-weight: 800;
+            background: rgba(245, 158, 11, 0.1); font-size: 0.9rem;
         }
 
         /* --- HISTORY VIEW --- */
@@ -203,7 +213,7 @@
         const db = getDatabase(app);
 
         // --- FILTER CONFIGURATION ---
-        // Chef KDS shows EVERYTHING EXCEPT Botanical Brews (ACCENT REMOVED)
+        // Chef KDS shows EVERYTHING EXCEPT Botanical Brews
         const EXCLUDED_CATEGORY = "Cafe Botanical Brews";
 
         // --- ROBUST WAKE LOCK (PREVENT SLEEP) ---
@@ -267,7 +277,9 @@
                 
                 if (data) {
                     Object.entries(data).forEach(([key, order]) => {
-                        if (order.status === 'completed' || order.status === 'rejected' || order.status === 'pending') return;
+                        // FILTER: Hide served/completed/rejected/pending
+                        // We KEEP 'cooking' and 'done' orders
+                        if (order.status === 'completed' || order.status === 'rejected' || order.status === 'pending' || order.status === 'served') return;
 
                         // NEW FILTER: Check if there are any NON-BREW items
                         let relevantItems = [];
@@ -276,14 +288,13 @@
                         }
 
                         if (relevantItems.length > 0) {
-                            const isActive = order.status === 'cooking';
-                            // Logic: If served/done but Chef items are still pending, show it
-                            const hasRelevantPending = relevantItems.some(i => i.kitchenDone === false && !i.deleted);
-                            const isRevived = (order.status === 'served' || order.status === 'done') && hasRelevantPending;
-
-                            if (isActive || isRevived) {
+                            // Show if status is cooking OR done (waiting for service)
+                            if (order.status === 'cooking' || order.status === 'done') {
                                 activeOrders.push({ key, ...order });
-                                currentTotalItems += relevantItems.length;
+                                
+                                // Only count items that aren't done for the notification sound
+                                const pendingItems = relevantItems.filter(i => !i.kitchenDone).length;
+                                currentTotalItems += pendingItems;
                             }
                         }
                     });
@@ -318,6 +329,7 @@
                 let timerClass = 'timer-fresh';
                 if(elapsedMin > 10) timerClass = 'timer-warn';
                 if(elapsedMin > 20) timerClass = 'timer-late';
+                if(order.status === 'done') timerClass = 'timer-done';
 
                 const custName = order.customer ? order.customer.name : 'Guest';
                 const orderType = order.orderType || 'Dine-In';
@@ -330,7 +342,9 @@
                         // 1. FILTER: EXCLUDE BREWS
                         if (item.category === EXCLUDED_CATEGORY) return;
 
-                        // 2. Hide "Done" items
+                        // 2. Hide "Done" items logic:
+                        // Only hide if the entire order is NOT done. If order is done, we might want to show them or show a "Ready" message.
+                        // Actually, standard KDS behavior: hide individual done items to declutter.
                         if (item.kitchenDone === true && !item.deleted) return; 
 
                         // 3. Hide Packing Charges
@@ -340,7 +354,6 @@
                         visibleItemCount++;
                         const isDeleted = item.deleted ? 'deleted-item' : '';
                         
-                        // --- UPDATED: Display Variants/Notes in Green ---
                         let variantHtml = '';
                         if(item.variant && item.variant.trim() !== "") {
                             variantHtml = `<div class="item-mods" style="color:var(--success); font-weight:600; font-style:normal;">${item.variant}</div>`;
@@ -358,8 +371,13 @@
                     });
                 }
 
+                // If no items visible, it means all items are marked Kitchen Done.
                 if (visibleItemCount === 0) {
-                    itemsHtml = `<div class="ready-msg">ALL ITEMS PREPARED<br>TAP HEADER TO CLEAR</div>`;
+                    if (order.status === 'done') {
+                        itemsHtml = `<div class="waiting-msg">ORDER READY<br>WAITING FOR PICKUP / SERVICE</div>`;
+                    } else {
+                        itemsHtml = `<div class="ready-msg">ALL ITEMS PREPARED<br>TAP HEADER TO COMPLETE</div>`;
+                    }
                 }
 
                 let noteHtml = "";
@@ -367,13 +385,16 @@
                     noteHtml = `<div class="kot-note">📝 NOTE: ${order.globalNote}</div>`;
                 }
 
+                let cardClass = "kot-card";
+                if(order.status === 'done') cardClass += " card-done";
+
                 const card = document.createElement('div');
-                card.className = "kot-card";
+                card.className = cardClass;
                 card.innerHTML = `
                     <div class="kot-header" onclick="completeOrder('${order.key}')" title="Tap to Complete Full Order">
                         <span class="kot-id">#${order.orderId}</span>
                         <div>
-                            <span class="header-hint">TAP TO CLEAR ✓</span>
+                            <span class="header-hint">TAP TO MARK READY ✓</span>
                             <span class="kot-timer ${timerClass}">${elapsedMin}m</span>
                         </div>
                     </div>
@@ -399,7 +420,13 @@
             const order = activeOrders.find(o => o.key === key);
             if(!order) return;
 
-            if(confirm(`Mark all Chef Items for Order #${order.orderId} as DONE?`)) {
+            // If it's already done, Chef can't "Serve" it. Manager must serve it.
+            if(order.status === 'done') {
+                alert("This order is already marked READY.\nWaiting for Manager/Waiter to serve/pickup.");
+                return;
+            }
+
+            if(confirm(`Mark all Chef Items for Order #${order.orderId} as READY?`)) {
                 
                 const updates = {};
                 let allItemsWillBeDone = true;
@@ -419,12 +446,10 @@
                     });
                 }
 
-                // 2. If T-Shop items are also done (or don't exist), we can move status to 'done'
-                // FIXED: Force 'done' so it appears on TV/Manager for all order types
+                // 2. If T-Shop items are also done (or don't exist), set status to 'done'.
+                // 'done' status keeps it visible on KDS (as "Ready") until Manager serves it.
                 if (allItemsWillBeDone) {
-                    // OLD LOGIC: (type === 'Delivery' || type === 'Pickup') ? 'done' : 'served'
-                    const nextStatus = 'done'; 
-                    updates['status'] = nextStatus;
+                    updates['status'] = 'done'; 
                     
                     // Add to local history for display
                     historyOrders.unshift({ ...order, doneTime: new Date() });
@@ -438,7 +463,7 @@
         };
 
         window.undoComplete = (key) => {
-             if(confirm("Move back to Kitchen Active?")) {
+             if(confirm("Move back to Cooking?")) {
                  update(ref(db, `orders/${key}`), { status: 'cooking' });
              }
         };
@@ -474,7 +499,7 @@
                 div.innerHTML = `
                     <div>
                         <div style="font-weight:700; color:white;">#${o.orderId} - ${o.customer.name}</div>
-                        <div style="font-size:0.8rem; color:#888;">Cleared at ${time}</div>
+                        <div style="font-size:0.8rem; color:#888;">Marked Ready at ${time}</div>
                     </div>
                     <button class="btn-undo" onclick="undoComplete('${o.key}')">Undo ↺</button>
                 `;
