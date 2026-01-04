@@ -204,10 +204,19 @@
 
                         visibleItemCount++;
                         
+                        // --- UPDATED: Display Variants/Notes in Green ---
+                        let variantHtml = '';
+                        if(item.variant && item.variant.trim() !== "") {
+                            variantHtml = `<div style="font-size:0.8rem; color:var(--success); margin-top:4px; font-weight:600;">${item.variant}</div>`;
+                        }
+
                         itemsHtml += `
                             <div class="kot-item" onclick="toggleItem('${order.key}', ${index}, ${!item.kitchenDone})">
                                 <span class="item-qty">${item.qty}</span>
-                                <div class="item-name">${item.name}</div>
+                                <div class="item-name">
+                                    ${item.name}
+                                    ${variantHtml}
+                                </div>
                             </div>`;
                     });
                 }
