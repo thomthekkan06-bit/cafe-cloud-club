@@ -575,7 +575,6 @@
                 list.innerHTML = "";
                 tableData = {}; // Clear previous table data
                 
-                // Track parcels to assign to slots
                 let pickupList = [];
                 let deliveryList = [];
 
@@ -583,7 +582,7 @@
                 let count = 0;
 
                 Object.entries(data).forEach(([key, order]) => {
-                    if(order.status === 'completed' || order.status === 'rejected' || order.status === 'delivered') return;
+                    if(order.status === 'completed' || order.status === 'rejected' || order.status === 'served') return;
                     
                     // 1. DINE-IN LOGIC
                     if(order.orderType === 'Dine-In' && order.customer && order.customer.name.startsWith('Table')) {
@@ -607,25 +606,29 @@
                         tableData[tId].keys.push(key);
                     }
 
-                    // 2. PARCEL LOGIC (Collection for Right Pane Slots)
+                    // 2. PARCEL LOGIC
                     if (order.status !== 'pending') {
                         if (order.orderType === 'Pickup') pickupList.push({key, ...order});
                         if (order.orderType === 'Delivery') deliveryList.push({key, ...order});
                     }
 
-                    // 3. QUEUE VISIBILITY (Left Pane)
-                    let showInQueue = true;
-                    if (order.status === 'served') showInQueue = false;
-                    
-                    // FIXED: Removed the logic that hid "done" Dine-In orders, 
-                    // so Manager can see them to mark as Served.
-                    // if (order.status === 'done' && order.orderType === 'Dine-In') showInQueue = false;
-                    
-                    if ((order.orderType === 'Pickup' || order.orderType === 'Delivery') && order.status !== 'pending') {
-                         showInQueue = false;
-                    }
+                    // 3. QUEUE VISIBILITY LOGIC (Left Pane)
+                    let showInQueue = false;
 
-                    if(order.status === 'pending') pending = true;
+                    if (order.status === 'pending') {
+                        showInQueue = true;
+                        pending = true;
+                    } else if (order.status === 'cooking' || order.status === 'done' || order.status === 'out_for_delivery') {
+                        if (order.orderType === 'Dine-In') {
+                            // Only show if items are Ready (kitchenDone) but NOT Served
+                            if (order.items && order.items.some(i => i.kitchenDone && !i.served && !i.deleted)) {
+                                showInQueue = true;
+                            }
+                        } else {
+                            // Standard logic for Delivery/Pickup
+                             if (order.status === 'done' || order.status === 'out_for_delivery') showInQueue = true;
+                        }
+                    }
 
                     if(showInQueue) {
                         count++;
@@ -652,7 +655,7 @@
                             phone: order.customer.phone,
                             customerName: order.customer.name, 
                             orderType: order.orderType,
-                            status: order.status // SAVING STATUS FOR UI LOGIC
+                            status: order.status
                         };
                     });
                 };
@@ -671,13 +674,9 @@
         }
 
         /* -------------------------------------------
-           NEW PARCEL LOGIC (DELIVERY / TAKEAWAY)
+           PARCEL & EXT ORDER LOGIC (Kept Same)
         ------------------------------------------- */
-        
-        window.openParcelTypeModal = () => {
-             document.getElementById('parcel-type-modal').style.display = 'flex';
-        };
-
+        window.openParcelTypeModal = () => { document.getElementById('parcel-type-modal').style.display = 'flex'; };
         window.selectParcelType = (type) => {
             currentParcelType = type; 
             document.getElementById('parcel-type-modal').style.display = 'none';
@@ -693,75 +692,46 @@
             document.getElementById('parcel-options-container').style.display = "none";
             document.getElementById('parcel-step1-modal').style.display = 'flex';
         };
-
         window.parcelAutoFill = () => {
             const idx = document.getElementById('parcel-menu-select').value;
             const container = document.getElementById('parcel-options-container');
-            container.innerHTML = "";
-            container.style.display = "none";
+            container.innerHTML = ""; container.style.display = "none";
             if(idx === "") return;
             const item = fullMenu[idx];
             const options = getOptionsForItem(item); 
             if(options.length > 0) {
                 container.style.display = "block";
                 options.forEach(opt => {
-                    container.innerHTML += `
-                        <div class="opt-row">
-                            <label class="opt-label">
-                                <input type="checkbox" class="parcel-opt-cb" value="${opt.name}" data-price="${opt.price}">
-                                ${opt.name}
-                            </label>
-                            <span class="opt-price">+₹${opt.price}</span>
-                        </div>`;
+                    container.innerHTML += `<div class="opt-row"><label class="opt-label"><input type="checkbox" class="parcel-opt-cb" value="${opt.name}" data-price="${opt.price}">${opt.name}</label><span class="opt-price">+₹${opt.price}</span></div>`;
                 });
             }
         };
-
         window.addParcelItem = () => {
             const idx = document.getElementById('parcel-menu-select').value;
             if(idx === "") return;
             const item = fullMenu[idx];
             const qty = parseInt(document.getElementById('parcel-qty').value) || 1;
             const note = document.getElementById('parcel-item-note').value.trim();
-
             let finalPrice = item.price;
             let modNames = [];
-            document.querySelectorAll('.parcel-opt-cb:checked').forEach(cb => {
-                finalPrice += parseInt(cb.dataset.price);
-                modNames.push(cb.value);
-            });
-
+            document.querySelectorAll('.parcel-opt-cb:checked').forEach(cb => { finalPrice += parseInt(cb.dataset.price); modNames.push(cb.value); });
             let packCost = 10;
             if (item.category === 'ADD-ON') packCost = item.name.startsWith("Hummus") ? 7 : 5;
             else if (fiveRsCats.includes(item.category)) packCost = 5;
             if (modNames.includes("Tossed Rice") || modNames.includes("Sorted Vegges")) packCost += 7;
-
             let variantStr = modNames.join(", ");
-            if (note) {
-                if(variantStr) variantStr += ` | Note: ${note}`;
-                else variantStr = `Note: ${note}`;
-            }
-
+            if (note) variantStr = variantStr ? `${variantStr} | Note: ${note}` : `Note: ${note}`;
             parcelItems.push({
-                name: item.name,
-                category: item.category,
-                price: finalPrice,
-                basePrice: item.price,
-                qty: qty,
-                variant: variantStr,
-                packingInfo: packCost,
-                kitchenDone: false // VITAL FOR KDS
+                name: item.name, category: item.category, price: finalPrice, basePrice: item.price,
+                qty: qty, variant: variantStr, packingInfo: packCost, kitchenDone: false 
             });
-
             renderParcelList();
-            
             document.getElementById('parcel-menu-select').value = "";
             document.getElementById('parcel-qty').value = "1";
             document.getElementById('parcel-item-note').value = "";
             document.getElementById('parcel-options-container').innerHTML = "";
             document.getElementById('parcel-options-container').style.display = "none";
         };
-
         function renderParcelList() {
             const list = document.getElementById('parcel-items-list');
             list.innerHTML = "";
@@ -769,23 +739,11 @@
             parcelItems.forEach((item, i) => {
                 const total = (item.price + item.packingInfo) * item.qty;
                 grand += total;
-                list.innerHTML += `
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px dashed #444; padding:5px 0;">
-                        <div>
-                            <b>${item.qty}x ${item.name}</b>
-                            <div style="font-size:0.7rem; color:#aaa;">${item.variant}</div>
-                        </div>
-                        <div style="text-align:right;">
-                            <div>₹${total}</div>
-                            <div style="font-size:0.7rem; color:red; cursor:pointer;" onclick="remParcel(${i})">Remove</div>
-                        </div>
-                    </div>
-                `;
+                list.innerHTML += `<div style="display:flex; justify-content:space-between; border-bottom:1px dashed #444; padding:5px 0;"><div><b>${item.qty}x ${item.name}</b><div style="font-size:0.7rem; color:#aaa;">${item.variant}</div></div><div style="text-align:right;"><div>₹${total}</div><div style="font-size:0.7rem; color:red; cursor:pointer;" onclick="remParcel(${i})">Remove</div></div></div>`;
             });
             document.getElementById('parcel-grand').innerText = `₹${grand}`;
         }
         window.remParcel = (i) => { parcelItems.splice(i,1); renderParcelList(); };
-
         window.goToParcelStep2 = () => {
             if(parcelItems.length === 0) return alert("Please add at least one item.");
             let count = 0; let total = 0;
@@ -798,39 +756,22 @@
             document.getElementById('parcel-step2-modal').style.display = 'flex';
             setTimeout(() => document.getElementById('parcel-c-name').focus(), 100);
         };
-
-        window.backToParcelStep1 = () => {
-            document.getElementById('parcel-step2-modal').style.display = 'none';
-            document.getElementById('parcel-step1-modal').style.display = 'flex';
-        };
-
+        window.backToParcelStep1 = () => { document.getElementById('parcel-step2-modal').style.display = 'none'; document.getElementById('parcel-step1-modal').style.display = 'flex'; };
         window.submitParcelOrder = async () => {
             const name = document.getElementById('parcel-c-name').value.trim();
             const phone = document.getElementById('parcel-c-phone').value.trim();
             const addr = document.getElementById('parcel-c-addr').value.trim();
-
             if(!name || !phone) return alert("Name and Phone are MANDATORY.");
             if(currentParcelType === 'Delivery' && !addr) return alert("Delivery Address is MANDATORY.");
-
             let sub = 0; let pack = 0;
-            parcelItems.forEach(i => {
-                sub += (i.price * i.qty);
-                pack += (i.packingInfo * i.qty);
-            });
-
+            parcelItems.forEach(i => { sub += (i.price * i.qty); pack += (i.packingInfo * i.qty); });
             const orderId = Math.floor(100000 + Math.random() * 900000);
             const finalAddr = (currentParcelType === 'Delivery') ? addr : 'Pickup / Takeaway';
-
             const order = {
-                orderId: orderId,
-                orderType: currentParcelType, 
-                timestamp: Date.now(),
-                status: 'pending',
+                orderId: orderId, orderType: currentParcelType, timestamp: Date.now(), status: 'pending',
                 customer: { name: name, phone: phone, address: finalAddr },
-                items: parcelItems,
-                financials: { subTotal: sub, discountVal: 0, packingTotal: pack, grandTotal: sub + pack }
+                items: parcelItems, financials: { subTotal: sub, discountVal: 0, packingTotal: pack, grandTotal: sub + pack }
             };
-
             await push(ref(db, 'orders'), order);
             document.getElementById('parcel-c-name').value = "";
             document.getElementById('parcel-c-phone').value = "";
@@ -838,9 +779,6 @@
             closeModal('parcel-step2-modal');
         };
 
-        /* -------------------------------------------
-           EXISTING SWIGGY/ZOMATO LOGIC
-        ------------------------------------------- */
         window.openExtOrderModal = () => {
             document.getElementById('ext-order-modal').style.display = 'flex';
             document.getElementById('ext-search').value = "";
@@ -849,7 +787,6 @@
             document.getElementById('ext-id').value = "";
             renderExtList();
         };
-
         window.extAutoFill = () => {
             const idx = document.getElementById('ext-menu-select').value;
             const container = document.getElementById('ext-options-container');
@@ -860,18 +797,10 @@
             if(options.length > 0) {
                 container.style.display = "block";
                 options.forEach(opt => {
-                    container.innerHTML += `
-                        <div class="opt-row">
-                            <label class="opt-label">
-                                <input type="checkbox" class="ext-opt-cb" value="${opt.name}" data-price="${opt.price}">
-                                ${opt.name}
-                            </label>
-                            <span class="opt-price">+₹${opt.price}</span>
-                        </div>`;
+                    container.innerHTML += `<div class="opt-row"><label class="opt-label"><input type="checkbox" class="ext-opt-cb" value="${opt.name}" data-price="${opt.price}">${opt.name}</label><span class="opt-price">+₹${opt.price}</span></div>`;
                 });
             }
         };
-
         window.addExtItem = () => {
             const idx = document.getElementById('ext-menu-select').value;
             if(idx === "") return;
@@ -879,18 +808,14 @@
             const qty = parseInt(document.getElementById('ext-qty').value) || 1;
             let finalPrice = item.price;
             let modNames = [];
-            document.querySelectorAll('.ext-opt-cb:checked').forEach(cb => {
-                finalPrice += parseInt(cb.dataset.price);
-                modNames.push(cb.value);
-            });
+            document.querySelectorAll('.ext-opt-cb:checked').forEach(cb => { finalPrice += parseInt(cb.dataset.price); modNames.push(cb.value); });
             let packCost = 10;
             if (item.category === 'ADD-ON') packCost = item.name.startsWith("Hummus") ? 7 : 5;
             else if (fiveRsCats.includes(item.category)) packCost = 5;
             if (modNames.includes("Tossed Rice") || modNames.includes("Sorted Vegges")) packCost += 7;
             extOrderItems.push({
                 name: item.name, category: item.category, price: finalPrice, basePrice: item.price,
-                qty: qty, variant: modNames.join(", "), packingInfo: packCost,
-                kitchenDone: false // VITAL FOR KDS
+                qty: qty, variant: modNames.join(", "), packingInfo: packCost, kitchenDone: false 
             });
             renderExtList();
             document.getElementById('ext-menu-select').value = "";
@@ -898,7 +823,6 @@
             document.getElementById('ext-options-container').innerHTML = "";
             document.getElementById('ext-options-container').style.display = "none";
         };
-
         function renderExtList() {
             const list = document.getElementById('ext-items-list');
             list.innerHTML = "";
@@ -908,23 +832,13 @@
                 const rowPack = item.packingInfo * item.qty;
                 itemTotal += rowTotal; packTotal += rowPack;
                 let desc = item.variant ? `<div class="ext-mods">${item.variant}</div>` : '';
-                list.innerHTML += `
-                    <div class="ext-item-row">
-                        <div class="ext-item-details"><b>${item.qty}x ${item.name}</b>${desc}</div>
-                        <div style="text-align:right">
-                            <div style="font-weight:bold">₹${rowTotal}</div>
-                            <div style="font-size:0.7rem; color:#888;">+Pack ₹${rowPack}</div>
-                            <button style="color:red;border:none;background:none;cursor:pointer;margin-top:5px;" onclick="remExt(${i})">REMOVE</button>
-                        </div>
-                    </div>`;
+                list.innerHTML += `<div class="ext-item-row"><div class="ext-item-details"><b>${item.qty}x ${item.name}</b>${desc}</div><div style="text-align:right"><div style="font-weight:bold">₹${rowTotal}</div><div style="font-size:0.7rem; color:#888;">+Pack ₹${rowPack}</div><button style="color:red;border:none;background:none;cursor:pointer;margin-top:5px;" onclick="remExt(${i})">REMOVE</button></div></div>`;
             });
             document.getElementById('ext-sub').innerText = `₹${itemTotal}`;
             document.getElementById('ext-pack').innerText = `₹${packTotal}`;
             document.getElementById('ext-grand').innerText = `₹${itemTotal + packTotal}`;
         }
-
         window.remExt = (i) => { extOrderItems.splice(i,1); renderExtList(); };
-
         window.submitExtOrder = () => {
             const pid = document.getElementById('ext-id').value;
             if(!pid || extOrderItems.length === 0) return alert("Missing ID or Items");
@@ -934,8 +848,7 @@
             const order = {
                 orderId: pid, orderType: plat, timestamp: Date.now(), status: 'cooking',
                 customer: { name: `${plat} #${pid}`, phone:'-', address:'Pickup' },
-                items: extOrderItems,
-                financials: { subTotal: sub, discountVal: 0, packingTotal: pack, grandTotal: sub + pack }
+                items: extOrderItems, financials: { subTotal: sub, discountVal: 0, packingTotal: pack, grandTotal: sub + pack }
             };
             push(ref(db, 'orders'), order).then(() => closeModal('ext-order-modal'));
         };
@@ -950,44 +863,61 @@
             else if(type==='Delivery') cls += ' type-delivery';
 
             const f = order.financials || { subTotal: 0, packingTotal: 0, discountVal: 0, grandTotal: 0 };
-            let itemsHtml = (order.items||[]).map(i => {
-                if(i.deleted) return `<div class="item-row item-void"><span>${i.qty}x ${i.name}</span><span>VOID</span></div>`;
-                let v = i.variant ? `<div class="item-custom">${i.variant}</div>` : '';
-                let lineTotal = i.price * i.qty; 
-                return `
-                    <div class="item-row">
-                        <div class="item-top">
-                            <span><span class="item-qty">${i.qty}x</span>${i.name}</span>
-                            <span style="font-weight:bold; color: #888;">₹${lineTotal}</span>
-                        </div>
-                        ${v}
-                    </div>`;
-            }).join('');
-            let showEdit = (order.status !== 'done' && order.status !== 'out_for_delivery');
-            let btns = '';
             
-            // FIXED: LOGIC FOR BUTTONS
+            // Map items for display and index reference
+            const itemsToRender = (order.items || []).map((item, idx) => ({ ...item, idx }));
+
+            let itemsHtml = "";
+            
+            itemsToRender.forEach(i => {
+                if(i.deleted) return; // Skip deleted
+
+                let shouldRender = true;
+                let actionBtn = "";
+
+                // For Dine-In active orders, only show Ready & Not Served items with a Serve Button
+                if (order.status !== 'pending' && type === 'Dine-In') {
+                    if (!i.kitchenDone || i.served) shouldRender = false;
+                    else {
+                        // IT IS READY!
+                        actionBtn = `<button class="btn-act btn-green" style="padding:5px 10px; font-size:0.75rem; margin-left:10px;" onclick="serveItem('${key}', ${i.idx})">SERVE</button>`;
+                    }
+                }
+
+                if (shouldRender) {
+                    let v = i.variant ? `<div class="item-custom">${i.variant}</div>` : '';
+                    let lineTotal = i.price * i.qty; 
+                    itemsHtml += `
+                        <div class="item-row" style="align-items:center; flex-direction:row; justify-content:space-between;">
+                            <div style="flex:1;">
+                                <div class="item-top">
+                                    <span><span class="item-qty">${i.qty}x</span>${i.name}</span>
+                                    ${(order.status === 'pending') ? `<span style="font-weight:bold; color: #888;">₹${lineTotal}</span>` : ''}
+                                </div>
+                                ${v}
+                            </div>
+                            ${actionBtn}
+                        </div>`;
+                }
+            });
+
+            let mainBtns = '';
+            
             if(order.status==='pending') {
-                btns = `<button class="btn-act btn-red" onclick="rejectOrder('${key}')">REJECT</button><button class="btn-act btn-green" onclick="upd('${key}','cooking')">ACCEPT</button>`;
+                mainBtns = `<button class="btn-act btn-red" onclick="rejectOrder('${key}')">REJECT</button><button class="btn-act btn-green" onclick="upd('${key}','cooking')">ACCEPT</button>`;
             }
-            else if(order.status==='cooking') {
-                btns = `<button class="btn-act btn-green" onclick="upd('${key}','done')">READY</button>`;
-            }
-            else if(order.status==='done') {
-                if(type === 'Delivery' && order.customer.address !== 'Pickup') {
-                    btns = `<button class="btn-act btn-orange" onclick="upd('${key}', 'out_for_delivery')">DISPATCH</button>`;
-                } 
-                else if (type === 'Dine-In') {
-                    // NEW: SERVED BUTTON FOR TABLE ORDERS
-                    btns = `<button class="btn-act btn-green" onclick="upd('${key}', 'served')">SERVED</button>`;
-                }
-                else {
-                    btns = `<button class="btn-act btn-orange" onclick="comp('${key}')">PICKED UP</button>`;
-                }
+            else if(type === 'Delivery' && order.status === 'done') {
+                mainBtns = `<button class="btn-act btn-orange" onclick="upd('${key}', 'out_for_delivery')">DISPATCH</button>`;
             } 
-            else if(order.status==='out_for_delivery') {
-                btns = `<button class="btn-act btn-green" onclick="comp('${key}')">COMPLETE</button>`;
+            else if(order.status === 'out_for_delivery') {
+                mainBtns = `<button class="btn-act btn-green" onclick="comp('${key}')">COMPLETE</button>`;
             }
+            else if (type === 'Pickup' && order.status === 'done') {
+                mainBtns = `<button class="btn-act btn-orange" onclick="comp('${key}')">PICKED UP</button>`;
+            }
+            // For Dine-In Active, main buttons are hidden (replaced by per-item serve)
+
+            let showEdit = (order.status !== 'done' && order.status !== 'out_for_delivery');
             
             container.innerHTML += `
                 <div class="${cls}">
@@ -999,23 +929,47 @@
                         <div class="info-grid">
                             <span class="info-label">Name</span><span>${order.customer.name}</span>
                             <span class="info-label">Phone</span><span><a href="tel:${order.customer.phone}" style="color:var(--primary);text-decoration:none;">${order.customer.phone || '-'}</a></span>
-                            <span class="info-label">Addr</span><span style="font-size:0.85rem; line-height:1.2;">${order.customer.address || '-'}</span>
+                            ${type === 'Delivery' ? `<span class="info-label">Addr</span><span style="font-size:0.85rem; line-height:1.2;">${order.customer.address || '-'}</span>` : ''}
                         </div>
+                        ${order.globalNote ? `<div style="color:orange; font-size:0.8rem; margin:5px 0;">Note: ${order.globalNote}</div>` : ''}
                         <div class="items-list">${itemsHtml}</div>
+                        ${(order.status === 'pending') ? `
                         <div class="fin-box">
                              <div class="fin-row"><span>Sub Total</span><span>₹${f.subTotal}</span></div>
                              <div class="fin-row"><span>Packing</span><span>₹${f.packingTotal}</span></div>
                              ${f.discountVal > 0 ? `<div class="fin-row" style="color:var(--danger)"><span>Discount</span><span>-₹${f.discountVal}</span></div>` : ''}
                              <div class="fin-row total"><span>GRAND TOTAL</span><span>₹${f.grandTotal}</span></div>
-                        </div>
+                        </div>` : ''}
                     </div>
+                    ${(mainBtns || showEdit) ? `
                     <div class="card-actions">
                          ${showEdit ? `<button class="btn-act btn-blue" style="flex:0.3" onclick="openEditModal('${key}')">EDIT</button>` : ''}
-                        ${btns}
-                    </div>
+                        ${mainBtns}
+                    </div>` : ''}
                 </div>
             `;
         }
+
+        window.serveItem = async (key, itemIdx) => {
+            const updates = {};
+            updates[`items/${itemIdx}/served`] = true;
+            await update(ref(db, `orders/${key}`), updates);
+
+            // Check if ALL items are now served
+            const snap = await get(ref(db, `orders/${key}`));
+            const order = snap.val();
+            
+            let allServed = true;
+            if(order.items) {
+                order.items.forEach(i => {
+                    if(!i.deleted && !i.served) allServed = false;
+                });
+            }
+
+            if(allServed) {
+                await update(ref(db, `orders/${key}`), { status: 'served' });
+            }
+        };
 
         function renderTables() {
             const m = document.getElementById('grid-main');
@@ -1088,7 +1042,12 @@
             document.getElementById('m-t-id').innerText = currentSettleTable;
             document.getElementById('m-i-list').innerHTML = d.items.map(i => {
                 if(i.deleted) return '';
-                return `<div style="display:flex;justify-content:space-between;margin-bottom:5px;color:#aaa"><span>${i.qty}x ${i.name}</span><span>₹${i.price*i.qty}</span></div>`;
+                // SHOW STATUS ICON
+                let statusIcon = "⏳";
+                if(i.served) statusIcon = "✅";
+                else if(i.kitchenDone) statusIcon = "👨‍🍳";
+                
+                return `<div style="display:flex;justify-content:space-between;margin-bottom:5px;color:#aaa"><span>${statusIcon} ${i.qty}x ${i.name}</span><span>₹${i.price*i.qty}</span></div>`;
             }).join('');
             
             document.getElementById('disc-type').value = 'flat';
@@ -1101,7 +1060,6 @@
             const btn = document.getElementById('btn-settle-action');
             btn.disabled = false;
             
-            // Logic for Delivery/Pickup Slot Buttons
             if(currentSettleTable.toString().startsWith('T')) {
                 if(d.status === 'done') {
                     btn.innerText = "✅ PICKED UP";
@@ -1111,7 +1069,6 @@
                     btn.disabled = true;
                 }
             } else if(currentSettleTable.toString().startsWith('D')) {
-                // DELIVERY LOGIC
                 if(d.status === 'done') {
                     btn.innerText = "Waiting for Agent";
                     btn.disabled = true; 
@@ -1245,7 +1202,6 @@
         };
 
         window.settleAndClear = async () => {
-            // SAFETY CHECK: Prevent Manager from deleting Delivery/Pickup orders in "Waiting" or "Out" states
             const tableStr = currentSettleTable.toString();
             if(tableStr.startsWith('D')) {
                 const d = tableData[currentSettleTable];
@@ -1254,7 +1210,6 @@
                     return; 
                 }
             }
-            // ------------------------------------------------------------------------------------------------
 
             const d = tableData[currentSettleTable];
             const type = document.getElementById('disc-type').value;
@@ -1330,11 +1285,7 @@
             container.innerHTML = "";
             items.forEach((item, index) => {
                 const isDel = item.deleted ? 'opacity:0.5; text-decoration:line-through;' : '';
-                container.innerHTML += `
-                    <div class="edit-row" style="display:flex; justify-content:space-between; margin-bottom:5px; ${isDel}">
-                        <div>${item.qty}x ${item.name}</div>
-                        <button style="color:red; background:none; border:none; cursor:pointer;" onclick="deleteItem(${index})">🗑</button>
-                    </div>`;
+                container.innerHTML += `<div class="edit-row" style="display:flex; justify-content:space-between; margin-bottom:5px; ${isDel}"><div>${item.qty}x ${item.name}</div><button style="color:red; background:none; border:none; cursor:pointer;" onclick="deleteItem(${index})">🗑</button></div>`;
             });
         }
 
