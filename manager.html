@@ -582,7 +582,8 @@
                 let count = 0;
 
                 Object.entries(data).forEach(([key, order]) => {
-                    if(order.status === 'completed' || order.status === 'rejected' || order.status === 'served') return;
+                    // FIX: REMOVED 'served' from exclusion list so served orders stay on table
+                    if(order.status === 'completed' || order.status === 'rejected') return;
                     
                     // 1. DINE-IN LOGIC
                     if(order.orderType === 'Dine-In' && order.customer && order.customer.name.startsWith('Table')) {
