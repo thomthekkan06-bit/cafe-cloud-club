@@ -419,10 +419,11 @@
                     });
                 }
 
-                // 2. If T-Shop items are also done (or don't exist), we can move status to 'served'/'done'
+                // 2. If T-Shop items are also done (or don't exist), we can move status to 'done'
+                // FIXED: Force 'done' so it appears on TV/Manager for all order types
                 if (allItemsWillBeDone) {
-                    const type = order.orderType || 'Dine-In';
-                    const nextStatus = (type === 'Delivery' || type === 'Pickup') ? 'done' : 'served';
+                    // OLD LOGIC: (type === 'Delivery' || type === 'Pickup') ? 'done' : 'served'
+                    const nextStatus = 'done'; 
                     updates['status'] = nextStatus;
                     
                     // Add to local history for display
