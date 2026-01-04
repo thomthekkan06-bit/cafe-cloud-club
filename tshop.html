@@ -38,6 +38,10 @@
         .kds-container { flex: 1; padding: 20px; overflow-y: auto; overflow-x: hidden; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; align-content: start; }
         
         .kot-card { background: var(--surface); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; display: flex; flex-direction: column; animation: slideIn 0.3s ease-out; height: fit-content; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        
+        /* Highlight cards that are fully ready but waiting for pickup/serving */
+        .kot-card.card-done { border: 2px solid var(--success); opacity: 0.8; }
+        
         @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         
         .kot-header { padding: 12px 15px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.2s; user-select: none; }
@@ -48,6 +52,8 @@
         .timer-fresh { color: var(--success); }
         .timer-warn { color: var(--warning); }
         .timer-late { color: var(--danger); animation: pulse 2s infinite; }
+        .timer-done { color: var(--text-main); background: var(--success); }
+
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
         
         .kot-info { padding: 10px 15px; font-size: 0.9rem; color: var(--text-muted); border-bottom: 1px dashed var(--border); display: flex; justify-content: space-between; }
@@ -63,7 +69,8 @@
         
         .kot-note { padding: 10px 15px; background: rgba(245, 158, 11, 0.1); color: var(--warning); font-size: 0.85rem; font-weight: 600; border-top: 1px solid var(--border); }
         .ready-msg { padding: 20px; text-align: center; color: var(--success); font-weight: 800; background: rgba(16, 185, 129, 0.1); font-size: 0.9rem; }
-        
+        .waiting-msg { padding: 20px; text-align: center; color: var(--warning); font-weight: 800; background: rgba(245, 158, 11, 0.1); font-size: 0.9rem; }
+
         .header-hint { font-size: 0.7rem; color: var(--success); text-transform: uppercase; letter-spacing: 1px; opacity: 0; transition: opacity 0.2s; text-align: right; }
         .kot-header:hover .header-hint { opacity: 1; }
         
@@ -105,7 +112,7 @@
         const db = getDatabase(app);
 
         // --- CONFIGURATION ---
-        // T-Shop KDS shows ONLY this category (ACCENT REMOVED)
+        // T-Shop KDS shows ONLY this category
         const INCLUDED_CATEGORY = "Cafe Botanical Brews";
         const ACCESS_PIN = "2024";
         
@@ -144,8 +151,9 @@
                 
                 if (data) {
                     Object.entries(data).forEach(([key, order]) => {
-                        // Skip if rejected/pending
-                        if (order.status === 'completed' || order.status === 'rejected' || order.status === 'pending') return;
+                        // 1. FILTER: HIDE IF SERVED/COMPLETED/REJECTED/PENDING
+                        // We KEEP 'cooking' and 'done' (Ready but waiting for service)
+                        if (order.status === 'completed' || order.status === 'rejected' || order.status === 'pending' || order.status === 'served') return;
                         
                         // FILTER: ONLY GET RELEVANT ITEMS
                         let relevantItems = [];
@@ -154,14 +162,13 @@
                         }
                         
                         if (relevantItems.length > 0) {
-                            const isActive = order.status === 'cooking';
-                            // Logic: Order is "active" for T-Shop if it has pending Brews, even if main status is served
-                            const hasRelevantPending = relevantItems.some(i => i.kitchenDone === false && !i.deleted);
-                            const isRevived = (order.status === 'served' || order.status === 'done') && hasRelevantPending;
-
-                            if (isActive || isRevived) {
+                             // Show if status is cooking OR done
+                            if (order.status === 'cooking' || order.status === 'done') {
                                 activeOrders.push({ key, ...order });
-                                currentTotalItems += relevantItems.length;
+                                
+                                // Only count items that aren't done for the notification sound
+                                const pendingItems = relevantItems.filter(i => !i.kitchenDone).length;
+                                currentTotalItems += pendingItems;
                             }
                         }
                     });
@@ -191,6 +198,7 @@
                 let timerClass = 'timer-fresh';
                 if(elapsedMin > 10) timerClass = 'timer-warn';
                 if(elapsedMin > 20) timerClass = 'timer-late';
+                if(order.status === 'done') timerClass = 'timer-done';
 
                 let itemsHtml = "";
                 let visibleItemCount = 0;
@@ -204,7 +212,6 @@
 
                         visibleItemCount++;
                         
-                        // --- UPDATED: Display Variants/Notes in Green ---
                         let variantHtml = '';
                         if(item.variant && item.variant.trim() !== "") {
                             variantHtml = `<div style="font-size:0.8rem; color:var(--success); margin-top:4px; font-weight:600;">${item.variant}</div>`;
@@ -222,17 +229,24 @@
                 }
 
                 if (visibleItemCount === 0) {
-                    itemsHtml = `<div class="ready-msg">BREWS READY<br>TAP HEADER TO CLEAR</div>`;
+                    if (order.status === 'done') {
+                        itemsHtml = `<div class="waiting-msg">READY<br>WAITING FOR SERVICE</div>`;
+                    } else {
+                        itemsHtml = `<div class="ready-msg">BREWS READY<br>TAP HEADER TO COMPLETE</div>`;
+                    }
                 }
 
                 let noteHtml = (order.globalNote && order.globalNote !== "-" && order.globalNote.trim() !== "") ? `<div class="kot-note">📝 ${order.globalNote}</div>` : "";
+                
+                let cardClass = "kot-card";
+                if(order.status === 'done') cardClass += " card-done";
 
                 const card = document.createElement('div');
-                card.className = "kot-card";
+                card.className = cardClass;
                 card.innerHTML = `
                     <div class="kot-header" onclick="completeOrder('${order.key}')">
                         <span class="kot-id">#${order.orderId}</span>
-                        <div><span class="header-hint">TAP TO CLEAR ✓</span> <span class="kot-timer ${timerClass}">${elapsedMin}m</span></div>
+                        <div><span class="header-hint">TAP TO MARK READY ✓</span> <span class="kot-timer ${timerClass}">${elapsedMin}m</span></div>
                     </div>
                     <div class="kot-info"><span style="font-weight:700">${order.customer.name}</span><span class="kot-type-badge">${order.orderType || 'Dine-In'}</span></div>
                     <div class="kot-items">${itemsHtml}</div>
@@ -250,7 +264,13 @@
             const order = activeOrders.find(o => o.key === key);
             if(!order) return;
 
-            if(confirm(`Mark T-Shop Items for #${order.orderId} as DONE?`)) {
+             // If it's already done, prevent toggling again
+             if(order.status === 'done') {
+                alert("This order is already marked READY.\nWaiting for Manager/Waiter to serve.");
+                return;
+            }
+
+            if(confirm(`Mark T-Shop Items for #${order.orderId} as READY?`)) {
                 const updates = {};
                 let allItemsWillBeDone = true;
 
@@ -266,8 +286,7 @@
 
                 // Only complete the whole order if Chef is also done
                 if (allItemsWillBeDone) {
-                    const nextStatus = (order.orderType === 'Delivery' || order.orderType === 'Pickup') ? 'done' : 'served';
-                    updates['status'] = nextStatus;
+                    updates['status'] = 'done';
                 }
 
                 update(ref(db, `orders/${key}`), updates);
