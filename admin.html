@@ -313,9 +313,14 @@
                             <h2 style="margin:0;">Loyalty Management</h2>
                             <p style="margin:5px 0 0 0; font-size:0.8rem; color:var(--text-muted);">Manage customer points and balances</p>
                         </div>
-                        <button class="btn-new" style="background:var(--warning); color:black;" onclick="syncHistoryPoints()">
-                            🔄 Sync from History
-                        </button>
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn-new" onclick="showAddLoyaltyForm()">
+                                <span>+</span> Add Customer
+                            </button>
+                            <button class="btn-new" style="background:var(--warning); color:black;" onclick="syncHistoryPoints()">
+                                🔄 Sync from History
+                            </button>
+                        </div>
                     </div>
                     
                     <div style="display:flex; gap:10px; margin-bottom:20px;">
@@ -378,7 +383,9 @@
                     <option>Freshly Folded</option><option>Rice Harmony</option><option>Salad Symphony</option>
                     <option>Toasty Treats</option><option>Warm Whispers</option><option>Nibbles & Bits</option>
                     <option>Icy Sips</option><option>Mojito Magic</option><option>Nature's Nectar</option>
-                    <option>Whipped Wonders</option><option>Frosted Leaf</option><option>ADD-ON</option>
+                    <option>Whipped Wonders</option><option>Frosted Leaf</option>
+                    <option>Cafe Botanical Brews</option>
+                    <option>ADD-ON</option>
                 </select>
             </div>
 
@@ -424,6 +431,43 @@
             <div class="modal-actions">
                 <button onclick="document.getElementById('loyalty-modal').style.display='none'" class="btn-cancel">Cancel</button>
                 <button onclick="saveLoyalty()" class="btn-save">Update Points</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="add-loyalty-modal" class="modal-overlay">
+        <div class="modal-card">
+            <h3 class="modal-title">Add New Customer</h3>
+            <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:20px;">Enter details manually from Loyverse.</p>
+            
+            <div class="form-group">
+                <label class="form-label">Customer Name <span style="color:var(--danger)">*</span></label>
+                <input type="text" id="new-loyalty-name" class="form-input" placeholder="e.g. John Doe">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Phone Number <span style="color:var(--danger)">*</span></label>
+                <input type="tel" id="new-loyalty-phone" class="form-input" placeholder="e.g. 9876543210">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Email (Optional)</label>
+                <input type="email" id="new-loyalty-email" class="form-input" placeholder="e.g. john@example.com">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Address (Optional)</label>
+                <input type="text" id="new-loyalty-address" class="form-input" placeholder="e.g. Flat 101, Main St">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Current Points</label>
+                <input type="number" id="new-loyalty-points" class="form-input" placeholder="0">
+            </div>
+
+            <div class="modal-actions">
+                <button onclick="document.getElementById('add-loyalty-modal').style.display='none'" class="btn-cancel">Cancel</button>
+                <button onclick="saveNewLoyaltyCustomer()" class="btn-save">Save Customer</button>
             </div>
         </div>
     </div>
@@ -790,17 +834,19 @@
                 const count = val.totalOrders || 0;
                 const spent = val.totalSpent || 0;
                 const points = val.points || 0;
+                const displayName = val.name ? `${val.name}<br><span style="font-size:0.75rem; opacity:0.7">${phone}</span>` : phone;
 
                 const row = document.createElement('tr');
                 row.style.borderBottom = "1px solid var(--border)";
                 row.innerHTML = `
                     <td style="padding:15px; color:var(--text-muted);">${lastDate}</td>
-                    <td style="padding:15px; font-family:'JetBrains Mono';">${phone}</td>
+                    <td style="padding:15px; font-family:'JetBrains Mono';">${displayName}</td>
                     <td style="padding:15px;">${count}</td>
                     <td style="padding:15px;">₹${spent.toLocaleString('en-IN')}</td>
                     <td style="padding:15px; font-weight:bold; color:var(--primary);">${points} Pts</td>
                     <td style="padding:15px; text-align:right;">
                         <button class="btn-cat-opt" style="padding:5px 15px;" onclick="editLoyalty('${phone}', ${points})">Adjust</button>
+                        <button class="btn-cat-opt" style="padding:5px 15px; border-color:var(--danger); color:var(--danger); margin-left:5px;" onclick="deleteLoyalty('${phone}')">Delete</button>
                     </td>
                 `;
                 tbody.appendChild(row);
@@ -824,6 +870,61 @@
                 document.getElementById('loyalty-modal').style.display = 'none';
                 searchLoyalty(); 
             });
+        }
+
+        // --- NEW ADD/DELETE LOYALTY FUNCTIONS ---
+
+        window.showAddLoyaltyForm = () => {
+            document.getElementById('add-loyalty-modal').style.display = 'flex';
+            // Clear form
+            document.getElementById('new-loyalty-name').value = "";
+            document.getElementById('new-loyalty-phone').value = "";
+            document.getElementById('new-loyalty-email').value = "";
+            document.getElementById('new-loyalty-address').value = "";
+            document.getElementById('new-loyalty-points').value = "";
+        }
+
+        window.saveNewLoyaltyCustomer = () => {
+            const name = document.getElementById('new-loyalty-name').value.trim();
+            let phone = document.getElementById('new-loyalty-phone').value.trim();
+            const email = document.getElementById('new-loyalty-email').value.trim();
+            const address = document.getElementById('new-loyalty-address').value.trim();
+            const points = parseInt(document.getElementById('new-loyalty-points').value) || 0;
+
+            if (!name || !phone) return alert("❌ Customer Name and Phone Number are mandatory!");
+            
+            // Basic phone cleaning (remove spaces/dashes)
+            phone = phone.replace(/\D/g, '');
+            if (phone.length < 10) return alert("❌ Please enter a valid phone number.");
+
+            const customerData = {
+                name: name,
+                phone: phone,
+                email: email,
+                address: address,
+                points: points,
+                totalOrders: 0, // Manual entry default
+                totalSpent: 0,  // Manual entry default
+                lastDate: Date.now() // Record creation time
+            };
+
+            // Save to Firebase (Key is phone number)
+            update(ref(db, `loyalty/${phone}`), customerData).then(() => {
+                document.getElementById('add-loyalty-modal').style.display = 'none';
+                // Reload list to show new entry
+                searchLoyalty(); 
+                alert("✅ Customer Added Successfully!");
+            }).catch(err => {
+                alert("Error saving: " + err.message);
+            });
+        }
+
+        window.deleteLoyalty = (phone) => {
+            if(confirm(`⚠️ DELETE WARNING\n\nAre you sure you want to delete loyalty data for:\n${phone}?\n\nThis action cannot be undone.`)) {
+                remove(ref(db, `loyalty/${phone}`)).then(() => {
+                    searchLoyalty(); // Refresh list
+                });
+            }
         }
 
         window.syncHistoryPoints = async () => {
