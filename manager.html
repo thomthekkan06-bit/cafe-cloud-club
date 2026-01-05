@@ -661,6 +661,7 @@
                             fins: { sub: f.subTotal||0, disc: f.discountVal||0, pack: f.packingTotal||0 },
                             phone: order.customer.phone,
                             customerName: order.customer.name, 
+                            address: order.customer.address, // CAPTURE ADDRESS FOR HISTORY
                             orderType: order.orderType,
                             status: order.status,
                             orderId: order.orderId // CAPTURE ID FOR INVOICE
@@ -1228,12 +1229,19 @@
             const finalGrand = (d.total - managerDisc - redeemVal) > 0 ? (d.total - managerDisc - redeemVal) : 0;
             const finalTotalDisc = d.fins.disc + managerDisc;
 
+            // DETERMINE CUSTOMER NAME / ADDR BASED ON TYPE
+            let cName = d.customerName; 
+            let cAddr = d.address;
+
+            // Fallback for Dine-In (where customerName might not be set or we prefer "Table X")
+            if(!cName) cName = `Table ${currentSettleTable}`;
+            if(!cAddr) cAddr = 'Dine-In';
+
             const master = {
-                // FIXED: Use the active Order ID as the History ID (Invoice Number)
                 orderId: d.orderId || Math.floor(100000 + Math.random() * 900000),
                 orderType: d.orderType || 'Dine-In', 
                 timestamp: Date.now(), status: 'paid',
-                customer: { name: `Table ${currentSettleTable}`, phone: d.phone || '-', address:'Dine-In' },
+                customer: { name: cName, phone: d.phone || '-', address: cAddr },
                 items: d.items, 
                 financials: { subTotal: d.fins.sub, discountVal: finalTotalDisc, loyaltyRedeemed: redeemVal, packingTotal: d.fins.pack, grandTotal: finalGrand }
             };
