@@ -76,7 +76,7 @@
         
         .empty-msg { width: 100%; text-align: center; margin-top: 100px; color: var(--border); font-size: 1.5rem; font-weight: 700; opacity: 0.5; }
 
-        /* DONE ITEM STATE (NEW FIX) */
+        /* DONE ITEM STATE */
         .kot-item.done-item .item-name { text-decoration: line-through; color: var(--danger); opacity: 0.8; }
         .kot-item.done-item .item-qty { color: var(--danger); opacity: 0.8; }
         .kot-item.done-item .item-mods { opacity: 0.5; text-decoration: line-through; }
@@ -157,8 +157,8 @@
                 if (data) {
                     Object.entries(data).forEach(([key, order]) => {
                         // 1. FILTER: HIDE IF SERVED/COMPLETED/REJECTED/PENDING
-                        // We KEEP 'cooking' and 'done' (Ready but waiting for service)
-                        if (order.status === 'completed' || order.status === 'rejected' || order.status === 'pending' || order.status === 'served') return;
+                        // 2. UPDATED FILTER: HIDE 'done' so it vanishes from screen
+                        if (order.status === 'completed' || order.status === 'rejected' || order.status === 'pending' || order.status === 'served' || order.status === 'done') return;
                         
                         // FILTER: ONLY GET RELEVANT ITEMS
                         let relevantItems = [];
@@ -167,8 +167,8 @@
                         }
                         
                         if (relevantItems.length > 0) {
-                             // Show if status is cooking OR done
-                            if (order.status === 'cooking' || order.status === 'done') {
+                             // Show if status is cooking. 'done' is hidden.
+                            if (order.status === 'cooking') {
                                 activeOrders.push({ key, ...order });
                                 
                                 // Only count items that aren't done for the notification sound
@@ -203,7 +203,7 @@
                 let timerClass = 'timer-fresh';
                 if(elapsedMin > 10) timerClass = 'timer-warn';
                 if(elapsedMin > 20) timerClass = 'timer-late';
-                if(order.status === 'done') timerClass = 'timer-done';
+                // 'timer-done' removed as done orders are hidden
 
                 let itemsHtml = "";
                 let visibleItemCount = 0;
@@ -213,7 +213,6 @@
                         // FILTER: SHOW ONLY BREWS
                         if (item.category !== INCLUDED_CATEGORY) return;
 
-                        // FIXED: Do not hide completed items.
                         visibleItemCount++;
                         
                         // Apply styling for done items
@@ -236,13 +235,12 @@
                 }
 
                 if (visibleItemCount === 0) {
-                     return; // Skip if no relevant items
+                     return; 
                 }
 
                 let noteHtml = (order.globalNote && order.globalNote !== "-" && order.globalNote.trim() !== "") ? `<div class="kot-note">📝 ${order.globalNote}</div>` : "";
                 
                 let cardClass = "kot-card";
-                if(order.status === 'done') cardClass += " card-done";
 
                 const card = document.createElement('div');
                 card.className = cardClass;
@@ -259,31 +257,48 @@
             });
         }
 
+        // --- UPDATED TOGGLE LOGIC ---
         window.toggleItem = (key, index, status) => {
-            update(ref(db, `orders/${key}/items/${index}`), { kitchenDone: status });
+            update(ref(db, `orders/${key}/items/${index}`), { kitchenDone: status })
+            .then(() => {
+                // AUTO-COMPLETE CHECK
+                const order = activeOrders.find(o => o.key === key);
+                if (!order) return;
+
+                let allItemsWillBeDone = true;
+                if (order.items) {
+                    order.items.forEach((item, i) => {
+                        // We check ALL items (including Chef's items)
+                        if (item.deleted) return;
+                        
+                        const isDone = (i === index) ? status : item.kitchenDone;
+                        if (!isDone) allItemsWillBeDone = false;
+                    });
+                }
+
+                if (allItemsWillBeDone && status === true) {
+                    update(ref(db, `orders/${key}`), { status: 'done' });
+                }
+            });
         };
 
         window.completeOrder = (key) => {
             const order = activeOrders.find(o => o.key === key);
             if(!order) return;
 
-             // If it's already done, prevent toggling again
-             if(order.status === 'done') {
-                alert("This order is already marked READY.\nWaiting for Manager/Waiter to serve.");
-                return;
-            }
-
             if(confirm(`Mark T-Shop Items for #${order.orderId} as READY?`)) {
                 const updates = {};
                 let allItemsWillBeDone = true;
 
                 order.items.forEach((item, index) => {
+                    if (item.deleted) return;
+
                     // Check if this item belongs to T-Shop
                     if (item.category === INCLUDED_CATEGORY) {
                         updates[`items/${index}/kitchenDone`] = true;
                     } else {
                         // This is a Chef item. Check if it is done.
-                        if (!item.kitchenDone && !item.deleted) allItemsWillBeDone = false;
+                        if (!item.kitchenDone) allItemsWillBeDone = false;
                     }
                 });
 
