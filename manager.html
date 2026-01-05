@@ -628,8 +628,10 @@
                                 showInQueue = true;
                             }
                         } else {
-                             // NEW FIX: Hide Pickup 'done' orders from Left Queue (they go to PK slots)
-                             if (order.orderType === 'Pickup' && order.status === 'done') {
+                             // FIX: Hide BOTH Pickup & Delivery orders if they are 'done' or 'out'
+                             // (Because they will appear in the Right Panel Slots instead)
+                             if ((order.orderType === 'Pickup' || order.orderType === 'Delivery') && 
+                                 (order.status === 'done' || order.status === 'out_for_delivery')) {
                                  showInQueue = false; 
                              } else {
                                  showInQueue = true;
