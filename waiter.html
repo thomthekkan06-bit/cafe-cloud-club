@@ -108,7 +108,7 @@
         </div>
     </div>
 
-    <div class="section-title">Indoor Dining (1-7 + Bar)</div>
+    <div class="section-title">Indoor Dining (1-7 + Bars)</div>
     <div class="tables-grid" id="grid-indoor-main"></div>
 
     <div class="section-title">Indoor AC (9-13)</div>
@@ -203,8 +203,17 @@
             const gridAC = document.getElementById('grid-indoor-ac');
             gridMain.innerHTML = "";
             gridAC.innerHTML = "";
+
+            // 1. Tables 1-7
             for(let i=1; i<=7; i++) createCard(i, gridMain, liveTableData[i]);
-            createCard(8, gridMain, liveTableData[8], true, "BAR");
+
+            // 2. Bar Tables (8, 14, 15, 16) - Matching Manager.html
+            createCard(8, gridMain, liveTableData[8], true, "BAR 1");
+            createCard(14, gridMain, liveTableData[14], true, "BAR 2");
+            createCard(15, gridMain, liveTableData[15], true, "BAR 3");
+            createCard(16, gridMain, liveTableData[16], true, "BAR 4");
+
+            // 3. AC Tables 9-13
             for(let i=9; i<=13; i++) createCard(i, gridAC, liveTableData[i]);
         }
 
