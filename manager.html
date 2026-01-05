@@ -847,7 +847,7 @@
             let sub = 0; let pack = 0;
             extOrderItems.forEach(i => { sub += (i.price * i.qty); pack += (i.packingInfo * i.qty); });
             const order = {
-                orderId: pid, orderType: plat, timestamp: Date.now(), status: 'cooking',
+                orderId: pid, orderType: plat, timestamp: Date.now(), status: 'pending', // CHANGED STATUS FROM COOKING TO PENDING
                 customer: { name: `${plat} #${pid}`, phone:'-', address:'Pickup' },
                 items: extOrderItems, financials: { subTotal: sub, discountVal: 0, packingTotal: pack, grandTotal: sub + pack }
             };
@@ -992,6 +992,7 @@
                     const mins = Math.floor(diff/60000);
                     
                     if(d.status === 'out_for_delivery') cls = 'table-card status-out';
+                    else if(d.status === 'done') cls = 'table-card status-warning'; // FORCE ORANGE IF READY
                     else if(mins < 60) cls = 'table-card status-fresh';
                     else if(mins < 90) cls = 'table-card status-warning';
                     else cls = 'table-card status-camper';
@@ -1009,6 +1010,7 @@
 
                     let statusText = "OCCUPIED";
                     if(d.status === 'out_for_delivery') statusText = "OUT FOR DELIVERY";
+                    else if(d.status === 'done') statusText = "READY";
 
                     txt = `
                         <div style="display:flex;justify-content:space-between"><div class="t-num">${displayLabel}</div><div style="font-weight:bold;color:#aaa">₹${d.total}</div></div>
