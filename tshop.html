@@ -75,6 +75,11 @@
         .kot-header:hover .header-hint { opacity: 1; }
         
         .empty-msg { width: 100%; text-align: center; margin-top: 100px; color: var(--border); font-size: 1.5rem; font-weight: 700; opacity: 0.5; }
+
+        /* DONE ITEM STATE (NEW FIX) */
+        .kot-item.done-item .item-name { text-decoration: line-through; color: var(--danger); opacity: 0.8; }
+        .kot-item.done-item .item-qty { color: var(--danger); opacity: 0.8; }
+        .kot-item.done-item .item-mods { opacity: 0.5; text-decoration: line-through; }
     </style>
 </head>
 <body>
@@ -208,9 +213,11 @@
                         // FILTER: SHOW ONLY BREWS
                         if (item.category !== INCLUDED_CATEGORY) return;
 
-                        if (item.kitchenDone === true && !item.deleted) return; 
-
+                        // FIXED: Do not hide completed items.
                         visibleItemCount++;
+                        
+                        // Apply styling for done items
+                        const isDone = item.kitchenDone ? 'done-item' : '';
                         
                         let variantHtml = '';
                         if(item.variant && item.variant.trim() !== "") {
@@ -218,7 +225,7 @@
                         }
 
                         itemsHtml += `
-                            <div class="kot-item" onclick="toggleItem('${order.key}', ${index}, ${!item.kitchenDone})">
+                            <div class="kot-item ${isDone}" onclick="toggleItem('${order.key}', ${index}, ${!item.kitchenDone})">
                                 <span class="item-qty">${item.qty}</span>
                                 <div class="item-name">
                                     ${item.name}
@@ -229,11 +236,7 @@
                 }
 
                 if (visibleItemCount === 0) {
-                    if (order.status === 'done') {
-                        itemsHtml = `<div class="waiting-msg">READY<br>WAITING FOR SERVICE</div>`;
-                    } else {
-                        itemsHtml = `<div class="ready-msg">BREWS READY<br>TAP HEADER TO COMPLETE</div>`;
-                    }
+                     return; // Skip if no relevant items
                 }
 
                 let noteHtml = (order.globalNote && order.globalNote !== "-" && order.globalNote.trim() !== "") ? `<div class="kot-note">📝 ${order.globalNote}</div>` : "";
