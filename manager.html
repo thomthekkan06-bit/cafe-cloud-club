@@ -347,7 +347,10 @@
 
     <div class="modal-overlay" id="settle-modal">
         <div class="modal-card">
-            <div class="modal-header"><h3 style="margin:0;">Settle / Action <span id="m-t-id"></span></h3><div onclick="closeModal('settle-modal')" style="cursor:pointer">&times;</div></div>
+            <div class="modal-header">
+                <h3 style="margin:0;" id="settle-modal-title">Invoice #<span id="m-t-id"></span></h3>
+                <div onclick="closeModal('settle-modal')" style="cursor:pointer">&times;</div>
+            </div>
             <div class="modal-body">
                 <div id="bill-req-alert" style="display:none; background:#FFD700; color:black; padding:10px; text-align:center; border-radius:8px; margin-bottom:15px; font-weight:bold;">
                     ⚠️ CUSTOMER REQUESTED BILL
@@ -582,7 +585,6 @@
                 let count = 0;
 
                 Object.entries(data).forEach(([key, order]) => {
-                    // FIX: REMOVED 'served' from exclusion list so served orders stay on table
                     if(order.status === 'completed' || order.status === 'rejected') return;
                     
                     // 1. DINE-IN LOGIC
@@ -592,7 +594,8 @@
                             total:0, items:[], keys:[], timestamp: order.timestamp,
                             fins: { sub:0, disc:0, pack:0 }, phone: null,
                             orderType: 'Dine-In',
-                            status: order.status
+                            status: order.status,
+                            orderId: order.orderId // CAPTURE ID FOR INVOICE
                         };
                         if(order.customer.phone && order.customer.phone.length >= 10 && order.customer.phone !== '0000000000') {
                             tableData[tId].phone = order.customer.phone;
@@ -621,19 +624,15 @@
                         pending = true;
                     } else if (order.status === 'cooking' || order.status === 'done' || order.status === 'out_for_delivery') {
                         if (order.orderType === 'Dine-In') {
-                            // Only show if items are Ready (kitchenDone) but NOT Served
                             if (order.items && order.items.some(i => i.kitchenDone && !i.served && !i.deleted)) {
                                 showInQueue = true;
                             }
                         } else {
-                             // Standard logic for Delivery/Pickup
-                             if (order.status === 'done' || order.status === 'out_for_delivery') {
-                                 // NEW FIX: Hide Pickup 'done' orders from Left Queue (they go to PK slots)
-                                 if (order.orderType === 'Pickup' && order.status === 'done') {
-                                     showInQueue = false; 
-                                 } else {
-                                     showInQueue = true;
-                                 }
+                             // NEW FIX: Hide Pickup 'done' orders from Left Queue (they go to PK slots)
+                             if (order.orderType === 'Pickup' && order.status === 'done') {
+                                 showInQueue = false; 
+                             } else {
+                                 showInQueue = true;
                              }
                         }
                     }
@@ -663,7 +662,8 @@
                             phone: order.customer.phone,
                             customerName: order.customer.name, 
                             orderType: order.orderType,
-                            status: order.status
+                            status: order.status,
+                            orderId: order.orderId // CAPTURE ID FOR INVOICE
                         };
                     });
                 };
@@ -1049,15 +1049,14 @@
             const d = tableData[currentSettleTable];
             const hasReq = activeBillRequests[currentSettleTable];
             document.getElementById('bill-req-alert').style.display = hasReq ? 'block' : 'none';
-            document.getElementById('m-t-id').innerText = currentSettleTable;
+            // NEW: Updated Header to show Invoice ID
+            document.getElementById('m-t-id').innerText = d.orderId || currentSettleTable;
+            
+            // NEW: Removed icons from the list
             document.getElementById('m-i-list').innerHTML = d.items.map(i => {
                 if(i.deleted) return '';
-                // SHOW STATUS ICON
-                let statusIcon = "⏳";
-                if(i.served) statusIcon = "✅";
-                else if(i.kitchenDone) statusIcon = "👨‍🍳";
-                
-                return `<div style="display:flex;justify-content:space-between;margin-bottom:5px;color:#aaa"><span>${statusIcon} ${i.qty}x ${i.name}</span><span>₹${i.price*i.qty}</span></div>`;
+                // Simple list with no icons
+                return `<div style="display:flex;justify-content:space-between;margin-bottom:5px;color:#aaa"><span>${i.qty}x ${i.name}</span><span>₹${i.price*i.qty}</span></div>`;
             }).join('');
             
             document.getElementById('disc-type').value = 'flat';
@@ -1230,7 +1229,8 @@
             const finalTotalDisc = d.fins.disc + managerDisc;
 
             const master = {
-                orderId: Math.floor(100000 + Math.random() * 900000),
+                // FIXED: Use the active Order ID as the History ID (Invoice Number)
+                orderId: d.orderId || Math.floor(100000 + Math.random() * 900000),
                 orderType: d.orderType || 'Dine-In', 
                 timestamp: Date.now(), status: 'paid',
                 customer: { name: `Table ${currentSettleTable}`, phone: d.phone || '-', address:'Dine-In' },
