@@ -626,8 +626,15 @@
                                 showInQueue = true;
                             }
                         } else {
-                            // Standard logic for Delivery/Pickup
-                             if (order.status === 'done' || order.status === 'out_for_delivery') showInQueue = true;
+                             // Standard logic for Delivery/Pickup
+                             if (order.status === 'done' || order.status === 'out_for_delivery') {
+                                 // NEW FIX: Hide Pickup 'done' orders from Left Queue (they go to PK slots)
+                                 if (order.orderType === 'Pickup' && order.status === 'done') {
+                                     showInQueue = false; 
+                                 } else {
+                                     showInQueue = true;
+                                 }
+                             }
                         }
                     }
 
@@ -1065,7 +1072,7 @@
             
             if(currentSettleTable.toString().startsWith('T')) {
                 if(d.status === 'done') {
-                    btn.innerText = "✅ PICKED UP";
+                    btn.innerText = "SETTLE"; // RENAMED FROM "PICKED UP"
                     btn.disabled = false;
                 } else {
                     btn.innerText = "Cooking...";
