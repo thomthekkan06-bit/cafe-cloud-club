@@ -1,3 +1,7 @@
+{
+type: uploaded file
+fileName: thomthekkan06-bit/cafe-cloud-club/cafe-cloud-club-a2fb794a57b9d4a80d641aa8f99e693991465be5/kitchen.html
+fullContent:
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -283,8 +287,8 @@
                 if (data) {
                     Object.entries(data).forEach(([key, order]) => {
                         // FILTER: Hide served/completed/rejected/pending
-                        // We KEEP 'cooking' and 'done' orders
-                        if (order.status === 'completed' || order.status === 'rejected' || order.status === 'pending' || order.status === 'served') return;
+                        // UPDATE: Also hide 'done' because user wants it to disappear from KDS when completed.
+                        if (order.status === 'completed' || order.status === 'rejected' || order.status === 'pending' || order.status === 'served' || order.status === 'done') return;
 
                         // NEW FILTER: Check if there are any NON-BREW items
                         let relevantItems = [];
@@ -293,8 +297,8 @@
                         }
 
                         if (relevantItems.length > 0) {
-                            // Show if status is cooking OR done (waiting for service)
-                            if (order.status === 'cooking' || order.status === 'done') {
+                            // Only show if status is cooking. 'done' is now hidden.
+                            if (order.status === 'cooking') {
                                 activeOrders.push({ key, ...order });
                                 
                                 // Only count items that aren't done for the notification sound
@@ -334,7 +338,7 @@
                 let timerClass = 'timer-fresh';
                 if(elapsedMin > 10) timerClass = 'timer-warn';
                 if(elapsedMin > 20) timerClass = 'timer-late';
-                if(order.status === 'done') timerClass = 'timer-done';
+                // 'timer-done' logic is removed since done orders are hidden
 
                 const custName = order.customer ? order.customer.name : 'Guest';
                 const orderType = order.orderType || 'Dine-In';
@@ -347,9 +351,6 @@
                         // 1. FILTER: EXCLUDE BREWS
                         if (item.category === EXCLUDED_CATEGORY) return;
 
-                        // 2. FIXED LOGIC: Do NOT hide items if they are kitchenDone.
-                        // Instead, we will apply a class to strike them out.
-                        
                         // 3. Hide Packing Charges
                         const itemNameLower = item.name.toLowerCase();
                         if (itemNameLower.includes("packing charge") || itemNameLower.includes("parcel charge")) return;
@@ -365,6 +366,7 @@
                             variantHtml = `<div class="item-mods" style="color:var(--success); font-weight:600; font-style:normal;">${item.variant}</div>`;
                         }
 
+                        // PASS INDEX TO TOGGLE ITEM
                         itemsHtml += `
                             <div class="kot-item ${isDeleted} ${isDone}" onclick="toggleItem('${order.key}', ${index}, ${!item.kitchenDone})">
                                 <span class="item-qty">${item.qty}</span>
@@ -388,7 +390,6 @@
                 }
 
                 let cardClass = "kot-card";
-                if(order.status === 'done') cardClass += " card-done";
 
                 const card = document.createElement('div');
                 card.className = cardClass;
@@ -415,49 +416,75 @@
 
         // --- ACTIONS ---
         window.toggleItem = (key, index, status) => {
-            update(ref(db, `orders/${key}/items/${index}`), { kitchenDone: status });
+            // 1. Perform the update for the specific item
+            update(ref(db, `orders/${key}/items/${index}`), { kitchenDone: status })
+            .then(() => {
+                // 2. CHECK IF ALL ITEMS ARE NOW DONE TO AUTO-COMPLETE
+                const order = activeOrders.find(o => o.key === key);
+                if (!order) return;
+
+                let allItemsWillBeDone = true;
+
+                if (order.items) {
+                    order.items.forEach((item, i) => {
+                         // Skip Excluded Categories or Deleted Items from check
+                         if (item.category === EXCLUDED_CATEGORY || item.deleted) return;
+                         
+                         // For the item we just clicked, use the NEW status passed in arg
+                         // For others, use existing status
+                         const isDone = (i === index) ? status : item.kitchenDone;
+                         
+                         if (!isDone) {
+                             allItemsWillBeDone = false;
+                         }
+                    });
+                }
+
+                if (allItemsWillBeDone && status === true) {
+                    // AUTO-TRIGGER COMPLETION WITHOUT DIALOG
+                    performAutoComplete(key, order);
+                }
+            });
         };
+
+        function performAutoComplete(key, order) {
+             const updates = {};
+             updates['status'] = 'done'; 
+             
+             // Add to local history for display
+             historyOrders.unshift({ ...order, doneTime: new Date() });
+             if(historyOrders.length > 20) historyOrders.pop();
+             renderHistory();
+             
+             // Update DB -> Order will vanish from Active KDS due to filter
+             update(ref(db, `orders/${key}`), updates);
+        }
 
         window.completeOrder = (key) => {
             const order = activeOrders.find(o => o.key === key);
             if(!order) return;
 
-            // If it's already done, Chef can't "Serve" it. Manager must serve it.
-            if(order.status === 'done') {
-                alert("This order is already marked READY.\nWaiting for Manager/Waiter to serve/pickup.");
-                return;
-            }
-
             if(confirm(`Mark all Chef Items for Order #${order.orderId} as READY?`)) {
                 
                 const updates = {};
-                let allItemsWillBeDone = true;
-
-                // 1. Loop through all items to update Chef items and check global status
+                
+                // 1. Loop through all items to update Chef items
                 if (order.items) {
                     order.items.forEach((item, index) => {
                         // If it is a Chef Item...
                         if (item.category !== EXCLUDED_CATEGORY) {
                             updates[`items/${index}/kitchenDone`] = true;
-                        } else {
-                            // If it is a T-Shop Item, check if it's done
-                            if (!item.kitchenDone && !item.deleted) {
-                                allItemsWillBeDone = false;
-                            }
-                        }
+                        } 
                     });
                 }
 
-                // 2. If T-Shop items are also done (or don't exist), set status to 'done'.
-                // 'done' status keeps it visible on KDS (as "Ready") until Manager serves it.
-                if (allItemsWillBeDone) {
-                    updates['status'] = 'done'; 
-                    
-                    // Add to local history for display
-                    historyOrders.unshift({ ...order, doneTime: new Date() });
-                    if(historyOrders.length > 20) historyOrders.pop();
-                    renderHistory();
-                }
+                // 2. Set Status Done
+                updates['status'] = 'done'; 
+                
+                // Add to local history
+                historyOrders.unshift({ ...order, doneTime: new Date() });
+                if(historyOrders.length > 20) historyOrders.pop();
+                renderHistory();
 
                 // 3. Perform Updates
                 update(ref(db, `orders/${key}`), updates);
