@@ -610,10 +610,12 @@
                         tableData[tId].keys.push(key);
                     }
 
-                    // 2. PARCEL LOGIC
+                    // 2. PARCEL LOGIC (Updated to include Swiggy/Zomato in Delivery Slots)
                     if (order.status !== 'pending') {
                         if (order.orderType === 'Pickup') pickupList.push({key, ...order});
-                        if (order.orderType === 'Delivery') deliveryList.push({key, ...order});
+                        if (order.orderType === 'Delivery' || order.orderType === 'Swiggy' || order.orderType === 'Zomato') {
+                             deliveryList.push({key, ...order});
+                        }
                     }
 
                     // 3. QUEUE VISIBILITY LOGIC (Left Pane)
@@ -628,9 +630,9 @@
                                 showInQueue = true;
                             }
                         } else {
-                             // FIX: Hide BOTH Pickup & Delivery orders if they are 'done' or 'out'
-                             // (Because they will appear in the Right Panel Slots instead)
-                             if ((order.orderType === 'Pickup' || order.orderType === 'Delivery') && 
+                             // FIX: Hide Pickup, Delivery, Swiggy, Zomato if 'done' or 'out'
+                             // They appear in the Right Panel Slots
+                             if (['Pickup', 'Delivery', 'Swiggy', 'Zomato'].includes(order.orderType) && 
                                  (order.status === 'done' || order.status === 'out_for_delivery')) {
                                  showInQueue = false; 
                              } else {
@@ -1082,8 +1084,14 @@
                 }
             } else if(currentSettleTable.toString().startsWith('D')) {
                 if(d.status === 'done') {
-                    btn.innerText = "Waiting for Agent";
-                    btn.disabled = true; 
+                    // MODIFIED: If Swiggy/Zomato, enable "PICKED UP"
+                    if(d.orderType === 'Swiggy' || d.orderType === 'Zomato') {
+                        btn.innerText = "PICKED UP";
+                        btn.disabled = false;
+                    } else {
+                        btn.innerText = "Waiting for Agent";
+                        btn.disabled = true; 
+                    }
                 } else if(d.status === 'out_for_delivery') {
                     btn.innerText = "🛵 Out for Delivery";
                     btn.disabled = true;
@@ -1217,7 +1225,8 @@
             const tableStr = currentSettleTable.toString();
             if(tableStr.startsWith('D')) {
                 const d = tableData[currentSettleTable];
-                if(d.status === 'done' || d.status === 'out_for_delivery') {
+                // MODIFIED: If it's Swiggy/Zomato, allow settling. Otherwise block it.
+                if((d.orderType !== 'Swiggy' && d.orderType !== 'Zomato') && (d.status === 'done' || d.status === 'out_for_delivery')) {
                     alert("This order is managed by the Delivery Agent.");
                     return; 
                 }
