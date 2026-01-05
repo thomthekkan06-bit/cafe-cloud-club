@@ -134,6 +134,11 @@
         .kot-item.deleted-item .item-name { text-decoration: line-through; color: var(--danger); }
         .kot-item.deleted-item .item-qty { text-decoration: line-through; color: var(--danger); }
 
+        /* DONE ITEM STATE (NEW FIX) */
+        .kot-item.done-item .item-name { text-decoration: line-through; color: var(--danger); opacity: 0.8; }
+        .kot-item.done-item .item-qty { color: var(--danger); opacity: 0.8; }
+        .kot-item.done-item .item-mods { opacity: 0.5; text-decoration: line-through; }
+
         .kot-note {
             padding: 10px 15px; background: rgba(245, 158, 11, 0.1);
             color: var(--warning); font-size: 0.85rem; font-weight: 600;
@@ -342,17 +347,18 @@
                         // 1. FILTER: EXCLUDE BREWS
                         if (item.category === EXCLUDED_CATEGORY) return;
 
-                        // 2. Hide "Done" items logic:
-                        // Only hide if the entire order is NOT done. If order is done, we might want to show them or show a "Ready" message.
-                        // Actually, standard KDS behavior: hide individual done items to declutter.
-                        if (item.kitchenDone === true && !item.deleted) return; 
-
+                        // 2. FIXED LOGIC: Do NOT hide items if they are kitchenDone.
+                        // Instead, we will apply a class to strike them out.
+                        
                         // 3. Hide Packing Charges
                         const itemNameLower = item.name.toLowerCase();
                         if (itemNameLower.includes("packing charge") || itemNameLower.includes("parcel charge")) return;
 
                         visibleItemCount++;
+                        
+                        // Determine styling classes
                         const isDeleted = item.deleted ? 'deleted-item' : '';
+                        const isDone = item.kitchenDone ? 'done-item' : ''; 
                         
                         let variantHtml = '';
                         if(item.variant && item.variant.trim() !== "") {
@@ -360,7 +366,7 @@
                         }
 
                         itemsHtml += `
-                            <div class="kot-item ${isDeleted}" onclick="toggleItem('${order.key}', ${index}, ${!item.kitchenDone})">
+                            <div class="kot-item ${isDeleted} ${isDone}" onclick="toggleItem('${order.key}', ${index}, ${!item.kitchenDone})">
                                 <span class="item-qty">${item.qty}</span>
                                 <div class="item-name">
                                     ${item.name}
@@ -371,13 +377,9 @@
                     });
                 }
 
-                // If no items visible, it means all items are marked Kitchen Done.
+                // If no items visible, it means all items were filtered out (e.g. all brews)
                 if (visibleItemCount === 0) {
-                    if (order.status === 'done') {
-                        itemsHtml = `<div class="waiting-msg">ORDER READY<br>WAITING FOR PICKUP / SERVICE</div>`;
-                    } else {
-                        itemsHtml = `<div class="ready-msg">ALL ITEMS PREPARED<br>TAP HEADER TO COMPLETE</div>`;
-                    }
+                     return; // Skip rendering this card entirely
                 }
 
                 let noteHtml = "";
