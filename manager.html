@@ -1288,7 +1288,13 @@
                     doc.save(`Bill_Table${currentSettleTable}.pdf`);
                     const choice = confirm("Bill PDF Downloaded!\n\nClick OK to open WhatsApp Web (drag the file to send).\nClick CANCEL to keep file.");
                     if (choice) {
-                         window.open("https://web.whatsapp.com/", '_blank');
+                         let phone = d.phone;
+                         if (phone && phone !== '-' && phone !== '0000000000') {
+                             if (phone.length === 10) phone = "91" + phone;
+                             window.open(`https://web.whatsapp.com/send?phone=${phone}&text=Please+find+attached+your+bill+PDF`, '_blank');
+                         } else {
+                             window.open("https://web.whatsapp.com/", '_blank');
+                         }
                     }
                 }
             } catch (err) { alert(err.message); }
