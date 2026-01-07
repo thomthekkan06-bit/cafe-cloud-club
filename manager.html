@@ -1156,7 +1156,7 @@
             document.getElementById('earn-preview').innerText = `+${pointsToEarn} Pts`;
         }
 
-        window.shareBill = () => {
+        window.shareBill = async () => {
             try {
                 if (!currentSettleTable || !tableData[currentSettleTable]) return alert("Select a table first.");
                 const d = tableData[currentSettleTable];
@@ -1169,6 +1169,19 @@
                 const finalGrand = (d.total - managerDisc - redeemVal) > 0 ? (d.total - managerDisc - redeemVal) : 0;
                 const finalTotalDisc = d.fins.disc + managerDisc;
                 
+                // Load Logo
+                const logoImg = new Image();
+                logoImg.src = 'cloudlogo.png';
+                
+                // Wrap image load in promise to ensure it exists before PDF gen
+                await new Promise((resolve, reject) => {
+                    logoImg.onload = resolve;
+                    logoImg.onerror = () => {
+                        console.warn("Logo cloudlogo.png not found, skipping.");
+                        resolve(); // Resolve anyway to print without logo
+                    };
+                });
+
                 // --- SWITCH TO RECEIPT SIZE (80mm width) ---
                 const doc = new window.jsPDF({
                     orientation: 'portrait',
@@ -1178,19 +1191,39 @@
 
                 if (typeof doc.autoTable !== 'function') return alert("AutoTable plugin not loaded.");
 
+                let yPos = 5;
+
+                // --- LOGO ---
+                if (logoImg.complete && logoImg.naturalWidth > 0) {
+                    // Calc aspect ratio to fit width 25mm
+                    const aspect = logoImg.naturalWidth / logoImg.naturalHeight;
+                    const w = 25; 
+                    const h = w / aspect;
+                    doc.addImage(logoImg, 'PNG', 27.5, yPos, w, h); // Center (80-25)/2 = 27.5
+                    yPos += h + 5; 
+                } else {
+                    yPos += 5; // Fallback spacing
+                }
+
                 // --- HEADER ---
                 doc.setFontSize(8); doc.setFont("helvetica", "bold");
-                doc.text("GST: 32AKXPC2831L1Z0", 5, 10); // Top Left
+                doc.text("GST: 32AKXPC2831L1Z0", 5, yPos); 
+                yPos += 5;
 
                 doc.setFontSize(12); doc.setFont("helvetica", "bold");
-                doc.text("CAFE CLOUD CLUB", 40, 15, { align: "center" });
+                doc.text("CAFE CLOUD CLUB", 40, yPos, { align: "center" });
+                yPos += 5;
                 
                 doc.setFontSize(8); doc.setFont("helvetica", "normal");
-                doc.text("Tasty & Fresh", 40, 20, { align: "center" });
-                doc.text("Date: " + new Date().toLocaleString(), 40, 24, { align: "center" });
+                doc.text("Tasty & Fresh", 40, yPos, { align: "center" });
+                yPos += 4;
+                
+                doc.text("Date: " + new Date().toLocaleString(), 40, yPos, { align: "center" });
+                yPos += 2;
                 
                 doc.setLineWidth(0.5); 
-                doc.line(2, 26, 78, 26); // Separator Line
+                doc.line(2, yPos, 78, yPos); // Separator Line
+                yPos += 2;
 
                 const tableBody = d.items.filter(i => !i.deleted).map(i => [
                     i.name, i.qty.toString(), (i.price * i.qty).toFixed(2)
@@ -1198,7 +1231,7 @@
 
                 // --- TABLE ---
                 doc.autoTable({
-                    startY: 28,
+                    startY: yPos,
                     head: [['Item', 'Qty', 'Amt']], 
                     body: tableBody,
                     theme: 'plain', 
