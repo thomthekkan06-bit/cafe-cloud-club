@@ -1169,9 +1169,6 @@
                 const finalGrand = (d.total - managerDisc - redeemVal) > 0 ? (d.total - managerDisc - redeemVal) : 0;
                 const finalTotalDisc = d.fins.disc + managerDisc;
                 
-                // Prompt phone first (Common use case is WhatsApp)
-                const phone = prompt("Enter Customer WhatsApp Number (Optional for Email/Share):", "91");
-                
                 // --- SWITCH TO RECEIPT SIZE (80mm width) ---
                 const doc = new window.jsPDF({
                     orientation: 'portrait',
@@ -1256,12 +1253,9 @@
                 // 2. Desktop Fallback
                 else {
                     doc.save(`Bill_Table${currentSettleTable}.pdf`);
-                    const choice = confirm("Bill PDF Downloaded!\n\nClick OK to open WhatsApp Web.\nClick CANCEL to keep file.");
+                    const choice = confirm("Bill PDF Downloaded!\n\nClick OK to open WhatsApp Web (drag the file to send).\nClick CANCEL to keep file.");
                     if (choice) {
-                         if(!phone) return alert("No phone number entered for WhatsApp.");
-                         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                         const baseUrl = isMobile ? "https://api.whatsapp.com/send" : "https://web.whatsapp.com/send";
-                         window.open(`${baseUrl}?phone=${phone}&text=Please+find+attached+your+bill+PDF`, '_blank');
+                         window.open("https://web.whatsapp.com/", '_blank');
                     }
                 }
             } catch (err) { alert(err.message); }
