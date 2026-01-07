@@ -1286,7 +1286,9 @@
                 // 2. Desktop Fallback
                 else {
                     doc.save(`Bill_Table${currentSettleTable}.pdf`);
-                    const choice = confirm("Bill PDF Downloaded!\n\nClick OK to open WhatsApp Web (drag the file to send).\nClick CANCEL to keep file.");
+                    
+                    const choice = confirm("Bill Saved to Downloads! 📥\n\n1. WhatsApp Web will open.\n2. DRAG & DROP the downloaded file into the chat.\n\nOpen WhatsApp now?");
+                    
                     if (choice) {
                          let phone = d.phone;
                          if (phone && phone !== '-' && phone !== '0000000000') {
