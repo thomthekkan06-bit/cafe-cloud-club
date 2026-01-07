@@ -387,7 +387,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn-modal-cancel" onclick="openEditFromTable()">EDIT</button>
-                <button class="btn-modal-cancel" style="border-color:#25D366; color:#25D366;" onclick="whatsappBill()">WhatsApp 📱</button>
+                <button class="btn-modal-cancel" style="border-color:#3b82f6; color:#3b82f6;" onclick="shareBill()">Share Bill 📤</button>
                 <button class="btn-modal-action" id="btn-settle-action" style="background:var(--success)" onclick="settleAndClear()">PAID & CLEAR</button>
             </div>
         </div>
@@ -1156,7 +1156,7 @@
             document.getElementById('earn-preview').innerText = `+${pointsToEarn} Pts`;
         }
 
-        window.whatsappBill = () => {
+        window.shareBill = () => {
             try {
                 if (!currentSettleTable || !tableData[currentSettleTable]) return alert("Select a table first.");
                 const d = tableData[currentSettleTable];
@@ -1169,9 +1169,9 @@
                 const finalGrand = (d.total - managerDisc - redeemVal) > 0 ? (d.total - managerDisc - redeemVal) : 0;
                 const finalTotalDisc = d.fins.disc + managerDisc;
                 
-                const phone = prompt("Enter Customer WhatsApp Number:", "91");
-                if(!phone) return;
-
+                // Prompt phone first (Common use case is WhatsApp)
+                const phone = prompt("Enter Customer WhatsApp Number (Optional for Email/Share):", "91");
+                
                 const doc = new window.jsPDF();
                 if (typeof doc.autoTable !== 'function') return alert("AutoTable plugin not loaded.");
 
@@ -1209,14 +1209,26 @@
                 const pdfBlob = doc.output('blob');
                 const file = new File([pdfBlob], `Bill_Table${currentSettleTable}.pdf`, { type: 'application/pdf' });
 
+                // 1. Try Native Share (Mobile - Covers WhatsApp/Email/AirDrop)
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                    navigator.share({ files: [file], title: 'Bill Receipt', text: 'Here is your bill.' }).catch(err => alert("Share failed"));
-                } else {
+                    navigator.share({ 
+                        files: [file], 
+                        title: 'Bill Receipt', 
+                        text: 'Here is your bill from Cafe Cloud Club.' 
+                    }).catch(err => console.log("Share dismissed"));
+                } 
+                // 2. Desktop Fallback (Download + Optional WhatsApp Web)
+                else {
                     doc.save(`Bill_Table${currentSettleTable}.pdf`);
-                    alert("Bill Downloaded! Opening WhatsApp...");
-                    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                    const baseUrl = isMobile ? "https://api.whatsapp.com/send" : "https://web.whatsapp.com/send";
-                    window.open(`${baseUrl}?phone=${phone}&text=Please+find+attached+your+bill+PDF`, '_blank');
+                    
+                    const choice = confirm("Bill PDF Downloaded!\n\nClick OK to open WhatsApp Web (drag the file to send).\nClick CANCEL to just keep the file (for Email/Printing).");
+                    
+                    if (choice) {
+                         if(!phone) return alert("No phone number entered for WhatsApp.");
+                         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                         const baseUrl = isMobile ? "https://api.whatsapp.com/send" : "https://web.whatsapp.com/send";
+                         window.open(`${baseUrl}?phone=${phone}&text=Please+find+attached+your+bill+PDF`, '_blank');
+                    }
                 }
             } catch (err) { alert(err.message); }
         };
