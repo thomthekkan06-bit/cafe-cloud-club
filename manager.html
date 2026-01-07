@@ -1175,6 +1175,9 @@
                 const doc = new window.jsPDF();
                 if (typeof doc.autoTable !== 'function') return alert("AutoTable plugin not loaded.");
 
+                doc.setFontSize(10); doc.setFont("helvetica", "bold");
+                doc.text("GST: 32AKXPC2831L1Z0", 10, 15); // Added GST
+
                 doc.setFontSize(22); doc.setFont("helvetica", "bold");
                 doc.text("CAFE CLOUD CLUB", 105, 20, { align: "center" });
                 doc.setFontSize(10); doc.setFont("helvetica", "normal");
@@ -1203,8 +1206,12 @@
                 }
                 doc.setFontSize(16); doc.setFont("helvetica", "bold");
                 doc.text(`TOTAL:`, 140, finalY + 5); doc.text(`Rs. ${finalGrand}`, 190, finalY + 5, {align: 'right'});
+                
                 doc.setFontSize(10); doc.setFont("helvetica", "italic");
                 doc.text("Thank you for visiting!", 105, finalY + 30, { align: "center" });
+                
+                doc.setFontSize(10); doc.setFont("helvetica", "normal");
+                doc.text("FSSAI no: 21323204000463", 105, finalY + 36, { align: "center" }); // Added FSSAI
 
                 const pdfBlob = doc.output('blob');
                 const file = new File([pdfBlob], `Bill_Table${currentSettleTable}.pdf`, { type: 'application/pdf' });
