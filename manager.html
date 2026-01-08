@@ -657,15 +657,18 @@
                         const slotId = `${prefix}${index+1}`;
                         const f = order.financials || {grandTotal:0, subTotal:0, discountVal:0, packingTotal:0};
                         
+                        // FIX: ADDED SAFETY CHECK HERE
+                        const cust = order.customer || { name: 'Unknown', phone: '-', address: '-' };
+
                         tableData[slotId] = {
                             total: f.grandTotal || 0,
                             items: order.items || [],
                             keys: [order.key],
                             timestamp: order.timestamp,
                             fins: { sub: f.subTotal||0, disc: f.discountVal||0, pack: f.packingTotal||0 },
-                            phone: order.customer.phone,
-                            customerName: order.customer.name, 
-                            address: order.customer.address, // CAPTURE ADDRESS FOR HISTORY
+                            phone: cust.phone,
+                            customerName: cust.name, 
+                            address: cust.address, // CAPTURE ADDRESS FOR HISTORY
                             orderType: order.orderType,
                             status: order.status,
                             orderId: order.orderId // CAPTURE ID FOR INVOICE
@@ -877,6 +880,9 @@
 
             const f = order.financials || { subTotal: 0, packingTotal: 0, discountVal: 0, grandTotal: 0 };
             
+            // FIX: ADDED SAFETY CHECK HERE
+            const cust = order.customer || { name: 'Unknown', phone: '-', address: '-' };
+
             // Map items for display and index reference
             const itemsToRender = (order.items || []).map((item, idx) => ({ ...item, idx }));
 
@@ -940,9 +946,9 @@
                     </div>
                     <div class="card-body">
                         <div class="info-grid">
-                            <span class="info-label">Name</span><span>${order.customer.name}</span>
-                            <span class="info-label">Phone</span><span><a href="tel:${order.customer.phone}" style="color:var(--primary);text-decoration:none;">${order.customer.phone || '-'}</a></span>
-                            ${type === 'Delivery' ? `<span class="info-label">Addr</span><span style="font-size:0.85rem; line-height:1.2;">${order.customer.address || '-'}</span>` : ''}
+                            <span class="info-label">Name</span><span>${cust.name}</span>
+                            <span class="info-label">Phone</span><span><a href="tel:${cust.phone}" style="color:var(--primary);text-decoration:none;">${cust.phone || '-'}</a></span>
+                            ${type === 'Delivery' ? `<span class="info-label">Addr</span><span style="font-size:0.85rem; line-height:1.2;">${cust.address || '-'}</span>` : ''}
                         </div>
                         ${order.globalNote ? `<div style="color:orange; font-size:0.8rem; margin:5px 0;">Note: ${order.globalNote}</div>` : ''}
                         <div class="items-list">${itemsHtml}</div>
