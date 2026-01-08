@@ -46,11 +46,11 @@
             animation: slideIn 0.3s ease-out; 
             height: fit-content; 
             box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
-            transition: all 0.3s ease;
+            transition: all 0.3s ease; /* Added transition */
         }
         
-        /* --- NEW STATUS CLASSES --- */
-        /* Fresh (0-10 mins) - Standard Green Border */
+        /* --- NEW STATUS STYLES (ADDED) --- */
+        /* Fresh (0-10 mins) - Green Border */
         .card-fresh { border-left: 4px solid var(--success); }
         
         /* Warning (10-15 mins) - Yellow Border */
@@ -169,6 +169,8 @@
                 bell.play().then(() => { bell.pause(); bell.currentTime = 0; }).catch(e=>{});
                 document.getElementById('pin-overlay').style.display = 'none';
                 initKDS();
+                // --- ADDED: Start Real-Time Refresh (Every 5 seconds) ---
+                setInterval(refreshOrderTimes, 5000); 
             } else { 
                 alert("Incorrect PIN"); 
                 document.getElementById('pin-input').value = ""; 
@@ -221,6 +223,13 @@
             });
         }
 
+        // --- ADDED: Function to refresh UI time without DB update ---
+        function refreshOrderTimes() {
+            if (activeOrders.length > 0) {
+                renderActiveOrders();
+            }
+        }
+
         function renderActiveOrders() {
             const container = document.getElementById('active-container');
             container.innerHTML = "";
@@ -232,11 +241,7 @@
             activeOrders.forEach(order => {
                 const elapsedMin = Math.floor((Date.now() - order.timestamp) / 60000);
                 
-                // --- UPDATED COLOR LOGIC T-SHOP ---
-                // 0-10 min: Fresh (Green)
-                // 10-15 min: Warning (Yellow)
-                // >15 min: Late (Red + Glow)
-
+                // --- UPDATED LOGIC (10m / 15m) ---
                 let timerClass = 'timer-fresh';
                 let cardStatusClass = 'card-fresh'; // Default
 
@@ -247,6 +252,7 @@
                     timerClass = 'timer-warn';
                     cardStatusClass = 'card-warn';
                 }
+                // ---------------------------------
 
                 let itemsHtml = "";
                 let visibleItemCount = 0;
@@ -283,8 +289,10 @@
 
                 let noteHtml = (order.globalNote && order.globalNote !== "-" && order.globalNote.trim() !== "") ? `<div class="kot-note">📝 ${order.globalNote}</div>` : "";
                 
+                let cardClass = "kot-card";
+
                 const card = document.createElement('div');
-                card.className = `kot-card ${cardStatusClass}`; // Apply updated status class
+                card.className = `${cardClass} ${cardStatusClass}`; // Apply updated status class
                 card.innerHTML = `
                     <div class="kot-header" onclick="completeOrder('${order.key}')">
                         <span class="kot-id">#${order.orderId}</span>
@@ -298,7 +306,7 @@
             });
         }
 
-        // --- TOGGLE LOGIC ---
+        // --- UPDATED TOGGLE LOGIC ---
         window.toggleItem = (key, index, status) => {
             update(ref(db, `orders/${key}/items/${index}`), { kitchenDone: status })
             .then(() => {
