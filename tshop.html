@@ -49,7 +49,7 @@
             transition: all 0.3s ease; /* Added transition */
         }
         
-        /* --- NEW STATUS STYLES (ADDED) --- */
+        /* --- NEW STATUS STYLES --- */
         /* Fresh (0-10 mins) - Green Border */
         .card-fresh { border-left: 4px solid var(--success); }
         
@@ -98,6 +98,9 @@
         .item-qty { font-weight: 800; color: var(--primary); margin-right: 10px; min-width: 25px; }
         .item-name { flex: 1; font-weight: 500; }
         
+        /* --- ADDED: Item Customization Style (Green) --- */
+        .item-mods { display: block; font-size: 0.85rem; color: var(--success); margin-top: 4px; font-weight: 600; }
+
         .kot-note { padding: 10px 15px; background: rgba(245, 158, 11, 0.1); color: var(--warning); font-size: 0.85rem; font-weight: 600; border-top: 1px solid var(--border); }
         .ready-msg { padding: 20px; text-align: center; color: var(--success); font-weight: 800; background: rgba(16, 185, 129, 0.1); font-size: 0.9rem; }
         .waiting-msg { padding: 20px; text-align: center; color: var(--warning); font-weight: 800; background: rgba(245, 158, 11, 0.1); font-size: 0.9rem; }
@@ -169,7 +172,7 @@
                 bell.play().then(() => { bell.pause(); bell.currentTime = 0; }).catch(e=>{});
                 document.getElementById('pin-overlay').style.display = 'none';
                 initKDS();
-                // --- ADDED: Start Real-Time Refresh (Every 5 seconds) ---
+                // --- Start Real-Time Refresh (Every 5 seconds) ---
                 setInterval(refreshOrderTimes, 5000); 
             } else { 
                 alert("Incorrect PIN"); 
@@ -223,7 +226,7 @@
             });
         }
 
-        // --- ADDED: Function to refresh UI time without DB update ---
+        // --- Function to refresh UI time without DB update ---
         function refreshOrderTimes() {
             if (activeOrders.length > 0) {
                 renderActiveOrders();
@@ -269,12 +272,12 @@
                         
                         let variantHtml = '';
                         
-                        // UPDATED: Check for variant AND itemNote
+                        // UPDATED: Check for variant AND itemNote using specific class for GREEN color
                         if(item.variant && item.variant.trim() !== "") {
-                            variantHtml += `<div style="font-size:0.8rem; color:var(--success); margin-top:4px; font-weight:600;">${item.variant}</div>`;
+                            variantHtml += `<div class="item-mods">${item.variant}</div>`;
                         }
                         if(item.itemNote && item.itemNote.trim() !== "") {
-                            variantHtml += `<div style="font-size:0.8rem; color:var(--success); margin-top:4px; font-weight:600;">Note: ${item.itemNote}</div>`;
+                            variantHtml += `<div class="item-mods">Note: ${item.itemNote}</div>`;
                         }
 
                         itemsHtml += `
