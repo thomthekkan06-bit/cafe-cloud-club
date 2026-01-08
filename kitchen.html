@@ -205,9 +205,12 @@
         .kot-item.done-item .item-qty { color: var(--danger); opacity: 0.6; }
         .kot-item.done-item .item-mods { opacity: 0.5; text-decoration: line-through; }
 
+        /* MODIFIED: Green Notes for Global Note */
         .kot-note {
-            padding: 12px 15px; background: rgba(245, 158, 11, 0.15);
-            color: var(--warning); font-size: 0.9rem; font-weight: 700;
+            padding: 12px 15px; 
+            background: rgba(16, 185, 129, 0.15); /* Green Tint */
+            color: var(--success); /* Green Text */
+            font-size: 0.9rem; font-weight: 700;
             border-top: 1px solid var(--border);
         }
 
@@ -421,12 +424,17 @@
                             variantHtml = `<div class="item-mods">${item.variant}</div>`;
                         }
 
+                        // MODIFIED: Highlight customizations inside the name (e.g. [Extra Cheese] or (Note: Spicy))
+                        let displayItemName = item.name;
+                        // Regex to wrap [...] and (...) in a span with the success (green) color
+                        displayItemName = displayItemName.replace(/(\[.*?\]|\(.*?\))/g, '<span style="color: var(--success); font-weight: 700;">$1</span>');
+
                         // PASS INDEX TO TOGGLE ITEM
                         itemsHtml += `
                             <div class="kot-item ${isDeleted} ${isDone}" onclick="toggleItem('${order.key}', ${index}, ${!item.kitchenDone})">
                                 <span class="item-qty">${item.qty}</span>
                                 <div class="item-name">
-                                    ${item.name}
+                                    ${displayItemName}
                                     ${variantHtml}
                                 </div>
                             </div>
