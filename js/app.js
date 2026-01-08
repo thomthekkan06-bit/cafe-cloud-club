@@ -209,6 +209,12 @@ onValue(menuRef, (snapshot) => {
             if (item.isDineInOnly === true) {
                 return; // Skips this item so it doesn't show in the online app
             }
+            
+            // --- FILTER: HIDE SPECIAL CATEGORIES (Requested Update) ---
+            const excludedCategories = ["Botanical Brews", "Desi Bites", "Desi Delight Bites"];
+            if (excludedCategories.includes(item.category)) {
+                return;
+            }
             // ---------------------------------------------------------
 
             if (item.stockStatus === 'MANUAL_OFF') isAvailable = false;
