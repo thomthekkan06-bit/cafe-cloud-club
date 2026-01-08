@@ -37,10 +37,41 @@
         
         .kds-container { flex: 1; padding: 20px; overflow-y: auto; overflow-x: hidden; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; align-content: start; }
         
-        .kot-card { background: var(--surface); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; display: flex; flex-direction: column; animation: slideIn 0.3s ease-out; height: fit-content; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .kot-card { 
+            background: var(--surface); 
+            border-radius: 12px; 
+            border: 1px solid var(--border); 
+            overflow: hidden; 
+            display: flex; flex-direction: column; 
+            animation: slideIn 0.3s ease-out; 
+            height: fit-content; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
+            transition: all 0.3s ease;
+        }
         
+        /* --- NEW STATUS CLASSES --- */
+        /* Fresh (0-10 mins) - Standard Green Border */
+        .card-fresh { border-left: 4px solid var(--success); }
+        
+        /* Warning (10-15 mins) - Yellow Border */
+        .card-warn { 
+            border-left: 4px solid var(--warning); 
+            border-color: var(--warning); 
+        }
+
+        /* Late (>15 mins) - Red Glow Animation */
+        .card-late { 
+            border: 2px solid var(--danger); 
+            animation: criticalGlow 1.5s infinite alternate; 
+        }
+
+        @keyframes criticalGlow {
+            from { box-shadow: 0 0 5px rgba(239, 68, 68, 0.4); }
+            to { box-shadow: 0 0 20px rgba(239, 68, 68, 0.9); }
+        }
+
         /* Highlight cards that are fully ready but waiting for pickup/serving */
-        .kot-card.card-done { border: 2px solid var(--success); opacity: 0.8; }
+        .kot-card.card-done { border: 2px solid var(--success); opacity: 0.8; animation: none; }
         
         @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         
@@ -200,10 +231,22 @@
 
             activeOrders.forEach(order => {
                 const elapsedMin = Math.floor((Date.now() - order.timestamp) / 60000);
+                
+                // --- UPDATED COLOR LOGIC T-SHOP ---
+                // 0-10 min: Fresh (Green)
+                // 10-15 min: Warning (Yellow)
+                // >15 min: Late (Red + Glow)
+
                 let timerClass = 'timer-fresh';
-                if(elapsedMin > 10) timerClass = 'timer-warn';
-                if(elapsedMin > 20) timerClass = 'timer-late';
-                // 'timer-done' removed as done orders are hidden
+                let cardStatusClass = 'card-fresh'; // Default
+
+                if (elapsedMin > 15) {
+                    timerClass = 'timer-late';
+                    cardStatusClass = 'card-late';
+                } else if (elapsedMin > 10) {
+                    timerClass = 'timer-warn';
+                    cardStatusClass = 'card-warn';
+                }
 
                 let itemsHtml = "";
                 let visibleItemCount = 0;
@@ -240,10 +283,8 @@
 
                 let noteHtml = (order.globalNote && order.globalNote !== "-" && order.globalNote.trim() !== "") ? `<div class="kot-note">📝 ${order.globalNote}</div>` : "";
                 
-                let cardClass = "kot-card";
-
                 const card = document.createElement('div');
-                card.className = cardClass;
+                card.className = `kot-card ${cardStatusClass}`; // Apply updated status class
                 card.innerHTML = `
                     <div class="kot-header" onclick="completeOrder('${order.key}')">
                         <span class="kot-id">#${order.orderId}</span>
@@ -257,7 +298,7 @@
             });
         }
 
-        // --- UPDATED TOGGLE LOGIC ---
+        // --- TOGGLE LOGIC ---
         window.toggleItem = (key, index, status) => {
             update(ref(db, `orders/${key}/items/${index}`), { kitchenDone: status })
             .then(() => {
