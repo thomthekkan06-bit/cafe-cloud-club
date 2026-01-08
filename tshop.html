@@ -268,8 +268,13 @@
                         const isDone = item.kitchenDone ? 'done-item' : '';
                         
                         let variantHtml = '';
+                        
+                        // UPDATED: Check for variant AND itemNote
                         if(item.variant && item.variant.trim() !== "") {
-                            variantHtml = `<div style="font-size:0.8rem; color:var(--success); margin-top:4px; font-weight:600;">${item.variant}</div>`;
+                            variantHtml += `<div style="font-size:0.8rem; color:var(--success); margin-top:4px; font-weight:600;">${item.variant}</div>`;
+                        }
+                        if(item.itemNote && item.itemNote.trim() !== "") {
+                            variantHtml += `<div style="font-size:0.8rem; color:var(--success); margin-top:4px; font-weight:600;">Note: ${item.itemNote}</div>`;
                         }
 
                         itemsHtml += `
