@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#121212">
+    <title>My Orders | Café Cloud Club</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { 
+    background: #0f1115; /* Matches Manager/Delivery App */
+    color: #f3f4f6; 
+    font-family: 'Poppins', sans-serif; 
+    padding: 20px; 
+}
+        .header { display: flex; align-items: center; margin-bottom: 20px; }
+        
+        /* BRAND UPDATE: Changed from Orange to Blue */
+        .back-btn { color: #3b82f6; text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 10px; transition: color 0.2s; }
+        .back-btn:hover { color: #60a5fa; }
+        
+.order-card {
+    background: #181b21; /* Matches Manager Surface */
+    border: 1px solid #2f3542; /* Soft Border */
+    border-radius: 12px;
+    padding: 15px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+        .top-row { display: flex; justify-content: space-between; align-items: center; }
+        .order-id { font-weight: 700; color: #fff; }
+        .order-date { font-size: 0.8rem; color: #888; }
+        .order-items { font-size: 0.9rem; color: #ccc; line-height: 1.4; }
+        .order-total { font-weight: 700; color: #27ae60; text-align: right; }
+        
+        /* BRAND UPDATE: Changed from Orange to Blue */
+        .track-btn {
+            background: #3b82f6; color: white; text-align: center; padding: 12px;
+            border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.9rem;
+            margin-top: 5px; transition: background 0.2s;
+        }
+        .track-btn:hover { background: #2563eb; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Menu</a>
+        <h2 style="margin-left: 20px; color: white; display: flex; align-items: center; gap: 10px;">
+            <img src="og-image.jpg" alt="Logo" style="height: 32px; border-radius: 6px;"> My Past Orders
+        </h2>
+    </div>
+
+    <div id="orders-list"></div>
+
+    <script>
+        const list = document.getElementById('orders-list');
+        const history = JSON.parse(localStorage.getItem('ccc_customer_history')) || [];
+
+        if(history.length === 0) {
+            list.innerHTML = `<div style="text-align:center; margin-top:50px; color:#666;">
+                <i class="fas fa-receipt" style="font-size:3rem; margin-bottom:15px;"></i><br>
+                No past orders found on this device.
+            </div>`;
+        } else {
+            // Show newest orders first
+            history.reverse().forEach(order => {
+                const card = document.createElement('div');
+                card.className = 'order-card';
+                card.innerHTML = `
+                    <div class="top-row">
+                        <span class="order-id">#${order.id}</span>
+                        <span class="order-date">${order.date}</span>
+                    </div>
+                    <div class="order-items">${order.items}</div>
+                    <div class="order-total">₹${order.total}</div>
+                    <a href="track.html" class="track-btn" onclick="trackThis('${order.key}', '${order.id}')">
+                        Track / View Status
+                    </a>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function trackThis(key, id) {
+            localStorage.setItem('ccc_tracking_key', key);
+            localStorage.setItem('ccc_tracking_id', id);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#121212">
+    <title>Track Order | Café Cloud Club</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+body {
+    background: #0f1115; /* Matches Manager/Delivery App */
+    color: #f3f4f6;
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+}
+        .header {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        /* BRAND UPDATE: Blue Link */
+        .back-btn {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex; align-items: center; gap: 5px;
+        }
+        
+        /* TRACKING CARD */
+.track-card {
+    background: #181b21; /* Matches Manager Surface */
+    width: 100%;
+    max-width: 500px;
+    border-radius: 20px;
+    padding: 30px 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    text-align: center;
+    border: 1px solid #2f3542; /* Soft Border */
+}
+
+        .status-big {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #27ae60;
+        }
+        .order-id {
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 30px;
+        }
+
+        /* STEPS */
+        .steps-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 20px;
+            position: relative;
+            margin-left: 20px;
+        }
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            opacity: 0.3;
+            transition: all 0.5s ease;
+        }
+        .step.active {
+            opacity: 1;
+        }
+        .icon-box {
+            width: 40px;
+            height: 40px;
+            background: #333;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            z-index: 2;
+        }
+        .step.completed .icon-box {
+            background: #27ae60;
+            color: white;
+        }
+        /* BRAND UPDATE: Blue for Active Step instead of Orange */
+        .step.active .icon-box {
+            background: #3b82f6;
+            color: white;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+        }
+        
+        /* REJECTED STATE */
+        .rejected-state {
+            color: #e74c3c !important;
+        }
+        .rejected-box {
+            background: #e74c3c !important;
+            color: white !important;
+        }
+
+        .line {
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            bottom: 20px;
+            width: 2px;
+            background: #333;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="my-orders.html" class="back-btn"><i class="fas fa-chevron-left"></i> Back</a>
+        <div style="font-weight:600; display: flex; align-items: center; gap: 10px;">
+            <img src="og-image.jpg" alt="Logo" style="height: 30px; border-radius: 6px;"> Track Order
+        </div>
+        <div style="width:50px;"></div> 
+    </div>
+
+    <div class="track-card">
+        <div id="disp-status" class="status-big">Loading Status...</div>
+        <div id="disp-id" class="order-id">Order #...</div>
+
+        <div class="steps-container">
+            <div class="line"></div>
+            
+            <div class="step" id="step-pending">
+                <div class="icon-box"><i class="fas fa-receipt"></i></div>
+                <div>Order Placed</div>
+            </div>
+            
+            <div class="step" id="step-cooking">
+                <div class="icon-box"><i class="fas fa-fire"></i></div>
+                <div>Cooking</div>
+            </div>
+            
+            <div class="step" id="step-out_for_delivery">
+                <div class="icon-box"><i class="fas fa-motorcycle"></i></div>
+                <div>Out for Delivery</div>
+            </div>
+            
+            <div class="step" id="step-delivered">
+                <div class="icon-box"><i class="fas fa-check"></i></div>
+                <div>Delivered</div>
+            </div>
+        </div>
+        
+        <div style="margin-top:30px; color:#666; font-size:0.8rem;">
+            Cafe Cloud Club • Fresh & Hot
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
+            authDomain: "cafe-orders-1afa1.firebaseapp.com",
+            databaseURL: "https://cafe-orders-1afa1-default-rtdb.firebaseio.com",
+            projectId: "cafe-orders-1afa1",
+            storageBucket: "cafe-orders-1afa1.firebasestorage.app",
+            messagingSenderId: "274410745480",
+            appId: "1:274410745480:web:9964c3914d512aed8d793d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const trackKey = localStorage.getItem('ccc_tracking_key');
+        const trackId = localStorage.getItem('ccc_tracking_id');
+
+        if(!trackKey) {
+            document.body.innerHTML = "<h2 style='color:white; margin-top:50px; text-align:center;'>No Order Found</h2>";
+        } else {
+            document.getElementById('disp-id').innerText = `Order #${trackId}`;
+            startLiveTracking(trackKey);
+        }
+
+        function startLiveTracking(key) {
+            onValue(ref(db, 'orders/' + key), (snapshot) => {
+                if (snapshot.exists()) {
+                    updateUI(snapshot.val().status);
+                } else {
+                    onValue(ref(db, 'history/' + key), (histSnap) => {
+                        if(histSnap.exists()) {
+                            updateUI(histSnap.val().status);
+                        } else {
+                            document.getElementById('disp-status').innerText = "Order Not Found";
+                        }
+                    });
+                }
+            });
+        }
+
+        function resetSteps() {
+            document.querySelectorAll('.step').forEach(el => {
+                el.classList.remove('active');
+                el.classList.remove('completed');
+                el.style.opacity = "0.3";
+                el.querySelector('.icon-box').classList.remove('rejected-box');
+            });
+            document.getElementById('disp-status').classList.remove('rejected-state');
+        }
+
+        function updateUI(status) {
+            resetSteps();
+            
+            if (status === 'rejected') {
+                const statusEl = document.getElementById('disp-status');
+                statusEl.innerText = "Order Rejected ❌";
+                statusEl.classList.add('rejected-state');
+                const step1 = document.getElementById('step-pending');
+                step1.style.opacity = "1";
+                step1.querySelector('.icon-box').classList.add('rejected-box');
+                step1.querySelector('.icon-box').innerHTML = '<i class="fas fa-times"></i>';
+                return; 
+            }
+
+            const steps = ['pending', 'cooking', 'out_for_delivery', 'delivered'];
+            let activeIndex = steps.indexOf(status);
+            
+            if (status === 'done') {
+                activeIndex = 1; // Mark cooking as done, waiting for pickup/delivery
+            }
+
+            if(activeIndex === -1) activeIndex = 0; 
+
+            const statusTexts = {
+                'pending': "Order Placed...",
+                'cooking': "Chef is Cooking! 🔥",
+                'done': "Order Ready! 🥡", 
+                'out_for_delivery': "On the Way! 🛵",
+                'delivered': "Delivered! 🎉"
+            };
+            document.getElementById('disp-status').innerText = statusTexts[status] || "Processing...";
+
+            steps.forEach((stepName, index) => {
+                const el = document.getElementById(`step-${stepName}`);
+                
+                if (index < activeIndex) {
+                    el.classList.add('completed');
+                    el.style.opacity = "1";
+                } else if (index === activeIndex) {
+                    el.classList.add('active');
+                    el.style.opacity = "1";
+                    
+                    if (status === 'done' && stepName === 'cooking') {
+                         el.classList.add('completed');
+                         el.classList.remove('active'); 
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

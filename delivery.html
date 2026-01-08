@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Delivery App | Cafe Cloud Club</title>
+    <link rel="icon" type="image/png" href="icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #0f1115;
+            --surface: #181b21;
+            --surface-hover: #22262e;
+            --border: #2f3542;
+            --primary: #3b82f6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --purple: #8b5cf6;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body { 
+            font-family: 'Inter', sans-serif;
+            background: var(--bg); 
+            color: var(--text-main); 
+            margin: 0; padding: 0;
+            padding-bottom: 80px; /* Space for scroll */
+        }
+
+        /* --- PIN LOCK --- */
+        #pin-overlay { 
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(15, 17, 21, 0.98); z-index: 10000; 
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+        .pin-box { 
+            background: var(--surface);
+            padding: 30px; border-radius: 16px; 
+            border: 1px solid var(--border); text-align: center; width: 85%; max-width: 320px;
+        }
+        .pin-input { 
+            background: var(--bg);
+            border: 1px solid var(--border); color: white; 
+            font-size: 2rem; text-align: center; letter-spacing: 10px; padding: 10px; 
+            border-radius: 8px; width: 100%;
+            margin: 20px 0; outline: none;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .btn-unlock { background: var(--primary); width: 100%; padding: 15px; border:none; border-radius:8px; color:white; font-weight:800; cursor:pointer; font-size: 1rem; }
+
+        /* --- HEADER & TABS --- */
+        .sticky-header {
+            position: sticky;
+            top: 0; z-index: 100;
+            background: rgba(15, 17, 21, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .top-bar {
+            padding: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .brand { font-weight: 800; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
+        .clock-badge { 
+            background: var(--surface);
+            border: 1px solid var(--border); 
+            padding: 5px 10px; border-radius: 6px; font-family: 'JetBrains Mono'; font-size: 0.85rem; color: var(--text-muted);
+        }
+
+        .tabs { display: grid; grid-template-columns: 1fr 1fr; padding: 0 15px 15px 15px; gap: 10px; }
+        .tab-btn {
+            background: var(--surface);
+            border: 1px solid var(--border); color: var(--text-muted);
+            padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; text-align: center;
+            position: relative;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            background: var(--primary);
+            color: white; border-color: var(--primary);
+        }
+        .tab-count {
+            background: var(--danger);
+            color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px;
+            position: absolute; top: -5px; right: -5px; display: none;
+        }
+
+        /* --- ORDERS LIST --- */
+        .orders-wrapper { padding: 15px; }
+        
+        .order-card {
+            background: var(--surface);
+            border: 1px solid var(--border); border-radius: 12px;
+            margin-bottom: 20px; overflow: hidden; position: relative;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .card-top {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: flex-start;
+        }
+        .order-id { font-family: 'JetBrains Mono'; font-size: 1.1rem; font-weight: 800; }
+        
+        .status-badge { 
+            font-size: 0.7rem;
+            font-weight: 800; text-transform: uppercase; 
+            padding: 4px 8px; border-radius: 4px;
+        }
+        .st-cooking { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        .st-ready { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .st-out { background: rgba(139, 92, 246, 0.2); color: var(--purple); }
+
+        .customer-info { padding: 15px; }
+        .info-row { display: flex; gap: 12px; margin-bottom: 12px; }
+        .i-icon { color: var(--text-muted); width: 20px; text-align: center; flex-shrink: 0; margin-top: 2px; }
+        .c-name { font-weight: 700; font-size: 1rem; margin-bottom: 2px; }
+        .c-addr { font-size: 0.9rem; line-height: 1.4; color: var(--text-muted); }
+
+        /* ITEMS TOGGLE */
+        .items-toggle {
+            padding: 10px 15px;
+            background: rgba(0,0,0,0.2); font-size: 0.85rem; 
+            color: var(--text-muted); cursor: pointer; display: flex; justify-content: space-between;
+            border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+        }
+        .items-list { display: none; padding: 15px; background: #121212; font-size: 0.9rem; }
+        .item-line { display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid #222; padding-bottom: 5px; }
+
+        /* MONEY SECTION */
+        .money-box {
+            background: #111;
+            padding: 15px; margin: 15px; border-radius: 8px; 
+            border: 1px dashed var(--border);
+        }
+        .fee-input-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .fee-input {
+            background: var(--surface);
+            border: 1px solid var(--border); color: white;
+            width: 80px; padding: 8px; border-radius: 6px; text-align: right; font-family: 'JetBrains Mono';
+        }
+        .total-row { display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem; font-weight: 800; }
+        .cash-green { color: var(--success); }
+
+        /* ACTIONS */
+        .action-bar { 
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); gap: 8px; 
+            padding: 0 15px 15px 15px;
+        }
+        .btn-icon {
+            background: var(--surface-hover);
+            border: 1px solid var(--border); color: var(--text-main);
+            height: 45px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; cursor: pointer;
+            text-decoration: none;
+        }
+        .btn-icon.whatsapp { color: #25D366; border-color: rgba(37, 211, 102, 0.3); }
+        .btn-icon.map { color: #3b82f6; border-color: rgba(59, 130, 246, 0.3); }
+        
+        .main-action-btn {
+            width: 100%;
+            border: none; padding: 18px; font-weight: 800; font-size: 1rem;
+            text-transform: uppercase; cursor: pointer;
+        }
+        .btn-pickup { background: var(--warning); color: #000; }
+        .btn-finish { background: var(--success); color: white; }
+
+        /* UTILS */
+        .hidden { display: none; }
+        .empty-state { text-align: center; padding: 50px 20px; color: var(--text-muted); opacity: 0.6; }
+
+    </style>
+</head>
+<body>
+
+    <div id="pin-overlay">
+        <div class="pin-box">
+            <h2 style="margin-top:0;">🛵 Delivery App</h2>
+            <p style="color:var(--text-muted); margin-bottom:20px;">Enter PIN to start shift</p>
+            <input type="password" id="pin-input" class="pin-input" placeholder="••••" maxlength="4" inputmode="numeric" pattern="[0-9]*">
+            <button class="btn-unlock" onclick="unlockApp()">START SHIFT</button>
+            <div style="margin-top: 25px; border-top: 1px solid var(--border); padding-top: 15px; font-size: 0.75rem; color: var(--text-muted);">
+                System by <span style="color: var(--primary); font-weight: 700;">Thomsons Networks</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="sticky-header">
+        <div class="top-bar">
+            <div class="brand">     <img src="og-image.jpg" alt="Logo" style="height: 28px; border-radius: 6px; margin-right: 8px;"> Cloud Delivery </div>
+            <div class="clock-badge" id="clock">00:00</div>
+        </div>
+        <div class="tabs">
+            <div class="tab-btn active" onclick="switchTab('pickup')" id="tab-pickup">
+                To Pickup <span class="tab-count" id="badge-pickup">0</span>
+            </div>
+            <div class="tab-btn" onclick="switchTab('active')" id="tab-active">
+                En Route <span class="tab-count" id="badge-active">0</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="orders-wrapper" id="pickup-list"></div>
+    <div class="orders-wrapper hidden" id="active-list"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        // UPDATED IMPORTS: Added runTransaction
+        import { getDatabase, ref, onValue, update, get, set, remove, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
+            authDomain: "cafe-orders-1afa1.firebaseapp.com",
+            databaseURL: "https://cafe-orders-1afa1-default-rtdb.firebaseio.com",
+            projectId: "cafe-orders-1afa1",
+            storageBucket: "cafe-orders-1afa1.firebasestorage.app",
+            messagingSenderId: "274410745480",
+            appId: "1:274410745480:web:9964c3914d512aed8d793d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // CONFIG
+        const DRIVER_PIN = "2024"; 
+        const alertSound = new Audio('bell.mp3');
+        alertSound.loop = true; 
+        
+        let knownOrders = new Set();
+        let isFirstLoad = true;
+        let isRinging = false;
+
+        // --- UI LOGIC ---
+        window.switchTab = (tab) => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.orders-wrapper').forEach(d => d.classList.add('hidden'));
+            
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.getElementById(`${tab}-list`).classList.remove('hidden');
+        }
+
+        window.toggleItems = (id) => {
+            const list = document.getElementById(`items-${id}`);
+            if(list.style.display === 'block') list.style.display = 'none';
+            else list.style.display = 'block';
+        }
+
+        // --- AUTH ---
+        window.unlockApp = async function() {
+            const input = document.getElementById('pin-input');
+            if(input.value === DRIVER_PIN) {
+                // Unlock Audio context
+                alertSound.play().then(() => {
+                    alertSound.pause();
+                    alertSound.currentTime = 0;
+                }).catch(e => console.log("Audio waiting"));
+                
+                try { if ('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch(e){}
+
+                document.getElementById('pin-overlay').style.display = 'none';
+                initOrders();
+            } else { 
+                alert("❌ Wrong PIN");
+                input.value = "";
+            }
+        }
+
+        // --- DATA ---
+        function initOrders() {
+            onValue(ref(db, 'orders'), (snapshot) => {
+                const data = snapshot.val();
+                
+                const pickupContainer = document.getElementById('pickup-list');
+                const activeContainer = document.getElementById('active-list');
+                
+                pickupContainer.innerHTML = "";
+                activeContainer.innerHTML = "";
+                
+                let countPickup = 0;
+                let countActive = 0;
+                let hasNewOrder = false;
+                const currentIds = new Set();
+
+                if (data) {
+                    // Convert to array and sort
+                    const orders = Object.entries(data).reverse();
+
+                    orders.forEach(([key, order]) => {
+                        // Only care about Delivery orders
+                        if (order.orderType !== 'Delivery') return;
+
+                        // Check status
+                        const isPickup = (order.status === 'cooking' || order.status === 'done');
+                        const isActive = (order.status === 'out_for_delivery');
+
+                        if (!isPickup && !isActive) return;
+
+                        // Tracking for Sound
+                        currentIds.add(key);
+                        if (!isFirstLoad && !knownOrders.has(key)) hasNewOrder = true;
+
+                        // Render Card
+                        const cardHtml = createOrderCard(key, order, isPickup);
+                        if(isPickup) {
+                            pickupContainer.innerHTML += cardHtml;
+                            countPickup++;
+                        } else {
+                            activeContainer.innerHTML += cardHtml;
+                            countActive++;
+                        }
+                    });
+                }
+
+                // Empty States
+                if(countPickup === 0) pickupContainer.innerHTML = `<div class="empty-state">No orders waiting for pickup.</div>`;
+                if(countActive === 0) activeContainer.innerHTML = `<div class="empty-state">No active deliveries.</div>`;
+
+                // Badges
+                const pBadge = document.getElementById('badge-pickup');
+                const aBadge = document.getElementById('badge-active');
+                
+                if(countPickup > 0) { pBadge.innerText = countPickup; pBadge.style.display = 'inline-block'; } 
+                else pBadge.style.display = 'none';
+                if(countActive > 0) { aBadge.innerText = countActive; aBadge.style.display = 'inline-block'; } 
+                else aBadge.style.display = 'none';
+
+                // Sound Logic
+                if (hasNewOrder) playAlarm();
+                knownOrders = currentIds;
+                isFirstLoad = false;
+            });
+        }
+
+        // --- CARD RENDERER (UPDATED MAP LOGIC) ---
+        function createOrderCard(key, order, isPickup) {
+            const fins = order.financials || { grandTotal: 0 };
+            const delFee = fins.deliveryFee || 0;
+            const total = fins.grandTotal;
+
+            // --- MAP LOGIC START ---
+            let displayAddress = order.customer.address || "No Address";
+            
+            // 1. Default: Search Google Maps by text address
+            let mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(displayAddress)}`;
+            
+            // 2. Check for Pin (and filter out broken links)
+            if (displayAddress.includes("📍 Pin:")) {
+                const parts = displayAddress.split("📍 Pin:");
+                displayAddress = parts[0].trim();
+                const linkPart = parts[1].trim();
+                
+                // FIX: Only use valid map links. Ignore the broken "googleusercontent" ones.
+                if(linkPart.startsWith("http") && !linkPart.includes("googleusercontent.com")) {
+                    mapLink = linkPart;
+                }
+            }
+            const cleanAddress = displayAddress.replace(/\n/g, '<br>');
+            // --- MAP LOGIC END ---
+
+            // Status Badge
+            let statusBadge = '';
+            if(order.status === 'cooking') statusBadge = `<span class="status-badge st-cooking">Preparing</span>`;
+            else if(order.status === 'done') statusBadge = `<span class="status-badge st-ready">Ready for Pickup</span>`;
+            else statusBadge = `<span class="status-badge st-out">On The Way</span>`;
+
+            // Items List
+            let itemsList = '';
+            if(order.items) {
+                order.items.forEach(i => {
+                    itemsList += `<div class="item-line"><span>${i.qty}x ${i.name}</span><span>${i.qty * i.price}</span></div>`;
+                });
+            }
+
+            // Buttons
+            const waLink = `https://wa.me/91${order.customer.phone}?text=Hi, I am from Cafe Cloud Club delivery. Regarding your order #${order.orderId}...`;
+            
+            const mainBtn = isPickup 
+                ? `<button class="main-action-btn btn-pickup" onclick="markPickedUp('${key}')">PICK UP ORDER 🎒</button>`
+                : `<button class="main-action-btn btn-finish" onclick="completeDelivery('${key}')">CASH COLLECTED & DONE ✅</button>`;
+
+            return `
+                <div class="order-card">
+                    <div class="card-top">
+                        <div>
+                            <div class="order-id">#${order.orderId}</div>
+                            <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">${new Date(order.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                        </div>
+                        ${statusBadge}
+                    </div>
+
+                    <div class="customer-info">
+                        <div class="info-row">
+                            <div class="i-icon"><i class="fas fa-user"></i></div>
+                            <div class="c-name">${order.customer.name}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="i-icon"><i class="fas fa-map-marker-alt" style="color:var(--danger)"></i></div>
+                            <div class="c-addr" id="addr-${key}">${cleanAddress}</div>
+                        </div>
+                    </div>
+
+                    <div class="items-toggle" onclick="toggleItems('${key}')">
+                        <span>View Items</span> <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="items-list" id="items-${key}">
+                        ${itemsList}
+                    </div>
+
+                    <div class="money-box">
+                        <div class="fee-input-group">
+                            <span style="font-size:0.9rem; color:var(--text-muted);">Delivery Fee:</span>
+                            <input type="number" class="fee-input" value="${delFee}" 
+                                onchange="updateFee('${key}', this.value, ${fins.subTotal}, ${fins.discountVal||0}, ${fins.packingTotal||0})" placeholder="0">
+                        </div>
+                        <div class="total-row">
+                            <span>Collect Cash:</span>
+                            <span class="cash-green">₹${total}</span>
+                        </div>
+                    </div>
+
+                    <div class="action-bar">
+                        <a href="${mapLink}" target="_blank" class="btn-icon map"><i class="fas fa-location-arrow"></i></a>
+                        <a href="tel:${order.customer.phone}" class="btn-icon"><i class="fas fa-phone"></i></a>
+                        <a href="${waLink}" target="_blank" class="btn-icon whatsapp"><i class="fab fa-whatsapp"></i></a>
+                        <button class="btn-icon" onclick="copyAddress('addr-${key}')"><i class="fas fa-copy"></i></button>
+                    </div>
+                    
+                    ${mainBtn}
+                </div>
+            `;
+        }
+
+        // --- GLOBAL ACTIONS ---
+        window.copyAddress = (elementId) => {
+            const text = document.getElementById(elementId).innerText;
+            navigator.clipboard.writeText(text).then(() => alert("Address Copied!"));
+        }
+
+        window.updateFee = (key, val, sub, disc, pack) => {
+            const fee = parseInt(val) || 0;
+            const newTotal = (sub - disc) + pack + fee;
+            update(ref(db, 'orders/' + key + '/financials'), { 
+                deliveryFee: fee, grandTotal: newTotal 
+            });
+        }
+
+        window.markPickedUp = (key) => {
+            stopAlarm(); // STOPS SOUND INSTANTLY
+            update(ref(db, 'orders/' + key), { status: 'out_for_delivery' });
+        }
+
+        // UPDATED: Complete Delivery with Loyalty Points Calculation
+        window.completeDelivery = (key) => {
+            stopAlarm();
+            if(!confirm("Confirm CASH Collected & Delivered?")) return;
+
+            const orderRef = ref(db, 'orders/' + key);
+            get(orderRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    data.completedAt = Date.now(); 
+                    data.status = 'delivered'; 
+
+                    // --- LOYALTY CREDIT START ---
+                    // Rule: 1 Point per ₹100 of Food/Bev (SubTotal)
+                    // Check if phone exists and has at least 10 digits
+                    if(data.customer && data.customer.phone && data.customer.phone.length >= 10) {
+                        const subTotal = data.financials ? data.financials.subTotal : 0;
+                        const pointsToEarn = Math.floor(subTotal / 100);
+                        
+                        if(pointsToEarn > 0) {
+                            const loyaltyRef = ref(db, `loyalty/${data.customer.phone}`);
+                            runTransaction(loyaltyRef, (currentData) => {
+                                if (currentData === null) {
+                                    return { points: pointsToEarn, lastUpdated: Date.now() };
+                                } else {
+                                    return { 
+                                        ...currentData, 
+                                        points: (currentData.points || 0) + pointsToEarn,
+                                        lastUpdated: Date.now() 
+                                    };
+                                }
+                            });
+                        }
+                    }
+                    // --- LOYALTY CREDIT END ---
+
+                    set(ref(db, 'history/' + key), data).then(() => { remove(orderRef); });
+                }
+            });
+        }
+
+        // --- ALARM UTILS ---
+        function playAlarm() {
+            if(isRinging) return;
+            isRinging = true;
+            alertSound.currentTime = 0;
+            alertSound.play().catch(e => console.log("Sound blocked"));
+            if ("vibrate" in navigator) navigator.vibrate([1000, 1000, 1000, 1000, 1000]);
+        }
+
+        function stopAlarm() {
+            isRinging = false;
+            alertSound.pause();
+            alertSound.currentTime = 0;
+            if ("vibrate" in navigator) navigator.vibrate(0);
+        }
+
+        // --- CLOCK ---
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+        }, 1000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Waiter Dashboard | Cafe Cloud Club</title>
+    <link rel="icon" type="image/png" href="icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f1115;
+            --surface: #181b21;
+            --border: #2f3542;
+            --primary: #3b82f6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --text: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); 
+            margin: 0; padding: 20px;
+        }
+
+        /* PIN LOCK */
+        #pin-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(15, 17, 21, 0.98); z-index: 10000; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .pin-box { 
+            background: var(--surface); padding: 30px; border-radius: 16px; 
+            border: 1px solid var(--border); text-align: center; width: 300px;
+        }
+        .pin-input { 
+            background: var(--bg); border: 1px solid var(--border); color: white; 
+            font-size: 2rem; text-align: center; letter-spacing: 10px; padding: 10px; 
+            border-radius: 8px; width: 100%; margin: 20px 0; outline: none; font-family: 'JetBrains Mono';
+        }
+        .btn-unlock { background: var(--primary); width: 100%; padding: 15px; border:none; border-radius:8px; color:white; font-weight:800; cursor:pointer; }
+
+        /* HEADER */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .brand { font-size: 1.5rem; font-weight: 800; color: white; }
+        .btn-logout { background: #333; color: #aaa; border: 1px solid #444; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; margin-right: 10px; }
+        
+        .section-title {
+            margin-top: 30px; margin-bottom: 15px; font-size: 0.9rem; font-weight: 700; 
+            color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;
+            border-bottom: 1px solid var(--border); padding-bottom: 10px;
+        }
+
+        .tables-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px;
+        }
+
+        .table-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 12px; height: 140px;
+            display: flex; flex-direction: column; justify-content: space-between; padding: 15px;
+            cursor: pointer; transition: 0.2s; position: relative; overflow: hidden;
+        }
+        .table-card:active { transform: scale(0.95); }
+        
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .table-num { font-size: 2.2rem; font-weight: 800; font-family: 'JetBrains Mono'; color: #e5e7eb; transition: color 0.3s; }
+        .bill-total { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 6px; }
+        .timer-display { font-size: 1.5rem; font-weight: 700; font-family: 'JetBrains Mono'; text-align: center; margin: 10px 0; opacity: 1; }
+        .status-text { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; text-align: center; opacity: 0.8; }
+
+        /* FREE STATE */
+        .status-free { opacity: 1; border-color: #333; }
+        .status-free .table-num { color: #666; }
+        .status-free .timer-display, .status-free .bill-total { display: none; }
+        .status-free .status-text { color: #555; letter-spacing: 2px; }
+
+        /* OCCUPIED STATES */
+        .status-fresh { border: 1px solid var(--success); background: rgba(16, 185, 129, 0.1); }
+        .status-fresh .table-num, .status-fresh .timer-display, .status-fresh .bill-total, .status-fresh .status-text { color: var(--success); }
+
+        .status-warning { border: 1px solid var(--warning); background: rgba(245, 158, 11, 0.1); }
+        .status-warning .table-num, .status-warning .timer-display, .status-warning .bill-total, .status-warning .status-text { color: var(--warning); }
+
+        .status-camper { border: 1px solid var(--danger); background: rgba(239, 68, 68, 0.15); animation: pulseRed 2s infinite; }
+        .status-camper .table-num, .status-camper .timer-display, .status-camper .bill-total, .status-camper .status-text { color: var(--danger); }
+        
+        @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        .is-bar { border-style: dashed; }
+    </style>
+</head>
+<body>
+
+    <div id="pin-overlay">
+        <div class="pin-box">
+            <h2>Waiter Access</h2>
+            <input type="password" id="pin-input" class="pin-input" placeholder="••••" maxlength="4" inputmode="numeric">
+            <button class="btn-unlock" onclick="checkPin()">UNLOCK</button>
+        </div>
+    </div>
+
+    <div class="header">
+        <div class="brand">Waiter Deck</div>
+        <div style="display:flex; align-items:center;">
+             <button class="btn-logout" onclick="logout()">Lock</button>
+             <div id="clock" style="font-family:'JetBrains Mono';">00:00</div>
+        </div>
+    </div>
+
+    <div class="section-title">Indoor Dining (1-7 + Bars)</div>
+    <div class="tables-grid" id="grid-indoor-main"></div>
+
+    <div class="section-title">Indoor AC (9-13)</div>
+    <div class="tables-grid" id="grid-indoor-ac"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        // ADDED 'push' to imports
+        import { getDatabase, ref, onValue, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
+            authDomain: "cafe-orders-1afa1.firebaseapp.com",
+            databaseURL: "https://cafe-orders-1afa1-default-rtdb.firebaseio.com",
+            projectId: "cafe-orders-1afa1",
+            messagingSenderId: "274410745480",
+            appId: "1:274410745480:web:9964c3914d512aed8d793d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // --- AUTH LOGIC START ---
+        if(localStorage.getItem('waiter_auth') === 'true') {
+            document.getElementById('pin-overlay').style.display = 'none';
+            loadTables();
+        }
+
+        window.checkPin = () => {
+            if(document.getElementById('pin-input').value === '2024') {
+                localStorage.setItem('waiter_auth', 'true'); 
+                document.getElementById('pin-overlay').style.display = 'none';
+                loadTables();
+            } else alert("Wrong PIN");
+        }
+
+        window.logout = () => {
+            localStorage.removeItem('waiter_auth');
+            location.reload();
+        }
+        // --- AUTH LOGIC END ---
+
+        let liveTableData = {};
+        let packingItem = null;
+
+        // 1. FETCH MENU TO FIND "PACKING" ITEM
+        onValue(ref(db, 'menu'), (snap) => {
+            const data = snap.val();
+            if(data) {
+                // Finds item with "packing" or "parcel" in the name
+                packingItem = Object.values(data).find(i => 
+                    i.name.toLowerCase().includes("packing") || 
+                    i.name.toLowerCase().includes("parcel")
+                );
+            }
+        });
+
+        function loadTables() {
+            onValue(ref(db, 'orders'), (snapshot) => {
+                const orders = snapshot.val() || {};
+                liveTableData = {}; 
+
+                Object.values(orders).forEach(o => {
+                    if (o.status !== 'completed' && o.status !== 'rejected' && o.status !== 'delivered' && o.status !== 'pending') {
+                        const customerName = (o.customer && o.customer.name) ? o.customer.name : "";
+                        const match = customerName.match(/Table (\w+)/i);
+                        
+                        if (match) {
+                            const tableId = match[1];
+                            const total = o.financials ? o.financials.grandTotal : 0;
+                            const startTime = o.timestamp; 
+
+                            if (!liveTableData[tableId] || startTime < liveTableData[tableId].timestamp) {
+                                liveTableData[tableId] = {
+                                    timestamp: startTime,
+                                    total: (liveTableData[tableId] ? liveTableData[tableId].total : 0) + total,
+                                    status: 'OCCUPIED'
+                                };
+                            } else {
+                                liveTableData[tableId].total += total;
+                            }
+                        }
+                    }
+                });
+
+                renderGrid(); 
+            });
+        }
+
+        function renderGrid() {
+            const gridMain = document.getElementById('grid-indoor-main');
+            const gridAC = document.getElementById('grid-indoor-ac');
+            gridMain.innerHTML = "";
+            gridAC.innerHTML = "";
+
+            // 1. Tables 1-7
+            for(let i=1; i<=7; i++) createCard(i, gridMain, liveTableData[i]);
+
+            // 2. Bar Tables (8, 14, 15, 16) - Matching Manager.html
+            createCard(8, gridMain, liveTableData[8], true, "BAR 1");
+            createCard(14, gridMain, liveTableData[14], true, "BAR 2");
+            createCard(15, gridMain, liveTableData[15], true, "BAR 3");
+            createCard(16, gridMain, liveTableData[16], true, "BAR 4");
+
+            // 3. AC Tables 9-13
+            for(let i=9; i<=13; i++) createCard(i, gridAC, liveTableData[i]);
+        }
+
+        function createCard(id, container, data, isBar = false, labelOverride = null) {
+            const div = document.createElement('div');
+            const displayLabel = labelOverride || id;
+            
+            let statusClass = 'status-free';
+            let timeText = ''; 
+            let totalText = ''; 
+            let statusLabel = 'FREE';
+            let actionBtn = ''; // New Action Button
+
+            if (data) {
+                const diff = Date.now() - data.timestamp;
+                const totalMinutes = Math.floor(diff / 60000);
+                const hrs = Math.floor(totalMinutes / 60);
+                const mins = totalMinutes % 60;
+                timeText = `${hrs}:${mins.toString().padStart(2, '0')}`;
+                totalText = `₹${data.total}`;
+                statusLabel = 'OCCUPIED';
+
+                if (totalMinutes < 60) statusClass = 'status-fresh';
+                else if (totalMinutes < 90) statusClass = 'status-warning';
+                else statusClass = 'status-camper';
+
+                // 2. INJECT PACKING BUTTON
+                // Stops propagation to prevent opening the table page
+                actionBtn = `
+                    <button onclick="event.stopPropagation(); quickAddParcel('${id}')" 
+                        style="position:absolute; bottom:10px; right:10px; background:#333; border:1px solid #555; color:white; border-radius:50%; width:32px; height:32px; cursor:pointer; font-size:1.2rem; display:flex; align-items:center; justify-content:center; z-index:10;" title="Add Packing Charge">
+                        📦
+                    </button>
+                `;
+            }
+
+            div.className = `table-card ${statusClass} ${isBar ? 'is-bar' : ''}`;
+            div.onclick = () => window.location.href = `table.html?table=${id}&mode=waiter`;
+            
+            const timerHtml = data ? `<div class="timer-display">${timeText}</div>` : '';
+            const billHtml = data ? `<div class="bill-total">${totalText}</div>` : '';
+
+            div.innerHTML = `
+                <div class="card-header">
+                    <div class="table-num">${displayLabel}</div>
+                    ${billHtml}
+                </div>
+                ${timerHtml}
+                <div class="status-text">${statusLabel}</div>
+                ${actionBtn}
+            `;
+            container.appendChild(div);
+        }
+
+        // 3. QUICK ADD PARCEL FUNCTION
+        window.quickAddParcel = function(tableId) {
+            if(!packingItem) {
+                alert("⚠️ 'Packing Charge' item not found in Menu. Please add it via Admin.");
+                return;
+            }
+            
+            if(!confirm(`Add '${packingItem.name}' (₹${packingItem.price}) to Table ${tableId}?`)) return;
+
+            // Create a mini-order. Status 'cooking' ensures it is picked up by Manager and Waiter logic as an active order.
+            const order = {
+                orderId: Math.floor(100000 + Math.random() * 900000),
+                orderType: 'Dine-In',
+                timestamp: Date.now(),
+                status: 'cooking', 
+                customer: { name: `Table ${tableId} (Packing)`, phone: '-', address: 'Dine-In' },
+                items: [{
+                    name: packingItem.name,
+                    price: parseInt(packingItem.price),
+                    qty: 1,
+                    kitchenDone: true // Auto-mark as done
+                }],
+                financials: {
+                    subTotal: parseInt(packingItem.price),
+                    discountVal: 0,
+                    packingTotal: 0,
+                    grandTotal: parseInt(packingItem.price)
+                }
+            };
+
+            push(ref(db, 'orders'), order).catch(e => alert("Error: " + e.message));
+        }
+
+        setInterval(() => { renderGrid(); document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }, 60000);
+        document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    </script>
+</body>
+</html>
