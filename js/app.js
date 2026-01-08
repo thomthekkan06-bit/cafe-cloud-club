@@ -845,11 +845,16 @@ const mapLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
         let item = cart[key];
         let lineTotal = item.price * item.qty;
         subTotal += lineTotal;
+        
+        // --- UPDATED PACKING CHARGE LOGIC ---
         let chargePerItem = 10;
-        if (item.category === 'ADD-ON') chargePerItem = key.startsWith("Hummus") ? 7 : 5;
+        if (item.category === 'Desi Delight Bites') chargePerItem = 0; // STRICTLY NO CHARGE
+        else if (item.category === 'ADD-ON') chargePerItem = key.startsWith("Hummus") ? 7 : 5;
         else if (fiveRsCats.includes(item.category)) chargePerItem = 5;
+        
         packingTotal += (chargePerItem * item.qty);
         if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
+        
         // Offer Item flagging
         let isOfferItem = false;
         
@@ -1134,13 +1139,14 @@ function renderCart() {
         const itemTotal = item.price * item.qty;
         subTotal += itemTotal;
         totalCount += item.qty;
+        
+        // --- UPDATED PACKING CHARGE LOGIC FOR CART ---
         let chargePerItem = 0;
-        if (item.category === 'ADD-ON') { chargePerItem = key.startsWith("Hummus") ? 7 : 5;
-        } 
-        else if (fiveRsCats.includes(item.category)) { chargePerItem = 5;
-        } 
-        else { chargePerItem = 10;
-        }
+        if (item.category === 'Desi Delight Bites') { chargePerItem = 0; }
+        else if (item.category === 'ADD-ON') { chargePerItem = key.startsWith("Hummus") ? 7 : 5; } 
+        else if (fiveRsCats.includes(item.category)) { chargePerItem = 5; } 
+        else { chargePerItem = 10; }
+        
         packingTotal += (chargePerItem * item.qty);
         if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
         list.innerHTML += `
