@@ -117,8 +117,8 @@
         const db = getDatabase(app);
 
         // --- CONFIGURATION ---
-        // T-Shop KDS shows ONLY this category
-        const INCLUDED_CATEGORY = "Cafe Botanical Brews";
+        // T-Shop KDS shows these categories
+        const INCLUDED_CATEGORIES = ["Cafe Botanical Brews", "Desi Delight Bites"];
         const ACCESS_PIN = "2024";
         
         const bell = new Audio('kdsound.mp3'); 
@@ -163,7 +163,7 @@
                         // FILTER: ONLY GET RELEVANT ITEMS
                         let relevantItems = [];
                         if(order.items) {
-                            relevantItems = order.items.filter(i => i.category === INCLUDED_CATEGORY);
+                            relevantItems = order.items.filter(i => INCLUDED_CATEGORIES.includes(i.category));
                         }
                         
                         if (relevantItems.length > 0) {
@@ -210,8 +210,8 @@
 
                 if (order.items) {
                     order.items.forEach((item, index) => {
-                        // FILTER: SHOW ONLY BREWS
-                        if (item.category !== INCLUDED_CATEGORY) return;
+                        // FILTER: SHOW ONLY TARGET CATEGORIES
+                        if (!INCLUDED_CATEGORIES.includes(item.category)) return;
 
                         visibleItemCount++;
                         
@@ -294,7 +294,7 @@
                     if (item.deleted) return;
 
                     // Check if this item belongs to T-Shop
-                    if (item.category === INCLUDED_CATEGORY) {
+                    if (INCLUDED_CATEGORIES.includes(item.category)) {
                         updates[`items/${index}/kitchenDone`] = true;
                     } else {
                         // This is a Chef item. Check if it is done.
