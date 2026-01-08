@@ -218,8 +218,8 @@
         const db = getDatabase(app);
 
         // --- FILTER CONFIGURATION ---
-        // Chef KDS shows EVERYTHING EXCEPT Botanical Brews
-        const EXCLUDED_CATEGORY = "Cafe Botanical Brews";
+        // Chef KDS shows EVERYTHING EXCEPT these categories
+        const EXCLUDED_CATEGORIES = ["Cafe Botanical Brews", "Desi Delight Bites"];
 
         // --- ROBUST WAKE LOCK (PREVENT SLEEP) ---
         let wakeLock = null;
@@ -286,10 +286,10 @@
                         // UPDATE: Also hide 'done' because user wants it to disappear from KDS when completed.
                         if (order.status === 'completed' || order.status === 'rejected' || order.status === 'pending' || order.status === 'served' || order.status === 'done') return;
 
-                        // NEW FILTER: Check if there are any NON-BREW items
+                        // NEW FILTER: Check if there are any ITEMS NOT IN EXCLUDED LIST
                         let relevantItems = [];
                         if (order.items) {
-                            relevantItems = order.items.filter(i => i.category !== EXCLUDED_CATEGORY);
+                            relevantItems = order.items.filter(i => !EXCLUDED_CATEGORIES.includes(i.category));
                         }
 
                         if (relevantItems.length > 0) {
@@ -344,8 +344,8 @@
 
                 if (order.items) {
                     order.items.forEach((item, index) => {
-                        // 1. FILTER: EXCLUDE BREWS
-                        if (item.category === EXCLUDED_CATEGORY) return;
+                        // 1. FILTER: EXCLUDE T-SHOP and SNACKS
+                        if (EXCLUDED_CATEGORIES.includes(item.category)) return;
 
                         // 3. Hide Packing Charges
                         const itemNameLower = item.name.toLowerCase();
@@ -424,7 +424,7 @@
                 if (order.items) {
                     order.items.forEach((item, i) => {
                          // Skip Excluded Categories or Deleted Items from check
-                         if (item.category === EXCLUDED_CATEGORY || item.deleted) return;
+                         if (EXCLUDED_CATEGORIES.includes(item.category) || item.deleted) return;
                          
                          // For the item we just clicked, use the NEW status passed in arg
                          // For others, use existing status
@@ -467,8 +467,8 @@
                 // 1. Loop through all items to update Chef items
                 if (order.items) {
                     order.items.forEach((item, index) => {
-                        // If it is a Chef Item...
-                        if (item.category !== EXCLUDED_CATEGORY) {
+                        // If it is NOT an excluded category...
+                        if (!EXCLUDED_CATEGORIES.includes(item.category)) {
                             updates[`items/${index}/kitchenDone`] = true;
                         } 
                     });
