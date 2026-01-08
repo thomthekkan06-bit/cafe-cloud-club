@@ -285,6 +285,7 @@
         <div class="filter-item" onclick="filterCat('Frosted Leaf', this)"><span>Ice Teas</span> <i class="fas fa-glass-martini" style="font-size:0.8rem;"></i></div>
         <div class="filter-item" onclick="filterCat('ADD-ON', this)"><span>Add-Ons</span> <i class="fas fa-plus-circle" style="font-size:0.8rem;"></i></div>
         <div class="filter-item" onclick="filterCat('Cafe Botanical Brews', this)"><span>Botanical Brews</span> <i class="fas fa-mug-hot" style="font-size:0.8rem;"></i></div>
+        <div class="filter-item" onclick="filterCat('Desi Delight Bites', this)"><span>Desi Bites</span> <i class="fas fa-cookie-bite" style="font-size:0.8rem;"></i></div>
     </div>
 
     <div class="filter-bar">
@@ -421,7 +422,6 @@
         }
 
         // --- SMART SESSION MANAGEMENT (NEW) ---
-        // Checks local storage and Firebase to determine if the table session is active
         async function initSession() {
             const savedRaw = localStorage.getItem('ccc_table_user');
             if (!savedRaw) return;
@@ -430,21 +430,14 @@
                 const savedData = JSON.parse(savedRaw);
                 
                 // 1. Check Table ID Match
-                // If user is scanning a different table, we should NOT auto-fill
-                if (savedData.tableId !== TABLE_ID) {
-                    // Mismatch: This is a new session on a different table.
-                    // We simply ignore the stored data (effectively cleared for this view)
-                    return; 
-                }
+                if (savedData.tableId !== TABLE_ID) return;
 
-                // 2. Check Firebase for Active Status (Has the manager settled?)
-                // We fetch the active orders list to see if this table is still "occupied"
+                // 2. Check Firebase for Active Status
                 const snapshot = await get(ref(db, 'orders'));
                 let isActive = false;
                 
                 if (snapshot.exists()) {
                     const orders = snapshot.val();
-                    // Check if any active order belongs to this Table ID
                     isActive = Object.values(orders).some(o => 
                         o.customer && 
                         o.customer.name && 
@@ -454,10 +447,8 @@
                 }
 
                 if (isActive) {
-                    // Session is Active: Auto-fill and LOCK the fields
                     const nameField = document.getElementById('cust-name');
                     const phoneField = document.getElementById('cust-phone');
-                    
                     if (nameField && savedData.name) {
                         nameField.value = savedData.name;
                         nameField.readOnly = true;
@@ -466,11 +457,8 @@
                         phoneField.value = savedData.phone;
                         phoneField.readOnly = true;
                     }
-                    console.log("Session restored and locked for Table", TABLE_ID);
                 } else {
-                    // Session is Inactive (Manager Settled): Clear storage
                     localStorage.removeItem('ccc_table_user');
-                    console.log("Previous session settled. Starting fresh.");
                 }
 
             } catch (e) {
@@ -478,7 +466,6 @@
             }
         }
 
-        // Run the check immediately
         initSession();
 
         // --- DATA ---
@@ -513,7 +500,6 @@
         window.toggleSidebar = () => {
             const left = document.getElementById('left-sidebar');
             const overlay = document.querySelector('.sidebar-overlay');
-            // Close Right Sidebar if open
             document.getElementById('cart-sidebar').classList.remove('active');
             
             if(left.classList.contains('active')) {
@@ -528,7 +514,6 @@
         window.toggleCart = () => {
             const right = document.getElementById('cart-sidebar');
             const overlay = document.querySelector('.sidebar-overlay');
-            // Close Left Sidebar if open
             document.getElementById('left-sidebar').classList.remove('active');
 
             if(right.classList.contains('active')) {
@@ -625,19 +610,27 @@
             if (MODE === 'waiter') {
                 let packPrice = 10;
                 const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
-                if (fiveRsCats.includes(cat)) packPrice = 5;
-                if (cat === 'ADD-ON') packPrice = name.startsWith("Hummus") ? 7 : 5;
+                
+                // RULE: No packing charge for Desi Delight Bites
+                if (cat === 'Desi Delight Bites') {
+                    packPrice = 0;
+                }
+                else if (fiveRsCats.includes(cat)) packPrice = 5;
+                else if (cat === 'ADD-ON') packPrice = name.startsWith("Hummus") ? 7 : 5;
+                
                 if (name.includes("Tossed Rice") || name.includes("Sorted / Boiled Vegges")) packPrice = 7;
                 
-                options.push({ name: "Packing", price: packPrice });
+                // Only push if price > 0
+                if (packPrice > 0) {
+                    options.push({ name: "Packing", price: packPrice });
+                }
             }
             // ----------------------------------
 
             // Force open modal if options exist OR if it's an ADD-ON OR if it's a waiter
-            if (options.length > 0 || cat === "ADD-ON" || MODE === 'waiter') {
+            if (options.length > 0 || cat === "ADD-ON" || (MODE === 'waiter' && options.length > 0)) {
                 openCustomization(item, options);
             } else {
-                // FIXED: Pass category here for filtering
                 addToCartLogic(item.name, item.price, item.type, item.category);
             }
         }
@@ -686,17 +679,15 @@
             if(mods.length > 0) displayName += ` [${mods.join(', ')}]`;
             if(note) displayName += ` (Note: ${note})`;
             
-            // FIXED: Pass category here for filtering
             addToCartLogic(displayName, finalPrice, selectedItem.type, selectedItem.category);
             closeCustomization();
         }
 
         window.closeCustomization = () => document.getElementById('customization-modal').style.display = 'none';
 
-        // FIXED: Added category parameter to save it in cart
         function addToCartLogic(name, price, type, category) {
             if(cart[name]) cart[name].qty++;
-            else cart[name] = { price, qty: 1, type, category: category || 'General' }; // Save Category
+            else cart[name] = { price, qty: 1, type, category: category || 'General' }; 
             renderCart();
             const btn = document.querySelector('.mobile-cart-btn');
             btn.style.transform = "scale(1.1)";
@@ -742,7 +733,6 @@
         window.toggleCart = () => {
             const right = document.getElementById('cart-sidebar');
             const overlay = document.querySelector('.sidebar-overlay');
-            // Close Left Sidebar if open
             document.getElementById('left-sidebar').classList.remove('active');
 
             if(right.classList.contains('active')) {
@@ -757,7 +747,6 @@
         window.openCheckout = () => document.getElementById('checkout-modal').style.display = 'flex';
         window.closeCheckout = () => document.getElementById('checkout-modal').style.display = 'none';
 
-        // --- FIX: PLACE ORDER WITH VALIDATION ---
         window.placeOrder = () => {
             const nameInput = document.getElementById('cust-name');
             const phoneInput = document.getElementById('cust-phone');
@@ -765,7 +754,6 @@
             const nameVal = nameInput.value.trim();
             const phoneVal = phoneInput.value.trim();
 
-            // Strict Validation
             if(nameVal.length < 2) {
                 alert("Please enter a valid Guest Name.");
                 nameInput.focus();
@@ -778,12 +766,10 @@
                 return;
             }
 
-            // --- SAVE IDENTIY TO STORAGE (NEW) ---
-            // Stores user details and lock information (tableId) for this session
             localStorage.setItem('ccc_table_user', JSON.stringify({
                 name: nameVal,
                 phone: phoneVal,
-                tableId: TABLE_ID // Saves the table ID to ensure we only lock for THIS table
+                tableId: TABLE_ID
             }));
 
             const finalName = `Table ${TABLE_ID} (${nameVal})`;
@@ -792,7 +778,6 @@
             const items = [];
             for(let key in cart) {
                 total += cart[key].price * cart[key].qty;
-                // FIXED: Include category in the pushed items so KDS can filter
                 items.push({ 
                     name: key, 
                     qty: cart[key].qty, 
