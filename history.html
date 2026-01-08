@@ -6,6 +6,9 @@
     <title>Sales Analytics | Cafe Cloud Club</title>
     <link rel="icon" type="image/png" href="icon.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
     <style>
         :root {
             --bg: #0f1115;
@@ -267,6 +270,7 @@
         <button class="btn-action" onclick="applyFilters()">Filter</button>
         <button class="btn-action" onclick="resetFilters()">Reset</button>
         <button class="btn-action" style="margin-left:auto; border-color:var(--success); color:var(--success);" onclick="exportToCSV()">📥 Export CSV</button>
+        <button class="btn-action" style="border-color:#f59e0b; color:#f59e0b;" onclick="exportToPDF()">📄 Export PDF</button>
     </div>
 
     <div class="table-container">
@@ -290,7 +294,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        // MODIFIED: Added 'update' to imports
         import { getDatabase, ref, onValue, remove, update, query } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
@@ -502,12 +505,10 @@
             if (event.target == modal) { modal.style.display = "none"; }
         }
 
-        // --- MODIFIED DELETE FUNCTION: NOW PERMANENT DELETE ---
         window.deleteOrder = function(key) {
             const password = prompt("⚠ PERMANENTLY DELETE ⚠\nEnter Admin Password:");
             if (password === DELETE_PIN) {
                 if(confirm("Are you sure you want to PERMANENTLY DELETE this record? It will not be shown anywhere.")) {
-                    // Use remove() to completely delete the node from Firebase
                     remove(ref(db, 'history/' + key))
                     .then(() => alert("Record permanently deleted."))
                     .catch(err => alert("Error: " + err));
@@ -540,6 +541,121 @@
             link.setAttribute("download", "cafe_sales_history.csv");
             document.body.appendChild(link);
             link.click();
+        }
+
+        // --- NEW: EXPORT PDF FUNCTION FOR ACCOUNTANT/GST ---
+        window.exportToPDF = function() {
+            if(typeof window.jspdf === 'undefined') {
+                alert("PDF Library not loaded yet. Please wait a moment.");
+                return;
+            }
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Header
+            doc.setFontSize(18);
+            doc.text("Cafe Cloud Club - Sales Report", 14, 22);
+            
+            doc.setFontSize(11);
+            doc.setTextColor(100);
+            const dateStr = new Date().toLocaleDateString('en-IN');
+            doc.text(`Generated on: ${dateStr}`, 14, 30);
+
+            // Filter info for the report header
+            const start = document.getElementById('date-start').value;
+            const end = document.getElementById('date-end').value;
+            let rangeStr = "Range: All Time";
+            if(start || end) rangeStr = `Range: ${start || 'Start'} to ${end || 'Present'}`;
+            doc.text(rangeStr, 14, 36);
+
+            // Table Columns
+            const tableColumn = ["Date", "Order ID", "Customer", "Type", "Kitchen Rev", "Delivery Fee", "Total"];
+            const tableRows = [];
+
+            let totalKitchen = 0;
+            let totalFees = 0;
+            let totalSales = 0;
+
+            // --- RE-RUN FILTER LOGIC TO GET EXACTLY WHAT IS ON SCREEN ---
+            const search = document.getElementById('search-input').value.toLowerCase();
+            const startDate = document.getElementById('date-start').valueAsDate;
+            const endDate = document.getElementById('date-end').valueAsDate;
+            if(endDate) endDate.setHours(23,59,59);
+
+            const filteredForPdf = allOrders.filter(o => {
+                const oDate = new Date(o.completedAt || o.timestamp);
+                let dateMatch = true;
+                if(startDate && oDate < startDate) dateMatch = false;
+                if(endDate && oDate > endDate) dateMatch = false;
+                
+                let searchMatch = true;
+                if(search) {
+                    const cName = o.customer ? o.customer.name : "";
+                    const cPhone = o.customer ? o.customer.phone : "";
+                    const str = `${o.orderId} ${cName} ${cPhone}`.toLowerCase();
+                    if(!str.includes(search)) searchMatch = false;
+                }
+                return dateMatch && searchMatch;
+            });
+
+            if(filteredForPdf.length === 0) return alert("No records to export.");
+
+            filteredForPdf.forEach(order => {
+                const d = new Date(order.completedAt || order.timestamp);
+                const fins = order.financials || {grandTotal:0, deliveryFee:0};
+                
+                // Exclude rejected orders from totals, but maybe show them in list?
+                // Usually accountants only want completed sales.
+                if(order.status === 'rejected') return; 
+
+                const kitchen = fins.grandTotal - (fins.deliveryFee||0);
+                const customerName = (order.customer && order.customer.name) ? order.customer.name : "Unknown";
+
+                totalKitchen += kitchen;
+                totalFees += (fins.deliveryFee||0);
+                totalSales += fins.grandTotal;
+
+                const row = [
+                    d.toLocaleDateString('en-IN'),
+                    order.orderId,
+                    customerName,
+                    order.orderType,
+                    kitchen.toFixed(2),
+                    (fins.deliveryFee||0).toFixed(2),
+                    fins.grandTotal.toFixed(2)
+                ];
+                tableRows.push(row);
+            });
+
+            // Add Footer Row
+            const footerRow = [
+                "TOTAL", "", "", "", 
+                totalKitchen.toFixed(2), 
+                totalFees.toFixed(2), 
+                totalSales.toFixed(2)
+            ];
+            tableRows.push(footerRow);
+
+            // Generate Table
+            doc.autoTable({
+                head: [tableColumn],
+                body: tableRows,
+                startY: 44,
+                theme: 'grid',
+                headStyles: { fillColor: [59, 130, 246] }, // matches your blue theme
+                footStyles: { fillColor: [24, 27, 33] },   // dark footer
+                didParseCell: function(data) {
+                    // Bold the last row (Total)
+                    if (data.row.index === tableRows.length - 1) {
+                        data.cell.styles.fontStyle = 'bold';
+                        data.cell.styles.fillColor = [220, 220, 220]; 
+                        data.cell.styles.textColor = [0, 0, 0];
+                    }
+                }
+            });
+
+            doc.save(`Sales_Report_${Date.now()}.pdf`);
         }
     </script>
 </body>
