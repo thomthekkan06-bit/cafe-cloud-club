@@ -66,14 +66,41 @@
         }
         .btn-unlock { background: var(--primary); width: 100%; padding: 12px; border:none; border-radius:8px; color:white; font-weight:800; cursor:pointer; font-size: 1rem; }
 
-        /* --- GRID LAYOUT --- */
+        /* --- HORIZONTAL SCROLL LAYOUT (UPDATED) --- */
         .kds-container {
-            flex: 1; padding: 20px; overflow-y: auto; overflow-x: hidden;
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px; align-content: start;
+            flex: 1; 
+            padding: 20px; 
+            
+            /* Enable horizontal scroll, disable vertical scroll for container */
+            overflow-x: auto; 
+            overflow-y: hidden;
+            
+            /* Flexbox Row Configuration */
+            display: flex; 
+            flex-direction: row; 
+            flex-wrap: nowrap; /* Forces side-by-side */
+            
+            gap: 20px; 
+            align-items: flex-start; /* Align cards to top */
+            align-content: start;
+            
+            /* Smooth scroll for touch */
+            -webkit-overflow-scrolling: touch; 
         }
 
-        /* --- KOT CARD --- */
+        /* Scrollbar Styling for Horizontal Scroll */
+        .kds-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        .kds-container::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+        .kds-container::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        /* --- KOT CARD (UPDATED) --- */
         .kot-card {
             background: var(--surface); border-radius: 12px;
             border: 1px solid var(--border); overflow: hidden;
@@ -81,10 +108,15 @@
             animation: slideIn 0.3s ease-out;
             height: fit-content;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            transition: all 0.3s ease; /* Added transition for smooth color changes */
+            transition: all 0.3s ease;
+            
+            /* Fixed Widths for Horizontal Layout */
+            min-width: 300px;
+            max-width: 300px;
+            flex-shrink: 0; 
         }
         
-        /* --- NEW STATUS STYLES (ADDED) --- */
+        /* --- NEW STATUS STYLES --- */
         /* Fresh (0-15 mins) - Green Border */
         .card-fresh {
             border-left: 4px solid var(--success);
@@ -159,7 +191,7 @@
         .kot-item.deleted-item .item-name { text-decoration: line-through; color: var(--danger); }
         .kot-item.deleted-item .item-qty { text-decoration: line-through; color: var(--danger); }
 
-        /* DONE ITEM STATE (NEW FIX) */
+        /* DONE ITEM STATE */
         .kot-item.done-item .item-name { text-decoration: line-through; color: var(--danger); opacity: 0.8; }
         .kot-item.done-item .item-qty { color: var(--danger); opacity: 0.8; }
         .kot-item.done-item .item-mods { opacity: 0.5; text-decoration: line-through; }
@@ -311,7 +343,6 @@
                 if (data) {
                     Object.entries(data).forEach(([key, order]) => {
                         // FILTER: Hide served/completed/rejected/pending
-                        // UPDATE: Also hide 'done' because user wants it to disappear from KDS when completed.
                         if (order.status === 'completed' || order.status === 'rejected' || order.status === 'pending' || order.status === 'served' || order.status === 'done') return;
 
                         // NEW FILTER: Check if there are any ITEMS NOT IN EXCLUDED LIST
@@ -321,7 +352,7 @@
                         }
 
                         if (relevantItems.length > 0) {
-                            // Only show if status is cooking. 'done' is now hidden.
+                            // Only show if status is cooking.
                             if (order.status === 'cooking') {
                                 activeOrders.push({ key, ...order });
                                 
