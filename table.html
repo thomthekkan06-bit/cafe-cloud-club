@@ -216,6 +216,7 @@
             color: #ccc;
             cursor: not-allowed;
             border-color: #444;
+            opacity: 0.7;
         }
         
         .modal-scroll-area { overflow-y: auto; flex: 1; text-align: left; margin-bottom: 15px; padding-right: 5px; }
@@ -421,48 +422,73 @@
             document.getElementById('waiter-badge').style.display = 'inline';
         }
 
-        // --- SMART SESSION MANAGEMENT (NEW) ---
+        // --- SMART SESSION MANAGEMENT (REVISED) ---
         async function initSession() {
-            const savedRaw = localStorage.getItem('ccc_table_user');
-            if (!savedRaw) return;
-
             try {
-                const savedData = JSON.parse(savedRaw);
-                
-                // 1. Check Table ID Match
-                if (savedData.tableId !== TABLE_ID) return;
-
-                // 2. Check Firebase for Active Status
+                // 1. Check Firebase for Active Status on this Table
                 const snapshot = await get(ref(db, 'orders'));
-                let isActive = false;
-                
                 if (snapshot.exists()) {
                     const orders = snapshot.val();
-                    isActive = Object.values(orders).some(o => 
-                        o.customer && 
-                        o.customer.name && 
-                        o.customer.name.startsWith(`Table ${TABLE_ID}`) && 
-                        o.status !== 'completed' && o.status !== 'paid'
-                    );
+                    
+                    // Find an active order for this table
+                    // We look for any order that is NOT completed, paid, or rejected.
+                    // This implies the table is currently occupied by this customer.
+                    const activeOrder = Object.values(orders).find(o => {
+                        const isThisTable = o.customer && o.customer.name && o.customer.name.startsWith(`Table ${TABLE_ID}`);
+                        const isActiveStatus = !['completed', 'paid', 'rejected'].includes(o.status);
+                        return isThisTable && isActiveStatus;
+                    });
+
+                    if (activeOrder) {
+                        // Extract Name from "Table X (Name)"
+                        let name = activeOrder.customer.name;
+                        const match = name.match(/\(([^)]+)\)/);
+                        if (match && match[1]) {
+                            name = match[1];
+                        } else {
+                             // Fallback cleanup
+                             name = name.replace(`Table ${TABLE_ID}`, '').trim();
+                        }
+                        const phone = activeOrder.customer.phone;
+
+                        // Fill and Lock Fields
+                        const nameField = document.getElementById('cust-name');
+                        const phoneField = document.getElementById('cust-phone');
+                        
+                        if (nameField) {
+                            nameField.value = name;
+                            nameField.readOnly = true;
+                            // Visual cue that it's locked
+                            nameField.title = "Details locked until bill is cleared";
+                        }
+                        if (phoneField) {
+                            phoneField.value = phone;
+                            phoneField.readOnly = true;
+                        }
+                        
+                        document.getElementById('modal-table-txt').innerHTML = `Ordering for <span style="color:var(--primary)">${name}</span>`;
+                        
+                        // Update Local Storage to match Server (just in case)
+                        localStorage.setItem('ccc_table_user', JSON.stringify({
+                            name: name,
+                            phone: phone,
+                            tableId: TABLE_ID
+                        }));
+                        return;
+                    }
                 }
 
-                if (isActive) {
-                    const nameField = document.getElementById('cust-name');
-                    const phoneField = document.getElementById('cust-phone');
-                    if (nameField && savedData.name) {
-                        nameField.value = savedData.name;
-                        nameField.readOnly = true;
+                // If no active order found on server, ensure local session is clear for this table
+                const savedRaw = localStorage.getItem('ccc_table_user');
+                if (savedRaw) {
+                    const savedData = JSON.parse(savedRaw);
+                    if (savedData.tableId === TABLE_ID) {
+                        localStorage.removeItem('ccc_table_user');
                     }
-                    if (phoneField && savedData.phone) {
-                        phoneField.value = savedData.phone;
-                        phoneField.readOnly = true;
-                    }
-                } else {
-                    localStorage.removeItem('ccc_table_user');
                 }
 
             } catch (e) {
-                console.error("Error checking session:", e);
+                console.error("Error syncing session:", e);
             }
         }
 
