@@ -468,12 +468,20 @@
         let parcelItems = [];
         let currentParcelType = 'Pickup'; 
 
-        // --- NEW SEARCH FILTER LOGIC ---
+        // --- NEW SEARCH FILTER LOGIC (UPDATED FOR CATEGORY FILTER) ---
         window.filterMenuSelect = (inputId, selectId) => {
             const query = document.getElementById(inputId).value.toLowerCase();
             const select = document.getElementById(selectId);
             select.innerHTML = '<option value="">-- Select Item --</option>';
+            
+            // Define excluded categories
+            const excludedCats = ["Botanical Brews", "Desi Bites", "Desi Delight Bites"];
+            const shouldFilter = (selectId === 'ext-menu-select' || selectId === 'parcel-menu-select');
+
             fullMenu.forEach((item, index) => {
+                // Check Filter
+                if (shouldFilter && excludedCats.includes(item.category)) return;
+
                 if (item.name.toLowerCase().includes(query)) {
                     const opt = document.createElement('option');
                     opt.value = index; 
@@ -539,7 +547,7 @@
             return opts;
         }
 
-        // --- INITIALIZATION ---
+        // --- INITIALIZATION (UPDATED) ---
         function init() {
             onValue(ref(db, 'menu'), snap => {
                 const data = snap.val() || {};
@@ -552,15 +560,26 @@
                 standardSel.innerHTML = '<option value="">-- Select Item --</option>';
                 parcelSel.innerHTML = '<option value="">-- Select Item --</option>';
                 
-                fullMenu.forEach((item, idx) => {
-                    const opt = document.createElement('option');
-                    opt.value = idx; opt.text = item.name;
-                    sel.appendChild(opt);
-                    
-                    const pOpt = document.createElement('option');
-                    pOpt.value = idx; pOpt.text = item.name;
-                    parcelSel.appendChild(pOpt);
+                const excludedCats = ["Botanical Brews", "Desi Bites", "Desi Delight Bites"];
 
+                fullMenu.forEach((item, idx) => {
+                    const isExcluded = excludedCats.includes(item.category);
+
+                    // 1. Swiggy/Zomato (APPLY FILTER)
+                    if (!isExcluded) {
+                        const opt = document.createElement('option');
+                        opt.value = idx; opt.text = item.name;
+                        sel.appendChild(opt);
+                    }
+                    
+                    // 2. Parcel (APPLY FILTER)
+                    if (!isExcluded) {
+                        const pOpt = document.createElement('option');
+                        pOpt.value = idx; pOpt.text = item.name;
+                        parcelSel.appendChild(pOpt);
+                    }
+
+                    // 3. Edit Order (Standard) - NO FILTER (Kept for Dine-In/Manager access)
                     const stdOpt = document.createElement('option');
                     stdOpt.value = item.name; stdOpt.dataset.price = item.price; stdOpt.text = item.name;
                     standardSel.appendChild(stdOpt);
