@@ -728,9 +728,19 @@
             let finalPrice = item.price;
             let modNames = [];
             document.querySelectorAll('.parcel-opt-cb:checked').forEach(cb => { finalPrice += parseInt(cb.dataset.price); modNames.push(cb.value); });
+            
+            // --- UPDATED PACKING CHARGE LOGIC (DESI BITES FIX) ---
             let packCost = 10;
-            if (item.category === 'ADD-ON') packCost = item.name.startsWith("Hummus") ? 7 : 5;
-            else if (fiveRsCats.includes(item.category)) packCost = 5;
+            if (item.category === 'Desi Delight Bites') {
+                packCost = 0;
+            } 
+            else if (item.category === 'ADD-ON') {
+                packCost = item.name.startsWith("Hummus") ? 7 : 5;
+            }
+            else if (fiveRsCats.includes(item.category)) {
+                packCost = 5;
+            }
+            
             if (modNames.includes("Tossed Rice") || modNames.includes("Sorted Vegges")) packCost += 7;
             let variantStr = modNames.join(", ");
             if (note) variantStr = variantStr ? `${variantStr} | Note: ${note}` : `Note: ${note}`;
@@ -822,9 +832,19 @@
             let finalPrice = item.price;
             let modNames = [];
             document.querySelectorAll('.ext-opt-cb:checked').forEach(cb => { finalPrice += parseInt(cb.dataset.price); modNames.push(cb.value); });
+            
+            // --- UPDATED PACKING CHARGE LOGIC (DESI BITES FIX) ---
             let packCost = 10;
-            if (item.category === 'ADD-ON') packCost = item.name.startsWith("Hummus") ? 7 : 5;
-            else if (fiveRsCats.includes(item.category)) packCost = 5;
+            if (item.category === 'Desi Delight Bites') {
+                packCost = 0;
+            }
+            else if (item.category === 'ADD-ON') {
+                packCost = item.name.startsWith("Hummus") ? 7 : 5;
+            }
+            else if (fiveRsCats.includes(item.category)) {
+                packCost = 5;
+            }
+            
             if (modNames.includes("Tossed Rice") || modNames.includes("Sorted Vegges")) packCost += 7;
             extOrderItems.push({
                 name: item.name, category: item.category, price: finalPrice, basePrice: item.price,
@@ -1418,16 +1438,23 @@
             });
         }
 
+        // --- UPDATED ADD NEW ITEM (NOW INCLUDES CATEGORY) ---
         window.addNewItemToOrder = async () => {
             const select = document.getElementById('menu-select');
             const name = select.value; 
             const price = parseFloat(document.getElementById('new-item-price').value);
             const qty = parseInt(document.getElementById('new-item-qty').value);
             if(!name || isNaN(price)) return;
+            
+            // FIND ITEM IN FULLMENU TO GET CATEGORY
+            const menuHeaderItem = fullMenu.find(i => i.name === name);
+            const cat = menuHeaderItem ? menuHeaderItem.category : 'Others';
+
             const snap = await get(ref(db, 'orders/' + currentEditKey));
             let order = snap.val();
             let items = order.items || [];
-            items.push({ name, price, qty, kitchenDone: false });
+            
+            items.push({ name, price, qty, category: cat, kitchenDone: false });
             updateOrderFinancials(order, items);
             await update(ref(db, 'orders/' + currentEditKey), order);
             renderEditList(items);
@@ -1450,6 +1477,7 @@
             closeModal('edit-modal');
         }
 
+        // --- UPDATED FINANCIALS LOGIC (DESI BITES SUPPORT) ---
         function updateOrderFinancials(order, items) {
             order.items = items;
             let sub = 0; let pack = 0;
@@ -1457,7 +1485,18 @@
             items.forEach(i => {
                 if(i.deleted) return;
                 sub += (i.price * i.qty);
-                pack += (5 * i.qty); 
+                
+                // CORRECT PACKING LOGIC
+                let pCost = 10;
+                if (i.category === 'Desi Delight Bites') {
+                    pCost = 0;
+                } else if (i.category === 'ADD-ON') {
+                    pCost = (i.name && i.name.startsWith("Hummus")) ? 7 : 5;
+                } else if (fiveRsCats.includes(i.category)) {
+                    pCost = 5;
+                }
+                
+                pack += (pCost * i.qty); 
             });
             order.financials = { subTotal: sub, discountVal: 0, packingTotal: pack, grandTotal: sub + pack };
         }
