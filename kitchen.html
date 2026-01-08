@@ -18,7 +18,6 @@
             --danger: #ef4444;
             --text-main: #ffffff;
             --text-muted: #9ca3af;
-            --strike-color: #555;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -66,57 +65,88 @@
         }
         .btn-unlock { background: var(--primary); width: 100%; padding: 12px; border:none; border-radius:8px; color:white; font-weight:800; cursor:pointer; font-size: 1rem; }
 
-        /* --- GRID LAYOUT --- */
+        /* --- HORIZONTAL GRID LAYOUT (NEW) --- */
         .kds-container {
-            flex: 1; padding: 20px; overflow-y: auto; overflow-x: hidden;
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px; align-content: start;
+            flex: 1; 
+            padding: 20px; 
+            overflow-x: auto; /* Horizontal Scroll */
+            overflow-y: hidden;
+            display: flex; /* Side by Side */
+            flex-direction: row;
+            gap: 20px; 
+            align-items: flex-start;
+            white-space: nowrap; /* Prevent wrapping */
         }
+        
+        /* Custom Scrollbar */
+        .kds-container::-webkit-scrollbar { height: 8px; }
+        .kds-container::-webkit-scrollbar-track { background: var(--bg); }
+        .kds-container::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        .kds-container::-webkit-scrollbar-thumb:hover { background: #555; }
 
         /* --- KOT CARD --- */
         .kot-card {
-            background: var(--surface); border-radius: 12px;
-            border: 1px solid var(--border); overflow: hidden;
+            background: var(--surface); 
+            border-radius: 12px;
+            /* Fixed width for side-by-side layout */
+            flex: 0 0 320px; 
+            width: 320px;
             display: flex; flex-direction: column;
             animation: slideIn 0.3s ease-out;
-            height: fit-content;
+            border: 2px solid var(--border); /* Default Border */
+            transition: all 0.3s ease;
+            max-height: 95%; /* Prevent card from exceeding height */
+            white-space: normal; /* Allow text inside to wrap */
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
-        
-        /* Highlight cards that are fully ready but waiting for pickup/serving */
-        .kot-card.card-done { border: 2px solid var(--success); opacity: 0.8; }
 
+        /* --- REAL-TIME COLOR STATES --- */
+        /* FRESH: 0-15 mins (Green) */
+        .card-fresh { border-color: var(--success); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.1); }
+        .card-fresh .kot-header { background: rgba(16, 185, 129, 0.15); }
+        .card-fresh .kot-timer { background: var(--success); color: #000; }
+
+        /* WARNING: 15-25 mins (Yellow) */
+        .card-warning { border-color: var(--warning); box-shadow: 0 4px 15px rgba(245, 158, 11, 0.15); }
+        .card-warning .kot-header { background: rgba(245, 158, 11, 0.15); }
+        .card-warning .kot-timer { background: var(--warning); color: #000; }
+
+        /* CRITICAL: > 25 mins (Red Glow) */
+        .card-critical { border-color: var(--danger); animation: pulseRed 2s infinite; }
+        .card-critical .kot-header { background: rgba(239, 68, 68, 0.2); }
+        .card-critical .kot-timer { background: var(--danger); color: white; }
+
+        @keyframes pulseRed {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
         @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
         .kot-header {
-            padding: 12px 15px; background: rgba(0,0,0,0.3);
-            border-bottom: 1px solid var(--border);
+            padding: 12px 15px; 
+            border-bottom: 1px solid rgba(255,255,255,0.1);
             display: flex; justify-content: space-between; align-items: center;
-            cursor: pointer; transition: background 0.2s;
-            user-select: none;
+            cursor: pointer; transition: background 0.2s; user-select: none;
         }
-        .kot-header:hover { background: rgba(255,255,255,0.05); }
-        .kot-header:active { background: rgba(255,255,255,0.1); }
 
-        .kot-id { font-family: 'JetBrains Mono'; font-weight: 800; font-size: 1.1rem; }
-        .kot-timer { font-family: 'JetBrains Mono'; font-weight: 700; font-size: 1rem; padding: 4px 8px; border-radius: 4px; background: rgba(0,0,0,0.2); }
+        .kot-id { 
+            font-family: 'JetBrains Mono'; 
+            font-weight: 800; 
+            font-size: 1.8rem; /* BIGGER ID */
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        .kot-timer { font-family: 'JetBrains Mono'; font-weight: 700; font-size: 1.1rem; padding: 4px 8px; border-radius: 4px; }
         
-        .timer-fresh { color: var(--success); }
-        .timer-warn { color: var(--warning); }
-        .timer-late { color: var(--danger); animation: pulse 2s infinite; }
-        
-        /* Timer style for ready orders */
-        .timer-done { color: var(--text-main); background: var(--success); }
-
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
-
         .kot-info {
             padding: 10px 15px; font-size: 0.9rem; color: var(--text-muted);
-            border-bottom: 1px dashed var(--border); display: flex; justify-content: space-between;
+            border-bottom: 1px dashed var(--border); display: flex; justify-content: space-between; align-items: center;
+            background: rgba(0,0,0,0.2);
         }
-        .kot-type-badge { font-weight: 700; text-transform: uppercase; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border); }
+        .kot-type-badge { font-weight: 700; text-transform: uppercase; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border); background: #333; }
 
-        .kot-items { padding: 5px 0; }
+        .kot-items { padding: 5px 0; overflow-y: auto; flex: 1; }
         .kot-item {
             padding: 12px 15px; border-bottom: 1px solid #2a2f36;
             cursor: pointer; display: flex; justify-content: space-between; align-items: flex-start;
@@ -125,16 +155,15 @@
         .kot-item:last-child { border-bottom: none; }
         .kot-item:hover { background: var(--surface-hover); }
         
-        .item-qty { font-weight: 800; color: var(--primary); margin-right: 10px; min-width: 25px; }
+        .item-qty { font-weight: 800; color: var(--primary); margin-right: 10px; min-width: 25px; font-size: 1.2rem; }
         .item-name { flex: 1; font-weight: 500; }
         .item-mods { display: block; font-size: 0.85rem; color: var(--success); margin-top: 4px; font-weight: 600; }
 
-        /* DELETED ITEM STATE */
+        /* STATES */
         .kot-item.deleted-item { opacity: 0.7; pointer-events: none; }
         .kot-item.deleted-item .item-name { text-decoration: line-through; color: var(--danger); }
         .kot-item.deleted-item .item-qty { text-decoration: line-through; color: var(--danger); }
 
-        /* DONE ITEM STATE (NEW FIX) */
         .kot-item.done-item .item-name { text-decoration: line-through; color: var(--danger); opacity: 0.8; }
         .kot-item.done-item .item-qty { color: var(--danger); opacity: 0.8; }
         .kot-item.done-item .item-mods { opacity: 0.5; text-decoration: line-through; }
@@ -143,16 +172,6 @@
             padding: 10px 15px; background: rgba(245, 158, 11, 0.1);
             color: var(--warning); font-size: 0.85rem; font-weight: 600;
             border-top: 1px solid var(--border);
-        }
-
-        /* READY MSG */
-        .ready-msg {
-            padding: 20px; text-align: center; color: var(--success); font-weight: 800;
-            background: rgba(16, 185, 129, 0.1); font-size: 0.9rem;
-        }
-        .waiting-msg {
-            padding: 20px; text-align: center; color: var(--warning); font-weight: 800;
-            background: rgba(245, 158, 11, 0.1); font-size: 0.9rem;
         }
 
         /* --- HISTORY VIEW --- */
@@ -165,8 +184,6 @@
         .btn-undo:hover { background: var(--primary); border-color: var(--primary); }
 
         .empty-msg { width: 100%; text-align: center; margin-top: 100px; color: var(--border); font-size: 1.5rem; font-weight: 700; opacity: 0.5; }
-
-        /* HEADER CLICK ACTION HINT */
         .header-hint { font-size: 0.7rem; color: var(--success); text-transform: uppercase; letter-spacing: 1px; opacity: 0; transition: opacity 0.2s; text-align: right; }
         .kot-header:hover .header-hint { opacity: 1; }
 
@@ -269,7 +286,9 @@
         // --- CLOCK ---
         setInterval(() => {
             document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-        }, 1000);
+            // Re-render periodically to update color states
+            if(!isFirstLoad) renderActiveOrders();
+        }, 60000);
 
         // --- CORE LOGIC ---
         function initKDS() {
@@ -282,8 +301,7 @@
                 
                 if (data) {
                     Object.entries(data).forEach(([key, order]) => {
-                        // FILTER: Hide served/completed/rejected/pending
-                        // UPDATE: Also hide 'done' because user wants it to disappear from KDS when completed.
+                        // FILTER: Hide served/completed/rejected/pending/done
                         if (order.status === 'completed' || order.status === 'rejected' || order.status === 'pending' || order.status === 'served' || order.status === 'done') return;
 
                         // NEW FILTER: Check if there are any NON-BREW items
@@ -293,7 +311,7 @@
                         }
 
                         if (relevantItems.length > 0) {
-                            // Only show if status is cooking. 'done' is now hidden.
+                            // Only show if status is cooking.
                             if (order.status === 'cooking') {
                                 activeOrders.push({ key, ...order });
                                 
@@ -331,10 +349,11 @@
 
             activeOrders.forEach(order => {
                 const elapsedMin = Math.floor((Date.now() - order.timestamp) / 60000);
-                let timerClass = 'timer-fresh';
-                if(elapsedMin > 10) timerClass = 'timer-warn';
-                if(elapsedMin > 20) timerClass = 'timer-late';
-                // 'timer-done' logic is removed since done orders are hidden
+                
+                // --- KITCHEN COLOR LOGIC (0-15 Green, 15-25 Yellow, >25 Red) ---
+                let cardStateClass = 'card-fresh';
+                if(elapsedMin >= 15 && elapsedMin < 25) cardStateClass = 'card-warning';
+                else if(elapsedMin >= 25) cardStateClass = 'card-critical';
 
                 const custName = order.customer ? order.customer.name : 'Guest';
                 const orderType = order.orderType || 'Dine-In';
@@ -347,7 +366,7 @@
                         // 1. FILTER: EXCLUDE BREWS
                         if (item.category === EXCLUDED_CATEGORY) return;
 
-                        // 3. Hide Packing Charges
+                        // 2. Hide Packing Charges
                         const itemNameLower = item.name.toLowerCase();
                         if (itemNameLower.includes("packing charge") || itemNameLower.includes("parcel charge")) return;
 
@@ -359,7 +378,7 @@
                         
                         let variantHtml = '';
                         if(item.variant && item.variant.trim() !== "") {
-                            variantHtml = `<div class="item-mods" style="color:var(--success); font-weight:600; font-style:normal;">${item.variant}</div>`;
+                            variantHtml = `<div class="item-mods">${item.variant}</div>`;
                         }
 
                         // PASS INDEX TO TOGGLE ITEM
@@ -375,30 +394,25 @@
                     });
                 }
 
-                // If no items visible, it means all items were filtered out (e.g. all brews)
-                if (visibleItemCount === 0) {
-                     return; // Skip rendering this card entirely
-                }
+                if (visibleItemCount === 0) return;
 
                 let noteHtml = "";
                 if(order.globalNote && order.globalNote !== "-" && order.globalNote.trim() !== "") {
                     noteHtml = `<div class="kot-note">📝 NOTE: ${order.globalNote}</div>`;
                 }
 
-                let cardClass = "kot-card";
-
                 const card = document.createElement('div');
-                card.className = cardClass;
+                card.className = `kot-card ${cardStateClass}`;
                 card.innerHTML = `
                     <div class="kot-header" onclick="completeOrder('${order.key}')" title="Tap to Complete Full Order">
                         <span class="kot-id">#${order.orderId}</span>
                         <div>
                             <span class="header-hint">TAP TO MARK READY ✓</span>
-                            <span class="kot-timer ${timerClass}">${elapsedMin}m</span>
+                            <span class="kot-timer">${elapsedMin}m</span>
                         </div>
                     </div>
                     <div class="kot-info">
-                        <span style="font-weight:700">${custName}</span>
+                        <span style="font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px;">${custName}</span>
                         <span class="kot-type-badge">${orderType}</span>
                     </div>
                     <div class="kot-items">
@@ -412,10 +426,8 @@
 
         // --- ACTIONS ---
         window.toggleItem = (key, index, status) => {
-            // 1. Perform the update for the specific item
             update(ref(db, `orders/${key}/items/${index}`), { kitchenDone: status })
             .then(() => {
-                // 2. CHECK IF ALL ITEMS ARE NOW DONE TO AUTO-COMPLETE
                 const order = activeOrders.find(o => o.key === key);
                 if (!order) return;
 
@@ -423,21 +435,13 @@
 
                 if (order.items) {
                     order.items.forEach((item, i) => {
-                         // Skip Excluded Categories or Deleted Items from check
                          if (item.category === EXCLUDED_CATEGORY || item.deleted) return;
-                         
-                         // For the item we just clicked, use the NEW status passed in arg
-                         // For others, use existing status
                          const isDone = (i === index) ? status : item.kitchenDone;
-                         
-                         if (!isDone) {
-                             allItemsWillBeDone = false;
-                         }
+                         if (!isDone) allItemsWillBeDone = false;
                     });
                 }
 
                 if (allItemsWillBeDone && status === true) {
-                    // AUTO-TRIGGER COMPLETION WITHOUT DIALOG
                     performAutoComplete(key, order);
                 }
             });
@@ -447,12 +451,10 @@
              const updates = {};
              updates['status'] = 'done'; 
              
-             // Add to local history for display
              historyOrders.unshift({ ...order, doneTime: new Date() });
              if(historyOrders.length > 20) historyOrders.pop();
              renderHistory();
              
-             // Update DB -> Order will vanish from Active KDS due to filter
              update(ref(db, `orders/${key}`), updates);
         }
 
@@ -464,25 +466,20 @@
                 
                 const updates = {};
                 
-                // 1. Loop through all items to update Chef items
                 if (order.items) {
                     order.items.forEach((item, index) => {
-                        // If it is a Chef Item...
                         if (item.category !== EXCLUDED_CATEGORY) {
                             updates[`items/${index}/kitchenDone`] = true;
                         } 
                     });
                 }
 
-                // 2. Set Status Done
                 updates['status'] = 'done'; 
                 
-                // Add to local history
                 historyOrders.unshift({ ...order, doneTime: new Date() });
                 if(historyOrders.length > 20) historyOrders.pop();
                 renderHistory();
 
-                // 3. Perform Updates
                 update(ref(db, `orders/${key}`), updates);
             }
         };
