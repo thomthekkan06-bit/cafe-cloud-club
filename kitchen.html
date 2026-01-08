@@ -81,11 +81,11 @@
             animation: slideIn 0.3s ease-out;
             height: fit-content;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            transition: all 0.3s ease; /* Smooth transition for status colors */
+            transition: all 0.3s ease; /* Added transition for smooth color changes */
         }
-
-        /* --- STATUS COLORS (NEW LOGIC) --- */
-        /* Fresh (0-15 mins) - Standard Green Border */
+        
+        /* --- NEW STATUS STYLES (ADDED) --- */
+        /* Fresh (0-15 mins) - Green Border */
         .card-fresh {
             border-left: 4px solid var(--success);
         }
@@ -107,6 +107,7 @@
 
         @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* --- NEW GLOW ANIMATION --- */
         @keyframes criticalGlow {
             from { box-shadow: 0 0 5px rgba(239, 68, 68, 0.4); }
             to { box-shadow: 0 0 20px rgba(239, 68, 68, 0.9); }
@@ -281,6 +282,9 @@
                 bell.play().then(() => { bell.pause(); bell.currentTime = 0; }).catch(e=>{});
                 document.getElementById('pin-overlay').style.display = 'none';
                 initKDS();
+                
+                // --- ADDED: Start Real-Time Refresh (Every 5 seconds) ---
+                setInterval(refreshOrderTimes, 5000); 
             } else {
                 alert("Incorrect PIN");
                 document.getElementById('pin-input').value = "";
@@ -343,6 +347,13 @@
             });
         }
 
+        // --- ADDED: Function to refresh UI time without DB update ---
+        function refreshOrderTimes() {
+            if (activeOrders.length > 0) {
+                renderActiveOrders();
+            }
+        }
+
         // --- RENDERERS ---
         function renderActiveOrders() {
             const container = document.getElementById('active-container');
@@ -356,8 +367,7 @@
             activeOrders.forEach(order => {
                 const elapsedMin = Math.floor((Date.now() - order.timestamp) / 60000);
                 
-                // --- UPDATED COLOR LOGIC ---
-                // 0-15: Green | 15-25: Yellow | >25: Red Glow
+                // --- UPDATED LOGIC (15m / 25m) ---
                 let timerClass = 'timer-fresh';
                 let cardStatusClass = 'card-fresh'; // Default Green
 
@@ -368,6 +378,7 @@
                     timerClass = 'timer-warn';
                     cardStatusClass = 'card-warn';
                 }
+                // ---------------------------------
 
                 const custName = order.customer ? order.customer.name : 'Guest';
                 const orderType = order.orderType || 'Dine-In';
@@ -418,8 +429,10 @@
                     noteHtml = `<div class="kot-note">📝 NOTE: ${order.globalNote}</div>`;
                 }
 
+                let cardClass = "kot-card";
+
                 const card = document.createElement('div');
-                card.className = `kot-card ${cardStatusClass}`; // Applied color class
+                card.className = `${cardClass} ${cardStatusClass}`; // Apply status class
                 card.innerHTML = `
                     <div class="kot-header" onclick="completeOrder('${order.key}')" title="Tap to Complete Full Order">
                         <span class="kot-id">#${order.orderId}</span>
