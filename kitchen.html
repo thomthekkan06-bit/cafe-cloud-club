@@ -81,12 +81,36 @@
             animation: slideIn 0.3s ease-out;
             height: fit-content;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: all 0.3s ease; /* Smooth transition for status colors */
         }
-        
+
+        /* --- STATUS COLORS (NEW LOGIC) --- */
+        /* Fresh (0-15 mins) - Standard Green Border */
+        .card-fresh {
+            border-left: 4px solid var(--success);
+        }
+
+        /* Warning (15-25 mins) - Yellow Border */
+        .card-warn {
+            border-left: 4px solid var(--warning);
+            border-color: var(--warning);
+        }
+
+        /* Late (>25 mins) - Red Glow Animation */
+        .card-late {
+            border: 2px solid var(--danger);
+            animation: criticalGlow 1.5s infinite alternate;
+        }
+
         /* Highlight cards that are fully ready but waiting for pickup/serving */
-        .kot-card.card-done { border: 2px solid var(--success); opacity: 0.8; }
+        .kot-card.card-done { border: 2px solid var(--success); opacity: 0.8; animation: none; }
 
         @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        @keyframes criticalGlow {
+            from { box-shadow: 0 0 5px rgba(239, 68, 68, 0.4); }
+            to { box-shadow: 0 0 20px rgba(239, 68, 68, 0.9); }
+        }
 
         .kot-header {
             padding: 12px 15px; background: rgba(0,0,0,0.3);
@@ -331,10 +355,19 @@
 
             activeOrders.forEach(order => {
                 const elapsedMin = Math.floor((Date.now() - order.timestamp) / 60000);
+                
+                // --- UPDATED COLOR LOGIC ---
+                // 0-15: Green | 15-25: Yellow | >25: Red Glow
                 let timerClass = 'timer-fresh';
-                if(elapsedMin > 10) timerClass = 'timer-warn';
-                if(elapsedMin > 20) timerClass = 'timer-late';
-                // 'timer-done' logic is removed since done orders are hidden
+                let cardStatusClass = 'card-fresh'; // Default Green
+
+                if (elapsedMin > 25) {
+                    timerClass = 'timer-late';
+                    cardStatusClass = 'card-late';
+                } else if (elapsedMin > 15) {
+                    timerClass = 'timer-warn';
+                    cardStatusClass = 'card-warn';
+                }
 
                 const custName = order.customer ? order.customer.name : 'Guest';
                 const orderType = order.orderType || 'Dine-In';
@@ -385,10 +418,8 @@
                     noteHtml = `<div class="kot-note">📝 NOTE: ${order.globalNote}</div>`;
                 }
 
-                let cardClass = "kot-card";
-
                 const card = document.createElement('div');
-                card.className = cardClass;
+                card.className = `kot-card ${cardStatusClass}`; // Applied color class
                 card.innerHTML = `
                     <div class="kot-header" onclick="completeOrder('${order.key}')" title="Tap to Complete Full Order">
                         <span class="kot-id">#${order.orderId}</span>
