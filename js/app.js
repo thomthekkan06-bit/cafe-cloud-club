@@ -460,7 +460,8 @@ window.openOptionModal = function(index) {
     
     if (item.category === "Whipped Wonders") availableOptions.push({ name: "Extra Ice Cream (Thick Shake)", price: 30 });
     if (availableOptions.length === 0 && item.category === "ADD-ON") {
-        addToCart(item.name, item.price, item.price, item.type, item.category);
+        // Direct Add (Empty Variant/Note)
+        addToCart(item.name, item.price, item.price, item.type, item.category, "", "", item.name);
         return;
     }
 
@@ -510,10 +511,16 @@ window.addToCartFromModal = function() {
     });
     const noteInput = document.getElementById('modal-note-input');
     const noteText = noteInput ? noteInput.value.trim() : '';
+    
+    // Construct Display Key (still used for unique cart entries)
     let displayName = item.name;
     if(modifiers.length > 0) displayName += ` [${modifiers.join(', ')}]`;
     if(noteText) displayName += ` (Note: ${noteText})`;
-    addToCart(displayName, finalPrice, item.price, item.type, item.category);
+    
+    // Pass Clean Data separately
+    const variantStr = modifiers.join(', ');
+    
+    addToCart(displayName, finalPrice, item.price, item.type, item.category, variantStr, noteText, item.name);
     closeCustomizationModal();
 }
 
@@ -522,17 +529,25 @@ window.closeCustomizationModal = function() {
     tempSelectedItemIndex = null;
 }
 
-function addToCart(name, finalPrice, basePrice, type, category) {
+// UPDATED: Added variant, itemNote, and cleanName params
+function addToCart(name, finalPrice, basePrice, type, category, variant = "", itemNote = "", cleanName = "") {
     if (typeof gtag === 'function') {
         gtag('event', 'add_to_cart', {
             currency: "INR", value: finalPrice,
             items: [{ item_name: name, item_category: category, price: finalPrice, quantity: 1 }]
         });
     }
+    
+    // Fallback if cleanName not provided
+    if(!cleanName) cleanName = name;
+
     if (cart[name]) {
         cart[name].qty++;
     } else {
-        cart[name] = { price: finalPrice, basePrice: basePrice, qty: 1, type: type, category: category };
+        cart[name] = { 
+            price: finalPrice, basePrice: basePrice, qty: 1, type: type, category: category,
+            variant: variant, itemNote: itemNote, cleanName: cleanName
+        };
     }
     saveCart();
     renderCart();
@@ -870,8 +885,16 @@ const mapLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
             else if (activeCoupon.includes('COMBO') || activeCoupon === 'SUNFEAST' || activeCoupon === 'CLOUD15') isOfferItem = true;
         }
 
+        // UPDATED: Push rich item with clean name, variant, and note
         richItems.push({
-            name: key, qty: item.qty, category: item.category, price: item.price, type: item.type, isOffer: isOfferItem
+            name: item.cleanName || key, 
+            qty: item.qty, 
+            category: item.category, 
+            price: item.price, 
+            type: item.type, 
+            isOffer: isOfferItem,
+            variant: item.variant || "",
+            itemNote: item.itemNote || ""
         });
     }
     
@@ -1081,7 +1104,8 @@ window.closeUpsell = function() { document.getElementById('upsell-modal').style.
 
 window.acceptUpsell = function() {
     if (!currentUpsellItem) return;
-    addToCart(currentUpsellItem.name, currentUpsellItem.price, currentUpsellItem.price, currentUpsellItem.type, currentUpsellItem.cat);
+    // Pass empty string for variant/note and clean name
+    addToCart(currentUpsellItem.name, currentUpsellItem.price, currentUpsellItem.price, currentUpsellItem.type, currentUpsellItem.cat, "", "", currentUpsellItem.name);
     closeUpsell();
 }
 
