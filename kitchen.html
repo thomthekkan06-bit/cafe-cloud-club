@@ -402,8 +402,13 @@
                         const isDone = item.kitchenDone ? 'done-item' : ''; 
                         
                         let variantHtml = '';
+                        
+                        // UPDATED: Check for variant AND itemNote and render them in GREEN
                         if(item.variant && item.variant.trim() !== "") {
-                            variantHtml = `<div class="item-mods" style="color:var(--success); font-weight:600; font-style:normal;">${item.variant}</div>`;
+                            variantHtml += `<div class="item-mods" style="color:var(--success); font-weight:600; font-style:normal;">${item.variant}</div>`;
+                        }
+                        if(item.itemNote && item.itemNote.trim() !== "") {
+                            variantHtml += `<div class="item-mods" style="color:var(--success); font-weight:600; font-style:normal;">Note: ${item.itemNote}</div>`;
                         }
 
                         // PASS INDEX TO TOGGLE ITEM
