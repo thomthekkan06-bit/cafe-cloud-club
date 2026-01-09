@@ -1,3 +1,7 @@
+{
+type: file_update
+fileName: thomthekkan06-bit/cafe-cloud-club/cafe-cloud-club-20032c5cc218f0a6272934f057b411e67338cfad/manager.html
+fullContent:
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -576,7 +580,7 @@
                 const data = snap.val() || {};
                 const list = document.getElementById('online-list');
                 list.innerHTML = "";
-                tableData = {}; // Clear previous table data
+                tableData = {}; 
                 
                 let pickupList = [];
                 let deliveryList = [];
@@ -588,29 +592,43 @@
                     if(order.status === 'completed' || order.status === 'rejected') return;
                     
                     // 1. DINE-IN LOGIC
-                    if(order.orderType === 'Dine-In' && order.customer && order.customer.name.startsWith('Table')) {
-                        const tId = order.customer.name.split(' ')[1];
-                        if(!tableData[tId]) tableData[tId] = { 
-                            total:0, items:[], keys:[], timestamp: order.timestamp,
-                            fins: { sub:0, disc:0, pack:0 }, phone: null,
-                            orderType: 'Dine-In',
-                            status: order.status,
-                            orderId: order.orderId // CAPTURE ID FOR INVOICE
-                        };
-                        if(order.customer.phone && order.customer.phone.length >= 10 && order.customer.phone !== '0000000000') {
-                            tableData[tId].phone = order.customer.phone;
+                    if(order.orderType === 'Dine-In' && order.customer) {
+                        let tId = null;
+                        
+                        // FIX: Detect "Table X" OR "Bar Chair X"
+                        if(order.customer.name.startsWith('Table ')) {
+                            tId = order.customer.name.split(' ')[1];
+                        } 
+                        else if(order.customer.name.startsWith('Bar Chair ')) {
+                             // "Bar Chair 1 (Name)" -> BC1
+                             const parts = order.customer.name.split(' ');
+                             if(parts[2]) tId = "BC" + parts[2];
                         }
-                        const f = order.financials || {grandTotal:0, subTotal:0, discountVal:0, packingTotal:0};
-                        tableData[tId].total += (f.grandTotal || 0);
-                        tableData[tId].fins.sub += (f.subTotal || 0);
-                        tableData[tId].fins.disc += (f.discountVal || 0);
-                        tableData[tId].fins.pack += (f.packingTotal || 0);
-                        if(order.timestamp < tableData[tId].timestamp) tableData[tId].timestamp = order.timestamp;
-                        tableData[tId].items.push(...(order.items||[]));
-                        tableData[tId].keys.push(key);
+                        
+                        if(tId) {
+                            if(!tableData[tId]) tableData[tId] = { 
+                                total:0, items:[], keys:[], timestamp: order.timestamp,
+                                fins: { sub:0, disc:0, pack:0 }, phone: null,
+                                orderType: 'Dine-In',
+                                status: order.status,
+                                orderId: order.orderId,
+                                customerName: order.customer.name
+                            };
+                            if(order.customer.phone && order.customer.phone.length >= 10 && order.customer.phone !== '0000000000') {
+                                tableData[tId].phone = order.customer.phone;
+                            }
+                            const f = order.financials || {grandTotal:0, subTotal:0, discountVal:0, packingTotal:0};
+                            tableData[tId].total += (f.grandTotal || 0);
+                            tableData[tId].fins.sub += (f.subTotal || 0);
+                            tableData[tId].fins.disc += (f.discountVal || 0);
+                            tableData[tId].fins.pack += (f.packingTotal || 0);
+                            if(order.timestamp < tableData[tId].timestamp) tableData[tId].timestamp = order.timestamp;
+                            tableData[tId].items.push(...(order.items||[]));
+                            tableData[tId].keys.push(key);
+                        }
                     }
 
-                    // 2. PARCEL LOGIC (Updated to include Swiggy/Zomato in Delivery Slots)
+                    // 2. PARCEL LOGIC
                     if (order.status !== 'pending') {
                         if (order.orderType === 'Pickup') pickupList.push({key, ...order});
                         if (order.orderType === 'Delivery' || order.orderType === 'Swiggy' || order.orderType === 'Zomato') {
@@ -630,8 +648,6 @@
                                 showInQueue = true;
                             }
                         } else {
-                             // FIX: Hide Pickup, Delivery, Swiggy, Zomato if 'done' or 'out'
-                             // They appear in the Right Panel Slots
                              if (['Pickup', 'Delivery', 'Swiggy', 'Zomato'].includes(order.orderType) && 
                                  (order.status === 'done' || order.status === 'out_for_delivery')) {
                                  showInQueue = false; 
@@ -657,7 +673,6 @@
                         const slotId = `${prefix}${index+1}`;
                         const f = order.financials || {grandTotal:0, subTotal:0, discountVal:0, packingTotal:0};
                         
-                        // FIX: ADDED SAFETY CHECK HERE
                         const cust = order.customer || { name: 'Unknown', phone: '-', address: '-' };
 
                         tableData[slotId] = {
@@ -668,16 +683,16 @@
                             fins: { sub: f.subTotal||0, disc: f.discountVal||0, pack: f.packingTotal||0 },
                             phone: cust.phone,
                             customerName: cust.name, 
-                            address: cust.address, // CAPTURE ADDRESS FOR HISTORY
+                            address: cust.address,
                             orderType: order.orderType,
                             status: order.status,
-                            orderId: order.orderId // CAPTURE ID FOR INVOICE
+                            orderId: order.orderId
                         };
                     });
                 };
 
-                mapToSlot('T', pickupList); // T1...T10
-                mapToSlot('D', deliveryList); // D1...D10
+                mapToSlot('T', pickupList); 
+                mapToSlot('D', deliveryList); 
 
                 document.getElementById('online-count').innerText = count;
                 renderTables();
@@ -880,25 +895,21 @@
 
             const f = order.financials || { subTotal: 0, packingTotal: 0, discountVal: 0, grandTotal: 0 };
             
-            // FIX: ADDED SAFETY CHECK HERE
             const cust = order.customer || { name: 'Unknown', phone: '-', address: '-' };
 
-            // Map items for display and index reference
             const itemsToRender = (order.items || []).map((item, idx) => ({ ...item, idx }));
 
             let itemsHtml = "";
             
             itemsToRender.forEach(i => {
-                if(i.deleted) return; // Skip deleted
+                if(i.deleted) return; 
 
                 let shouldRender = true;
                 let actionBtn = "";
 
-                // For Dine-In active orders, only show Ready & Not Served items with a Serve Button
                 if (order.status !== 'pending' && type === 'Dine-In') {
                     if (!i.kitchenDone || i.served) shouldRender = false;
                     else {
-                        // IT IS READY!
                         actionBtn = `<button class="btn-act btn-green" style="padding:5px 10px; font-size:0.75rem; margin-left:10px;" onclick="serveItem('${key}', ${i.idx})">SERVE</button>`;
                     }
                 }
@@ -934,7 +945,6 @@
             else if (type === 'Pickup' && order.status === 'done') {
                 mainBtns = `<button class="btn-act btn-orange" onclick="comp('${key}')">PICKED UP</button>`;
             }
-            // For Dine-In Active, main buttons are hidden (replaced by per-item serve)
 
             let showEdit = (order.status !== 'done' && order.status !== 'out_for_delivery');
             
@@ -1045,10 +1055,12 @@
             };
             
             for(let i=1; i<=7; i++) make(i, m);
-            make(8, m, "BC1");
-            make(14, m, "BC2");
-            make(15, m, "BC3");
-            make(16, m, "BC4");
+            
+            // FIX: Render BC1, BC2... instead of 8, 14, 15, 16
+            make("BC1", m, "BC1");
+            make("BC2", m, "BC2");
+            make("BC3", m, "BC3");
+            make("BC4", m, "BC4");
 
             for(let i=9; i<=13; i++) make(i, a);
 
@@ -1060,13 +1072,10 @@
             const d = tableData[currentSettleTable];
             const hasReq = activeBillRequests[currentSettleTable];
             document.getElementById('bill-req-alert').style.display = hasReq ? 'block' : 'none';
-            // NEW: Updated Header to show Invoice ID
             document.getElementById('m-t-id').innerText = d.orderId || currentSettleTable;
             
-            // NEW: Removed icons from the list
             document.getElementById('m-i-list').innerHTML = d.items.map(i => {
                 if(i.deleted) return '';
-                // Simple list with no icons
                 return `<div style="display:flex;justify-content:space-between;margin-bottom:5px;color:#aaa"><span>${i.qty}x ${i.name}</span><span>₹${i.price*i.qty}</span></div>`;
             }).join('');
             
@@ -1082,7 +1091,7 @@
             
             if(currentSettleTable.toString().startsWith('T')) {
                 if(d.status === 'done') {
-                    btn.innerText = "SETTLE"; // RENAMED FROM "PICKED UP"
+                    btn.innerText = "SETTLE"; 
                     btn.disabled = false;
                 } else {
                     btn.innerText = "Cooking...";
@@ -1090,7 +1099,6 @@
                 }
             } else if(currentSettleTable.toString().startsWith('D')) {
                 if(d.status === 'done') {
-                    // MODIFIED: If Swiggy/Zomato, enable "PICKED UP"
                     if(d.orderType === 'Swiggy' || d.orderType === 'Zomato') {
                         btn.innerText = "PICKED UP";
                         btn.disabled = false;
@@ -1175,43 +1183,37 @@
                 const finalGrand = (d.total - managerDisc - redeemVal) > 0 ? (d.total - managerDisc - redeemVal) : 0;
                 const finalTotalDisc = d.fins.disc + managerDisc;
                 
-                // Load Logo
                 const logoImg = new Image();
                 logoImg.src = 'cloudlogo.png';
                 
-                // Wrap image load in promise to ensure it exists before PDF gen
                 await new Promise((resolve, reject) => {
                     logoImg.onload = resolve;
                     logoImg.onerror = () => {
                         console.warn("Logo cloudlogo.png not found, skipping.");
-                        resolve(); // Resolve anyway to print without logo
+                        resolve(); 
                     };
                 });
 
-                // --- SWITCH TO RECEIPT SIZE (80mm width) ---
                 const doc = new window.jsPDF({
                     orientation: 'portrait',
                     unit: 'mm',
-                    format: [80, 250] // Receipt Width 80mm, Height 250mm
+                    format: [80, 250] 
                 });
 
                 if (typeof doc.autoTable !== 'function') return alert("AutoTable plugin not loaded.");
 
                 let yPos = 5;
 
-                // --- LOGO ---
                 if (logoImg.complete && logoImg.naturalWidth > 0) {
-                    // Calc aspect ratio to fit width 25mm
                     const aspect = logoImg.naturalWidth / logoImg.naturalHeight;
                     const w = 25; 
                     const h = w / aspect;
-                    doc.addImage(logoImg, 'PNG', 27.5, yPos, w, h); // Center (80-25)/2 = 27.5
+                    doc.addImage(logoImg, 'PNG', 27.5, yPos, w, h); 
                     yPos += h + 5; 
                 } else {
-                    yPos += 5; // Fallback spacing
+                    yPos += 5; 
                 }
 
-                // --- HEADER ---
                 doc.setFontSize(8); doc.setFont("helvetica", "bold");
                 doc.text("GST: 32AKXPC2831L1Z0", 5, yPos); 
                 yPos += 5;
@@ -1228,32 +1230,30 @@
                 yPos += 2;
                 
                 doc.setLineWidth(0.5); 
-                doc.line(2, yPos, 78, yPos); // Separator Line
+                doc.line(2, yPos, 78, yPos); 
                 yPos += 2;
 
                 const tableBody = d.items.filter(i => !i.deleted).map(i => [
                     i.name, i.qty.toString(), (i.price * i.qty).toFixed(2)
                 ]);
 
-                // --- TABLE ---
                 doc.autoTable({
                     startY: yPos,
                     head: [['Item', 'Qty', 'Amt']], 
                     body: tableBody,
                     theme: 'plain', 
-                    styles: { fontSize: 8, cellPadding: 1 }, // Small Font
+                    styles: { fontSize: 8, cellPadding: 1 }, 
                     columnStyles: { 
-                        0: { cellWidth: 'auto' }, // Item Name
-                        1: { cellWidth: 10, halign: 'center' }, // Qty
-                        2: { cellWidth: 15, halign: 'right' }   // Amount
+                        0: { cellWidth: 'auto' }, 
+                        1: { cellWidth: 10, halign: 'center' }, 
+                        2: { cellWidth: 15, halign: 'right' }   
                     },
                     headStyles: { fontStyle: 'bold', fillColor: [220, 220, 220] },
-                    margin: { left: 2, right: 2 } // Tight margins
+                    margin: { left: 2, right: 2 } 
                 });
 
                 let finalY = doc.lastAutoTable.finalY + 5;
                 
-                // --- TOTALS (Right Aligned to 75mm) ---
                 const rightX = 75; 
                 doc.setFontSize(9);
                 doc.text(`Sub Total:`, 40, finalY); doc.text(`${d.fins.sub}`, rightX, finalY, {align: 'right'}); finalY += 4;
@@ -1271,19 +1271,15 @@
                 doc.setFontSize(11); doc.setFont("helvetica", "bold");
                 doc.text(`TOTAL:`, 40, finalY + 2); doc.text(`Rs. ${finalGrand}`, rightX, finalY + 2, {align: 'right'});
                 
-                // --- FOOTER (Updated: Bill No & Name added) ---
-                finalY += 8; // Space after totals
+                finalY += 8; 
 
                 doc.setFontSize(8); doc.setFont("helvetica", "normal");
                 
-                // Bill Number
                 doc.text(`Bill No: ${d.orderId || '-'}`, 40, finalY, { align: "center" });
                 finalY += 4;
 
-                // Customer Name Logic
                 let cName = d.customerName;
                 if(!cName) {
-                     // Fallback for Dine-In if not directly set
                      if(!currentSettleTable.toString().startsWith('T') && !currentSettleTable.toString().startsWith('D')) {
                          cName = `Table ${currentSettleTable}`;
                      }
@@ -1297,12 +1293,11 @@
                 doc.text("Thank you for visiting!", 40, finalY + 4, { align: "center" });
                 
                 doc.setFont("helvetica", "normal");
-                doc.text("FSSAI no: 21323204000463", 40, finalY + 9, { align: "center" }); // Bottom Center
+                doc.text("FSSAI no: 21323204000463", 40, finalY + 9, { align: "center" }); 
 
                 const pdfBlob = doc.output('blob');
                 const file = new File([pdfBlob], `Bill_Table${currentSettleTable}.pdf`, { type: 'application/pdf' });
 
-                // 1. Try Native Share (Mobile)
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     navigator.share({ 
                         files: [file], 
@@ -1310,7 +1305,6 @@
                         text: 'Here is your bill from Cafe Cloud Club.' 
                     }).catch(err => console.log("Share dismissed"));
                 } 
-                // 2. Desktop Fallback
                 else {
                     doc.save(`Bill_Table${currentSettleTable}.pdf`);
                     const choice = confirm("Bill PDF Downloaded!\n\nClick OK to open WhatsApp Web (drag the file to send).\nClick CANCEL to keep file.");
@@ -1331,7 +1325,6 @@
             const tableStr = currentSettleTable.toString();
             if(tableStr.startsWith('D')) {
                 const d = tableData[currentSettleTable];
-                // MODIFIED: If it's Swiggy/Zomato, allow settling. Otherwise block it.
                 if((d.orderType !== 'Swiggy' && d.orderType !== 'Zomato') && (d.status === 'done' || d.status === 'out_for_delivery')) {
                     alert("This order is managed by the Delivery Agent.");
                     return; 
@@ -1346,11 +1339,9 @@
             const finalGrand = (d.total - managerDisc - redeemVal) > 0 ? (d.total - managerDisc - redeemVal) : 0;
             const finalTotalDisc = d.fins.disc + managerDisc;
 
-            // DETERMINE CUSTOMER NAME / ADDR BASED ON TYPE
             let cName = d.customerName; 
             let cAddr = d.address;
 
-            // Fallback for Dine-In (where customerName might not be set or we prefer "Table X")
             if(!cName) cName = `Table ${currentSettleTable}`;
             if(!cAddr) cAddr = 'Dine-In';
 
@@ -1407,7 +1398,8 @@
                 }
                 for(let i=1; i<=13; i++) {
                     const opt = document.createElement('option');
-                    opt.value = i; opt.text = (i===8)?"Table 8 (BAR)":`Table ${i}`;
+                    // MODIFIED: Rename option for consistency
+                    opt.value = i; opt.text = (i===8)?"Bar Chair 1":`Table ${i}`;
                     if(i.toString() === currentTableId) opt.selected = true;
                     sel.appendChild(opt);
                 }
