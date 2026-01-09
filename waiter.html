@@ -24,8 +24,8 @@
             margin: 0; padding: 20px;
         }
 
-        /* PIN LOCK */
-        #pin-overlay { 
+        /* PIN & NAME OVERLAY */
+        .overlay-screen { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(15, 17, 21, 0.98); z-index: 10000; 
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -34,16 +34,18 @@
             background: var(--surface); padding: 30px; border-radius: 16px; 
             border: 1px solid var(--border); text-align: center; width: 300px;
         }
-        .pin-input { 
+        .pin-input, .name-input { 
             background: var(--bg); border: 1px solid var(--border); color: white; 
-            font-size: 2rem; text-align: center; letter-spacing: 10px; padding: 10px; 
+            font-size: 1.5rem; text-align: center; padding: 10px; 
             border-radius: 8px; width: 100%; margin: 20px 0; outline: none; font-family: 'JetBrains Mono';
         }
+        .pin-input { letter-spacing: 10px; font-size: 2rem; }
         .btn-unlock { background: var(--primary); width: 100%; padding: 15px; border:none; border-radius:8px; color:white; font-weight:800; cursor:pointer; }
 
         /* HEADER */
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .brand { font-size: 1.5rem; font-weight: 800; color: white; }
+        .brand { font-size: 1.5rem; font-weight: 800; color: white; display: flex; flex-direction: column; }
+        .waiter-badge { font-size: 0.8rem; color: var(--primary); font-weight: 600; text-transform: uppercase; margin-top: 5px; }
         .btn-logout { background: #333; color: #aaa; border: 1px solid #444; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; margin-right: 10px; }
         
         .section-title {
@@ -70,13 +72,12 @@
         .timer-display { font-size: 1.5rem; font-weight: 700; font-family: 'JetBrains Mono'; text-align: center; margin: 10px 0; opacity: 1; }
         .status-text { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; text-align: center; opacity: 0.8; }
 
-        /* FREE STATE */
+        /* STATES */
         .status-free { opacity: 1; border-color: #333; }
         .status-free .table-num { color: #666; }
         .status-free .timer-display, .status-free .bill-total { display: none; }
         .status-free .status-text { color: #555; letter-spacing: 2px; }
 
-        /* OCCUPIED STATES */
         .status-fresh { border: 1px solid var(--success); background: rgba(16, 185, 129, 0.1); }
         .status-fresh .table-num, .status-fresh .timer-display, .status-fresh .bill-total, .status-fresh .status-text { color: var(--success); }
 
@@ -92,7 +93,7 @@
 </head>
 <body>
 
-    <div id="pin-overlay">
+    <div id="pin-overlay" class="overlay-screen">
         <div class="pin-box">
             <h2>Waiter Access</h2>
             <input type="password" id="pin-input" class="pin-input" placeholder="••••" maxlength="4" inputmode="numeric">
@@ -100,8 +101,20 @@
         </div>
     </div>
 
+    <div id="name-overlay" class="overlay-screen" style="display: none;">
+        <div class="pin-box">
+            <h2>Who are you?</h2>
+            <p style="color:#aaa; font-size:0.9rem;">Enter your name once. It will be locked to this device.</p>
+            <input type="text" id="waiter-name-input" class="name-input" placeholder="e.g. John" maxlength="15">
+            <button class="btn-unlock" onclick="saveWaiterName()">SET NAME & START</button>
+        </div>
+    </div>
+
     <div class="header">
-        <div class="brand">Waiter Deck</div>
+        <div class="brand">
+            Waiter Deck
+            <span id="waiter-display-badge" class="waiter-badge"></span>
+        </div>
         <div style="display:flex; align-items:center;">
              <button class="btn-logout" onclick="logout()">Lock</button>
              <div id="clock" style="font-family:'JetBrains Mono';">00:00</div>
@@ -116,7 +129,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        // ADDED 'push' to imports
         import { getDatabase, ref, onValue, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
@@ -131,18 +143,45 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- AUTH LOGIC START ---
+        // --- AUTH & NAME LOGIC START ---
+        
+        // 1. Check Login
         if(localStorage.getItem('waiter_auth') === 'true') {
             document.getElementById('pin-overlay').style.display = 'none';
-            loadTables();
+            checkNameAndLoad();
         }
 
         window.checkPin = () => {
             if(document.getElementById('pin-input').value === '2024') {
                 localStorage.setItem('waiter_auth', 'true'); 
                 document.getElementById('pin-overlay').style.display = 'none';
-                loadTables();
+                checkNameAndLoad();
             } else alert("Wrong PIN");
+        }
+
+        // 2. Check if Name is set
+        function checkNameAndLoad() {
+            const savedName = localStorage.getItem('ccc_waiter_name');
+            if(!savedName) {
+                // Show Name Setup
+                document.getElementById('name-overlay').style.display = 'flex';
+            } else {
+                // Name exists, Load App
+                document.getElementById('waiter-display-badge').innerText = `Serving: ${savedName}`;
+                loadTables();
+            }
+        }
+
+        // 3. Save Name (Runs once)
+        window.saveWaiterName = () => {
+            const input = document.getElementById('waiter-name-input').value.trim();
+            if(input.length < 2) {
+                alert("Please enter a valid name.");
+                return;
+            }
+            localStorage.setItem('ccc_waiter_name', input);
+            document.getElementById('name-overlay').style.display = 'none';
+            checkNameAndLoad();
         }
 
         window.logout = () => {
@@ -154,11 +193,9 @@
         let liveTableData = {};
         let packingItem = null;
 
-        // 1. FETCH MENU TO FIND "PACKING" ITEM
         onValue(ref(db, 'menu'), (snap) => {
             const data = snap.val();
             if(data) {
-                // Finds item with "packing" or "parcel" in the name
                 packingItem = Object.values(data).find(i => 
                     i.name.toLowerCase().includes("packing") || 
                     i.name.toLowerCase().includes("parcel")
@@ -204,16 +241,13 @@
             gridMain.innerHTML = "";
             gridAC.innerHTML = "";
 
-            // 1. Tables 1-7
             for(let i=1; i<=7; i++) createCard(i, gridMain, liveTableData[i]);
 
-            // 2. Bar Tables (8, 14, 15, 16) - Matching Manager.html
             createCard(8, gridMain, liveTableData[8], true, "BAR 1");
             createCard(14, gridMain, liveTableData[14], true, "BAR 2");
             createCard(15, gridMain, liveTableData[15], true, "BAR 3");
             createCard(16, gridMain, liveTableData[16], true, "BAR 4");
 
-            // 3. AC Tables 9-13
             for(let i=9; i<=13; i++) createCard(i, gridAC, liveTableData[i]);
         }
 
@@ -225,7 +259,7 @@
             let timeText = ''; 
             let totalText = ''; 
             let statusLabel = 'FREE';
-            let actionBtn = ''; // New Action Button
+            let actionBtn = ''; 
 
             if (data) {
                 const diff = Date.now() - data.timestamp;
@@ -240,8 +274,6 @@
                 else if (totalMinutes < 90) statusClass = 'status-warning';
                 else statusClass = 'status-camper';
 
-                // 2. INJECT PACKING BUTTON
-                // Stops propagation to prevent opening the table page
                 actionBtn = `
                     <button onclick="event.stopPropagation(); quickAddParcel('${id}')" 
                         style="position:absolute; bottom:10px; right:10px; background:#333; border:1px solid #555; color:white; border-radius:50%; width:32px; height:32px; cursor:pointer; font-size:1.2rem; display:flex; align-items:center; justify-content:center; z-index:10;" title="Add Packing Charge">
@@ -251,6 +283,8 @@
             }
 
             div.className = `table-card ${statusClass} ${isBar ? 'is-bar' : ''}`;
+            // IMPORTANT: In your Table.html (not included here), you must retrieve 'ccc_waiter_name' from localStorage 
+            // and add it to the order data for full menu orders.
             div.onclick = () => window.location.href = `table.html?table=${id}&mode=waiter`;
             
             const timerHtml = data ? `<div class="timer-display">${timeText}</div>` : '';
@@ -268,7 +302,6 @@
             container.appendChild(div);
         }
 
-        // 3. QUICK ADD PARCEL FUNCTION
         window.quickAddParcel = function(tableId) {
             if(!packingItem) {
                 alert("⚠️ 'Packing Charge' item not found in Menu. Please add it via Admin.");
@@ -277,18 +310,21 @@
             
             if(!confirm(`Add '${packingItem.name}' (₹${packingItem.price}) to Table ${tableId}?`)) return;
 
-            // Create a mini-order. Status 'cooking' ensures it is picked up by Manager and Waiter logic as an active order.
+            // GET WAITER NAME
+            const wName = localStorage.getItem('ccc_waiter_name') || 'Unknown';
+
             const order = {
                 orderId: Math.floor(100000 + Math.random() * 900000),
                 orderType: 'Dine-In',
                 timestamp: Date.now(),
                 status: 'cooking', 
+                waiterName: wName, // ATTACH NAME HERE
                 customer: { name: `Table ${tableId} (Packing)`, phone: '-', address: 'Dine-In' },
                 items: [{
                     name: packingItem.name,
                     price: parseInt(packingItem.price),
                     qty: 1,
-                    kitchenDone: true // Auto-mark as done
+                    kitchenDone: true 
                 }],
                 financials: {
                     subTotal: parseInt(packingItem.price),
