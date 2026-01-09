@@ -1,3 +1,7 @@
+{
+type: file_update
+fileName: thomthekkan06-bit/cafe-cloud-club/cafe-cloud-club-20032c5cc218f0a6272934f057b411e67338cfad/waiter.html
+fullContent:
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -211,10 +215,23 @@
                 Object.values(orders).forEach(o => {
                     if (o.status !== 'completed' && o.status !== 'rejected' && o.status !== 'delivered' && o.status !== 'pending') {
                         const customerName = (o.customer && o.customer.name) ? o.customer.name : "";
-                        const match = customerName.match(/Table (\w+)/i);
                         
-                        if (match) {
-                            const tableId = match[1];
+                        // FIX: Detect "Table X" OR "Bar Chair X"
+                        let tableId = null;
+                        
+                        // Check for standard "Table X"
+                        if (customerName.startsWith('Table ')) {
+                            tableId = customerName.split(' ')[1];
+                        } 
+                        // Check for "Bar Chair X"
+                        else if (customerName.startsWith('Bar Chair ')) {
+                            // "Bar Chair 1 (Name)" -> Split by space
+                            // parts[0]=Bar, [1]=Chair, [2]=1
+                            const parts = customerName.split(' ');
+                            if(parts[2]) tableId = "BC" + parts[2]; // e.g., "BC1"
+                        }
+
+                        if (tableId) {
                             const total = o.financials ? o.financials.grandTotal : 0;
                             const startTime = o.timestamp; 
 
@@ -243,10 +260,11 @@
 
             for(let i=1; i<=7; i++) createCard(i, gridMain, liveTableData[i]);
 
-            createCard(8, gridMain, liveTableData[8], true, "BC1");
-            createCard(14, gridMain, liveTableData[14], true, "BC2");
-            createCard(15, gridMain, liveTableData[15], true, "BC3");
-            createCard(16, gridMain, liveTableData[16], true, "BC4");
+            // UPDATED: Pass "BC1" instead of 8 to generate correct link
+            createCard("BC1", gridMain, liveTableData["BC1"], true, "BC1");
+            createCard("BC2", gridMain, liveTableData["BC2"], true, "BC2");
+            createCard("BC3", gridMain, liveTableData["BC3"], true, "BC3");
+            createCard("BC4", gridMain, liveTableData["BC4"], true, "BC4");
 
             for(let i=9; i<=13; i++) createCard(i, gridAC, liveTableData[i]);
         }
@@ -283,8 +301,8 @@
             }
 
             div.className = `table-card ${statusClass} ${isBar ? 'is-bar' : ''}`;
-            // IMPORTANT: In your Table.html (not included here), you must retrieve 'ccc_waiter_name' from localStorage 
-            // and add it to the order data for full menu orders.
+            
+            // This will now generate "table.html?table=BC1&mode=waiter"
             div.onclick = () => window.location.href = `table.html?table=${id}&mode=waiter`;
             
             const timerHtml = data ? `<div class="timer-display">${timeText}</div>` : '';
@@ -312,14 +330,20 @@
 
             // GET WAITER NAME
             const wName = localStorage.getItem('ccc_waiter_name') || 'Unknown';
+            
+            // Format name for BC or Table
+            let tableName = `Table ${tableId}`;
+            if(tableId.toString().startsWith("BC")) {
+                tableName = `Bar Chair ${tableId.substring(2)}`;
+            }
 
             const order = {
                 orderId: Math.floor(100000 + Math.random() * 900000),
                 orderType: 'Dine-In',
                 timestamp: Date.now(),
                 status: 'cooking', 
-                waiterName: wName, // ATTACH NAME HERE
-                customer: { name: `Table ${tableId} (Packing)`, phone: '-', address: 'Dine-In' },
+                waiterName: wName, 
+                customer: { name: `${tableName} (Packing)`, phone: '-', address: 'Dine-In' },
                 items: [{
                     name: packingItem.name,
                     price: parseInt(packingItem.price),
