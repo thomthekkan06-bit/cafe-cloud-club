@@ -227,7 +227,6 @@
                 if (data) {
                     Object.entries(data).forEach(([key, order]) => {
                         // 1. FILTER: HIDE IF SERVED/COMPLETED/REJECTED/PENDING
-                        // 2. UPDATED FILTER: HIDE 'done' so it vanishes from screen
                         if (order.status === 'completed' || order.status === 'rejected' || order.status === 'pending' || order.status === 'served' || order.status === 'done') return;
                         
                         // FILTER: ONLY GET RELEVANT ITEMS
@@ -239,11 +238,18 @@
                         if (relevantItems.length > 0) {
                              // Show if status is cooking.
                             if (order.status === 'cooking') {
-                                activeOrders.push({ key, ...order });
                                 
-                                // Only count items that aren't done for the notification sound
-                                const pendingItems = relevantItems.filter(i => !i.kitchenDone).length;
-                                currentTotalItems += pendingItems;
+                                // FIX: Check if we have any pending T-SHOP items. 
+                                // If all T-shop items are done, hide from T-shop screen (even if Chef is busy)
+                                const hasPendingTShopItems = relevantItems.some(i => !i.kitchenDone);
+
+                                if (hasPendingTShopItems) {
+                                    activeOrders.push({ key, ...order });
+                                    
+                                    // Only count items that aren't done for the notification sound
+                                    const pendingItems = relevantItems.filter(i => !i.kitchenDone).length;
+                                    currentTotalItems += pendingItems;
+                                }
                             }
                         }
                     });
