@@ -484,7 +484,10 @@
                         } 
                         else {
                             // Rule: "Dine-In" -> "Customer Name and Table No"
-                            if (rawName.toLowerCase().startsWith('table')) {
+                            const lowerName = rawName.toLowerCase();
+                            
+                            // 1. Handle "Table X (Name)"
+                            if (lowerName.startsWith('table')) {
                                 const parts = rawName.split(' ');
                                 if(parts.length >= 2) {
                                     h2Text = `${parts[0]} ${parts[1]}`; // "Table 5"
@@ -494,7 +497,23 @@
                                     h2Text = rawName;
                                     spanText = `#${orderId}`;
                                 }
-                            } else {
+                            } 
+                            // 2. NEW: Handle "Bar Chair X (Name)" -> "BC X"
+                            else if (lowerName.startsWith('bar chair')) {
+                                // Expected format: "Bar Chair 1 (Name)"
+                                const parts = rawName.split(' ');
+                                // parts[0]="Bar", parts[1]="Chair", parts[2]="1", parts[3+]="(Name)"
+                                if(parts.length >= 3) {
+                                    h2Text = `BC ${parts[2]}`; // "BC 1"
+                                    const guestName = parts.slice(3).join(' ').replace(/[()]/g, '');
+                                    spanText = guestName || 'Guest';
+                                } else {
+                                    h2Text = rawName.replace(/Bar Chair/i, "BC");
+                                    spanText = `#${orderId}`;
+                                }
+                            }
+                            // 3. Fallback
+                            else {
                                 h2Text = rawName;
                                 spanText = `Order #${orderId}`;
                             }
