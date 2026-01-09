@@ -1,3 +1,7 @@
+{
+type: file_update
+fileName: thomthekkan06-bit/cafe-cloud-club/cafe-cloud-club-20032c5cc218f0a6272934f057b411e67338cfad/table.html
+fullContent:
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -410,32 +414,36 @@
 
         // --- INIT ---
         const params = new URLSearchParams(window.location.search);
+        // FIX: Allow TABLE_ID to be "BC1" etc.
         const TABLE_ID = params.get('table') || "1"; 
         const MODE = params.get('mode') || 'customer';
 
-        document.getElementById('header-table-num').innerText = `Table ${TABLE_ID}`;
-        document.getElementById('modal-table-txt').innerText = `Ordering for Table ${TABLE_ID}`;
+        // FIX: Display "Bar Chair X" if starts with BC
+        let displayTable = `Table ${TABLE_ID}`;
+        if(TABLE_ID.startsWith("BC")) {
+            displayTable = `Bar Chair ${TABLE_ID.substring(2)}`;
+        }
+
+        document.getElementById('header-table-num').innerText = displayTable;
+        document.getElementById('modal-table-txt').innerText = `Ordering for ${displayTable}`;
         
         if(MODE === 'waiter') {
             document.getElementById('waiter-badge').style.display = 'inline';
         }
 
         // --- SMART SESSION MANAGEMENT (SERVER-SIDE CHECK) ---
-        // 1. Checks Firebase for ANY active order for this table.
-        // 2. If found, auto-fills and locks Name/Phone.
-        // 3. This allows multiple waiters to add to the same table bill.
         async function initSession() {
-            const tablePrefix = `Table ${TABLE_ID} `; 
+            // FIX: Search for "Bar Chair X " OR "Table X "
+            const tablePrefix = TABLE_ID.startsWith("BC") ? 
+                                `Bar Chair ${TABLE_ID.substring(2)} ` : 
+                                `Table ${TABLE_ID} `;
             
             try {
-                // Fetch all orders to find if this table is active
                 const snapshot = await get(ref(db, 'orders'));
                 let activeOrder = null;
                 
                 if (snapshot.exists()) {
                     const orders = snapshot.val();
-                    // Filter for orders belonging to this table that are NOT completed/paid
-                    // This defines an "Active Session"
                     const activeOrders = Object.values(orders).filter(o => 
                         o.customer && 
                         o.customer.name && 
@@ -446,7 +454,6 @@
                     );
                     
                     if (activeOrders.length > 0) {
-                        // Use the most recent order for details
                         activeOrder = activeOrders.sort((a,b) => b.timestamp - a.timestamp)[0];
                     }
                 }
@@ -455,10 +462,6 @@
                 const phoneField = document.getElementById('cust-phone');
 
                 if (activeOrder) {
-                    // --- ACTIVE SESSION FOUND ---
-                    console.log("Restoring active session for", activeOrder.customer.name);
-                    
-                    // Extract the guest name from format "Table X (GuestName)"
                     let rawName = activeOrder.customer.name; 
                     let guestName = rawName.replace(tablePrefix + "(", "").replace(/\)$/, "");
 
@@ -471,7 +474,6 @@
                         phoneField.readOnly = true; 
                     }
 
-                    // Update Local Storage (Syncs this device)
                     localStorage.setItem('ccc_table_user', JSON.stringify({
                         name: guestName,
                         phone: activeOrder.customer.phone,
@@ -479,8 +481,6 @@
                     }));
                 } 
                 else {
-                    // --- NO ACTIVE SESSION ---
-                    // Clear any stale local storage for this table
                     const savedRaw = localStorage.getItem('ccc_table_user');
                     if (savedRaw) {
                         const savedData = JSON.parse(savedRaw);
@@ -495,7 +495,6 @@
             }
         }
 
-        // Run the check immediately
         initSession();
 
         // --- DATA ---
@@ -530,7 +529,6 @@
         window.toggleSidebar = () => {
             const left = document.getElementById('left-sidebar');
             const overlay = document.querySelector('.sidebar-overlay');
-            // Close Right Sidebar if open
             document.getElementById('cart-sidebar').classList.remove('active');
             
             if(left.classList.contains('active')) {
@@ -545,7 +543,6 @@
         window.toggleCart = () => {
             const right = document.getElementById('cart-sidebar');
             const overlay = document.querySelector('.sidebar-overlay');
-            // Close Left Sidebar if open
             document.getElementById('left-sidebar').classList.remove('active');
 
             if(right.classList.contains('active')) {
@@ -613,7 +610,6 @@
             });
         }
 
-        // --- CUSTOMIZATION & PACKING LOGIC ---
         window.checkOptions = (itemName) => {
             const item = menuData.find(i => i.name === itemName);
             if(!item) return;
@@ -621,7 +617,6 @@
             const cat = item.category;
             const name = item.name;
 
-            // Existing Customization Logic
             if (["Bun-Tastic Burgers", "Italian Indulgence", "Freshly Folded", "Toasty Treats"].includes(cat)) {
                 options.push({ name: "Extra Cheese", price: 15 });
             }
@@ -638,7 +633,6 @@
             }
             if (cat === "Whipped Wonders") options.push({ name: "Extra Ice Cream", price: 30 });
 
-            // --- WAITER PACKING ADDITION ---
             if (MODE === 'waiter') {
                 let packPrice = 10;
                 const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
@@ -648,9 +642,7 @@
                 
                 options.push({ name: "Packing", price: packPrice });
             }
-            // ----------------------------------
 
-            // Force open modal if options exist OR if it's an ADD-ON OR if it's a waiter
             if (options.length > 0 || cat === "ADD-ON" || MODE === 'waiter') {
                 openCustomization(item, options);
             } else {
@@ -756,7 +748,6 @@
         window.toggleCart = () => {
             const right = document.getElementById('cart-sidebar');
             const overlay = document.querySelector('.sidebar-overlay');
-            // Close Left Sidebar if open
             document.getElementById('left-sidebar').classList.remove('active');
 
             if(right.classList.contains('active')) {
@@ -771,7 +762,6 @@
         window.openCheckout = () => document.getElementById('checkout-modal').style.display = 'flex';
         window.closeCheckout = () => document.getElementById('checkout-modal').style.display = 'none';
 
-        // --- FIX: PLACE ORDER WITH VALIDATION ---
         window.placeOrder = () => {
             const nameInput = document.getElementById('cust-name');
             const phoneInput = document.getElementById('cust-phone');
@@ -779,7 +769,6 @@
             const nameVal = nameInput.value.trim();
             const phoneVal = phoneInput.value.trim();
 
-            // Strict Validation
             if(nameVal.length < 2) {
                 alert("Please enter a valid Guest Name.");
                 nameInput.focus();
@@ -792,14 +781,18 @@
                 return;
             }
 
-            // Save Identity to storage
             localStorage.setItem('ccc_table_user', JSON.stringify({
                 name: nameVal,
                 phone: phoneVal,
                 tableId: TABLE_ID
             }));
 
-            const finalName = `Table ${TABLE_ID} (${nameVal})`;
+            // FIX: Proper Name "Bar Chair X" vs "Table X"
+            let finalTableName = `Table ${TABLE_ID}`;
+            if(TABLE_ID.startsWith("BC")) {
+                finalTableName = `Bar Chair ${TABLE_ID.substring(2)}`;
+            }
+            const finalName = `${finalTableName} (${nameVal})`;
             
             let total = 0;
             const items = [];
