@@ -138,7 +138,7 @@
         .kot-id { 
             font-family: 'JetBrains Mono'; 
             font-weight: 700; 
-            font-size: 1rem; /* Smaller */
+            font-size: 1rem; 
             color: var(--text-muted); 
         }
 
@@ -156,27 +156,42 @@
             padding: 15px; 
             background: var(--surface);
             border-bottom: 1px dashed var(--border); 
-            display: flex; justify-content: space-between; align-items: center;
+            display: flex; justify-content: space-between; align-items: flex-start;
         }
 
-        /* BIG CUSTOMER NAME / TABLE (LEFT) */
+        /* LEFT SIDE (Name + Waiter) */
+        .kot-info-left {
+            display: flex;
+            flex-direction: column;
+            max-width: 60%;
+        }
+
+        /* BIG CUSTOMER NAME / TABLE */
         .kot-name-display {
-            font-size: 1.4rem; /* Big */
+            font-size: 1.4rem;
             font-weight: 800;
             color: white;
             text-align: left;
             line-height: 1.2;
-            max-width: 60%;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
+        /* WAITER BADGE */
+        .waiter-tag {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+            font-weight: 600;
+        }
+        .waiter-tag b { color: var(--primary); }
+
         /* BIG ORDER TYPE (RIGHT) */
         .kot-type-badge { 
             font-weight: 800; 
             text-transform: uppercase; 
-            font-size: 1.1rem; /* Big */
+            font-size: 1.1rem; 
             padding: 6px 12px; 
             border-radius: 6px; 
             border: 2px solid var(--border);
@@ -400,6 +415,9 @@
 
                 const custName = order.customer ? order.customer.name : 'Guest';
                 const orderType = order.orderType || 'Dine-In';
+                
+                // --- GET WAITER NAME ---
+                const waiterName = order.waiterName ? order.waiterName : null;
 
                 let itemsHtml = "";
                 let visibleItemCount = 0;
@@ -451,6 +469,12 @@
                 if(order.globalNote && order.globalNote !== "-" && order.globalNote.trim() !== "") {
                     noteHtml = `<div class="kot-note">📝 NOTE: ${order.globalNote}</div>`;
                 }
+                
+                // --- WAITER HTML BLOCK ---
+                let waiterHtml = "";
+                if(waiterName) {
+                    waiterHtml = `<div class="waiter-tag">Server: <b>${waiterName}</b></div>`;
+                }
 
                 const card = document.createElement('div');
                 card.className = `kot-card ${cardStateClass}`;
@@ -465,7 +489,10 @@
                         </div>
                     </div>
                     <div class="kot-info">
-                        <span class="kot-name-display">${custName}</span>
+                        <div class="kot-info-left">
+                            <span class="kot-name-display">${custName}</span>
+                            ${waiterHtml}
+                        </div>
                         <span class="kot-type-badge">${orderType}</span>
                     </div>
                     <div class="kot-items">
