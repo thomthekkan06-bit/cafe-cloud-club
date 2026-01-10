@@ -314,7 +314,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue, update, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
@@ -583,30 +583,36 @@
             // 1. Perform the update for the specific item
             update(ref(db, `orders/${key}/items/${index}`), { kitchenDone: status })
             .then(() => {
-                // 2. CHECK IF CHEF'S ITEMS ARE DONE
-                const order = activeOrders.find(o => o.key === key);
-                if (!order) return;
+                // 2. CRITICAL FIX: Fetch FRESH data from DB. 
+                // Using activeOrders here is risky because it might be stale.
+                return get(ref(db, `orders/${key}`));
+            })
+            .then((snapshot) => {
+                const order = snapshot.val();
+                if (!order || !order.items) return;
 
                 let chefWorkIsDone = true;
 
-                if (order.items) {
-                    order.items.forEach((item, i) => {
-                         if (item.deleted) return;
-                         
-                         // *** THE FIX: Ignore items that are NOT for the Chef ***
-                         if (EXCLUDED_CATEGORIES.includes(item.category)) return;
+                order.items.forEach((item, i) => {
+                     if (item.deleted) return;
+                     
+                     // Ignore items that are NOT for the Chef
+                     if (EXCLUDED_CATEGORIES.includes(item.category)) return;
 
-                         const isDone = (i === index) ? status : item.kitchenDone;
-                         
-                         if (!isDone) {
-                             chefWorkIsDone = false;
-                         }
-                    });
-                }
+                     // Check status (fetched fresh from DB)
+                     if (!item.kitchenDone) {
+                         chefWorkIsDone = false;
+                     }
+                });
 
-                if (chefWorkIsDone && status === true) {
-                    // Chef is done. We force complete the order so it shows "Ready" everywhere.
+                if (chefWorkIsDone) {
+                    // Chef is done. Force status to 'done'.
                     performAutoComplete(key, order);
+                } else {
+                    // If unticked, ensure status is cooking
+                    if(order.status === 'done') {
+                         update(ref(db, `orders/${key}`), { status: 'cooking' });
+                    }
                 }
             });
         };
@@ -631,32 +637,35 @@
         }
 
         window.completeOrder = (key) => {
-            const order = activeOrders.find(o => o.key === key);
-            if(!order) return;
+            // Fetch fresh data before completing to avoid race conditions
+            get(ref(db, `orders/${key}`)).then(snap => {
+                const order = snap.val();
+                if(!order) return;
 
-            if(confirm(`Mark ENTIRE Order #${order.orderId} as READY?`)) {
-                
-                const updates = {};
+                if(confirm(`Mark ENTIRE Order #${order.orderId} as READY?`)) {
+                    
+                    const updates = {};
 
-                // 1. Mark ALL items as done (including T-Shop/Excluded items)
-                if (order.items) {
-                    order.items.forEach((item, index) => {
-                        if (item.deleted) return;
-                        updates[`items/${index}/kitchenDone`] = true;
-                    });
+                    // 1. Mark ALL items as done (including T-Shop/Excluded items)
+                    if (order.items) {
+                        order.items.forEach((item, index) => {
+                            if (item.deleted) return;
+                            updates[`items/${index}/kitchenDone`] = true;
+                        });
+                    }
+
+                    // 2. Force Global Status to Done
+                    updates['status'] = 'done'; 
+                    
+                    // Add to local history
+                    historyOrders.unshift({ ...order, doneTime: new Date() });
+                    if(historyOrders.length > 20) historyOrders.pop();
+                    renderHistory();
+
+                    // Perform Updates
+                    update(ref(db, `orders/${key}`), updates);
                 }
-
-                // 2. Force Global Status to Done
-                updates['status'] = 'done'; 
-                
-                // Add to local history
-                historyOrders.unshift({ ...order, doneTime: new Date() });
-                if(historyOrders.length > 20) historyOrders.pop();
-                renderHistory();
-
-                // Perform Updates
-                update(ref(db, `orders/${key}`), updates);
-            }
+            });
         };
 
         window.undoComplete = (key) => {
