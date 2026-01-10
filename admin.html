@@ -425,7 +425,7 @@
             
             <div class="form-group">
                 <label class="form-label">Total Points</label>
-                <input type="number" id="inp-loyalty-points" class="form-input">
+                <input type="number" id="inp-loyalty-points" class="form-input" step="any">
             </div>
 
             <div class="modal-actions">
@@ -462,7 +462,7 @@
 
             <div class="form-group">
                 <label class="form-label">Current Points</label>
-                <input type="number" id="new-loyalty-points" class="form-input" placeholder="0">
+                <input type="number" id="new-loyalty-points" class="form-input" placeholder="0" step="any">
             </div>
 
             <div class="modal-actions">
@@ -862,7 +862,7 @@
 
         window.saveLoyalty = () => {
             const phone = document.getElementById('edit-loyalty-phone').value;
-            const newPts = parseInt(document.getElementById('inp-loyalty-points').value);
+            const newPts = parseFloat(document.getElementById('inp-loyalty-points').value);
             
             if(isNaN(newPts) || !phone) return;
 
@@ -889,7 +889,7 @@
             let phone = document.getElementById('new-loyalty-phone').value.trim();
             const email = document.getElementById('new-loyalty-email').value.trim();
             const address = document.getElementById('new-loyalty-address').value.trim();
-            const points = parseInt(document.getElementById('new-loyalty-points').value) || 0;
+            const points = parseFloat(document.getElementById('new-loyalty-points').value) || 0;
 
             if (!name || !phone) return alert("❌ Customer Name and Phone Number are mandatory!");
             
@@ -956,7 +956,7 @@
                     }
 
                     // 1. Calculate Points (1 pt per ₹100 Subtotal)
-                    const earned = Math.floor(sub / 100);
+                    const earned = (sub / 100);
                     
                     // 2. Accumulate Stats
                     customerStats[phone].points += (earned - redeemed);
