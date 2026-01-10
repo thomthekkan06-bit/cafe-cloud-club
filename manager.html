@@ -1127,17 +1127,10 @@
                     btn.disabled = true;
                 }
             } else if(currentSettleTable.toString().startsWith('D')) {
-                if(d.status === 'done') {
-                    if(d.orderType === 'Swiggy' || d.orderType === 'Zomato') {
-                        btn.innerText = "PICKED UP";
-                        btn.disabled = false;
-                    } else {
-                        btn.innerText = "Waiting for Agent";
-                        btn.disabled = true; 
-                    }
-                } else if(d.status === 'out_for_delivery') {
-                    btn.innerText = "🛵 Out for Delivery";
-                    btn.disabled = true;
+                // UNIFIED LOGIC: If Kitchen is done, allow Manager to Pay & Clear
+                if(d.status === 'done' || d.status === 'out_for_delivery') {
+                    btn.innerText = "PAID & CLEAR";
+                    btn.disabled = false;
                 } else {
                     btn.innerText = "Cooking...";
                     btn.disabled = true;
@@ -1370,14 +1363,8 @@
 
         window.settleAndClear = async () => {
             const tableStr = currentSettleTable.toString();
-            if(tableStr.startsWith('D')) {
-                const d = tableData[currentSettleTable];
-                if((d.orderType !== 'Swiggy' && d.orderType !== 'Zomato') && (d.status === 'done' || d.status === 'out_for_delivery')) {
-                    alert("This order is managed by the Delivery Agent.");
-                    return; 
-                }
-            }
-
+            // Removed blocking 'D' check here.
+            
             const d = tableData[currentSettleTable];
             const type = document.getElementById('disc-type').value;
             const val = parseFloat(document.getElementById('disc-val').value) || 0;
