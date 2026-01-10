@@ -647,12 +647,19 @@
                                 showInQueue = true;
                             }
                         } else {
-                             if (['Pickup', 'Delivery', 'Swiggy', 'Zomato'].includes(order.orderType) && 
+                             // --- MODIFIED LOGIC START ---
+                             // Rule: If Pickup is Cooking or Done, HIDE it (It lives in the Grid now)
+                             if (order.orderType === 'Pickup' && (order.status === 'cooking' || order.status === 'done')) {
+                                 showInQueue = false;
+                             }
+                             // Keep Delivery/Swiggy/Zomato logic (hide only when done/out)
+                             else if (['Delivery', 'Swiggy', 'Zomato'].includes(order.orderType) && 
                                  (order.status === 'done' || order.status === 'out_for_delivery')) {
                                  showInQueue = false; 
                              } else {
                                  showInQueue = true;
                              }
+                             // --- MODIFIED LOGIC END ---
                         }
                     }
 
@@ -1113,7 +1120,7 @@
             
             if(currentSettleTable.toString().startsWith('T')) {
                 if(d.status === 'done') {
-                    btn.innerText = "SETTLE"; 
+                    btn.innerText = "PAID & CLEAR"; // MODIFIED
                     btn.disabled = false;
                 } else {
                     btn.innerText = "Cooking...";
