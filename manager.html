@@ -1198,7 +1198,7 @@
             document.getElementById('m-pack').innerText = `₹${totalPack}`; // Update Packing UI
             document.getElementById('m-tot').innerText = `₹${finalTotal > 0 ? finalTotal : 0}`;
             
-            const pointsToEarn = Math.floor(d.fins.sub / 100);
+            const pointsToEarn = (d.fins.sub / 100);
             document.getElementById('earn-preview').innerText = `+${pointsToEarn} Pts`;
         }
 
@@ -1396,7 +1396,7 @@
                 financials: { subTotal: d.fins.sub, discountVal: finalTotalDisc, loyaltyRedeemed: redeemVal, packingTotal: finalTotalPack, grandTotal: finalGrand }
             };
 
-            const pointsToEarn = Math.floor(d.fins.sub / 100);
+            const pointsToEarn = (d.fins.sub / 100);
             if(d.phone) {
                 const loyaltyRef = ref(db, `loyalty/${d.phone}`);
                 await runTransaction(loyaltyRef, (currentData) => {
@@ -1520,7 +1520,7 @@
                     let d = s.val(); 
                     if(d.customer && d.customer.phone && d.customer.phone.length >= 10) {
                         const subTotal = d.financials ? d.financials.subTotal : 0;
-                        const pointsToEarn = Math.floor(subTotal / 100);
+                        const pointsToEarn = (subTotal / 100);
                         if(pointsToEarn > 0) {
                             const loyaltyRef = ref(db, `loyalty/${d.customer.phone}`);
                             runTransaction(loyaltyRef, (current) => {
