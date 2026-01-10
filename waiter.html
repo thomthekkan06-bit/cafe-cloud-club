@@ -72,6 +72,17 @@
         .timer-display { font-size: 1.5rem; font-weight: 700; font-family: 'JetBrains Mono'; text-align: center; margin: 10px 0; opacity: 1; }
         .status-text { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; text-align: center; opacity: 0.8; }
 
+        /* PARCEL INDICATOR STYLE */
+        .parcel-indicator {
+            position: absolute; top: 10px; right: 10px;
+            font-size: 1.5rem; animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-5px);}
+            60% {transform: translateY(-3px);}
+        }
+
         /* STATES */
         .status-free { opacity: 1; border-color: #333; }
         .status-free .table-num { color: #666; }
@@ -212,7 +223,6 @@
                     if (o.status !== 'completed' && o.status !== 'rejected' && o.status !== 'delivered' && o.status !== 'pending') {
                         const customerName = (o.customer && o.customer.name) ? o.customer.name : "";
                         
-                        // FIX: Detect "Table X" OR "Bar Chair X"
                         let tableId = null;
                         
                         // Check for standard "Table X"
@@ -221,24 +231,32 @@
                         } 
                         // Check for "Bar Chair X"
                         else if (customerName.startsWith('Bar Chair ')) {
-                            // "Bar Chair 1 (Name)" -> Split by space
-                            // parts[0]=Bar, [1]=Chair, [2]=1
                             const parts = customerName.split(' ');
-                            if(parts[2]) tableId = "BC" + parts[2]; // e.g., "BC1"
+                            if(parts[2]) tableId = "BC" + parts[2]; 
                         }
 
                         if (tableId) {
                             const total = o.financials ? o.financials.grandTotal : 0;
                             const startTime = o.timestamp; 
+                            
+                            // CHECK FOR PACKING CUSTOMIZATION
+                            let isPacking = false;
+                            if(o.items) {
+                                // We check if ANY item in this order has [Packing] in its name
+                                isPacking = o.items.some(i => i.name.includes('[Packing]'));
+                            }
 
                             if (!liveTableData[tableId] || startTime < liveTableData[tableId].timestamp) {
                                 liveTableData[tableId] = {
                                     timestamp: startTime,
                                     total: (liveTableData[tableId] ? liveTableData[tableId].total : 0) + total,
-                                    status: 'OCCUPIED'
+                                    status: 'OCCUPIED',
+                                    isPacking: isPacking 
                                 };
                             } else {
                                 liveTableData[tableId].total += total;
+                                // If ANY order for this table has packing, mark the table as packing
+                                if(isPacking) liveTableData[tableId].isPacking = true;
                             }
                         }
                     }
@@ -256,7 +274,6 @@
 
             for(let i=1; i<=7; i++) createCard(i, gridMain, liveTableData[i]);
 
-            // UPDATED: Pass "BC1" instead of 8 to generate correct link
             createCard("BC1", gridMain, liveTableData["BC1"], true, "BC1");
             createCard("BC2", gridMain, liveTableData["BC2"], true, "BC2");
             createCard("BC3", gridMain, liveTableData["BC3"], true, "BC3");
@@ -274,6 +291,7 @@
             let totalText = ''; 
             let statusLabel = 'FREE';
             let actionBtn = ''; 
+            let parcelIndicator = '';
 
             if (data) {
                 const diff = Date.now() - data.timestamp;
@@ -288,23 +306,29 @@
                 else if (totalMinutes < 90) statusClass = 'status-warning';
                 else statusClass = 'status-camper';
 
+                // CHANGED: Button is now a PLUS sign to avoid confusion
                 actionBtn = `
                     <button onclick="event.stopPropagation(); quickAddParcel('${id}')" 
-                        style="position:absolute; bottom:10px; right:10px; background:#333; border:1px solid #555; color:white; border-radius:50%; width:32px; height:32px; cursor:pointer; font-size:1.2rem; display:flex; align-items:center; justify-content:center; z-index:10;" title="Add Packing Charge">
-                        📦
+                        style="position:absolute; bottom:10px; right:10px; background:#333; border:1px solid #555; color:white; border-radius:50%; width:32px; height:32px; cursor:pointer; font-size:1.2rem; display:flex; align-items:center; justify-content:center; z-index:10;" title="Quick Add Packing Charge">
+                        ➕
                     </button>
                 `;
+
+                // NEW: Status Indicator shows ONLY if [Packing] customization is present
+                if(data.isPacking) {
+                    parcelIndicator = `<div class="parcel-indicator">📦</div>`;
+                }
             }
 
             div.className = `table-card ${statusClass} ${isBar ? 'is-bar' : ''}`;
             
-            // This will now generate "table.html?table=BC1&mode=waiter"
             div.onclick = () => window.location.href = `table.html?table=${id}&mode=waiter`;
             
             const timerHtml = data ? `<div class="timer-display">${timeText}</div>` : '';
             const billHtml = data ? `<div class="bill-total">${totalText}</div>` : '';
 
             div.innerHTML = `
+                ${parcelIndicator}
                 <div class="card-header">
                     <div class="table-num">${displayLabel}</div>
                     ${billHtml}
@@ -324,10 +348,8 @@
             
             if(!confirm(`Add '${packingItem.name}' (₹${packingItem.price}) to Table ${tableId}?`)) return;
 
-            // GET WAITER NAME
             const wName = localStorage.getItem('ccc_waiter_name') || 'Unknown';
             
-            // Format name for BC or Table
             let tableName = `Table ${tableId}`;
             if(tableId.toString().startsWith("BC")) {
                 tableName = `Bar Chair ${tableId.substring(2)}`;
