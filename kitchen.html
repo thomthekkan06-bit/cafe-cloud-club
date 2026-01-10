@@ -6,6 +6,7 @@
     <title>Chef KDS | Café Cloud Club</title>
     <link rel="icon" type="image/png" href="icon.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --bg: #121418;
@@ -18,6 +19,11 @@
             --danger: #ef4444;
             --text-main: #ffffff;
             --text-muted: #9ca3af;
+            
+            /* Zomato-style Specifics */
+            --note-bg: #fff3cd;
+            --note-text: #856404;
+            --note-border: #ffeeba;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -202,31 +208,63 @@
         .kot-item {
             padding: 12px 15px; border-bottom: 1px solid #2a2f36;
             cursor: pointer; display: flex; justify-content: space-between; align-items: flex-start;
-            transition: background 0.1s; font-size: 1.1rem; line-height: 1.4;
+            transition: background 0.1s; line-height: 1.4;
         }
         .kot-item:last-child { border-bottom: none; }
         .kot-item:hover { background: var(--surface-hover); }
         
+        /* ZOMATO STYLE ITEM LAYOUT */
         .item-qty { font-weight: 800; color: var(--primary); margin-right: 12px; min-width: 25px; font-size: 1.2rem; }
-        .item-name { flex: 1; font-weight: 600; }
-        .item-mods { display: block; font-size: 0.9rem; color: var(--success); margin-top: 4px; font-weight: 600; }
+        .item-content { flex: 1; display: flex; flex-direction: column; }
+        
+        .item-name-main { 
+            font-weight: 700; 
+            font-size: 1.15rem; 
+            color: white; 
+        }
+
+        /* ZOMATO STYLE MODIFIERS (List view) */
+        .modifier-list {
+            margin-top: 4px;
+            display: flex; 
+            flex-direction: column;
+            gap: 2px;
+        }
+        .modifier-item {
+            font-size: 0.95rem;
+            color: #9ca3af; /* Muted Grey */
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .modifier-item::before {
+            content: "•"; /* Bullet point */
+            color: #6b7280;
+            font-size: 0.7rem;
+        }
 
         /* DELETED ITEM STATE */
         .kot-item.deleted-item { opacity: 0.7; pointer-events: none; text-decoration: line-through; color: var(--danger); }
         
         /* DONE ITEM STATE */
-        .kot-item.done-item .item-name { text-decoration: line-through; color: var(--danger); opacity: 0.6; }
+        .kot-item.done-item .item-name-main { text-decoration: line-through; color: var(--danger); opacity: 0.6; }
         .kot-item.done-item .item-qty { color: var(--danger); opacity: 0.6; }
-        .kot-item.done-item .item-mods { opacity: 0.5; text-decoration: line-through; }
+        .kot-item.done-item .modifier-item { opacity: 0.5; text-decoration: line-through; }
 
-        /* MODIFIED: Green Notes for Global Note */
+        /* ZOMATO STYLE NOTE (Sticky Note Look) */
         .kot-note {
             padding: 12px 15px; 
-            background: rgba(16, 185, 129, 0.15); /* Green Tint */
-            color: var(--success); /* Green Text */
-            font-size: 0.9rem; font-weight: 700;
-            border-top: 1px solid var(--border);
+            background: var(--note-bg); 
+            color: var(--note-text);
+            border: 1px solid var(--note-border);
+            border-radius: 8px;
+            margin: 10px;
+            font-size: 0.95rem; font-weight: 700;
+            display: flex; align-items: flex-start; gap: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+        .kot-note i { margin-top: 3px; }
 
         /* --- HISTORY VIEW --- */
         #history-view { display: none; background: #000; position: absolute; top: 70px; left: 0; width: 100%; height: calc(100% - 70px); z-index: 50; padding: 20px; overflow-y: auto; }
@@ -291,8 +329,8 @@
         const db = getDatabase(app);
 
         // --- FILTER CONFIGURATION ---
-        // Chef KDS shows EVERYTHING EXCEPT Botanical Brews
-        const EXCLUDED_CATEGORY = "Cafe Botanical Brews";
+        // Chef KDS shows EVERYTHING EXCEPT these categories
+        const EXCLUDED_CATEGORIES = ["Cafe Botanical Brews", "Desi Delight Bites"];
 
         // --- ROBUST WAKE LOCK (PREVENT SLEEP) ---
         let wakeLock = null;
@@ -360,20 +398,27 @@
                         // FILTER: Hide served/completed/rejected/pending
                         if (order.status === 'completed' || order.status === 'rejected' || order.status === 'pending' || order.status === 'served' || order.status === 'done') return;
 
-                        // NEW FILTER: Check if there are any NON-BREW items
+                        // NEW FILTER: Check if there are any items NOT in the excluded categories
                         let relevantItems = [];
                         if (order.items) {
-                            relevantItems = order.items.filter(i => i.category !== EXCLUDED_CATEGORY);
+                            relevantItems = order.items.filter(i => !EXCLUDED_CATEGORIES.includes(i.category));
                         }
 
                         if (relevantItems.length > 0) {
                             // Only show if status is cooking.
                             if (order.status === 'cooking') {
-                                activeOrders.push({ key, ...order });
                                 
-                                // Only count items that aren't done for the notification sound
-                                const pendingItems = relevantItems.filter(i => !i.kitchenDone).length;
-                                currentTotalItems += pendingItems;
+                                // FIX: Check if ANY of these relevant items are NOT DONE.
+                                // If all chef items are done, hide this card from Chef KDS (even if T-Shop is pending)
+                                const hasPendingChefItems = relevantItems.some(i => !i.kitchenDone);
+
+                                if (hasPendingChefItems) {
+                                    activeOrders.push({ key, ...order });
+                                    
+                                    // Only count items that aren't done for the notification sound
+                                    const pendingItems = relevantItems.filter(i => !i.kitchenDone).length;
+                                    currentTotalItems += pendingItems;
+                                }
                             }
                         }
                     });
@@ -423,10 +468,10 @@
 
                 if (order.items) {
                     order.items.forEach((item, index) => {
-                        // 1. FILTER: EXCLUDE BREWS
-                        if (item.category === EXCLUDED_CATEGORY) return;
+                        // 1. FILTER: EXCLUDE T-SHOP ITEMS
+                        if (EXCLUDED_CATEGORIES.includes(item.category)) return;
 
-                        // 3. Hide Packing Charges
+                        // 2. Hide Packing Charges
                         const itemNameLower = item.name.toLowerCase();
                         if (itemNameLower.includes("packing charge") || itemNameLower.includes("parcel charge")) return;
 
@@ -436,37 +481,67 @@
                         const isDeleted = item.deleted ? 'deleted-item' : '';
                         const isDone = item.kitchenDone ? 'done-item' : ''; 
                         
-                        let variantHtml = '';
-                        if(item.variant && item.variant.trim() !== "") {
-                            variantHtml = `<div class="item-mods">${item.variant}</div>`;
+                        // --- ZOMATO STYLE PARSING (Extraction) ---
+                        let displayItemName = item.name;
+                        let extractedModifiers = [];
+
+                        // 1. Extract [...]
+                        const bracketMatches = displayItemName.match(/\[(.*?)\]/g);
+                        if (bracketMatches) {
+                            bracketMatches.forEach(match => {
+                                extractedModifiers.push(match.replace('[', '').replace(']', ''));
+                                displayItemName = displayItemName.replace(match, ''); // Remove from name
+                            });
                         }
 
-                        // MODIFIED: Highlight customizations inside the name (e.g. [Extra Cheese] or (Note: Spicy))
-                        let displayItemName = item.name;
-                        // Regex to wrap [...] and (...) in a span with the success (green) color
-                        displayItemName = displayItemName.replace(/(\[.*?\]|\(.*?\))/g, '<span style="color: var(--success); font-weight: 700;">$1</span>');
+                        // 2. Extract (...)
+                        const parenMatches = displayItemName.match(/\((.*?)\)/g);
+                        if (parenMatches) {
+                            parenMatches.forEach(match => {
+                                extractedModifiers.push(match.replace('(', '').replace(')', ''));
+                                displayItemName = displayItemName.replace(match, ''); // Remove from name
+                            });
+                        }
+
+                        // 3. Add Explicit Variant field
+                        if(item.variant && item.variant.trim() !== "") {
+                            extractedModifiers.push(item.variant);
+                        }
+
+                        // Clean up main name
+                        displayItemName = displayItemName.trim();
+
+                        // Build Modifier HTML
+                        let modifiersHtml = "";
+                        if (extractedModifiers.length > 0) {
+                            modifiersHtml = `<div class="modifier-list">`;
+                            extractedModifiers.forEach(mod => {
+                                modifiersHtml += `<div class="modifier-item">${mod}</div>`;
+                            });
+                            modifiersHtml += `</div>`;
+                        }
 
                         // PASS INDEX TO TOGGLE ITEM
                         itemsHtml += `
                             <div class="kot-item ${isDeleted} ${isDone}" onclick="toggleItem('${order.key}', ${index}, ${!item.kitchenDone})">
                                 <span class="item-qty">${item.qty}</span>
-                                <div class="item-name">
-                                    ${displayItemName}
-                                    ${variantHtml}
+                                <div class="item-content">
+                                    <div class="item-name-main">${displayItemName}</div>
+                                    ${modifiersHtml}
                                 </div>
                             </div>
                         `;
                     });
                 }
 
-                // If no items visible, it means all items were filtered out (e.g. all brews)
+                // If no items visible, it means all items were filtered out
                 if (visibleItemCount === 0) {
-                     return; // Skip rendering this card entirely
+                     return; 
                 }
 
                 let noteHtml = "";
                 if(order.globalNote && order.globalNote !== "-" && order.globalNote.trim() !== "") {
-                    noteHtml = `<div class="kot-note">📝 NOTE: ${order.globalNote}</div>`;
+                    noteHtml = `<div class="kot-note"><i class="fas fa-sticky-note"></i> <span>${order.globalNote}</span></div>`;
                 }
                 
                 // --- WAITER HTML BLOCK ---
@@ -516,11 +591,10 @@
 
                 if (order.items) {
                     order.items.forEach((item, i) => {
-                         // Skip Excluded Categories or Deleted Items from check
-                         if (item.category === EXCLUDED_CATEGORY || item.deleted) return;
+                         // FIX: Do NOT skip excluded categories. 
+                         // We must ensure the WHOLE order is done before setting status='done'
+                         if (item.deleted) return;
                          
-                         // For the item we just clicked, use the NEW status passed in arg
-                         // For others, use existing status
                          const isDone = (i === index) ? status : item.kitchenDone;
                          
                          if (!isDone) {
@@ -545,7 +619,6 @@
              if(historyOrders.length > 20) historyOrders.pop();
              renderHistory();
              
-             // Update DB -> Order will vanish from Active KDS due to filter
              update(ref(db, `orders/${key}`), updates);
         }
 
@@ -556,21 +629,29 @@
             if(confirm(`Mark all Chef Items for Order #${order.orderId} as READY?`)) {
                 
                 const updates = {};
-                
-                // 1. Loop through all items to update Chef items
+                let allItemsTrulyDone = true; // NEW FLAG
+
+                // 1. Loop through all items
                 if (order.items) {
                     order.items.forEach((item, index) => {
-                        // If it is a Chef Item...
-                        if (item.category !== EXCLUDED_CATEGORY) {
+                        if (item.deleted) return;
+
+                        // If it is a Chef Item... Mark Done
+                        if (!EXCLUDED_CATEGORIES.includes(item.category)) {
                             updates[`items/${index}/kitchenDone`] = true;
-                        } 
+                        } else {
+                            // It is a T-Shop Item. Check if it is already done.
+                            if (!item.kitchenDone) allItemsTrulyDone = false;
+                        }
                     });
                 }
 
-                // 2. Set Status Done
-                updates['status'] = 'done'; 
+                // 2. Only Set Global Status Done if T-Shop is also done
+                if (allItemsTrulyDone) {
+                    updates['status'] = 'done'; 
+                }
                 
-                // Add to local history
+                // Add to local history (because it will disappear from this screen due to filter)
                 historyOrders.unshift({ ...order, doneTime: new Date() });
                 if(historyOrders.length > 20) historyOrders.pop();
                 renderHistory();
