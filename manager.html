@@ -355,6 +355,9 @@
                 <div id="bill-req-alert" style="display:none; background:#FFD700; color:black; padding:10px; text-align:center; border-radius:8px; margin-bottom:15px; font-weight:bold;">
                     ⚠️ CUSTOMER REQUESTED BILL
                 </div>
+                <div style="margin-bottom: 10px; padding: 5px; background: rgba(59, 130, 246, 0.1); border-radius: 4px; border-left: 3px solid var(--primary); font-size: 0.8rem;">
+                    Tick items below to add <b>Packing Charges</b> for leftovers.
+                </div>
                 <div id="m-i-list"></div>
                 <div id="loyalty-section" style="margin: 15px 0; padding: 10px; background: rgba(59, 130, 246, 0.1); border-radius: 6px; border: 1px solid var(--primary); display:none;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -1070,9 +1073,32 @@
             document.getElementById('bill-req-alert').style.display = hasReq ? 'block' : 'none';
             document.getElementById('m-t-id').innerText = d.orderId || currentSettleTable;
             
-            document.getElementById('m-i-list').innerHTML = d.items.map(i => {
+            const isDineIn = (d.orderType === 'Dine-In');
+
+            document.getElementById('m-i-list').innerHTML = d.items.map((i, idx) => {
                 if(i.deleted) return '';
-                return `<div style="display:flex;justify-content:space-between;margin-bottom:5px;color:#aaa"><span>${i.qty}x ${i.name}</span><span>₹${i.price*i.qty}</span></div>`;
+                
+                // Calculate potential packing cost
+                let packCost = 10;
+                if (i.category === 'ADD-ON') packCost = i.name.startsWith("Hummus") ? 7 : 5;
+                else if (fiveRsCats.includes(i.category)) packCost = 5;
+                if (i.variant && (i.variant.includes("Tossed Rice") || i.variant.includes("Sorted Vegges"))) packCost += 7;
+                
+                // Cost for the full line quantity
+                const linePackCost = packCost * i.qty;
+                
+                let checkboxHtml = '';
+                if(isDineIn) {
+                    checkboxHtml = `<input type="checkbox" class="pack-cb" data-cost="${linePackCost}" onchange="calcSettleTotal()" style="margin-right:8px; transform:scale(1.2);">`;
+                }
+
+                return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;color:#aaa">
+                            <div style="display:flex;align-items:center;">
+                                ${checkboxHtml}
+                                <span>${i.qty}x ${i.name}</span>
+                            </div>
+                            <span>₹${i.price*i.qty}</span>
+                        </div>`;
             }).join('');
             
             document.getElementById('disc-type').value = 'flat';
@@ -1151,8 +1177,16 @@
             if(redeemVal < 0) redeemVal = 0;
             if(redeemInput.value != redeemVal && redeemInput.value != '') redeemInput.value = redeemVal;
 
-            const finalTotal = d.total - managerDisc - redeemVal;
+            // NEW: Calc Leftover Packing
+            let leftoverPack = 0;
+            document.querySelectorAll('.pack-cb:checked').forEach(cb => {
+                leftoverPack += parseFloat(cb.dataset.cost || 0);
+            });
+
+            // d.total includes original packing (d.fins.pack). We simply add extra packing to the final calc.
+            const finalTotal = d.total - managerDisc - redeemVal + leftoverPack;
             const totalDisc = d.fins.disc + managerDisc;
+            const totalPack = d.fins.pack + leftoverPack;
 
             document.getElementById('m-disc').innerText = `-₹${totalDisc}`;
             const loyRow = document.getElementById('loyalty-row');
@@ -1161,7 +1195,9 @@
                 document.getElementById('m-loyalty').innerText = `-₹${redeemVal}`;
             } else loyRow.style.display = 'none';
 
+            document.getElementById('m-pack').innerText = `₹${totalPack}`; // Update Packing UI
             document.getElementById('m-tot').innerText = `₹${finalTotal > 0 ? finalTotal : 0}`;
+            
             const pointsToEarn = Math.floor(d.fins.sub / 100);
             document.getElementById('earn-preview').innerText = `+${pointsToEarn} Pts`;
         }
@@ -1176,8 +1212,16 @@
                 const val = parseFloat(document.getElementById('disc-val').value) || 0;
                 let managerDisc = (type === 'flat') ? val : Math.round(d.total * (val / 100));
                 const redeemVal = parseInt(document.getElementById('redeem-points').value) || 0;
-                const finalGrand = (d.total - managerDisc - redeemVal) > 0 ? (d.total - managerDisc - redeemVal) : 0;
+
+                // NEW: Calc Leftover Packing for PDF
+                let leftoverPack = 0;
+                document.querySelectorAll('.pack-cb:checked').forEach(cb => {
+                    leftoverPack += parseFloat(cb.dataset.cost || 0);
+                });
+
+                const finalGrand = (d.total - managerDisc - redeemVal + leftoverPack) > 0 ? (d.total - managerDisc - redeemVal + leftoverPack) : 0;
                 const finalTotalDisc = d.fins.disc + managerDisc;
+                const finalTotalPack = d.fins.pack + leftoverPack;
                 
                 const logoImg = new Image();
                 logoImg.src = 'cloudlogo.png';
@@ -1253,7 +1297,7 @@
                 const rightX = 75; 
                 doc.setFontSize(9);
                 doc.text(`Sub Total:`, 40, finalY); doc.text(`${d.fins.sub}`, rightX, finalY, {align: 'right'}); finalY += 4;
-                doc.text(`Packing:`, 40, finalY); doc.text(`${d.fins.pack}`, rightX, finalY, {align: 'right'}); finalY += 4;
+                doc.text(`Packing:`, 40, finalY); doc.text(`${finalTotalPack}`, rightX, finalY, {align: 'right'}); finalY += 4;
                 if(finalTotalDisc > 0) {
                     doc.setTextColor(255, 0, 0); 
                     doc.text(`Discount:`, 40, finalY); doc.text(`-${finalTotalDisc}`, rightX, finalY, {align: 'right'}); 
@@ -1332,8 +1376,16 @@
             const val = parseFloat(document.getElementById('disc-val').value) || 0;
             let managerDisc = (type === 'flat') ? val : Math.round(d.total * (val / 100));
             const redeemVal = parseInt(document.getElementById('redeem-points').value) || 0;
-            const finalGrand = (d.total - managerDisc - redeemVal) > 0 ? (d.total - managerDisc - redeemVal) : 0;
+            
+            // NEW: Calc Leftover Packing for Final Submission
+            let leftoverPack = 0;
+            document.querySelectorAll('.pack-cb:checked').forEach(cb => {
+                leftoverPack += parseFloat(cb.dataset.cost || 0);
+            });
+
+            const finalGrand = (d.total - managerDisc - redeemVal + leftoverPack) > 0 ? (d.total - managerDisc - redeemVal + leftoverPack) : 0;
             const finalTotalDisc = d.fins.disc + managerDisc;
+            const finalTotalPack = d.fins.pack + leftoverPack; // Original pack + leftovers
 
             let cName = d.customerName; 
             let cAddr = d.address;
@@ -1347,7 +1399,7 @@
                 timestamp: Date.now(), status: 'paid',
                 customer: { name: cName, phone: d.phone || '-', address: cAddr },
                 items: d.items, 
-                financials: { subTotal: d.fins.sub, discountVal: finalTotalDisc, loyaltyRedeemed: redeemVal, packingTotal: d.fins.pack, grandTotal: finalGrand }
+                financials: { subTotal: d.fins.sub, discountVal: finalTotalDisc, loyaltyRedeemed: redeemVal, packingTotal: finalTotalPack, grandTotal: finalGrand }
             };
 
             const pointsToEarn = Math.floor(d.fins.sub / 100);
