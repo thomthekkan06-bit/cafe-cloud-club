@@ -626,37 +626,28 @@
             const order = activeOrders.find(o => o.key === key);
             if(!order) return;
 
-            if(confirm(`Mark all Chef Items for Order #${order.orderId} as READY?`)) {
+            if(confirm(`Mark ENTIRE Order #${order.orderId} as READY?`)) {
                 
                 const updates = {};
-                let allItemsTrulyDone = true; // NEW FLAG
 
-                // 1. Loop through all items
+                // 1. Mark ALL items as done (including T-Shop/Excluded items)
+                // This prevents the order from getting stuck if T-Shop items aren't managed elsewhere.
                 if (order.items) {
                     order.items.forEach((item, index) => {
                         if (item.deleted) return;
-
-                        // If it is a Chef Item... Mark Done
-                        if (!EXCLUDED_CATEGORIES.includes(item.category)) {
-                            updates[`items/${index}/kitchenDone`] = true;
-                        } else {
-                            // It is a T-Shop Item. Check if it is already done.
-                            if (!item.kitchenDone) allItemsTrulyDone = false;
-                        }
+                        updates[`items/${index}/kitchenDone`] = true;
                     });
                 }
 
-                // 2. Only Set Global Status Done if T-Shop is also done
-                if (allItemsTrulyDone) {
-                    updates['status'] = 'done'; 
-                }
+                // 2. Force Global Status to Done
+                updates['status'] = 'done'; 
                 
-                // Add to local history (because it will disappear from this screen due to filter)
+                // Add to local history
                 historyOrders.unshift({ ...order, doneTime: new Date() });
                 if(historyOrders.length > 20) historyOrders.pop();
                 renderHistory();
 
-                // 3. Perform Updates
+                // Perform Updates
                 update(ref(db, `orders/${key}`), updates);
             }
         };
