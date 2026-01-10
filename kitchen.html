@@ -583,28 +583,29 @@
             // 1. Perform the update for the specific item
             update(ref(db, `orders/${key}/items/${index}`), { kitchenDone: status })
             .then(() => {
-                // 2. CHECK IF ALL ITEMS ARE NOW DONE TO AUTO-COMPLETE
+                // 2. CHECK IF CHEF'S ITEMS ARE DONE
                 const order = activeOrders.find(o => o.key === key);
                 if (!order) return;
 
-                let allItemsWillBeDone = true;
+                let chefWorkIsDone = true;
 
                 if (order.items) {
                     order.items.forEach((item, i) => {
-                         // FIX: Do NOT skip excluded categories. 
-                         // We must ensure the WHOLE order is done before setting status='done'
                          if (item.deleted) return;
                          
+                         // *** THE FIX: Ignore items that are NOT for the Chef ***
+                         if (EXCLUDED_CATEGORIES.includes(item.category)) return;
+
                          const isDone = (i === index) ? status : item.kitchenDone;
                          
                          if (!isDone) {
-                             allItemsWillBeDone = false;
+                             chefWorkIsDone = false;
                          }
                     });
                 }
 
-                if (allItemsWillBeDone && status === true) {
-                    // AUTO-TRIGGER COMPLETION WITHOUT DIALOG
+                if (chefWorkIsDone && status === true) {
+                    // Chef is done. We force complete the order so it shows "Ready" everywhere.
                     performAutoComplete(key, order);
                 }
             });
@@ -613,6 +614,13 @@
         function performAutoComplete(key, order) {
              const updates = {};
              updates['status'] = 'done'; 
+             
+             // NEW: Ensure ALL items (including hidden ones) are marked as done
+             if (order.items) {
+                 order.items.forEach((item, i) => {
+                     if(!item.deleted) updates[`items/${i}/kitchenDone`] = true;
+                 });
+             }
              
              // Add to local history for display
              historyOrders.unshift({ ...order, doneTime: new Date() });
@@ -631,7 +639,6 @@
                 const updates = {};
 
                 // 1. Mark ALL items as done (including T-Shop/Excluded items)
-                // This prevents the order from getting stuck if T-Shop items aren't managed elsewhere.
                 if (order.items) {
                     order.items.forEach((item, index) => {
                         if (item.deleted) return;
