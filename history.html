@@ -6,6 +6,10 @@
     <title>Sales Analytics | Cafe Cloud Club</title>
     <link rel="icon" type="image/png" href="icon.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
     <style>
         :root {
             --bg: #0f1115;
@@ -80,7 +84,6 @@
         }
         .date-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         
-        /* Time Input Specifics */
         input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
 
@@ -276,7 +279,10 @@
         </div>
         <button class="btn-action" onclick="applyFilters()">Filter</button>
         <button class="btn-action" onclick="resetFilters()">Reset</button>
-        <button class="btn-action" style="margin-left:auto; border-color:var(--success); color:var(--success);" onclick="exportToCSV()">📥 Export CSV</button>
+        <div style="margin-left:auto; display:flex; gap:10px;">
+            <button class="btn-action" style="border-color:var(--danger); color:var(--danger);" onclick="exportToPDF()">📄 Export PDF</button>
+            <button class="btn-action" style="border-color:var(--success); color:var(--success);" onclick="exportToCSV()">📥 Export CSV</button>
+        </div>
     </div>
 
     <div class="table-container">
@@ -426,38 +432,30 @@
             document.getElementById('stat-count').innerText = c;
         }
 
-        // MODIFIED: applyFilters with Time Support
         window.applyFilters = function() {
             const search = document.getElementById('search-input').value.toLowerCase();
-            
-            // Get string values
             const dateStartVal = document.getElementById('date-start').value;
             const timeStartVal = document.getElementById('time-start').value;
             const dateEndVal = document.getElementById('date-end').value;
             const timeEndVal = document.getElementById('time-end').value;
 
-            // Construct precise Date objects
             let startDate = null;
             let endDate = null;
 
             if (dateStartVal) {
-                // If time is provided, use it. Else default to 00:00
                 startDate = new Date(dateStartVal + 'T' + (timeStartVal || '00:00:00'));
             }
             if (dateEndVal) {
-                // If time is provided, use it. Else default to 23:59:59
                 endDate = new Date(dateEndVal + 'T' + (timeEndVal || '23:59:59'));
             }
 
             const filtered = allOrders.filter(o => {
                 const oDate = new Date(o.completedAt || o.timestamp);
                 
-                // 1. Date/Time Range Check
                 let rangeMatch = true;
                 if(startDate && oDate < startDate) rangeMatch = false;
                 if(endDate && oDate > endDate) rangeMatch = false;
                 
-                // 2. Search Check
                 let searchMatch = true;
                 if(search) {
                     const cName = o.customer ? o.customer.name : "";
@@ -470,7 +468,6 @@
             renderTable(filtered);
         }
 
-        // MODIFIED: resetFilters now clears time inputs too
         window.resetFilters = function() {
             document.getElementById('search-input').value = "";
             document.getElementById('date-start').value = "";
@@ -570,6 +567,63 @@
             link.setAttribute("download", "cafe_sales_history.csv");
             document.body.appendChild(link);
             link.click();
+        }
+
+        // --- NEW PDF EXPORT FUNCTION ---
+        window.exportToPDF = function() {
+            if(allOrders.length === 0) return alert("No data to export.");
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Header
+            doc.setFontSize(18);
+            doc.text("Cafe Cloud Club - Sales History", 14, 20);
+            
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text("Generated on: " + new Date().toLocaleString(), 14, 28);
+            
+            const tableColumn = ["Date", "Order ID", "Customer", "Type", "Status", "Kitchen", "Total"];
+            const tableRows = [];
+            let totalRevenue = 0;
+
+            allOrders.forEach(o => {
+                const d = new Date(o.completedAt || o.timestamp);
+                const fins = o.financials || {grandTotal:0, deliveryFee:0};
+                const cName = o.customer ? o.customer.name : "Unknown";
+                const isRejected = o.status === 'rejected';
+                const kitchen = fins.grandTotal - (fins.deliveryFee || 0);
+
+                if(!isRejected) totalRevenue += fins.grandTotal;
+
+                const rowData = [
+                    d.toLocaleDateString() + " " + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                    o.orderId,
+                    cName,
+                    o.orderType,
+                    isRejected ? "REJECTED" : "COMPLETED",
+                    "Rs." + kitchen,
+                    "Rs." + fins.grandTotal
+                ];
+                tableRows.push(rowData);
+            });
+
+            doc.autoTable({
+                head: [tableColumn],
+                body: tableRows,
+                startY: 35,
+                styles: { fontSize: 8 },
+                headStyles: { fillColor: [59, 130, 246] }, // Blue header
+            });
+            
+            // Footer Total
+            const finalY = doc.lastAutoTable.finalY || 40;
+            doc.setFontSize(12);
+            doc.setTextColor(0);
+            doc.text(`GRAND TOTAL REVENUE: Rs. ${totalRevenue.toLocaleString('en-IN')}`, 14, finalY + 15);
+
+            doc.save("cafe_sales_report.pdf");
         }
     </script>
 </body>
