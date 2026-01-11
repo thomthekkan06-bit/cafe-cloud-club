@@ -924,11 +924,16 @@ const mapLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
     let finalNote = instruction || "";
     if (activeCoupon && discountVal > 0) finalNote += ` [COUPON: ${activeCoupon} OFF ₹${discountVal}]`;
     if (finalNote === "") finalNote = "-";
+
+    // --- CAPTURE WAITER NAME FROM STORAGE ---
+    const currentWaiter = localStorage.getItem('ccc_waiter_name');
+
     const kitchenOrderData = {
         orderId: orderId,
         orderType: type,
         timestamp: Date.now(),
         status: 'pending',
+        waiterName: currentWaiter, // <--- ADDED FIELD
         customer: {
             name: name,
             phone: phone,
