@@ -183,14 +183,15 @@
             white-space: nowrap;
         }
 
-        /* WAITER BADGE */
-        .waiter-tag {
+        /* WAITER BADGE (REMOVED - MOVED TO FOOTER) */
+        /* .waiter-tag {
             font-size: 0.85rem;
             color: var(--text-muted);
             margin-top: 5px;
             font-weight: 600;
         }
-        .waiter-tag b { color: var(--primary); }
+        .waiter-tag b { color: var(--primary); } 
+        */
 
         /* BIG ORDER TYPE (RIGHT) */
         .kot-type-badge { 
@@ -265,6 +266,19 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .kot-note i { margin-top: 3px; }
+
+        /* --- CARD FOOTER (For Waiter Name) --- */
+        .kot-footer {
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-top: 1px solid var(--border);
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-align: right;
+            margin-top: auto; /* Pushes to bottom */
+        }
+        .kot-footer span { color: var(--primary); }
 
         /* --- HISTORY VIEW --- */
         #history-view { display: none; background: #000; position: absolute; top: 70px; left: 0; width: 100%; height: calc(100% - 70px); z-index: 50; padding: 20px; overflow-y: auto; }
@@ -544,10 +558,10 @@
                     noteHtml = `<div class="kot-note"><i class="fas fa-sticky-note"></i> <span>${order.globalNote}</span></div>`;
                 }
                 
-                // --- WAITER HTML BLOCK ---
-                let waiterHtml = "";
+                // --- WAITER HTML BLOCK (MOVED TO FOOTER) ---
+                let waiterFooterHtml = "";
                 if(waiterName) {
-                    waiterHtml = `<div class="waiter-tag">Server: <b>${waiterName}</b></div>`;
+                    waiterFooterHtml = `<div class="kot-footer">Waiter: <span>${waiterName}</span></div>`;
                 }
 
                 const card = document.createElement('div');
@@ -565,7 +579,6 @@
                     <div class="kot-info">
                         <div class="kot-info-left">
                             <span class="kot-name-display">${custName}</span>
-                            ${waiterHtml}
                         </div>
                         <span class="kot-type-badge">${orderType}</span>
                     </div>
@@ -573,6 +586,7 @@
                         ${itemsHtml}
                     </div>
                     ${noteHtml}
+                    ${waiterFooterHtml}
                 `;
                 container.appendChild(card);
             });
