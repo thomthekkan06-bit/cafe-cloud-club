@@ -603,6 +603,12 @@
                              const parts = order.customer.name.split(' ');
                              if(parts[2]) tId = "BC" + parts[2];
                         }
+                        // NEW: Detect "AC X"
+                        else if(order.customer.name.startsWith('AC ')) {
+                            // "AC 1 (Name)" -> AC1
+                            const parts = order.customer.name.split(' ');
+                            if(parts[1]) tId = "AC" + parts[1];
+                        }
                         
                         if(tId) {
                             if(!tableData[tId]) tableData[tId] = { 
@@ -1068,7 +1074,8 @@
             make("BC3", m, "BC3");
             make("BC4", m, "BC4");
 
-            for(let i=9; i<=13; i++) make(i, a);
+            // MODIFIED: RENDER AC1 to AC5 instead of 9-13
+            for(let i=1; i<=5; i++) make(`AC${i}`, a, `AC ${i}`);
 
             for(let i=1; i<=10; i++) make(`D${i}`, d, `DEL ${i}`);
             for(let i=1; i<=10; i++) make(`T${i}`, t, `PKP ${i}`);
@@ -1438,13 +1445,28 @@
                 if (order.customer && order.customer.name && order.customer.name.startsWith("Table")) {
                     currentTableId = order.customer.name.split(" ")[1];
                 }
-                for(let i=1; i<=13; i++) {
+                
+                // --- REVISED OPTION GENERATION ---
+                // 1. Indoor 1-7
+                for(let i=1; i<=7; i++) {
                     const opt = document.createElement('option');
-                    // MODIFIED: Rename option for consistency
-                    opt.value = i; opt.text = (i===8)?"Bar Chair 1":`Table ${i}`;
+                    opt.value = i; opt.text = `Table ${i}`;
                     if(i.toString() === currentTableId) opt.selected = true;
                     sel.appendChild(opt);
                 }
+                // 2. Bar Chairs 1-4
+                for(let i=1; i<=4; i++) {
+                    const opt = document.createElement('option');
+                    opt.value = `BC${i}`; opt.text = `Bar Chair ${i}`;
+                    sel.appendChild(opt);
+                }
+                // 3. AC Tables 1-5 (Replacing 9-13)
+                for(let i=1; i<=5; i++) {
+                    const opt = document.createElement('option');
+                    opt.value = `AC${i}`; opt.text = `AC ${i}`;
+                    sel.appendChild(opt);
+                }
+
                 renderEditList(order.items || []);
             }
         }
@@ -1486,7 +1508,12 @@
 
         window.saveTableMove = async () => {
             const newTableId = document.getElementById('table-transfer-select').value;
-            await update(ref(db, 'orders/' + currentEditKey + '/customer'), { name: `Table ${newTableId}` });
+            // Handle different prefixes for name generation
+            let namePrefix = `Table ${newTableId}`;
+            if(newTableId.startsWith("BC")) namePrefix = `Bar Chair ${newTableId.substring(2)}`;
+            if(newTableId.startsWith("AC")) namePrefix = `AC ${newTableId.substring(2)}`;
+            
+            await update(ref(db, 'orders/' + currentEditKey + '/customer'), { name: namePrefix });
             closeModal('edit-modal');
         }
 
