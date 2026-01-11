@@ -269,7 +269,7 @@
             <div class="nav-scroll" id="nav-list">
                 </div>
             <div style="padding: 20px; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--text-muted); text-align: center;">
-                v2.2 System Ready
+                v2.3 System Ready
             </div>
         </aside>
 
@@ -376,16 +376,32 @@
                 </div>
             </div>
 
+            <div class="form-group" style="margin-top:15px; background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;">
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer; color:var(--warning);">
+                    <input type="checkbox" id="inp-dinein" style="width:20px; height:20px; accent-color:var(--warning);">
+                    <span>🔒 Dine-In Only (Hide on Website)</span>
+                </label>
+            </div>
+
             <div class="form-group">
                 <label class="form-label">Category</label>
                 <select id="inp-cat" class="form-select">
-                    <option>Bun-Tastic Burgers</option><option>Butcher's Best</option><option>Italian Indulgence</option>
-                    <option>Freshly Folded</option><option>Rice Harmony</option><option>Salad Symphony</option>
-                    <option>Toasty Treats</option><option>Warm Whispers</option><option>Nibbles & Bits</option>
-                    <option>Icy Sips</option><option>Mojito Magic</option><option>Nature's Nectar</option>
-                    <option>Whipped Wonders</option><option>Frosted Leaf</option>
+                    <option>Bun-Tastic Burgers</option>
+                    <option>Butcher's Best</option>
+                    <option>Italian Indulgence</option>
+                    <option>Freshly Folded</option>
+                    <option>Rice Harmony</option>
+                    <option>Salad Symphony</option>
+                    <option>Toasty Treats</option>
+                    <option>Warm Whispers</option>
+                    <option>Nibbles & Bits</option>
+                    <option>Icy Sips</option>
+                    <option>Mojito Magic</option>
+                    <option>Nature's Nectar</option>
+                    <option>Whipped Wonders</option>
+                    <option>Frosted Leaf</option>
                     <option>Cafe Botanical Brews</option>
-                    <option>ADD-ON</option>
+                    <option>Shake Shots</option> <option>ADD-ON</option>
                 </select>
             </div>
 
@@ -743,6 +759,7 @@
             document.getElementById('edit-key').value = "";
             document.getElementById('inp-name').value = "";
             document.getElementById('inp-price').value = "";
+            document.getElementById('inp-dinein').checked = false; // Reset checkbox
         }
         
         window.hideForm = () => document.getElementById('editor-overlay').style.display='none';
@@ -763,6 +780,7 @@
                 price: parseInt(document.getElementById('inp-price').value),
                 category: document.getElementById('inp-cat').value,
                 type: document.getElementById('inp-type').value,
+                isDineInOnly: document.getElementById('inp-dinein').checked, // NEW FIELD
                 stockStatus: currentStockStatus
             };
             
@@ -786,6 +804,9 @@
             document.getElementById('inp-price').value=item.price;
             document.getElementById('inp-cat').value=item.category;
             document.getElementById('inp-type').value=item.type;
+            
+            // Set Checkbox
+            document.getElementById('inp-dinein').checked = item.isDineInOnly || false;
         }
 
         window.deleteItem = () => { 
