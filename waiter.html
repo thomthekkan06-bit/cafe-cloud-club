@@ -135,7 +135,7 @@
     <div class="section-title">Indoor Dining (1-7 + Bars)</div>
     <div class="tables-grid" id="grid-indoor-main"></div>
 
-    <div class="section-title">Indoor AC (9-13)</div>
+    <div class="section-title">AC Room (1-5)</div>
     <div class="tables-grid" id="grid-indoor-ac"></div>
 
     <script type="module">
@@ -234,6 +234,12 @@
                             const parts = customerName.split(' ');
                             if(parts[2]) tableId = "BC" + parts[2]; 
                         }
+                        // Check for "AC X"
+                        else if (customerName.startsWith('AC ')) {
+                            // "AC 1 (Name)" -> AC1
+                            const parts = customerName.split(' ');
+                            if(parts[1]) tableId = "AC" + parts[1];
+                        }
 
                         if (tableId) {
                             const total = o.financials ? o.financials.grandTotal : 0;
@@ -279,7 +285,8 @@
             createCard("BC3", gridMain, liveTableData["BC3"], true, "BC3");
             createCard("BC4", gridMain, liveTableData["BC4"], true, "BC4");
 
-            for(let i=9; i<=13; i++) createCard(i, gridAC, liveTableData[i]);
+            // MODIFIED: Render AC1 to AC5
+            for(let i=1; i<=5; i++) createCard(`AC${i}`, gridAC, liveTableData[`AC${i}`], false, `AC ${i}`);
         }
 
         function createCard(id, container, data, isBar = false, labelOverride = null) {
@@ -353,6 +360,8 @@
             let tableName = `Table ${tableId}`;
             if(tableId.toString().startsWith("BC")) {
                 tableName = `Bar Chair ${tableId.substring(2)}`;
+            } else if(tableId.toString().startsWith("AC")) {
+                tableName = `AC ${tableId.substring(2)}`;
             }
 
             const order = {
