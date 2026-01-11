@@ -148,6 +148,19 @@
         .kot-item.done-item .item-name { text-decoration: line-through; color: var(--danger); opacity: 0.8; }
         .kot-item.done-item .item-qty { color: var(--danger); opacity: 0.8; }
         .kot-item.done-item .item-mods { opacity: 0.5; text-decoration: line-through; }
+
+        /* --- CARD FOOTER (For Waiter Name) --- */
+        .kot-footer {
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-top: 1px solid var(--border);
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-align: right;
+            margin-top: auto; /* Pushes to bottom */
+        }
+        .kot-footer span { color: var(--primary); }
     </style>
 </head>
 <body>
@@ -298,6 +311,9 @@
                 else if(elapsedMin >= 15) cardStateClass = 'card-critical';
                 // -----------------------------------------------------------
 
+                // --- GET WAITER NAME ---
+                const waiterName = order.waiterName ? order.waiterName : null;
+
                 let itemsHtml = "";
                 let visibleItemCount = 0;
 
@@ -333,6 +349,12 @@
 
                 let noteHtml = (order.globalNote && order.globalNote !== "-" && order.globalNote.trim() !== "") ? `<div class="kot-note">📝 ${order.globalNote}</div>` : "";
                 
+                // --- WAITER HTML BLOCK (FOOTER) ---
+                let waiterFooterHtml = "";
+                if(waiterName) {
+                    waiterFooterHtml = `<div class="kot-footer">Waiter: <span>${waiterName}</span></div>`;
+                }
+
                 const card = document.createElement('div');
                 card.className = `kot-card ${cardStateClass}`;
                 
@@ -348,7 +370,7 @@
                     </div>
                     <div class="kot-items">${itemsHtml}</div>
                     ${noteHtml}
-                `;
+                    ${waiterFooterHtml} `;
                 container.appendChild(card);
             });
         }
