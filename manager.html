@@ -1506,15 +1506,49 @@
             }
         }
 
+        // --- FIXED FUNCTION: SAVING TABLE MOVE AND KEEPING CUSTOMER NAME ---
         window.saveTableMove = async () => {
             const newTableId = document.getElementById('table-transfer-select').value;
-            // Handle different prefixes for name generation
-            let namePrefix = `Table ${newTableId}`;
-            if(newTableId.startsWith("BC")) namePrefix = `Bar Chair ${newTableId.substring(2)}`;
-            if(newTableId.startsWith("AC")) namePrefix = `AC ${newTableId.substring(2)}`;
             
-            await update(ref(db, 'orders/' + currentEditKey + '/customer'), { name: namePrefix });
-            closeModal('edit-modal');
+            // 1. Generate the NEW table prefix (e.g., "Table 5")
+            let newPrefix = `Table ${newTableId}`;
+            if(newTableId.startsWith("BC")) newPrefix = `Bar Chair ${newTableId.substring(2)}`;
+            if(newTableId.startsWith("AC")) newPrefix = `AC ${newTableId.substring(2)}`;
+
+            try {
+                // 2. Fetch the CURRENT order to get the existing name
+                const snap = await get(ref(db, 'orders/' + currentEditKey));
+                if (!snap.exists()) {
+                    alert("Order not found!");
+                    return;
+                }
+                const order = snap.val();
+                const oldName = order.customer ? order.customer.name : "";
+
+                // 3. Extract the customer's actual name by removing the old table prefix
+                // This regex removes "Table 1 ", "AC 2 ", "Bar Chair 1 ", etc.
+                let customerNameOnly = oldName
+                    .replace(/^Table \d+\s*/i, "")
+                    .replace(/^AC \d+\s*/i, "")
+                    .replace(/^Bar Chair \d+\s*/i, "")
+                    .trim();
+
+                // 4. Combine new table + existing name
+                // If name was "Table 1 Rahul" -> becomes "Table 5 Rahul"
+                // If name was just "Table 1" -> becomes "Table 5"
+                let finalName = newPrefix;
+                if(customerNameOnly && customerNameOnly.length > 0) {
+                    finalName = `${newPrefix} ${customerNameOnly}`;
+                }
+
+                // 5. Update Database
+                await update(ref(db, 'orders/' + currentEditKey + '/customer'), { name: finalName });
+                closeModal('edit-modal');
+                
+            } catch (error) {
+                console.error("Error moving table:", error);
+                alert("Failed to move table. See console.");
+            }
         }
 
         function updateOrderFinancials(order, items) {
