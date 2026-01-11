@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>T-Shop KDS | Café Cloud Club</title>
+    <link rel="icon" type="image/png" href="icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Reusing KDS Styles */
+        :root { 
+            --bg: #0f172a; 
+            --surface: #1e293b; 
+            --surface-hover: #334155; 
+            --border: #334155; 
+            --primary: #10b981; /* Green/Teal for Tea Shop */ 
+            --success: #10b981; 
+            --warning: #f59e0b; 
+            --danger: #ef4444; 
+            --text-main: #ffffff; 
+            --text-muted: #9ca3af; 
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        .kds-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; background: #1e293b; border-bottom: 1px solid var(--border); height: 70px; flex-shrink: 0; }
+        .brand { font-size: 1.5rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
+        .brand span { color: var(--primary); }
+        .clock { font-family: 'JetBrains Mono'; font-size: 1.2rem; font-weight: 700; color: var(--text-muted); }
+        
+        #pin-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.98); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .pin-box { background: var(--surface); padding: 40px; border-radius: 16px; border: 1px solid var(--border); text-align: center; }
+        .pin-input { background: var(--bg); border: 1px solid var(--border); color: white; font-size: 2rem; text-align: center; letter-spacing: 10px; padding: 10px; border-radius: 8px; width: 200px; margin: 20px 0; outline: none; font-family: 'JetBrains Mono'; }
+        .btn-unlock { background: var(--primary); width: 100%; padding: 12px; border:none; border-radius:8px; color:white; font-weight:800; cursor:pointer; font-size: 1rem; }
+        
+        /* --- HORIZONTAL GRID LAYOUT --- */
+        .kds-container { 
+            flex: 1; padding: 20px; 
+            overflow-x: auto; /* Horizontal Scroll */
+            overflow-y: hidden; /* Hide Vertical Scroll */
+            display: flex; /* Side-by-Side */
+            flex-direction: row; 
+            gap: 20px; 
+            align-items: flex-start;
+            white-space: nowrap; /* Prevent Wrap */
+        }
+        
+        /* Scrollbar */
+        .kds-container::-webkit-scrollbar { height: 8px; }
+        .kds-container::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        
+        /* --- CARD --- */
+        .kot-card { 
+            background: var(--surface); 
+            border-radius: 12px; 
+            border: 2px solid var(--border); 
+            overflow: hidden; 
+            display: flex; flex-direction: column; 
+            animation: slideIn 0.3s ease-out; 
+            /* FIXED WIDTH FOR HORIZONTAL */
+            flex: 0 0 320px; 
+            width: 320px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            max-height: 95%; white-space: normal;
+        }
+
+        /* --- T-SHOP COLOR LOGIC --- */
+        /* FRESH: 0-10m */
+        .card-fresh { border-color: var(--success); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.1); }
+        .card-fresh .kot-timer { background: var(--success); color: #000; }
+
+        /* WARNING: 10-15m */
+        .card-warning { border-color: var(--warning); box-shadow: 0 4px 15px rgba(245, 158, 11, 0.15); }
+        .card-warning .kot-timer { background: var(--warning); color: #000; }
+
+        /* CRITICAL: > 15m */
+        .card-critical { border-color: var(--danger); animation: pulseRed 2s infinite; }
+        .card-critical .kot-timer { background: var(--danger); color: white; }
+        
+        @keyframes pulseRed {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* --- CARD HEADER --- */
+        .kot-header { 
+            padding: 10px 15px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border); 
+            display: flex; justify-content: space-between; align-items: center; 
+            cursor: pointer; user-select: none;
+        }
+        
+        /* Small ID (Left) */
+        .kot-id { 
+            font-family: 'JetBrains Mono'; font-weight: 700; 
+            font-size: 1rem; color: var(--text-muted); 
+        }
+
+        /* Big Timer (Right) */
+        .kot-timer { 
+            font-family: 'JetBrains Mono'; font-weight: 800; font-size: 1.2rem; 
+            padding: 4px 10px; border-radius: 6px; 
+        }
+        
+        /* --- INFO ROW --- */
+        .kot-info { 
+            padding: 15px; border-bottom: 1px dashed var(--border); 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: var(--surface);
+        }
+        
+        /* Big Name (Left) */
+        .kot-name-display {
+            font-size: 1.4rem; font-weight: 800; color: white;
+            text-align: left; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+
+        /* Big Type (Right) */
+        .kot-type-badge { 
+            font-weight: 800; text-transform: uppercase; 
+            font-size: 1.1rem; padding: 6px 12px; border-radius: 6px; 
+            border: 2px solid var(--border); color: var(--warning);
+            text-align: right;
+        }
+        
+        /* --- ITEMS --- */
+        .kot-items { padding: 5px 0; overflow-y: auto; flex: 1; }
+        .kot-item { padding: 12px 15px; border-bottom: 1px solid #334155; cursor: pointer; display: flex; justify-content: space-between; align-items: flex-start; transition: background 0.1s; font-size: 1.1rem; line-height: 1.4; }
+        .kot-item:last-child { border-bottom: none; }
+        .kot-item:hover { background: var(--surface-hover); }
+        
+        .item-qty { font-weight: 800; color: var(--primary); margin-right: 12px; min-width: 25px; font-size: 1.2rem; }
+        .item-name { flex: 1; font-weight: 600; }
+        
+        .kot-note { padding: 10px 15px; background: rgba(245, 158, 11, 0.1); color: var(--warning); font-size: 0.85rem; font-weight: 600; border-top: 1px solid var(--border); }
+        .ready-msg { padding: 20px; text-align: center; color: var(--success); font-weight: 800; background: rgba(16, 185, 129, 0.1); font-size: 0.9rem; }
+        .waiting-msg { padding: 20px; text-align: center; color: var(--warning); font-weight: 800; background: rgba(245, 158, 11, 0.1); font-size: 0.9rem; }
+
+        .header-hint { font-size: 0.7rem; color: var(--success); text-transform: uppercase; letter-spacing: 1px; opacity: 0; transition: opacity 0.2s; text-align: right; }
+        .kot-header:hover .header-hint { opacity: 1; }
+        
+        .empty-msg { width: 100%; text-align: center; margin-top: 100px; color: var(--border); font-size: 1.5rem; font-weight: 700; opacity: 0.5; }
+
+        /* DONE ITEM STATE */
+        .kot-item.done-item .item-name { text-decoration: line-through; color: var(--danger); opacity: 0.8; }
+        .kot-item.done-item .item-qty { color: var(--danger); opacity: 0.8; }
+        .kot-item.done-item .item-mods { opacity: 0.5; text-decoration: line-through; }
+    </style>
+</head>
+<body>
+    <div id="pin-overlay">
+        <div class="pin-box">
+            <h2 style="margin-top:0;">🍵 T-Shop KDS</h2>
+            <input type="password" id="pin-input" class="pin-input" placeholder="••••" maxlength="4" inputmode="numeric" autofocus>
+            <button class="btn-unlock" onclick="checkPin()">OPEN T-SHOP</button>
+        </div>
+    </div>
+
+    <header class="kds-header">
+        <div class="brand"><i class="fas fa-mug-hot"></i> T-SHOP <span>KDS</span></div>
+        <div id="clock" class="clock">00:00</div>
+    </header>
+
+    <div id="active-container" class="kds-container">
+        <div class="empty-msg">NO ORDERS<br>BREW SOME TEA</div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
+            authDomain: "cafe-orders-1afa1.firebaseapp.com",
+            databaseURL: "https://cafe-orders-1afa1-default-rtdb.firebaseio.com",
+            projectId: "cafe-orders-1afa1",
+            messagingSenderId: "274410745480",
+            appId: "1:274410745480:web:9964c3914d512aed8d793d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // --- CONFIGURATION ---
+        // T-Shop KDS shows ONLY these categories
+        const INCLUDED_CATEGORIES = ["Cafe Botanical Brews", "Desi Delight Bites"];
+        const ACCESS_PIN = "2024";
+        
+        const bell = new Audio('kdsound.mp3'); 
+        let activeOrders = [];
+        let previousTotalItems = 0;
+        let isFirstLoad = true;
+
+        // --- ROBUST WAKE LOCK (PREVENT SLEEP) ---
+        let wakeLock = null;
+
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log("Screen Wake Lock: Active");
+                }
+            } catch (err) {
+                console.log("Wake Lock request failed (usually needs a click):", err.name);
+            }
+        }
+
+        requestWakeLock();
+        document.addEventListener('click', () => { requestWakeLock(); }, { once: true }); 
+        document.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState === 'visible') { requestWakeLock(); }
+        });
+
+        
+        // --- LOGIC ---
+        window.checkPin = function() {
+            if(document.getElementById('pin-input').value === ACCESS_PIN) {
+                bell.play().then(() => { bell.pause(); bell.currentTime = 0; }).catch(e=>{});
+                document.getElementById('pin-overlay').style.display = 'none';
+                initKDS();
+            } else { 
+                alert("Incorrect PIN"); 
+                document.getElementById('pin-input').value = ""; 
+            }
+        }
+
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+            // RE-RENDER PERIODICALLY FOR COLOR UPDATES
+            if(!isFirstLoad) renderActiveOrders();
+        }, 60000);
+
+        function initKDS() {
+            onValue(ref(db, 'orders'), (snapshot) => {
+                const data = snapshot.val();
+                activeOrders = [];
+                let currentTotalItems = 0;
+                
+                if (data) {
+                    Object.entries(data).forEach(([key, order]) => {
+                        // 1. FILTER: HIDE IF SERVED/COMPLETED/REJECTED/PENDING
+                        if (order.status === 'completed' || order.status === 'rejected' || order.status === 'pending' || order.status === 'served' || order.status === 'done') return;
+                        
+                        // FILTER: ONLY GET RELEVANT ITEMS
+                        let relevantItems = [];
+                        if(order.items) {
+                            relevantItems = order.items.filter(i => INCLUDED_CATEGORIES.includes(i.category));
+                        }
+                        
+                        if (relevantItems.length > 0) {
+                             // Show if status is cooking.
+                            if (order.status === 'cooking') {
+                                
+                                // FIX: Check if we have any pending T-SHOP items. 
+                                // If all T-shop items are done, hide from T-shop screen (even if Chef is busy)
+                                const hasPendingTShopItems = relevantItems.some(i => !i.kitchenDone);
+
+                                if (hasPendingTShopItems) {
+                                    activeOrders.push({ key, ...order });
+                                    
+                                    // Only count items that aren't done for the notification sound
+                                    const pendingItems = relevantItems.filter(i => !i.kitchenDone).length;
+                                    currentTotalItems += pendingItems;
+                                }
+                            }
+                        }
+                    });
+                }
+                activeOrders.sort((a, b) => a.timestamp - b.timestamp);
+
+                if (!isFirstLoad && currentTotalItems > previousTotalItems) {
+                    bell.currentTime = 0;
+                    bell.play().catch(e => console.log("Audio blocked"));
+                }
+                previousTotalItems = currentTotalItems;
+                isFirstLoad = false;
+                renderActiveOrders();
+            });
+        }
+
+        function renderActiveOrders() {
+            const container = document.getElementById('active-container');
+            container.innerHTML = "";
+            if (activeOrders.length === 0) {
+                container.innerHTML = `<div class="empty-msg">NO ORDERS<br>BREW SOME TEA</div>`;
+                return;
+            }
+
+            activeOrders.forEach(order => {
+                const elapsedMin = Math.floor((Date.now() - order.timestamp) / 60000);
+                
+                // --- COLOR LOGIC: 0-10 (Green), 10-15 (Yellow), >15 (Red) ---
+                let cardStateClass = 'card-fresh';
+                if(elapsedMin >= 10 && elapsedMin < 15) cardStateClass = 'card-warning';
+                else if(elapsedMin >= 15) cardStateClass = 'card-critical';
+                // -----------------------------------------------------------
+
+                let itemsHtml = "";
+                let visibleItemCount = 0;
+
+                if (order.items) {
+                    order.items.forEach((item, index) => {
+                        // FILTER: SHOW ONLY T-SHOP CATEGORIES
+                        if (!INCLUDED_CATEGORIES.includes(item.category)) return;
+
+                        visibleItemCount++;
+                        
+                        // Apply styling for done items
+                        const isDone = item.kitchenDone ? 'done-item' : '';
+                        
+                        let variantHtml = '';
+                        if(item.variant && item.variant.trim() !== "") {
+                            variantHtml = `<div style="font-size:0.8rem; color:var(--success); margin-top:4px; font-weight:600;">${item.variant}</div>`;
+                        }
+
+                        itemsHtml += `
+                            <div class="kot-item ${isDone}" onclick="toggleItem('${order.key}', ${index}, ${!item.kitchenDone})">
+                                <span class="item-qty">${item.qty}</span>
+                                <div class="item-name">
+                                    ${item.name}
+                                    ${variantHtml}
+                                </div>
+                            </div>`;
+                    });
+                }
+
+                if (visibleItemCount === 0) {
+                     return; 
+                }
+
+                let noteHtml = (order.globalNote && order.globalNote !== "-" && order.globalNote.trim() !== "") ? `<div class="kot-note">📝 ${order.globalNote}</div>` : "";
+                
+                const card = document.createElement('div');
+                card.className = `kot-card ${cardStateClass}`;
+                
+                // UPDATED CARD CONTENT STRUCTURE
+                card.innerHTML = `
+                    <div class="kot-header" onclick="completeOrder('${order.key}')">
+                        <span class="kot-id">#${order.orderId}</span>
+                        <div><span class="header-hint">TAP TO MARK READY ✓</span> <span class="kot-timer">${elapsedMin}m</span></div>
+                    </div>
+                    <div class="kot-info">
+                        <span class="kot-name-display">${order.customer.name}</span>
+                        <span class="kot-type-badge">${order.orderType || 'Dine-In'}</span>
+                    </div>
+                    <div class="kot-items">${itemsHtml}</div>
+                    ${noteHtml}
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // --- UPDATED TOGGLE LOGIC ---
+        window.toggleItem = (key, index, status) => {
+            update(ref(db, `orders/${key}/items/${index}`), { kitchenDone: status })
+            .then(() => {
+                // AUTO-COMPLETE CHECK
+                const order = activeOrders.find(o => o.key === key);
+                if (!order) return;
+
+                let allItemsWillBeDone = true;
+                if (order.items) {
+                    order.items.forEach((item, i) => {
+                        // We check ALL items (including Chef's items)
+                        if (item.deleted) return;
+                        
+                        const isDone = (i === index) ? status : item.kitchenDone;
+                        if (!isDone) allItemsWillBeDone = false;
+                    });
+                }
+
+                if (allItemsWillBeDone && status === true) {
+                    update(ref(db, `orders/${key}`), { status: 'done' });
+                }
+            });
+        };
+
+        window.completeOrder = (key) => {
+            const order = activeOrders.find(o => o.key === key);
+            if(!order) return;
+
+            if(confirm(`Mark T-Shop Items for #${order.orderId} as READY?`)) {
+                const updates = {};
+                let allItemsWillBeDone = true;
+
+                order.items.forEach((item, index) => {
+                    if (item.deleted) return;
+
+                    // Check if this item belongs to T-Shop
+                    if (INCLUDED_CATEGORIES.includes(item.category)) {
+                        updates[`items/${index}/kitchenDone`] = true;
+                    } else {
+                        // This is a Chef item. Check if it is done.
+                        if (!item.kitchenDone) allItemsWillBeDone = false;
+                    }
+                });
+
+                // Only complete the whole order if Chef is also done
+                if (allItemsWillBeDone) {
+                    updates['status'] = 'done';
+                }
+
+                update(ref(db, `orders/${key}`), updates);
+            }
+        };
+    </script>
+</body>
+</html>
