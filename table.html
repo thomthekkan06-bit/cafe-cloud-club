@@ -415,10 +415,12 @@
         const TABLE_ID = params.get('table') || "1"; 
         const MODE = params.get('mode') || 'customer';
 
-        // FIX: Display "Bar Chair X" if starts with BC
+        // FIX: Display "Bar Chair X" if starts with BC, "AC X" if starts with AC
         let displayTable = `Table ${TABLE_ID}`;
         if(TABLE_ID.startsWith("BC")) {
             displayTable = `Bar Chair ${TABLE_ID.substring(2)}`;
+        } else if(TABLE_ID.startsWith("AC")) {
+            displayTable = `AC ${TABLE_ID.substring(2)}`;
         }
 
         document.getElementById('header-table-num').innerText = displayTable;
@@ -430,10 +432,13 @@
 
         // --- SMART SESSION MANAGEMENT (SERVER-SIDE CHECK) ---
         async function initSession() {
-            // FIX: Search for "Bar Chair X " OR "Table X "
-            const tablePrefix = TABLE_ID.startsWith("BC") ? 
-                                `Bar Chair ${TABLE_ID.substring(2)} ` : 
-                                `Table ${TABLE_ID} `;
+            // FIX: Search for "Bar Chair X ", "Table X ", or "AC X "
+            let tablePrefix = `Table ${TABLE_ID} `;
+            if(TABLE_ID.startsWith("BC")) {
+                tablePrefix = `Bar Chair ${TABLE_ID.substring(2)} `;
+            } else if(TABLE_ID.startsWith("AC")) {
+                tablePrefix = `AC ${TABLE_ID.substring(2)} `;
+            }
             
             try {
                 const snapshot = await get(ref(db, 'orders'));
@@ -784,10 +789,12 @@
                 tableId: TABLE_ID
             }));
 
-            // FIX: Proper Name "Bar Chair X" vs "Table X"
+            // FIX: Proper Name "Bar Chair X" vs "Table X" vs "AC X"
             let finalTableName = `Table ${TABLE_ID}`;
             if(TABLE_ID.startsWith("BC")) {
                 finalTableName = `Bar Chair ${TABLE_ID.substring(2)}`;
+            } else if(TABLE_ID.startsWith("AC")) {
+                finalTableName = `AC ${TABLE_ID.substring(2)}`;
             }
             const finalName = `${finalTableName} (${nameVal})`;
             
@@ -812,7 +819,7 @@
                 customer: { name: finalName, phone: phoneVal, address: 'Dine-In', email: '-' },
                 items: items,
                 financials: { subTotal: total, discountVal: 0, couponCode: "NONE", packingTotal: 0, grandTotal: total },
-                globalNote: `Table ${TABLE_ID} - ${MODE === 'waiter' ? 'Waiter' : 'Customer'}`
+                globalNote: `${finalTableName} - ${MODE === 'waiter' ? 'Waiter' : 'Customer'}`
             };
 
             push(ref(db, 'orders'), order).then(() => {
