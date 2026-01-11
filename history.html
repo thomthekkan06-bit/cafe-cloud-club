@@ -70,13 +70,20 @@
             display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;
             background: var(--surface); padding: 15px; border-radius: 12px; border: 1px solid var(--border);
             flex-shrink: 0;
+            align-items: center;
         }
         .search-box { flex: 1; min-width: 250px; }
         .input-field {
-            width: 100%; background: var(--bg); border: 1px solid var(--border);
+            background: var(--bg); border: 1px solid var(--border);
             color: white; padding: 10px 15px; border-radius: 8px; outline: none;
+            font-family: inherit;
         }
-        .date-group { display: flex; gap: 10px; align-items: center; }
+        .date-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        
+        /* Time Input Specifics */
+        input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+
         .btn-action {
             background: var(--surface-hover); color: var(--text-main); border: 1px solid var(--border);
             padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 0.9rem;
@@ -168,6 +175,7 @@
             .search-box { min-width: 100%; }
             .date-group { width: 100%; }
             .input-field { width: 100%; }
+            .controls-row { flex-direction: column; align-items: stretch; }
         }
     </style>
 </head>
@@ -257,12 +265,14 @@
 
     <div class="controls-row">
         <div class="search-box">
-            <input type="text" id="search-input" class="input-field" placeholder="🔍 Search Customer, ID, Phone...">
+            <input type="text" id="search-input" class="input-field" placeholder="🔍 Search Customer, ID, Phone..." style="width:100%;">
         </div>
         <div class="date-group">
-            <input type="date" id="date-start" class="input-field">
+            <input type="date" id="date-start" class="input-field" title="Start Date">
+            <input type="time" id="time-start" class="input-field" title="Start Time" style="min-width:auto;">
             <span style="color:var(--text-muted)">to</span>
-            <input type="date" id="date-end" class="input-field">
+            <input type="date" id="date-end" class="input-field" title="End Date">
+            <input type="time" id="time-end" class="input-field" title="End Time" style="min-width:auto;">
         </div>
         <button class="btn-action" onclick="applyFilters()">Filter</button>
         <button class="btn-action" onclick="resetFilters()">Reset</button>
@@ -290,7 +300,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        // MODIFIED: Added 'update' to imports
         import { getDatabase, ref, onValue, remove, update, query } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
@@ -417,18 +426,38 @@
             document.getElementById('stat-count').innerText = c;
         }
 
+        // MODIFIED: applyFilters with Time Support
         window.applyFilters = function() {
             const search = document.getElementById('search-input').value.toLowerCase();
-            const start = document.getElementById('date-start').valueAsDate;
-            const end = document.getElementById('date-end').valueAsDate;
-            if(end) end.setHours(23,59,59);
+            
+            // Get string values
+            const dateStartVal = document.getElementById('date-start').value;
+            const timeStartVal = document.getElementById('time-start').value;
+            const dateEndVal = document.getElementById('date-end').value;
+            const timeEndVal = document.getElementById('time-end').value;
+
+            // Construct precise Date objects
+            let startDate = null;
+            let endDate = null;
+
+            if (dateStartVal) {
+                // If time is provided, use it. Else default to 00:00
+                startDate = new Date(dateStartVal + 'T' + (timeStartVal || '00:00:00'));
+            }
+            if (dateEndVal) {
+                // If time is provided, use it. Else default to 23:59:59
+                endDate = new Date(dateEndVal + 'T' + (timeEndVal || '23:59:59'));
+            }
 
             const filtered = allOrders.filter(o => {
                 const oDate = new Date(o.completedAt || o.timestamp);
-                let dateMatch = true;
-                if(start && oDate < start) dateMatch = false;
-                if(end && oDate > end) dateMatch = false;
                 
+                // 1. Date/Time Range Check
+                let rangeMatch = true;
+                if(startDate && oDate < startDate) rangeMatch = false;
+                if(endDate && oDate > endDate) rangeMatch = false;
+                
+                // 2. Search Check
                 let searchMatch = true;
                 if(search) {
                     const cName = o.customer ? o.customer.name : "";
@@ -436,15 +465,18 @@
                     const str = `${o.orderId} ${cName} ${cPhone}`.toLowerCase();
                     if(!str.includes(search)) searchMatch = false;
                 }
-                return dateMatch && searchMatch;
+                return rangeMatch && searchMatch;
             });
             renderTable(filtered);
         }
 
+        // MODIFIED: resetFilters now clears time inputs too
         window.resetFilters = function() {
             document.getElementById('search-input').value = "";
             document.getElementById('date-start').value = "";
+            document.getElementById('time-start').value = "";
             document.getElementById('date-end').value = "";
+            document.getElementById('time-end').value = "";
             renderTable(allOrders);
         }
 
@@ -502,12 +534,10 @@
             if (event.target == modal) { modal.style.display = "none"; }
         }
 
-        // --- MODIFIED DELETE FUNCTION: NOW PERMANENT DELETE ---
         window.deleteOrder = function(key) {
             const password = prompt("⚠ PERMANENTLY DELETE ⚠\nEnter Admin Password:");
             if (password === DELETE_PIN) {
                 if(confirm("Are you sure you want to PERMANENTLY DELETE this record? It will not be shown anywhere.")) {
-                    // Use remove() to completely delete the node from Firebase
                     remove(ref(db, 'history/' + key))
                     .then(() => alert("Record permanently deleted."))
                     .catch(err => alert("Error: " + err));
