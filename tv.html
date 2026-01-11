@@ -512,7 +512,21 @@
                                     spanText = `#${orderId}`;
                                 }
                             }
-                            // 3. Fallback
+                            // 3. NEW: Handle "AC X (Name)" -> "AC X"
+                            else if (lowerName.startsWith('ac')) {
+                                // Expected format: "AC 1 (Name)"
+                                const parts = rawName.split(' ');
+                                // parts[0]="AC", parts[1]="1", parts[2+]="(Name)"
+                                if(parts.length >= 2) {
+                                    h2Text = `AC ${parts[1]}`; // "AC 1"
+                                    const guestName = parts.slice(2).join(' ').replace(/[()]/g, '');
+                                    spanText = guestName || 'Guest';
+                                } else {
+                                    h2Text = rawName;
+                                    spanText = `#${orderId}`;
+                                }
+                            }
+                            // 4. Fallback
                             else {
                                 h2Text = rawName;
                                 spanText = `Order #${orderId}`;
