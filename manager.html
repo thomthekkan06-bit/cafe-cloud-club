@@ -1506,7 +1506,7 @@
             }
         }
 
-        // --- FIXED FUNCTION: SAVING TABLE MOVE AND KEEPING CUSTOMER NAME ---
+        // --- FIXED FUNCTION: SAVING TABLE MOVE FOR ALL ORDERS ---
         window.saveTableMove = async () => {
             const newTableId = document.getElementById('table-transfer-select').value;
             
@@ -1516,7 +1516,7 @@
             if(newTableId.startsWith("AC")) newPrefix = `AC ${newTableId.substring(2)}`;
 
             try {
-                // 2. Fetch the CURRENT order to get the existing name
+                // 2. Fetch the CURRENT order to get the existing Guest Name
                 const snap = await get(ref(db, 'orders/' + currentEditKey));
                 if (!snap.exists()) {
                     alert("Order not found!");
@@ -1534,15 +1534,31 @@
                     .trim();
 
                 // 4. Combine new table + existing name
-                // If name was "Table 1 Rahul" -> becomes "Table 5 Rahul"
-                // If name was just "Table 1" -> becomes "Table 5"
                 let finalName = newPrefix;
                 if(customerNameOnly && customerNameOnly.length > 0) {
                     finalName = `${newPrefix} ${customerNameOnly}`;
                 }
 
-                // 5. Update Database
-                await update(ref(db, 'orders/' + currentEditKey + '/customer'), { name: finalName });
+                // --- FIX START: Detect all sibling orders for this table ---
+                let keysToMove = [currentEditKey]; // Default to just the current one
+
+                // If we are currently viewing a table in the dashboard, grab ALL its order keys
+                if (currentSettleTable && tableData[currentSettleTable]) {
+                    const tData = tableData[currentSettleTable];
+                    // Verify the order we are editing actually belongs to this table group
+                    if (tData.keys.includes(currentEditKey)) {
+                        keysToMove = tData.keys;
+                    }
+                }
+                // --- FIX END ---
+
+                // 5. Update Database for ALL orders associated with the table
+                const updates = {};
+                keysToMove.forEach(key => {
+                    updates[`orders/${key}/customer/name`] = finalName;
+                });
+                
+                await update(ref(db), updates);
                 closeModal('edit-modal');
                 
             } catch (error) {
