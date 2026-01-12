@@ -135,6 +135,27 @@
         .item-qty { font-weight: 800; color: var(--primary); margin-right: 12px; min-width: 25px; font-size: 1.2rem; }
         .item-name { flex: 1; font-weight: 600; }
         
+        /* MODIFIER STYLES (MATCHING CHEF KDS) */
+        .modifier-list {
+            margin-top: 4px;
+            display: flex; 
+            flex-direction: column;
+            gap: 2px;
+        }
+        .modifier-item {
+            font-size: 0.9rem;
+            color: #4ade80; /* Bright Green */
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .modifier-item::before {
+            content: "•"; /* Bullet point */
+            color: #4ade80;
+            font-size: 0.7rem;
+        }
+
         .kot-note { padding: 10px 15px; background: rgba(245, 158, 11, 0.1); color: var(--warning); font-size: 0.85rem; font-weight: 600; border-top: 1px solid var(--border); }
         .ready-msg { padding: 20px; text-align: center; color: var(--success); font-weight: 800; background: rgba(16, 185, 129, 0.1); font-size: 0.9rem; }
         .waiting-msg { padding: 20px; text-align: center; color: var(--warning); font-weight: 800; background: rgba(245, 158, 11, 0.1); font-size: 0.9rem; }
@@ -147,7 +168,7 @@
         /* DONE ITEM STATE */
         .kot-item.done-item .item-name { text-decoration: line-through; color: var(--danger); opacity: 0.8; }
         .kot-item.done-item .item-qty { color: var(--danger); opacity: 0.8; }
-        .kot-item.done-item .item-mods { opacity: 0.5; text-decoration: line-through; }
+        .kot-item.done-item .modifier-item { opacity: 0.5; text-decoration: line-through; }
     </style>
 </head>
 <body>
@@ -312,17 +333,51 @@
                         // Apply styling for done items
                         const isDone = item.kitchenDone ? 'done-item' : '';
                         
-                        let variantHtml = '';
+                        // --- PARSING MODIFIERS (Customizations & Notes) ---
+                        // Copied from Kitchen.html to ensure consistency
+                        let displayItemName = item.name;
+                        let extractedModifiers = [];
+
+                        // 1. Extract [...]
+                        const bracketMatches = displayItemName.match(/\[(.*?)\]/g);
+                        if (bracketMatches) {
+                            bracketMatches.forEach(match => {
+                                extractedModifiers.push(match.replace('[', '').replace(']', ''));
+                                displayItemName = displayItemName.replace(match, '');
+                            });
+                        }
+
+                        // 2. Extract (...)
+                        const parenMatches = displayItemName.match(/\((.*?)\)/g);
+                        if (parenMatches) {
+                            parenMatches.forEach(match => {
+                                extractedModifiers.push(match.replace('(', '').replace(')', ''));
+                                displayItemName = displayItemName.replace(match, '');
+                            });
+                        }
+
+                        // 3. Existing Variant Logic
                         if(item.variant && item.variant.trim() !== "") {
-                            variantHtml = `<div style="font-size:0.8rem; color:var(--success); margin-top:4px; font-weight:600;">${item.variant}</div>`;
+                            extractedModifiers.push(item.variant);
+                        }
+
+                        displayItemName = displayItemName.trim();
+
+                        let modifiersHtml = "";
+                        if (extractedModifiers.length > 0) {
+                            modifiersHtml = `<div class="modifier-list">`;
+                            extractedModifiers.forEach(mod => {
+                                modifiersHtml += `<div class="modifier-item">${mod}</div>`;
+                            });
+                            modifiersHtml += `</div>`;
                         }
 
                         itemsHtml += `
                             <div class="kot-item ${isDone}" onclick="toggleItem('${order.key}', ${index}, ${!item.kitchenDone})">
                                 <span class="item-qty">${item.qty}</span>
                                 <div class="item-name">
-                                    ${item.name}
-                                    ${variantHtml}
+                                    ${displayItemName}
+                                    ${modifiersHtml}
                                 </div>
                             </div>`;
                     });
