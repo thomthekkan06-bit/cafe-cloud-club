@@ -185,8 +185,9 @@
         const db = getDatabase(app);
 
         // --- CONFIGURATION ---
-        // T-Shop KDS shows ONLY these categories
-        const INCLUDED_CATEGORIES = ["Cafe Botanical Brews", "Desi Delight Bites"];
+        // EDITED: Now T-Shop ONLY sees 'Desi Delight Bites'. 
+        // 'Cloud Botanical Brews' has been removed so it goes to Kitchen.
+        const INCLUDED_CATEGORIES = ["Desi Delight Bites"];
         const ACCESS_PIN = "2024";
         
         const bell = new Audio('kdsound.mp3'); 
