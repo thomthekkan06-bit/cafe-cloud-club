@@ -404,6 +404,12 @@
                     <option>Shake Shots</option> <option>ADD-ON</option>
                 </select>
             </div>
+            
+            <div class="form-group" style="border-top:1px solid var(--border); padding-top:15px; margin-top:15px;">
+                <label class="form-label">Custom Add-ons</label>
+                <div id="options-list-container"></div>
+                <button onclick="addOptionRow()" style="background:transparent; border:1px dashed var(--primary); color:var(--primary); padding:8px; width:100%; border-radius:6px; cursor:pointer; margin-top:5px; font-size:0.85rem;">+ Add Option</button>
+            </div>
 
             <div class="modal-actions">
                 <button onclick="hideForm()" class="btn-cancel">Cancel</button>
@@ -760,9 +766,27 @@
             document.getElementById('inp-name').value = "";
             document.getElementById('inp-price').value = "";
             document.getElementById('inp-dinein').checked = false; // Reset checkbox
+            document.getElementById('options-list-container').innerHTML = ''; // CLEAR OPTIONS
         }
         
         window.hideForm = () => document.getElementById('editor-overlay').style.display='none';
+
+        // NEW HELPER: Add Dynamic Option Row
+        window.addOptionRow = (name = '', price = '') => {
+            const container = document.getElementById('options-list-container');
+            const div = document.createElement('div');
+            div.className = 'opt-row';
+            div.style.display = 'flex';
+            div.style.gap = '10px'; 
+            div.style.marginBottom = '10px';
+            
+            div.innerHTML = `
+                <input type="text" class="form-input opt-name" placeholder="Option Name" value="${name}" style="flex:2;">
+                <input type="number" class="form-input opt-price" placeholder="Price" value="${price}" style="flex:1;">
+                <button onclick="this.parentElement.remove()" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:1.2rem;">&times;</button>
+            `;
+            container.appendChild(div);
+        }
         
         window.saveItem = () => {
             const key = document.getElementById('edit-key').value;
@@ -775,13 +799,22 @@
                 }
             }
             
+            // 1. Collect Options
+            const options = [];
+            document.querySelectorAll('.opt-row').forEach(row => {
+                const optName = row.querySelector('.opt-name').value.trim();
+                const optPrice = parseInt(row.querySelector('.opt-price').value) || 0;
+                if(optName) options.push({ name: optName, price: optPrice });
+            });
+
             const data = {
                 name: document.getElementById('inp-name').value,
                 price: parseInt(document.getElementById('inp-price').value),
                 category: document.getElementById('inp-cat').value,
                 type: document.getElementById('inp-type').value,
                 isDineInOnly: document.getElementById('inp-dinein').checked, // NEW FIELD
-                stockStatus: currentStockStatus
+                stockStatus: currentStockStatus,
+                options: options
             };
             
             if(!data.name || !data.price) return alert("Please fill Name and Price");
@@ -807,6 +840,14 @@
             
             // Set Checkbox
             document.getElementById('inp-dinein').checked = item.isDineInOnly || false;
+
+            // Clear previous options
+            document.getElementById('options-list-container').innerHTML = '';
+
+            // Load existing options if they exist
+            if (item.options && Array.isArray(item.options)) {
+                item.options.forEach(opt => addOptionRow(opt.name, opt.price));
+            }
         }
 
         window.deleteItem = () => { 
