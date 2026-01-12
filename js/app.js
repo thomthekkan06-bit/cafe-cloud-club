@@ -21,7 +21,7 @@ let couponsData = {};
 const couponsRef = ref(db, 'coupons');
 onValue(couponsRef, (snapshot) => {
     couponsData = snapshot.val() || {};
-    console.log("Coupons loaded:", couponsData);
+    // Removed debug log for production
 });
 
 /* --- MAP & LOCATION LOGIC --- */
@@ -426,65 +426,48 @@ window.openOptionModal = function(index) {
         });
     }
     tempSelectedItemIndex = index;
-    let availableOptions = [];
-    const cheeseCats = ["Bun-Tastic Burgers", "Italian Indulgence", "Freshly Folded", "Toasty Treats"];
-    if (cheeseCats.includes(item.category)) availableOptions.push({ name: "Extra Cheese", price: 15 });
-    if (item.category === "Bun-Tastic Burgers") {
-        const friedEggEligible = [
-            "Chicken Slider Burger - Pesto", "Chicken Slider Burger - Tandoori", "Cloud Special Chicken Burger",
-            "Egg Burger", "Pesto Chicken Burger", "Tandoori Burger Chicken", "Tandoori Special Chicken Burger",
-            "Tropical Beef Burger", "Tropical Pesto Chicken Burger", "Tropical Tandoori Chicken Burger",
-            "Classic Beef Burger", "Double Decker Beef Burger"
-        ];
-        if (friedEggEligible.includes(item.name)) availableOptions.push({ name: "Add Fried Egg (Non-Veg)", price: 20 });
-    }
-    
-    if (item.category === "Italian Indulgence") {
-        availableOptions.push({ name: "Garlic Bread", price: 40 });
-        if (item.name.toLowerCase().includes('chicken')) availableOptions.push({ name: "Extra Chicken (Non-Veg)", price: 60 });
-        if (item.name.toLowerCase().includes('shrimp')) availableOptions.push({ name: "Extra Shrimp (Non-Veg)", price: 90 });
-    }
-    
-    if (item.category === "Butcher's Best") {
-        availableOptions.push({ name: "Extra Hashbrown", price: 40 });
-        availableOptions.push({ name: "Tossed Rice", price: 40 });
-        availableOptions.push({ name: "Sorted / Boiled Vegges", price: 40 });
-        availableOptions.push({ name: "Sunny Sideup (Non-Veg)", price: 25 });
-        if (!item.name.toLowerCase().includes('fish')) availableOptions.push({ name: "Hummus (Veg)", price: 40 });
-    }
 
-    if (item.category === "Rice Harmony") {
-        if (item.name.toLowerCase().includes('chicken')) availableOptions.push({ name: "Extra Chicken (Non-Veg)", price: 40 });
-        if (item.type === 'veg') availableOptions.push({ name: "Extra Paneer (Veg)", price: 30 });
-    }
-    
-    if (item.category === "Whipped Wonders") availableOptions.push({ name: "Extra Ice Cream (Thick Shake)", price: 30 });
+    // --- NEW LOGIC: READ FROM DB ---
+    // If options exist in Firebase, use them. Otherwise empty array.
+    let availableOptions = item.options || [];
+
+    // Special case for simple "ADD-ON" items with no options (Immediate Add)
     if (availableOptions.length === 0 && item.category === "ADD-ON") {
         addToCart(item.name, item.price, item.price, item.type, item.category);
         return;
     }
 
+    // Update UI
     document.getElementById('modal-item-title').innerText = item.name;
     document.getElementById('modal-item-base-price').innerText = `Base Price: ${rupeeSign}${item.price}`;
+    
     const container = document.getElementById('modal-options-wrapper');
     container.innerHTML = '';
-    availableOptions.forEach((opt, i) => {
-        container.innerHTML += `
-            <div class="custom-option-row">
-                <label class="custom-option-label">
-                    <input type="checkbox" class="modal-opt-checkbox" data-name="${opt.name}" data-price="${opt.price}" onchange="updateModalTotal()"> 
-                    ${opt.name}
-                 </label>
-                <span class="custom-option-price">+${rupeeSign}${opt.price}</span>
-            </div>
-        `;
-    });
+
+    if (availableOptions.length > 0) {
+        availableOptions.forEach((opt) => {
+            container.innerHTML += `
+                <div class="custom-option-row">
+                    <label class="custom-option-label">
+                        <input type="checkbox" class="modal-opt-checkbox" data-name="${opt.name}" data-price="${opt.price}" onchange="updateModalTotal()"> 
+                        ${opt.name}
+                     </label>
+                    <span class="custom-option-price">+${rupeeSign}${opt.price}</span>
+                </div>
+            `;
+        });
+    } else {
+        container.innerHTML = `<div style="padding:15px; color:#999; text-align:center; font-size:0.9rem;">No customizations available for this item.</div>`;
+    }
+
+    // Add Note Input
     container.innerHTML += `
         <div style="margin-top:15px;">
             <label style="font-size:0.8rem; color:var(--grey-text);">Special Note:</label>
             <input type="text" id="modal-note-input" class="note-input" placeholder="e.g. Spicy, No Mayo">
         </div>
     `;
+
     document.getElementById('customization-modal').style.display = 'flex';
     updateModalTotal();
 }
@@ -550,15 +533,6 @@ window.updateQty = function(name, change) {
         saveCart(); 
         renderCart();
     }
-}
-
-function isSundayPasta(name) {
-    const n = name.toLowerCase();
-    if (!n.includes('penne')) return false;
-    if (!n.includes('chicken') && !n.includes('veg')) return false;
-    if (n.includes('black garlic')) return false;
-    if (n.includes('pesto') || n.includes('alfredo') || n.includes('arabiata') || n.includes('cloud special')) return true;
-    return false;
 }
 
 // --- FIXED VALIDATION LOGIC: Allows extra items ---
