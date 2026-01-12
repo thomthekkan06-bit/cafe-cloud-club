@@ -329,9 +329,8 @@
         const db = getDatabase(app);
 
         // --- FILTER CONFIGURATION ---
-        // EDITED: Now only 'Desi Delight Bites' are hidden from Chef. 
-        // 'Cloud Botanical Brews' will now show here.
-        const EXCLUDED_CATEGORIES = ["Desi Delight Bites"];
+        // EDITED: RESTORED EXCLUSIONS for 'Cloud Botanical Brews' and 'Cafe Botanical Brews'
+        const EXCLUDED_CATEGORIES = ["Desi Delight Bites", "Cloud Botanical Brews", "Cafe Botanical Brews"];
 
         // --- ROBUST WAKE LOCK (PREVENT SLEEP) ---
         let wakeLock = null;
