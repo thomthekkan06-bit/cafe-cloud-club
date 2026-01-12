@@ -1506,7 +1506,7 @@
             }
         }
 
-        // --- FIXED FUNCTION: SAVING TABLE MOVE FOR ALL ORDERS ---
+        // --- FIXED FUNCTION: SAVING TABLE MOVE FOR ALL ORDERS --- 
         window.saveTableMove = async () => {
             const newTableId = document.getElementById('table-transfer-select').value;
             
@@ -1539,20 +1539,31 @@
                     finalName = `${newPrefix} ${customerNameOnly}`;
                 }
 
-                // --- FIX START: Detect all sibling orders for this table ---
-                let keysToMove = [currentEditKey]; // Default to just the current one
+                // 5. IDENTIFY ALL ORDERS TO MOVE (Detect all sibling orders for this table)
+                let keysToMove = [currentEditKey]; 
 
-                // If we are currently viewing a table in the dashboard, grab ALL its order keys
-                if (currentSettleTable && tableData[currentSettleTable]) {
-                    const tData = tableData[currentSettleTable];
-                    // Verify the order we are editing actually belongs to this table group
+                // Attempt to derive the old Table ID from the old name directly
+                // This ensures we find the group even if currentSettleTable is not set
+                let oldTableId = null;
+                if (oldName.startsWith("Table ")) {
+                    oldTableId = oldName.split(" ")[1]; 
+                } else if (oldName.startsWith("AC ")) {
+                    oldTableId = "AC" + oldName.split(" ")[1]; 
+                } else if (oldName.startsWith("Bar Chair ")) {
+                    const parts = oldName.split(" ");
+                    if (parts[2]) oldTableId = "BC" + parts[2];
+                }
+
+                // If we successfully identified the old table, grab all keys from the live tableData
+                if (oldTableId && tableData[oldTableId]) {
+                    const tData = tableData[oldTableId];
+                    // Safety check: ensure the current order is actually in this list
                     if (tData.keys.includes(currentEditKey)) {
                         keysToMove = tData.keys;
                     }
                 }
-                // --- FIX END ---
 
-                // 5. Update Database for ALL orders associated with the table
+                // 6. Update Database for ALL orders associated with the table
                 const updates = {};
                 keysToMove.forEach(key => {
                     updates[`orders/${key}/customer/name`] = finalName;
