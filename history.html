@@ -325,7 +325,9 @@
         const ACCESS_PIN = "2024";
         const DELETE_PIN = "2021";
         
-        let allOrders = [];
+        // GLOBAL VARIABLES
+        let allOrders = []; // Stores everything from Firebase
+        let currentFilteredOrders = []; // Stores what is currently visible
 
         // --- PIN LOGIC ---
         const pinInput = document.getElementById('pin-input');
@@ -355,7 +357,12 @@
 
             onValue(historyQuery, (snapshot) => {
                 const data = snapshot.val();
-                if (!data) { renderTable([]); return; }
+                if (!data) { 
+                    allOrders = [];
+                    currentFilteredOrders = [];
+                    renderTable([]); 
+                    return; 
+                }
                 
                 allOrders = Object.entries(data)
                     .filter(([key, val]) => val && val.customer) 
@@ -364,6 +371,8 @@
                     }))
                     .sort((a,b) => (b.completedAt || b.timestamp) - (a.completedAt || a.timestamp));
                 
+                // On initial load, filtered is same as all
+                currentFilteredOrders = allOrders;
                 renderTable(allOrders);
             });
         }
@@ -465,6 +474,9 @@
                 }
                 return rangeMatch && searchMatch;
             });
+
+            // UPDATE GLOBAL FILTERED LIST
+            currentFilteredOrders = filtered;
             renderTable(filtered);
         }
 
@@ -474,6 +486,9 @@
             document.getElementById('time-start').value = "";
             document.getElementById('date-end').value = "";
             document.getElementById('time-end').value = "";
+            
+            // RESET GLOBAL LIST
+            currentFilteredOrders = allOrders;
             renderTable(allOrders);
         }
 
@@ -543,10 +558,11 @@
         }
 
         window.exportToCSV = function() {
-            if(allOrders.length === 0) return alert("No data to export.");
+            // FIXED: Use currentFilteredOrders instead of allOrders
+            if(currentFilteredOrders.length === 0) return alert("No data to export.");
             let csvContent = "data:text/csv;charset=utf-8,";
             csvContent += "Date,Time,OrderID,Customer,Phone,Type,Status,KitchenRevenue,DeliveryFee,TotalAmount\n";
-            allOrders.forEach(o => {
+            currentFilteredOrders.forEach(o => {
                 const d = new Date(o.completedAt || o.timestamp);
                 const fins = o.financials || {grandTotal:0, deliveryFee:0};
                 const cName = o.customer ? o.customer.name : "Unknown";
@@ -569,9 +585,9 @@
             link.click();
         }
 
-        // --- NEW PDF EXPORT FUNCTION ---
         window.exportToPDF = function() {
-            if(allOrders.length === 0) return alert("No data to export.");
+            // FIXED: Use currentFilteredOrders instead of allOrders
+            if(currentFilteredOrders.length === 0) return alert("No data to export.");
             
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
@@ -584,11 +600,19 @@
             doc.setTextColor(100);
             doc.text("Generated on: " + new Date().toLocaleString(), 14, 28);
             
+            // Show Filter Range in PDF if applicable
+            const dateStartVal = document.getElementById('date-start').value;
+            const dateEndVal = document.getElementById('date-end').value;
+            if(dateStartVal || dateEndVal) {
+                const rangeText = `Filter: ${dateStartVal || 'Start'} to ${dateEndVal || 'Now'}`;
+                doc.text(rangeText, 14, 33);
+            }
+            
             const tableColumn = ["Date", "Order ID", "Customer", "Type", "Status", "Kitchen", "Total"];
             const tableRows = [];
             let totalRevenue = 0;
 
-            allOrders.forEach(o => {
+            currentFilteredOrders.forEach(o => {
                 const d = new Date(o.completedAt || o.timestamp);
                 const fins = o.financials || {grandTotal:0, deliveryFee:0};
                 const cName = o.customer ? o.customer.name : "Unknown";
@@ -612,16 +636,16 @@
             doc.autoTable({
                 head: [tableColumn],
                 body: tableRows,
-                startY: 35,
+                startY: 40, // Pushed down slightly to accommodate range text
                 styles: { fontSize: 8 },
                 headStyles: { fillColor: [59, 130, 246] }, // Blue header
             });
             
             // Footer Total
-            const finalY = doc.lastAutoTable.finalY || 40;
+            const finalY = doc.lastAutoTable.finalY || 45;
             doc.setFontSize(12);
             doc.setTextColor(0);
-            doc.text(`GRAND TOTAL REVENUE: Rs. ${totalRevenue.toLocaleString('en-IN')}`, 14, finalY + 15);
+            doc.text(`GRAND TOTAL REVENUE (Selection): Rs. ${totalRevenue.toLocaleString('en-IN')}`, 14, finalY + 15);
 
             doc.save("cafe_sales_report.pdf");
         }
