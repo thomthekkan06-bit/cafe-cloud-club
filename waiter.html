@@ -132,11 +132,11 @@
         </div>
     </div>
 
-    <div class="section-title">Indoor Dining (1-7 + Bars)</div>
-    <div class="tables-grid" id="grid-indoor-main"></div>
+    <div class="section-title">Outdoor Dining (1-7 + Bars)</div>
+    <div class="tables-grid" id="grid-Outdoor-main"></div>
 
     <div class="section-title">AC Room (1-5)</div>
-    <div class="tables-grid" id="grid-indoor-ac"></div>
+    <div class="tables-grid" id="grid-Outdoor-ac"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -273,8 +273,8 @@
         }
 
         function renderGrid() {
-            const gridMain = document.getElementById('grid-indoor-main');
-            const gridAC = document.getElementById('grid-indoor-ac');
+            const gridMain = document.getElementById('grid-Outdoor-main');
+            const gridAC = document.getElementById('grid-Outdoor-ac');
             gridMain.innerHTML = "";
             gridAC.innerHTML = "";
 
