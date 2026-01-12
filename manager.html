@@ -207,7 +207,7 @@
         </div>
         <div class="right-pane">
             <div class="pane-header"><span>DINE-IN MAP</span><span id="dinein-count" style="color:var(--success)">0 Occupied</span></div>
-            <div class="section-label">Indoor</div>
+            <div class="section-label">Outdoor</div>
             <div class="tables-grid" id="grid-main"></div>
             <div class="section-label">AC Room</div>
             <div class="tables-grid" id="grid-ac"></div>
@@ -1447,7 +1447,7 @@
                 }
                 
                 // --- REVISED OPTION GENERATION ---
-                // 1. Indoor 1-7
+                // 1. Outdoor 1-7
                 for(let i=1; i<=7; i++) {
                     const opt = document.createElement('option');
                     opt.value = i; opt.text = `Table ${i}`;
