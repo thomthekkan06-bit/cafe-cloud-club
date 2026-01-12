@@ -191,9 +191,19 @@
             background: rgba(0,0,0,0.8); z-index: 2000; display: none; 
             align-items: center; justify-content: center; backdrop-filter: blur(5px);
         }
+
+        /* --- FIXED MODAL SCROLLING --- */
         .modal-card { 
             background: var(--surface);
             width: 450px; max-width: 90%; 
+            
+            /* These lines fix the scrolling issue */
+            max-height: 85vh;       /* Limits height */
+            overflow-y: auto;       /* Adds scrollbar if needed */
+            display: flex;          
+            flex-direction: column; 
+            /* -------------------------------- */
+
             border-radius: 16px; border: 1px solid var(--border); padding: 30px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.6);
             animation: slideUp 0.3s ease;
