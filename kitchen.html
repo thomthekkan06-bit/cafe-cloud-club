@@ -329,8 +329,9 @@
         const db = getDatabase(app);
 
         // --- FILTER CONFIGURATION ---
-        // Chef KDS shows EVERYTHING EXCEPT these categories
-        const EXCLUDED_CATEGORIES = ["Cafe Botanical Brews", "Desi Delight Bites"];
+        // EDITED: Now only 'Desi Delight Bites' are hidden from Chef. 
+        // 'Cloud Botanical Brews' will now show here.
+        const EXCLUDED_CATEGORIES = ["Desi Delight Bites"];
 
         // --- ROBUST WAKE LOCK (PREVENT SLEEP) ---
         let wakeLock = null;
