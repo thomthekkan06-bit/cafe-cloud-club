@@ -471,6 +471,28 @@
         let parcelItems = [];
         let currentParcelType = 'Pickup'; 
 
+        // --- HELPER: CONVERT IMAGE TO BASE64 ON THE FLY ---
+        const getBase64ImageFromUrl = async (imageUrl) => {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.setAttribute('crossOrigin', 'anonymous'); // Try to bypass CORS if hosted externally
+                img.onload = () => {
+                    const canvas = document.createElement("canvas");
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext("2d");
+                    ctx.drawImage(img, 0, 0);
+                    const dataURL = canvas.toDataURL("image/png");
+                    resolve(dataURL);
+                };
+                img.onerror = () => {
+                    console.error("Could not load logo: " + imageUrl);
+                    resolve(null); // Fail gracefully so bill still generates
+                };
+                img.src = imageUrl;
+            });
+        };
+
         // --- NEW SEARCH FILTER LOGIC ---
         window.filterMenuSelect = (inputId, selectId) => {
             const query = document.getElementById(inputId).value.toLowerCase();
@@ -1209,13 +1231,21 @@
             document.getElementById('earn-preview').innerText = `+${pointsToEarn} Pts`;
         }
 
-        // --- NEW THERMAL RECEIPT GENERATOR ---
-window.shareBill = async () => {
+        // --- NEW THERMAL RECEIPT GENERATOR (ROBUST IMAGE LOADING) ---
+        window.shareBill = async () => {
             try {
                 // 1. Validation & Data Setup
                 if (!currentSettleTable || !tableData[currentSettleTable]) return alert("Select a table first.");
                 const d = tableData[currentSettleTable];
                 if (!window.jspdf) return alert("PDF Library not loaded.");
+
+                // --- STEP 1: LOAD LOGO DYNAMICALLY ---
+                // This attempts to convert your file to data. 
+                // If 'cloudlogo.png' is missing or blocked, it returns null.
+                let logoBase64 = null;
+                try {
+                    logoBase64 = await getBase64ImageFromUrl('cloudlogo.png');
+                } catch (e) { console.log("Logo load failed", e); }
 
                 // Calculate Totals
                 const type = document.getElementById('disc-type').value;
@@ -1232,14 +1262,13 @@ window.shareBill = async () => {
                 const totalPack = d.fins.pack + leftoverPack;
                 const totalDisc = d.fins.disc + managerDisc;
 
-                // 2. Initialize PDF (80mm Width for Thermal Printer)
+                // 2. Initialize PDF
                 const doc = new window.jsPDF({
                     orientation: 'portrait',
                     unit: 'mm',
                     format: [80, 280] 
                 });
 
-                // --- HELPER FUNCTIONS ---
                 const centerX = 40;
                 const rightX = 76;
                 const leftX = 4;
@@ -1248,38 +1277,25 @@ window.shareBill = async () => {
                     doc.setFontSize(size); doc.setFont("helvetica", font);
                     doc.text(text, centerX, y, { align: "center" });
                 };
-                
                 const rightText = (text, y, size=10, font='normal') => {
                     doc.setFontSize(size); doc.setFont("helvetica", font);
                     doc.text(text, rightX, y, { align: "right" });
                 };
-
                 const drawDashedLine = (y) => {
-                    doc.setLineWidth(0.2);
-                    doc.setLineDashPattern([1, 1], 0); 
-                    doc.line(leftX, y, rightX, y);
-                    doc.setLineDashPattern([], 0); 
+                    doc.setLineWidth(0.2); doc.setLineDashPattern([1, 1], 0); 
+                    doc.line(leftX, y, rightX, y); doc.setLineDashPattern([], 0); 
                 };
 
                 let yPos = 10;
 
                 // --- 3. HEADER SECTION ---
-                const logoBase64 = "data:image/png;base64,YOUR_COPIED_LONG_STRING_HERE"; // PASTE YOUR BASE64 STRING HERE
-
-                if (logoBase64.length > 100) { 
-                    try {
-                        const w = 25; 
-                        const h = 25; 
-                        
-                        doc.addImage(logoBase64, 'PNG', (80-w)/2, yPos, w, h);
-                        yPos += h + 5;
-                    } catch (e) {
-                        console.error("Logo Error:", e);
-                        centerText("Café Cloud Club", yPos, 16, 'bold');
-                        yPos += 8;
-                    }
+                if (logoBase64) {
+                    const w = 25; 
+                    const h = 25; 
+                    doc.addImage(logoBase64, 'PNG', (80-w)/2, yPos, w, h);
+                    yPos += h + 5;
                 } else {
-                    // Fallback if no base64 provided
+                    // Fallback if logo failed to load
                     centerText("Café Cloud Club", yPos, 16, 'bold');
                     yPos += 8;
                 }
@@ -1295,119 +1311,75 @@ window.shareBill = async () => {
                 drawDashedLine(yPos);
                 yPos += 7;
 
-                // --- 4. BIG TOTAL DISPLAY ---
+                // --- 4. BIG TOTAL ---
                 centerText(`Rs. ${finalGrand.toFixed(2)}`, yPos + 2, 20, 'bold');
                 yPos += 9;
                 centerText("Total", yPos, 10, 'normal');
                 yPos += 6;
-
                 drawDashedLine(yPos);
                 yPos += 6;
 
                 // --- 5. INFO BLOCK ---
                 doc.setFontSize(9); doc.setFont("helvetica", "normal");
-                
                 doc.text(`Order: ${d.orderType || 'Takeaway'} #${d.orderId || '-'}`, leftX, yPos);
                 yPos += 5;
-                
                 const dateObj = new Date();
-                const dateStr = dateObj.toLocaleDateString('en-GB') + " " + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                doc.text(`Date: ${dateStr}`, leftX, yPos);
+                doc.text(`Date: ${dateObj.toLocaleDateString('en-GB')} ${dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`, leftX, yPos);
                 yPos += 5;
-
-                let cName = d.customerName || `Table ${currentSettleTable}`;
-                doc.text(`Customer: ${cName}`, leftX, yPos);
+                doc.text(`Customer: ${d.customerName || `Table ${currentSettleTable}`}`, leftX, yPos);
                 yPos += 5;
-                
-                if(d.phone && d.phone.length > 5) {
-                    doc.text(`Phone: ${d.phone}`, leftX, yPos);
-                    yPos += 5;
-                }
+                if(d.phone && d.phone.length > 5) { doc.text(`Phone: ${d.phone}`, leftX, yPos); yPos += 5; }
 
                 drawDashedLine(yPos);
                 yPos += 6;
 
                 // --- 6. ITEMS ---
                 centerText("Order Details", yPos - 2, 9, 'bold');
-                yPos += 6; // --- ADDED SPACING FIX ---
-                
+                yPos += 6;
                 d.items.forEach(i => {
                     if(i.deleted) return;
-
-                    doc.setFont("helvetica", "bold");
-                    doc.setFontSize(10);
-                    
-                    const itemTotal = (i.price * i.qty).toFixed(2);
-                    // Wrap text to avoid hitting price column
+                    doc.setFont("helvetica", "bold"); doc.setFontSize(10);
                     const nameLines = doc.splitTextToSize(i.name, 45); 
-                    
                     doc.text(nameLines, leftX, yPos);
-                    rightText(`Rs. ${itemTotal}`, yPos, 10, 'bold');
-                    
-                    // Move Y down based on lines
+                    rightText(`Rs. ${(i.price * i.qty).toFixed(2)}`, yPos, 10, 'bold');
                     yPos += (nameLines.length * 4); 
-
-                    // Calculation Line (e.g. 2 x 150)
-                    doc.setFont("helvetica", "normal");
-                    doc.setFontSize(8);
-                    doc.setTextColor(80, 80, 80); 
+                    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(80, 80, 80); 
                     doc.text(`${i.qty} x ${i.price}`, leftX, yPos);
-                    
-                    // Addons / Packing
                     let details = [];
-                    // Logic to show variant
                     if(i.variant) details.push(i.variant);
-                    
-                    // Packing Logic
                     let packCost = 10;
                     const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
                     if (i.category === 'ADD-ON') packCost = i.name.startsWith("Hummus") ? 7 : 5;
                     else if (fiveRsCats.includes(i.category)) packCost = 5;
                     if (i.variant && (i.variant.includes("Tossed Rice") || i.variant.includes("Sorted Vegges"))) packCost += 7;
-                    
                     if(packCost > 0) details.push(`+Pack ${packCost}`);
-
                     if(details.length > 0) {
-                        yPos += 3.5;
-                        doc.setFont("helvetica", "italic");
+                        yPos += 3.5; doc.setFont("helvetica", "italic");
                         doc.text(`(${details.join(', ')})`, leftX + 2, yPos);
                     }
-
-                    doc.setTextColor(0, 0, 0); 
-                    yPos += 6; // Extra space between items
+                    doc.setTextColor(0, 0, 0); yPos += 6;
                 });
 
                 drawDashedLine(yPos);
                 yPos += 6;
 
                 // --- 7. SUMMARY ---
-                const row = (label, value, isBold=false) => {
-                    doc.setFontSize(9); doc.setFont("helvetica", isBold ? "bold" : "normal");
-                    doc.text(label, leftX, yPos);
-                    rightText(value, yPos, 9, isBold ? 'bold' : 'normal');
-                    yPos += 5;
+                const row = (l, v, b=false) => {
+                    doc.setFontSize(9); doc.setFont("helvetica", b?"bold":"normal");
+                    doc.text(l, leftX, yPos); rightText(v, yPos, 9, b?'bold':'normal'); yPos += 5;
                 };
-
                 row("Subtotal", `Rs. ${d.fins.sub}`);
                 if(totalPack > 0) row("Packing Charges", `Rs. ${totalPack}`);
                 if(totalDisc > 0) row("Discount", `- Rs. ${totalDisc}`);
                 if(redeemVal > 0) row("Loyalty Used", `- Rs. ${redeemVal}`);
-
-                yPos += 1;
-                doc.setLineWidth(0.4);
-                doc.line(leftX, yPos, rightX, yPos); 
-                yPos += 6;
-
-                // Grand Total
+                yPos += 1; doc.setLineWidth(0.4); doc.line(leftX, yPos, rightX, yPos); yPos += 6;
+                
                 doc.setFontSize(14); doc.setFont("helvetica", "bold");
                 doc.text("Grand Total", leftX, yPos);
                 rightText(`Rs. ${finalGrand}`, yPos, 14, 'bold');
                 yPos += 6;
-
                 doc.setFontSize(9); doc.setFont("helvetica", "normal");
-                doc.text("Payment Mode", leftX, yPos);
-                rightText("Cash / UPI", yPos);
-                yPos += 8;
+                doc.text("Payment Mode", leftX, yPos); rightText("Cash / UPI", yPos); yPos += 8;
 
                 drawDashedLine(yPos);
                 yPos += 6;
@@ -1418,17 +1390,20 @@ window.shareBill = async () => {
                 centerText('"Please consume within 2hrs"', yPos, 8, 'italic');
                 yPos += 4;
                 centerText("FSSAI No: 21323204000463", yPos, 7, 'normal');
+                yPos += 5;
+
+                // --- FOOTER LOGO ---
+                if (logoBase64) {
+                    const w = 20; const h = 20; 
+                    doc.addImage(logoBase64, 'PNG', (80-w)/2, yPos, w, h);
+                    yPos += h + 5;
+                }
 
                 // --- 9. SAVE ---
                 const pdfBlob = doc.output('blob');
                 const file = new File([pdfBlob], `Bill_${d.orderId}.pdf`, { type: 'application/pdf' });
-
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                    navigator.share({ 
-                        files: [file], 
-                        title: 'Bill Receipt', 
-                        text: 'Cafe Cloud Club Receipt' 
-                    }).catch(console.log);
+                    navigator.share({ files: [file], title: 'Bill Receipt', text: 'Cafe Cloud Club Receipt' }).catch(console.log);
                 } else {
                     doc.save(`Bill_${d.orderId}.pdf`);
                     if(confirm("Bill PDF Saved! Open WhatsApp to send?")) {
@@ -1437,7 +1412,6 @@ window.shareBill = async () => {
                          window.open(phone ? `https://wa.me/${phone}` : "https://web.whatsapp.com/", '_blank');
                     }
                 }
-
             } catch (err) { console.error(err); alert("Error generating bill: " + err.message); }
         };
 
