@@ -390,7 +390,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn-modal-cancel" onclick="openEditFromTable()">EDIT</button>
-                <button class="btn-modal-cancel" style="border-color:#3b82f6; color:#3b82f6;" onclick="shareBill()">Share Bill 📤</button>
+                <button class="btn-modal-cancel" style="border-color:#3b82f6; color:#3b82f6;" onclick="shareBill()">Download Bill 📥</button>
                 <button class="btn-modal-action" id="btn-settle-action" style="background:var(--success)" onclick="settleAndClear()">PAID & CLEAR</button>
             </div>
         </div>
@@ -1425,19 +1425,10 @@
 
                 // REMOVED FOOTER LOGO HERE
 
-                // --- 9. SAVE ---
-                const pdfBlob = doc.output('blob');
-                const file = new File([pdfBlob], `Bill_${d.orderId}.pdf`, { type: 'application/pdf' });
-                if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                    navigator.share({ files: [file], title: 'Bill Receipt', text: 'Cafe Cloud Club Receipt' }).catch(console.log);
-                } else {
-                    doc.save(`Bill_${d.orderId}.pdf`);
-                    if(confirm("Bill PDF Saved! Open WhatsApp to send?")) {
-                         let phone = d.phone;
-                         if (phone && phone.length === 10) phone = "91" + phone;
-                         window.open(phone ? `https://wa.me/${phone}` : "https://web.whatsapp.com/", '_blank');
-                    }
-                }
+                // --- 9. SAVE (Force Download Only) ---
+                doc.save(`Bill_${d.orderId}.pdf`);
+                // No share sheet, no whatsapp prompt.
+
             } catch (err) { console.error(err); alert("Error generating bill: " + err.message); }
         };
 
