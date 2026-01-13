@@ -1506,76 +1506,66 @@
             }
         }
 
-        // --- FIXED FUNCTION: SAVING TABLE MOVE FOR ALL ORDERS --- 
+        // --- FIXED FUNCTION: SAVING TABLE MOVE FOR ALL ORDERS (REVISED) --- 
         window.saveTableMove = async () => {
             const newTableId = document.getElementById('table-transfer-select').value;
-            
-            // 1. Generate the NEW table prefix (e.g., "Table 5")
+            // 1. Construct New Name Prefix
             let newPrefix = `Table ${newTableId}`;
             if(newTableId.startsWith("BC")) newPrefix = `Bar Chair ${newTableId.substring(2)}`;
-            if(newTableId.startsWith("AC")) newPrefix = `AC ${newTableId.substring(2)}`;
+            else if(newTableId.startsWith("AC")) newPrefix = `AC ${newTableId.substring(2)}`;
 
             try {
-                // 2. Fetch the CURRENT order to get the existing Guest Name
+                // 2. Identify Source Order & Old Table ID
                 const snap = await get(ref(db, 'orders/' + currentEditKey));
-                if (!snap.exists()) {
-                    alert("Order not found!");
-                    return;
-                }
-                const order = snap.val();
-                const oldName = order.customer ? order.customer.name : "";
-
-                // 3. Extract the customer's actual name by removing the old table prefix
-                // This regex removes "Table 1 ", "AC 2 ", "Bar Chair 1 ", etc.
-                let customerNameOnly = oldName
-                    .replace(/^Table \d+\s*/i, "")
-                    .replace(/^AC \d+\s*/i, "")
-                    .replace(/^Bar Chair \d+\s*/i, "")
-                    .trim();
-
-                // 4. Combine new table + existing name
-                let finalName = newPrefix;
-                if(customerNameOnly && customerNameOnly.length > 0) {
-                    finalName = `${newPrefix} ${customerNameOnly}`;
+                if (!snap.exists()) { alert("Order not found!"); return; }
+                const sourceOrder = snap.val();
+                const sourceName = sourceOrder.customer ? sourceOrder.customer.name : "";
+                
+                // Extract Customer Name (if any) to preserve it
+                let customerNameOnly = "";
+                // Logic to strip "Table X " from "Table 1 John" -> "John"
+                if (sourceName.startsWith("Table ")) {
+                    const parts = sourceName.split(" ");
+                    if (parts.length > 2) customerNameOnly = parts.slice(2).join(" ");
+                } else if (sourceName.startsWith("AC ")) {
+                    const parts = sourceName.split(" ");
+                    if (parts.length > 2) customerNameOnly = parts.slice(2).join(" ");
+                } else if (sourceName.startsWith("Bar Chair ")) {
+                    const parts = sourceName.split(" ");
+                    if (parts.length > 3) customerNameOnly = parts.slice(3).join(" ");
                 }
 
-                // 5. IDENTIFY ALL ORDERS TO MOVE (Detect all sibling orders for this table)
-                let keysToMove = [currentEditKey]; 
-
-                // Attempt to derive the old Table ID from the old name directly
-                // This ensures we find the group even if currentSettleTable is not set
+                // 3. Determine Old Table ID to use tableData for grouping
                 let oldTableId = null;
-                if (oldName.startsWith("Table ")) {
-                    oldTableId = oldName.split(" ")[1]; 
-                } else if (oldName.startsWith("AC ")) {
-                    oldTableId = "AC" + oldName.split(" ")[1]; 
-                } else if (oldName.startsWith("Bar Chair ")) {
-                    const parts = oldName.split(" ");
-                    if (parts[2]) oldTableId = "BC" + parts[2];
+                if (sourceName.startsWith("Table ")) oldTableId = sourceName.split(" ")[1];
+                else if (sourceName.startsWith("AC ")) oldTableId = "AC" + sourceName.split(" ")[1];
+                else if (sourceName.startsWith("Bar Chair ")) oldTableId = "BC" + sourceName.split(" ")[2];
+                
+                // 4. Identify Keys to Move
+                let keysToMove = [currentEditKey]; // Default to just this one if grouping fails
+                
+                // CHECK TABLEDATA (This ensures we get EVERYTHING visible on that table)
+                if (oldTableId && tableData[oldTableId] && tableData[oldTableId].keys) {
+                    keysToMove = tableData[oldTableId].keys;
                 }
-
-                // If we successfully identified the old table, grab all keys from the live tableData
-                if (oldTableId && tableData[oldTableId]) {
-                    const tData = tableData[oldTableId];
-                    // Safety check: ensure the current order is actually in this list
-                    if (tData.keys.includes(currentEditKey)) {
-                        keysToMove = tData.keys;
-                    }
-                }
-
-                // 6. Update Database for ALL orders associated with the table
+                
+                // 5. Update
                 const updates = {};
-                keysToMove.forEach(key => {
-                    updates[`orders/${key}/customer/name`] = finalName;
+                const finalName = customerNameOnly ? `${newPrefix} ${customerNameOnly}` : newPrefix;
+                
+                keysToMove.forEach(k => {
+                     updates[`orders/${k}/customer/name`] = finalName;
+                     // Also move phone/email if source has them (this fixes the missing contact info bug)
+                     if(sourceOrder.customer.phone && sourceOrder.customer.phone.length > 5) 
+                        updates[`orders/${k}/customer/phone`] = sourceOrder.customer.phone;
+                     if(sourceOrder.customer.email && sourceOrder.customer.email.includes('@'))
+                        updates[`orders/${k}/customer/email`] = sourceOrder.customer.email;
                 });
                 
                 await update(ref(db), updates);
                 closeModal('edit-modal');
-                
-            } catch (error) {
-                console.error("Error moving table:", error);
-                alert("Failed to move table. See console.");
-            }
+
+            } catch(e) { console.error(e); alert(e.message); }
         }
 
         function updateOrderFinancials(order, items) {
