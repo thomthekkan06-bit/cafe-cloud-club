@@ -1422,8 +1422,10 @@
                 yPos += 4;
                 centerText("FSSAI No: 21323204000463", yPos, 7, 'normal');
                 yPos += 5;
-
-                // REMOVED FOOTER LOGO HERE
+                
+                // --- ADDED BRANDING HERE ---
+                centerText("Built by Thomsons Networks", yPos, 7, 'italic');
+                yPos += 5;
 
                 // --- 9. SAVE (Force Download Only) ---
                 doc.save(`Bill_${d.orderId}.pdf`);
