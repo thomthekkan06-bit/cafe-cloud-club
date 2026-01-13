@@ -1240,8 +1240,6 @@
                 if (!window.jspdf) return alert("PDF Library not loaded.");
 
                 // --- STEP 1: LOAD LOGO DYNAMICALLY ---
-                // This attempts to convert your file to data. 
-                // If 'cloudlogo.png' is missing or blocked, it returns null.
                 let logoBase64 = null;
                 try {
                     logoBase64 = await getBase64ImageFromUrl('cloudlogo.png');
@@ -1262,11 +1260,20 @@
                 const totalPack = d.fins.pack + leftoverPack;
                 const totalDisc = d.fins.disc + managerDisc;
 
-                // 2. Initialize PDF
+                // --- DYNAMIC HEIGHT CALCULATION ---
+                // Count valid items (not deleted)
+                const activeItemCount = (d.items || []).filter(i => !i.deleted).length;
+                // Base height (Headers + Footer + Margins) approx 150mm
+                // Add 20mm per item to be safe for wrapping lines
+                let estHeight = 150 + (activeItemCount * 20);
+                // Ensure it doesn't go below the standard 280mm
+                if (estHeight < 280) estHeight = 280;
+
+                // 2. Initialize PDF with Dynamic Height
                 const doc = new window.jsPDF({
                     orientation: 'portrait',
                     unit: 'mm',
-                    format: [80, 280] 
+                    format: [80, estHeight] 
                 });
 
                 const centerX = 40;
@@ -1295,7 +1302,6 @@
                     doc.addImage(logoBase64, 'PNG', (80-w)/2, yPos, w, h);
                     yPos += h + 5;
                 } else {
-                    // Fallback if logo failed to load
                     centerText("Café Cloud Club", yPos, 16, 'bold');
                     yPos += 8;
                 }
@@ -1337,15 +1343,14 @@
                 centerText("Order Details", yPos - 2, 9, 'bold');
                 yPos += 6;
                 
-                // --- NEW COLUMN HEADERS ---
                 doc.setFontSize(8); doc.setFont("helvetica", "bold");
                 doc.text("QTY", leftX, yPos);
                 doc.text("ITEM NAME", leftX + 9, yPos); 
-                doc.text("PRICE", 58, yPos, { align: "right" }); // Align Price near Amount
+                doc.text("PRICE", 58, yPos, { align: "right" }); 
                 doc.text("AMOUNT", rightX, yPos, { align: "right" });
                 yPos += 4;
                 
-                drawDashedLine(yPos); // Optional Separator
+                drawDashedLine(yPos); 
                 yPos += 5;
 
                 d.items.forEach(i => {
@@ -1353,33 +1358,23 @@
 
                     doc.setFont("helvetica", "bold"); doc.setFontSize(9);
                     
-                    // 1. QTY
                     doc.text(String(i.qty), leftX, yPos);
 
-                    // 2. ITEM NAME (Text Wrapped)
-                    // Width is approx 40mm (from x=9 to x=50ish)
                     const nameLines = doc.splitTextToSize(i.name, 35); 
                     doc.text(nameLines, leftX + 9, yPos);
 
-                    // 3. UNIT PRICE
                     doc.text(String(i.price), 58, yPos, { align: "right" });
 
-                    // 4. TOTAL AMOUNT
                     const itemTotal = (i.price * i.qty).toFixed(2);
                     rightText(itemTotal, yPos, 9, 'bold');
 
-                    // Adjust Y based on name height
                     yPos += (nameLines.length * 4); 
 
-                    // Variants / Packing (Indented)
                     doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(80, 80, 80); 
                     
                     let details = [];
                     if(i.variant) details.push(i.variant);
                     
-                    // REMOVED PACKING INFO FROM HERE AS REQUESTED
-                    // The total packing charge is still calculated and shown in the summary below.
-
                     if(details.length > 0) {
                         const detailLines = doc.splitTextToSize(`(${details.join(', ')})`, 35);
                         doc.setFont("helvetica", "italic");
@@ -1388,7 +1383,7 @@
                     }
 
                     doc.setTextColor(0, 0, 0); 
-                    yPos += 3; // Spacer
+                    yPos += 3; 
                 });
 
                 drawDashedLine(yPos);
@@ -1423,13 +1418,11 @@
                 centerText("FSSAI No: 21323204000463", yPos, 7, 'normal');
                 yPos += 5;
                 
-                // --- ADDED BRANDING HERE ---
                 centerText("Built by Thomsons Networks", yPos, 7, 'italic');
                 yPos += 5;
 
-                // --- 9. SAVE (Force Download Only) ---
+                // --- 9. SAVE ---
                 doc.save(`Bill_${d.orderId}.pdf`);
-                // No share sheet, no whatsapp prompt.
 
             } catch (err) { console.error(err); alert("Error generating bill: " + err.message); }
         };
