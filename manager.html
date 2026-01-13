@@ -1263,30 +1263,26 @@ window.shareBill = async () => {
 
                 let yPos = 10;
 
-// --- 3. HEADER SECTION ---
-// PASTE YOUR BASE64 STRING INSIDE THE QUOTES BELOW
-const logoBase64 = "data:image/png;base64,YOUR_COPIED_LONG_STRING_HERE";
+                // --- 3. HEADER SECTION ---
+                const logoBase64 = "data:image/png;base64,YOUR_COPIED_LONG_STRING_HERE"; // PASTE YOUR BASE64 STRING HERE
 
-if (logoBase64.length > 100) { // Simple check to ensure data exists
-    try {
-        const w = 25; 
-        // Assuming a standard aspect ratio if we can't calculate it easily from base64 string alone 
-        // or you can load it into an image object to get exact dimensions if needed.
-        // For now, we will assume it is roughly square or just set a fixed height to avoid overlap.
-        const h = 25; 
-        
-        doc.addImage(logoBase64, 'PNG', (80-w)/2, yPos, w, h);
-        yPos += h + 5;
-    } catch (e) {
-        console.error("Logo Error:", e);
-        centerText("Café Cloud Club", yPos, 16, 'bold');
-        yPos += 8;
-    }
-} else {
-    // Fallback if no base64 provided
-    centerText("Café Cloud Club", yPos, 16, 'bold');
-    yPos += 8;
-}
+                if (logoBase64.length > 100) { 
+                    try {
+                        const w = 25; 
+                        const h = 25; 
+                        
+                        doc.addImage(logoBase64, 'PNG', (80-w)/2, yPos, w, h);
+                        yPos += h + 5;
+                    } catch (e) {
+                        console.error("Logo Error:", e);
+                        centerText("Café Cloud Club", yPos, 16, 'bold');
+                        yPos += 8;
+                    }
+                } else {
+                    // Fallback if no base64 provided
+                    centerText("Café Cloud Club", yPos, 16, 'bold');
+                    yPos += 8;
+                }
 
                 centerText("Café Cloud Club", yPos, 12, 'bold');
                 yPos += 5;
@@ -1332,11 +1328,11 @@ if (logoBase64.length > 100) { // Simple check to ensure data exists
                 yPos += 6;
 
                 // --- 6. ITEMS ---
-centerText("Order Details", yPos - 2, 9, 'bold');
-yPos += 6; // <--- ADD THIS LINE to push the items down
-
-d.items.forEach(i => {
-    if(i.deleted) return;
+                centerText("Order Details", yPos - 2, 9, 'bold');
+                yPos += 6; // --- ADDED SPACING FIX ---
+                
+                d.items.forEach(i => {
+                    if(i.deleted) return;
 
                     doc.setFont("helvetica", "bold");
                     doc.setFontSize(10);
