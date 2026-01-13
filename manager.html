@@ -1377,13 +1377,8 @@
                     let details = [];
                     if(i.variant) details.push(i.variant);
                     
-                    let packCost = 10;
-                    const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
-                    if (i.category === 'ADD-ON') packCost = i.name.startsWith("Hummus") ? 7 : 5;
-                    else if (fiveRsCats.includes(i.category)) packCost = 5;
-                    if (i.variant && (i.variant.includes("Tossed Rice") || i.variant.includes("Sorted Vegges"))) packCost += 7;
-                    
-                    if(packCost > 0) details.push(`+Pack ${packCost}`);
+                    // REMOVED PACKING INFO FROM HERE AS REQUESTED
+                    // The total packing charge is still calculated and shown in the summary below.
 
                     if(details.length > 0) {
                         const detailLines = doc.splitTextToSize(`(${details.join(', ')})`, 35);
@@ -1428,12 +1423,7 @@
                 centerText("FSSAI No: 21323204000463", yPos, 7, 'normal');
                 yPos += 5;
 
-                // --- FOOTER LOGO ---
-                if (logoBase64) {
-                    const w = 20; const h = 20; 
-                    doc.addImage(logoBase64, 'PNG', (80-w)/2, yPos, w, h);
-                    yPos += h + 5;
-                }
+                // REMOVED FOOTER LOGO HERE
 
                 // --- 9. SAVE ---
                 const pdfBlob = doc.output('blob');
