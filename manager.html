@@ -1285,7 +1285,7 @@ window.shareBill = async () => {
                     yPos += 8;
                 }
 
-                centerText("Cloud Club Cafe", yPos, 12, 'bold');
+                centerText("Café Cloud Club", yPos, 12, 'bold');
                 yPos += 5;
                 
                 doc.setFontSize(9); doc.setFont("helvetica", "normal");
@@ -1329,10 +1329,11 @@ window.shareBill = async () => {
                 yPos += 6;
 
                 // --- 6. ITEMS ---
-                centerText("Order Details", yPos - 2, 9, 'bold');
-                
-                d.items.forEach(i => {
-                    if(i.deleted) return;
+centerText("Order Details", yPos - 2, 9, 'bold');
+yPos += 6; // <--- ADD THIS LINE to push the items down
+
+d.items.forEach(i => {
+    if(i.deleted) return;
 
                     doc.setFont("helvetica", "bold");
                     doc.setFontSize(10);
