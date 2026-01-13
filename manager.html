@@ -1210,14 +1210,14 @@
         }
 
         // --- NEW THERMAL RECEIPT GENERATOR ---
-        window.shareBill = async () => {
+window.shareBill = async () => {
             try {
                 // 1. Validation & Data Setup
                 if (!currentSettleTable || !tableData[currentSettleTable]) return alert("Select a table first.");
                 const d = tableData[currentSettleTable];
                 if (!window.jspdf) return alert("PDF Library not loaded.");
 
-                // Calculate Totals (Matches your Settle Modal logic)
+                // Calculate Totals
                 const type = document.getElementById('disc-type').value;
                 const val = parseFloat(document.getElementById('disc-val').value) || 0;
                 let managerDisc = (type === 'flat') ? val : Math.round(d.total * (val / 100));
@@ -1236,7 +1236,7 @@
                 const doc = new window.jsPDF({
                     orientation: 'portrait',
                     unit: 'mm',
-                    format: [80, 280] // Height is adjustable, 280 covers long bills
+                    format: [80, 280] 
                 });
 
                 // --- HELPER FUNCTIONS ---
@@ -1256,9 +1256,9 @@
 
                 const drawDashedLine = (y) => {
                     doc.setLineWidth(0.2);
-                    doc.setLineDashPattern([1, 1], 0); // 1mm dash, 1mm gap
+                    doc.setLineDashPattern([1, 1], 0); 
                     doc.line(leftX, y, rightX, y);
-                    doc.setLineDashPattern([], 0); // Reset to solid
+                    doc.setLineDashPattern([], 0); 
                 };
 
                 let yPos = 10;
@@ -1268,12 +1268,11 @@
                 const logoImg = new Image();
                 logoImg.src = 'cloudlogo.png';
                 
-                // Wait briefly for logo (optional, prevents freeze if missing)
                 await new Promise(r => { 
                     if(logoImg.complete) r(); 
                     logoImg.onload = r; 
                     logoImg.onerror = r; 
-                    setTimeout(r, 500); // Timeout fallback
+                    setTimeout(r, 300); 
                 });
 
                 if (logoImg.naturalWidth > 0) {
@@ -1286,20 +1285,20 @@
                     yPos += 8;
                 }
 
-                centerText("Cloud Club Café", yPos, 12, 'bold');
+                centerText("Cloud Club Cafe", yPos, 12, 'bold');
                 yPos += 5;
                 
                 doc.setFontSize(9); doc.setFont("helvetica", "normal");
                 const addrLines = doc.splitTextToSize("Opposite kfc, Muringoor, Chalakudy, Kerala, 680316", 70);
                 doc.text(addrLines, centerX, yPos, { align: "center" });
-                yPos += (addrLines.length * 4) + 2;
+                yPos += (addrLines.length * 4) + 3;
 
                 drawDashedLine(yPos);
                 yPos += 7;
 
                 // --- 4. BIG TOTAL DISPLAY ---
-                centerText(`₹${finalGrand.toFixed(2)}`, yPos + 3, 22, 'bold');
-                yPos += 8;
+                centerText(`Rs. ${finalGrand.toFixed(2)}`, yPos + 2, 20, 'bold');
+                yPos += 9;
                 centerText("Total", yPos, 10, 'normal');
                 yPos += 6;
 
@@ -1309,17 +1308,14 @@
                 // --- 5. INFO BLOCK ---
                 doc.setFontSize(9); doc.setFont("helvetica", "normal");
                 
-                // Order ID & Type
                 doc.text(`Order: ${d.orderType || 'Takeaway'} #${d.orderId || '-'}`, leftX, yPos);
                 yPos += 5;
                 
-                // Date
                 const dateObj = new Date();
                 const dateStr = dateObj.toLocaleDateString('en-GB') + " " + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 doc.text(`Date: ${dateStr}`, leftX, yPos);
                 yPos += 5;
 
-                // Customer Info
                 let cName = d.customerName || `Table ${currentSettleTable}`;
                 doc.text(`Customer: ${cName}`, leftX, yPos);
                 yPos += 5;
@@ -1332,59 +1328,59 @@
                 drawDashedLine(yPos);
                 yPos += 6;
 
-                // --- 6. ITEMS (The "Stack" Layout) ---
-                centerText("- Order Details -", yPos - 2, 8, 'italic');
+                // --- 6. ITEMS ---
+                centerText("Order Details", yPos - 2, 9, 'bold');
                 
                 d.items.forEach(i => {
                     if(i.deleted) return;
 
-                    // ROW 1: Name (Left) -- Price (Right)
                     doc.setFont("helvetica", "bold");
                     doc.setFontSize(10);
                     
                     const itemTotal = (i.price * i.qty).toFixed(2);
-                    // Wrap text if name is too long (limit width to 50mm)
-                    const nameLines = doc.splitTextToSize(i.name, 50);
+                    // Wrap text to avoid hitting price column
+                    const nameLines = doc.splitTextToSize(i.name, 45); 
                     
                     doc.text(nameLines, leftX, yPos);
-                    rightText(`₹${itemTotal}`, yPos, 10, 'bold');
+                    rightText(`Rs. ${itemTotal}`, yPos, 10, 'bold');
                     
-                    // Move Y down based on how many lines the name took
+                    // Move Y down based on lines
                     yPos += (nameLines.length * 4); 
 
-                    // ROW 2: Calculation (Small Gray)
+                    // Calculation Line (e.g. 2 x 150)
                     doc.setFont("helvetica", "normal");
                     doc.setFontSize(8);
-                    doc.setTextColor(80, 80, 80); // Gray
-                    doc.text(`${i.qty} x ₹${i.price}`, leftX, yPos);
+                    doc.setTextColor(80, 80, 80); 
+                    doc.text(`${i.qty} x ${i.price}`, leftX, yPos);
                     
-                    // Addons / Packing / Variant info
+                    // Addons / Packing
                     let details = [];
+                    // Logic to show variant
                     if(i.variant) details.push(i.variant);
                     
-                    // Calculate item specific packing cost for display
+                    // Packing Logic
                     let packCost = 10;
                     const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
                     if (i.category === 'ADD-ON') packCost = i.name.startsWith("Hummus") ? 7 : 5;
                     else if (fiveRsCats.includes(i.category)) packCost = 5;
                     if (i.variant && (i.variant.includes("Tossed Rice") || i.variant.includes("Sorted Vegges"))) packCost += 7;
                     
-                    if(packCost > 0) details.push(`+Pack ₹${packCost}`);
+                    if(packCost > 0) details.push(`+Pack ${packCost}`);
 
                     if(details.length > 0) {
                         yPos += 3.5;
                         doc.setFont("helvetica", "italic");
-                        doc.text(`(${details.join(', ')})`, leftX + 2, yPos); // Indent slightly
+                        doc.text(`(${details.join(', ')})`, leftX + 2, yPos);
                     }
 
-                    doc.setTextColor(0, 0, 0); // Reset Black
-                    yPos += 5; // Spacing before next item
+                    doc.setTextColor(0, 0, 0); 
+                    yPos += 6; // Extra space between items
                 });
 
                 drawDashedLine(yPos);
                 yPos += 6;
 
-                // --- 7. SUMMARY TOTALS ---
+                // --- 7. SUMMARY ---
                 const row = (label, value, isBold=false) => {
                     doc.setFontSize(9); doc.setFont("helvetica", isBold ? "bold" : "normal");
                     doc.text(label, leftX, yPos);
@@ -1392,20 +1388,20 @@
                     yPos += 5;
                 };
 
-                row("Subtotal", `₹${d.fins.sub}`);
-                if(totalPack > 0) row("Packing Charges", `₹${totalPack}`);
-                if(totalDisc > 0) row("Discount", `- ₹${totalDisc}`);
-                if(redeemVal > 0) row("Loyalty Used", `- ₹${redeemVal}`);
+                row("Subtotal", `Rs. ${d.fins.sub}`);
+                if(totalPack > 0) row("Packing Charges", `Rs. ${totalPack}`);
+                if(totalDisc > 0) row("Discount", `- Rs. ${totalDisc}`);
+                if(redeemVal > 0) row("Loyalty Used", `- Rs. ${redeemVal}`);
 
                 yPos += 1;
                 doc.setLineWidth(0.4);
-                doc.line(leftX, yPos, rightX, yPos); // Solid line before Grand Total
+                doc.line(leftX, yPos, rightX, yPos); 
                 yPos += 6;
 
                 // Grand Total
                 doc.setFontSize(14); doc.setFont("helvetica", "bold");
                 doc.text("Grand Total", leftX, yPos);
-                rightText(`₹${finalGrand}`, yPos, 14, 'bold');
+                rightText(`Rs. ${finalGrand}`, yPos, 14, 'bold');
                 yPos += 6;
 
                 doc.setFontSize(9); doc.setFont("helvetica", "normal");
@@ -1419,11 +1415,11 @@
                 // --- 8. FOOTER ---
                 centerText("Thank you and Visit again", yPos, 10, 'bold');
                 yPos += 5;
-                centerText('"Please consume the delivered food within 2hrs."', yPos, 7, 'italic');
+                centerText('"Please consume within 2hrs"', yPos, 8, 'italic');
                 yPos += 4;
-                centerText("No 20-12664", yPos, 7, 'normal');
+                centerText("FSSAI No: 21323204000463", yPos, 7, 'normal');
 
-                // --- 9. OUTPUT ---
+                // --- 9. SAVE ---
                 const pdfBlob = doc.output('blob');
                 const file = new File([pdfBlob], `Bill_${d.orderId}.pdf`, { type: 'application/pdf' });
 
