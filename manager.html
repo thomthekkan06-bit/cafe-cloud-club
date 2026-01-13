@@ -1433,51 +1433,106 @@
             if(keys.length > 0) { closeModal('settle-modal'); openEditModal(keys[keys.length - 1]); }
         }
 
-        window.openEditModal = async (key) => {
-            currentEditKey = key;
-            document.getElementById('edit-modal').style.display = 'flex';
-            const snap = await get(ref(db, 'orders/' + key));
-            if(snap.exists()) {
-                const order = snap.val();
-                const sel = document.getElementById('table-transfer-select');
-                sel.innerHTML = "";
-                let currentTableId = "";
-                if (order.customer && order.customer.name && order.customer.name.startsWith("Table")) {
-                    currentTableId = order.customer.name.split(" ")[1];
-                }
-                
-                // --- REVISED OPTION GENERATION ---
-                // 1. Outdoor 1-7
-                for(let i=1; i<=7; i++) {
-                    const opt = document.createElement('option');
-                    opt.value = i; opt.text = `Table ${i}`;
-                    if(i.toString() === currentTableId) opt.selected = true;
-                    sel.appendChild(opt);
-                }
-                // 2. Bar Chairs 1-4
-                for(let i=1; i<=4; i++) {
-                    const opt = document.createElement('option');
-                    opt.value = `BC${i}`; opt.text = `Bar Chair ${i}`;
-                    sel.appendChild(opt);
-                }
-                // 3. AC Tables 1-5 (Replacing 9-13)
-                for(let i=1; i<=5; i++) {
-                    const opt = document.createElement('option');
-                    opt.value = `AC${i}`; opt.text = `AC ${i}`;
-                    sel.appendChild(opt);
-                }
+        // GLOBAL VARS
+        let currentEditKeys = []; // New global to track all keys for the table
 
-                renderEditList(order.items || []);
+        window.openEditModal = async (key) => {
+            currentEditKey = key; // Keep this for reference (e.g. adding items to latest)
+            document.getElementById('edit-modal').style.display = 'flex';
+            
+            // 1. Determine if this key belongs to a table with multiple orders
+            let tableId = null;
+            let keysToFetch = [key];
+
+            // Search tableData to see if this key is part of a known table
+            for (const [tId, tData] of Object.entries(tableData)) {
+                if (tData.keys && tData.keys.includes(key)) {
+                    tableId = tId;
+                    keysToFetch = tData.keys; // Fetch ALL keys for this table
+                    break;
+                }
             }
+            
+            currentEditKeys = keysToFetch; // Store for refreshing
+
+            // 2. Setup the "Move Table" dropdown (Standard logic)
+            // We need the customer name from the current order to pre-select properly
+            const snap = await get(ref(db, 'orders/' + key));
+            const order = snap.val(); // Main order to determine current table name
+            
+            const sel = document.getElementById('table-transfer-select');
+            sel.innerHTML = "";
+            let currentTableId = "";
+            if (order && order.customer && order.customer.name) {
+                 if (order.customer.name.startsWith("Table")) currentTableId = order.customer.name.split(" ")[1];
+                 else if (order.customer.name.startsWith("AC")) currentTableId = "AC" + order.customer.name.split(" ")[1];
+                 else if (order.customer.name.startsWith("Bar Chair")) currentTableId = "BC" + order.customer.name.split(" ")[2];
+            }
+
+            // ... Populate Select Options (Same as before) ...
+            // Outdoor 1-7
+            for(let i=1; i<=7; i++) {
+                const opt = document.createElement('option');
+                opt.value = i; opt.text = `Table ${i}`;
+                if(i.toString() === currentTableId) opt.selected = true;
+                sel.appendChild(opt);
+            }
+            // Bar Chairs
+            for(let i=1; i<=4; i++) {
+                const opt = document.createElement('option');
+                opt.value = `BC${i}`; opt.text = `Bar Chair ${i}`;
+                if(`BC${i}` === currentTableId) opt.selected = true;
+                sel.appendChild(opt);
+            }
+            // AC
+            for(let i=1; i<=5; i++) {
+                const opt = document.createElement('option');
+                opt.value = `AC${i}`; opt.text = `AC ${i}`;
+                if(`AC${i}` === currentTableId) opt.selected = true;
+                sel.appendChild(opt);
+            }
+
+            // 3. Fetch and Render ALL Items
+            await fetchAndRenderEditList();
         }
 
-        function renderEditList(items) {
+        async function fetchAndRenderEditList() {
             const container = document.getElementById('edit-list-container');
-            container.innerHTML = "";
-            items.forEach((item, index) => {
-                const isDel = item.deleted ? 'opacity:0.5; text-decoration:line-through;' : '';
-                container.innerHTML += `<div class="edit-row" style="display:flex; justify-content:space-between; margin-bottom:5px; ${isDel}"><div>${item.qty}x ${item.name}</div><button style="color:red; background:none; border:none; cursor:pointer;" onclick="deleteItem(${index})">🗑</button></div>`;
-            });
+            container.innerHTML = "Loading items...";
+            
+            let html = "";
+            
+            for (const k of currentEditKeys) {
+                const s = await get(ref(db, 'orders/' + k));
+                if (!s.exists()) continue;
+                const o = s.val();
+                if (!o.items) continue;
+                
+                o.items.forEach((item, idx) => {
+                    const isDel = item.deleted ? 'opacity:0.5; text-decoration:line-through;' : '';
+                    // We need to pass the SPECIFIC Key and Index to delete
+                    html += `<div class="edit-row" style="display:flex; justify-content:space-between; margin-bottom:5px; ${isDel}">
+                                <div>${item.qty}x ${item.name} <span style="font-size:0.7rem; color:#888">(${o.orderId})</span></div>
+                                <button style="color:red; background:none; border:none; cursor:pointer;" onclick="deleteItemCombined('${k}', ${idx})">🗑</button>
+                             </div>`;
+                });
+            }
+            
+            container.innerHTML = html;
+        }
+
+        window.deleteItemCombined = async (key, idx) => {
+            if(!confirm("Delete this item?")) return;
+            const snap = await get(ref(db, 'orders/' + key));
+            if(snap.exists()) {
+                let order = snap.val();
+                if(order.items && order.items[idx]) {
+                    order.items[idx].deleted = true;
+                    updateOrderFinancials(order, order.items);
+                    await update(ref(db, 'orders/' + key), order);
+                    fetchAndRenderEditList(); // Refresh
+                }
+            }
         }
 
         window.addNewItemToOrder = async () => {
@@ -1492,80 +1547,91 @@
             items.push({ name, price, qty, kitchenDone: false });
             updateOrderFinancials(order, items);
             await update(ref(db, 'orders/' + currentEditKey), order);
-            renderEditList(items);
+            fetchAndRenderEditList(); // Refresh
         }
 
         window.deleteItem = async (index) => {
+            // Deprecated by deleteItemCombined but kept safe
             const snap = await get(ref(db, 'orders/' + currentEditKey));
             let order = snap.val();
             if(order.items[index]) {
                 order.items[index].deleted = true;
                 updateOrderFinancials(order, order.items);
                 await update(ref(db, 'orders/' + currentEditKey), order);
-                renderEditList(order.items);
+                fetchAndRenderEditList();
             }
         }
 
-        // --- FIXED FUNCTION: SAVING TABLE MOVE FOR ALL ORDERS (REVISED) --- 
+        // --- FIXED FUNCTION: SAVING TABLE MOVE FOR ALL ORDERS --- 
         window.saveTableMove = async () => {
             const newTableId = document.getElementById('table-transfer-select').value;
-            // 1. Construct New Name Prefix
+            
+            // 1. Generate the NEW table prefix (e.g., "Table 5")
             let newPrefix = `Table ${newTableId}`;
             if(newTableId.startsWith("BC")) newPrefix = `Bar Chair ${newTableId.substring(2)}`;
-            else if(newTableId.startsWith("AC")) newPrefix = `AC ${newTableId.substring(2)}`;
+            if(newTableId.startsWith("AC")) newPrefix = `AC ${newTableId.substring(2)}`;
 
             try {
-                // 2. Identify Source Order & Old Table ID
+                // 2. Fetch the CURRENT order to get the existing Guest Name
                 const snap = await get(ref(db, 'orders/' + currentEditKey));
-                if (!snap.exists()) { alert("Order not found!"); return; }
-                const sourceOrder = snap.val();
-                const sourceName = sourceOrder.customer ? sourceOrder.customer.name : "";
-                
-                // Extract Customer Name (if any) to preserve it
-                let customerNameOnly = "";
-                // Logic to strip "Table X " from "Table 1 John" -> "John"
-                if (sourceName.startsWith("Table ")) {
-                    const parts = sourceName.split(" ");
-                    if (parts.length > 2) customerNameOnly = parts.slice(2).join(" ");
-                } else if (sourceName.startsWith("AC ")) {
-                    const parts = sourceName.split(" ");
-                    if (parts.length > 2) customerNameOnly = parts.slice(2).join(" ");
-                } else if (sourceName.startsWith("Bar Chair ")) {
-                    const parts = sourceName.split(" ");
-                    if (parts.length > 3) customerNameOnly = parts.slice(3).join(" ");
+                if (!snap.exists()) {
+                    alert("Order not found!");
+                    return;
+                }
+                const order = snap.val();
+                const oldName = order.customer ? order.customer.name : "";
+
+                // 3. Extract the customer's actual name by removing the old table prefix
+                // This regex removes "Table 1 ", "AC 2 ", "Bar Chair 1 ", etc.
+                let customerNameOnly = oldName
+                    .replace(/^Table \d+\s*/i, "")
+                    .replace(/^AC \d+\s*/i, "")
+                    .replace(/^Bar Chair \d+\s*/i, "")
+                    .trim();
+
+                // 4. Combine new table + existing name
+                let finalName = newPrefix;
+                if(customerNameOnly && customerNameOnly.length > 0) {
+                    finalName = `${newPrefix} ${customerNameOnly}`;
                 }
 
-                // 3. Determine Old Table ID to use tableData for grouping
+                // 5. IDENTIFY ALL ORDERS TO MOVE (Detect all sibling orders for this table)
+                let keysToMove = [currentEditKey]; 
+
+                // Attempt to derive the old Table ID from the old name directly
+                // This ensures we find the group even if currentSettleTable is not set
                 let oldTableId = null;
-                if (sourceName.startsWith("Table ")) oldTableId = sourceName.split(" ")[1];
-                else if (sourceName.startsWith("AC ")) oldTableId = "AC" + sourceName.split(" ")[1];
-                else if (sourceName.startsWith("Bar Chair ")) oldTableId = "BC" + sourceName.split(" ")[2];
-                
-                // 4. Identify Keys to Move
-                let keysToMove = [currentEditKey]; // Default to just this one if grouping fails
-                
-                // CHECK TABLEDATA (This ensures we get EVERYTHING visible on that table)
-                if (oldTableId && tableData[oldTableId] && tableData[oldTableId].keys) {
-                    keysToMove = tableData[oldTableId].keys;
+                if (oldName.startsWith("Table ")) {
+                    oldTableId = oldName.split(" ")[1]; 
+                } else if (oldName.startsWith("AC ")) {
+                    oldTableId = "AC" + oldName.split(" ")[1]; 
+                } else if (oldName.startsWith("Bar Chair ")) {
+                    const parts = oldName.split(" ");
+                    if (parts[2]) oldTableId = "BC" + parts[2];
                 }
-                
-                // 5. Update
+
+                // If we successfully identified the old table, grab all keys from the live tableData
+                if (oldTableId && tableData[oldTableId]) {
+                    const tData = tableData[oldTableId];
+                    // Safety check: ensure the current order is actually in this list
+                    if (tData.keys.includes(currentEditKey)) {
+                        keysToMove = tData.keys;
+                    }
+                }
+
+                // 6. Update Database for ALL orders associated with the table
                 const updates = {};
-                const finalName = customerNameOnly ? `${newPrefix} ${customerNameOnly}` : newPrefix;
-                
-                keysToMove.forEach(k => {
-                     updates[`orders/${k}/customer/name`] = finalName;
-                     // Also move phone/email if source has them (this fixes the missing contact info bug)
-                     if(sourceOrder.customer.phone && sourceOrder.customer.phone.length > 5) 
-                        updates[`orders/${k}/customer/phone`] = sourceOrder.customer.phone;
-                     if(sourceOrder.customer.email && sourceOrder.customer.email.includes('@'))
-                        updates[`orders/${k}/customer/email`] = sourceOrder.customer.email;
+                keysToMove.forEach(key => {
+                    updates[`orders/${key}/customer/name`] = finalName;
                 });
                 
                 await update(ref(db), updates);
                 closeModal('edit-modal');
-
-            } catch(e) { console.error(e); alert(e.message); }
+                
+            } catch (error) {
+                console.error("Error moving table:", error);
+                alert("Failed to move table. See console.");
+            }
         }
 
         function updateOrderFinancials(order, items) {
