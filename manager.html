@@ -1209,163 +1209,240 @@
             document.getElementById('earn-preview').innerText = `+${pointsToEarn} Pts`;
         }
 
+        // --- NEW THERMAL RECEIPT GENERATOR ---
         window.shareBill = async () => {
             try {
+                // 1. Validation & Data Setup
                 if (!currentSettleTable || !tableData[currentSettleTable]) return alert("Select a table first.");
                 const d = tableData[currentSettleTable];
                 if (!window.jspdf) return alert("PDF Library not loaded.");
 
+                // Calculate Totals (Matches your Settle Modal logic)
                 const type = document.getElementById('disc-type').value;
                 const val = parseFloat(document.getElementById('disc-val').value) || 0;
                 let managerDisc = (type === 'flat') ? val : Math.round(d.total * (val / 100));
                 const redeemVal = parseInt(document.getElementById('redeem-points').value) || 0;
-
-                // NEW: Calc Leftover Packing for PDF
+                
                 let leftoverPack = 0;
                 document.querySelectorAll('.pack-cb:checked').forEach(cb => {
                     leftoverPack += parseFloat(cb.dataset.cost || 0);
                 });
 
                 const finalGrand = (d.total - managerDisc - redeemVal + leftoverPack) > 0 ? (d.total - managerDisc - redeemVal + leftoverPack) : 0;
-                const finalTotalDisc = d.fins.disc + managerDisc;
-                const finalTotalPack = d.fins.pack + leftoverPack;
-                
-                const logoImg = new Image();
-                logoImg.src = 'cloudlogo.png';
-                
-                await new Promise((resolve, reject) => {
-                    logoImg.onload = resolve;
-                    logoImg.onerror = () => {
-                        console.warn("Logo cloudlogo.png not found, skipping.");
-                        resolve(); 
-                    };
-                });
+                const totalPack = d.fins.pack + leftoverPack;
+                const totalDisc = d.fins.disc + managerDisc;
 
+                // 2. Initialize PDF (80mm Width for Thermal Printer)
                 const doc = new window.jsPDF({
                     orientation: 'portrait',
                     unit: 'mm',
-                    format: [80, 250] 
+                    format: [80, 280] // Height is adjustable, 280 covers long bills
                 });
 
-                if (typeof doc.autoTable !== 'function') return alert("AutoTable plugin not loaded.");
+                // --- HELPER FUNCTIONS ---
+                const centerX = 40;
+                const rightX = 76;
+                const leftX = 4;
 
-                let yPos = 5;
+                const centerText = (text, y, size=10, font='normal') => {
+                    doc.setFontSize(size); doc.setFont("helvetica", font);
+                    doc.text(text, centerX, y, { align: "center" });
+                };
+                
+                const rightText = (text, y, size=10, font='normal') => {
+                    doc.setFontSize(size); doc.setFont("helvetica", font);
+                    doc.text(text, rightX, y, { align: "right" });
+                };
 
-                if (logoImg.complete && logoImg.naturalWidth > 0) {
-                    const aspect = logoImg.naturalWidth / logoImg.naturalHeight;
+                const drawDashedLine = (y) => {
+                    doc.setLineWidth(0.2);
+                    doc.setLineDashPattern([1, 1], 0); // 1mm dash, 1mm gap
+                    doc.line(leftX, y, rightX, y);
+                    doc.setLineDashPattern([], 0); // Reset to solid
+                };
+
+                let yPos = 10;
+
+                // --- 3. HEADER SECTION ---
+                // Try to load logo
+                const logoImg = new Image();
+                logoImg.src = 'cloudlogo.png';
+                
+                // Wait briefly for logo (optional, prevents freeze if missing)
+                await new Promise(r => { 
+                    if(logoImg.complete) r(); 
+                    logoImg.onload = r; 
+                    logoImg.onerror = r; 
+                    setTimeout(r, 500); // Timeout fallback
+                });
+
+                if (logoImg.naturalWidth > 0) {
                     const w = 25; 
-                    const h = w / aspect;
-                    doc.addImage(logoImg, 'PNG', 27.5, yPos, w, h); 
-                    yPos += h + 5; 
+                    const h = 25 * (logoImg.naturalHeight / logoImg.naturalWidth);
+                    doc.addImage(logoImg, 'PNG', (80-w)/2, yPos, w, h);
+                    yPos += h + 5;
                 } else {
-                    yPos += 5; 
+                    centerText("CLOUD CLUB", yPos, 16, 'bold');
+                    yPos += 8;
                 }
 
-                doc.setFontSize(8); doc.setFont("helvetica", "bold");
-                doc.text("GST: 32AKXPC2831L1Z0", 5, yPos); 
-                yPos += 5;
-
-                doc.setFontSize(12); doc.setFont("helvetica", "bold");
-                doc.text("CAFE CLOUD CLUB", 40, yPos, { align: "center" });
+                centerText("Cloud Club Café", yPos, 12, 'bold');
                 yPos += 5;
                 
-                doc.setFontSize(8); doc.setFont("helvetica", "normal");
-                doc.text("Tasty & Fresh", 40, yPos, { align: "center" });
-                yPos += 4;
-                
-                doc.text("Date: " + new Date().toLocaleString(), 40, yPos, { align: "center" });
-                yPos += 2;
-                
-                doc.setLineWidth(0.5); 
-                doc.line(2, yPos, 78, yPos); 
-                yPos += 2;
+                doc.setFontSize(9); doc.setFont("helvetica", "normal");
+                const addrLines = doc.splitTextToSize("Opposite kfc, Muringoor, Chalakudy, Kerala, 680316", 70);
+                doc.text(addrLines, centerX, yPos, { align: "center" });
+                yPos += (addrLines.length * 4) + 2;
 
-                const tableBody = d.items.filter(i => !i.deleted).map(i => [
-                    i.name, i.qty.toString(), (i.price * i.qty).toFixed(2)
-                ]);
+                drawDashedLine(yPos);
+                yPos += 7;
 
-                doc.autoTable({
-                    startY: yPos,
-                    head: [['Item', 'Qty', 'Amt']], 
-                    body: tableBody,
-                    theme: 'plain', 
-                    styles: { fontSize: 8, cellPadding: 1 }, 
-                    columnStyles: { 
-                        0: { cellWidth: 'auto' }, 
-                        1: { cellWidth: 10, halign: 'center' }, 
-                        2: { cellWidth: 15, halign: 'right' }   
-                    },
-                    headStyles: { fontStyle: 'bold', fillColor: [220, 220, 220] },
-                    margin: { left: 2, right: 2 } 
+                // --- 4. BIG TOTAL DISPLAY ---
+                centerText(`₹${finalGrand.toFixed(2)}`, yPos + 3, 22, 'bold');
+                yPos += 8;
+                centerText("Total", yPos, 10, 'normal');
+                yPos += 6;
+
+                drawDashedLine(yPos);
+                yPos += 6;
+
+                // --- 5. INFO BLOCK ---
+                doc.setFontSize(9); doc.setFont("helvetica", "normal");
+                
+                // Order ID & Type
+                doc.text(`Order: ${d.orderType || 'Takeaway'} #${d.orderId || '-'}`, leftX, yPos);
+                yPos += 5;
+                
+                // Date
+                const dateObj = new Date();
+                const dateStr = dateObj.toLocaleDateString('en-GB') + " " + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                doc.text(`Date: ${dateStr}`, leftX, yPos);
+                yPos += 5;
+
+                // Customer Info
+                let cName = d.customerName || `Table ${currentSettleTable}`;
+                doc.text(`Customer: ${cName}`, leftX, yPos);
+                yPos += 5;
+                
+                if(d.phone && d.phone.length > 5) {
+                    doc.text(`Phone: ${d.phone}`, leftX, yPos);
+                    yPos += 5;
+                }
+
+                drawDashedLine(yPos);
+                yPos += 6;
+
+                // --- 6. ITEMS (The "Stack" Layout) ---
+                centerText("- Order Details -", yPos - 2, 8, 'italic');
+                
+                d.items.forEach(i => {
+                    if(i.deleted) return;
+
+                    // ROW 1: Name (Left) -- Price (Right)
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(10);
+                    
+                    const itemTotal = (i.price * i.qty).toFixed(2);
+                    // Wrap text if name is too long (limit width to 50mm)
+                    const nameLines = doc.splitTextToSize(i.name, 50);
+                    
+                    doc.text(nameLines, leftX, yPos);
+                    rightText(`₹${itemTotal}`, yPos, 10, 'bold');
+                    
+                    // Move Y down based on how many lines the name took
+                    yPos += (nameLines.length * 4); 
+
+                    // ROW 2: Calculation (Small Gray)
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(8);
+                    doc.setTextColor(80, 80, 80); // Gray
+                    doc.text(`${i.qty} x ₹${i.price}`, leftX, yPos);
+                    
+                    // Addons / Packing / Variant info
+                    let details = [];
+                    if(i.variant) details.push(i.variant);
+                    
+                    // Calculate item specific packing cost for display
+                    let packCost = 10;
+                    const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
+                    if (i.category === 'ADD-ON') packCost = i.name.startsWith("Hummus") ? 7 : 5;
+                    else if (fiveRsCats.includes(i.category)) packCost = 5;
+                    if (i.variant && (i.variant.includes("Tossed Rice") || i.variant.includes("Sorted Vegges"))) packCost += 7;
+                    
+                    if(packCost > 0) details.push(`+Pack ₹${packCost}`);
+
+                    if(details.length > 0) {
+                        yPos += 3.5;
+                        doc.setFont("helvetica", "italic");
+                        doc.text(`(${details.join(', ')})`, leftX + 2, yPos); // Indent slightly
+                    }
+
+                    doc.setTextColor(0, 0, 0); // Reset Black
+                    yPos += 5; // Spacing before next item
                 });
 
-                let finalY = doc.lastAutoTable.finalY + 5;
-                
-                const rightX = 75; 
-                doc.setFontSize(9);
-                doc.text(`Sub Total:`, 40, finalY); doc.text(`${d.fins.sub}`, rightX, finalY, {align: 'right'}); finalY += 4;
-                doc.text(`Packing:`, 40, finalY); doc.text(`${finalTotalPack}`, rightX, finalY, {align: 'right'}); finalY += 4;
-                if(finalTotalDisc > 0) {
-                    doc.setTextColor(255, 0, 0); 
-                    doc.text(`Discount:`, 40, finalY); doc.text(`-${finalTotalDisc}`, rightX, finalY, {align: 'right'}); 
-                    doc.setTextColor(0, 0, 0); finalY += 4;
-                }
-                if(redeemVal > 0) {
-                    doc.setTextColor(59, 130, 246); 
-                    doc.text(`Loyalty Pts:`, 40, finalY); doc.text(`-${redeemVal}`, rightX, finalY, {align: 'right'}); 
-                    doc.setTextColor(0, 0, 0); finalY += 4;
-                }
-                doc.setFontSize(11); doc.setFont("helvetica", "bold");
-                doc.text(`TOTAL:`, 40, finalY + 2); doc.text(`Rs. ${finalGrand}`, rightX, finalY + 2, {align: 'right'});
-                
-                finalY += 8; 
+                drawDashedLine(yPos);
+                yPos += 6;
 
-                doc.setFontSize(8); doc.setFont("helvetica", "normal");
-                
-                doc.text(`Bill No: ${d.orderId || '-'}`, 40, finalY, { align: "center" });
-                finalY += 4;
+                // --- 7. SUMMARY TOTALS ---
+                const row = (label, value, isBold=false) => {
+                    doc.setFontSize(9); doc.setFont("helvetica", isBold ? "bold" : "normal");
+                    doc.text(label, leftX, yPos);
+                    rightText(value, yPos, 9, isBold ? 'bold' : 'normal');
+                    yPos += 5;
+                };
 
-                let cName = d.customerName;
-                if(!cName) {
-                     if(!currentSettleTable.toString().startsWith('T') && !currentSettleTable.toString().startsWith('D')) {
-                         cName = `Table ${currentSettleTable}`;
-                     }
-                }
-                if(cName) {
-                    doc.text(`Customer: ${cName}`, 40, finalY, { align: "center" });
-                    finalY += 4;
-                }
+                row("Subtotal", `₹${d.fins.sub}`);
+                if(totalPack > 0) row("Packing Charges", `₹${totalPack}`);
+                if(totalDisc > 0) row("Discount", `- ₹${totalDisc}`);
+                if(redeemVal > 0) row("Loyalty Used", `- ₹${redeemVal}`);
 
-                doc.setFont("helvetica", "italic");
-                doc.text("Thank you for visiting!", 40, finalY + 4, { align: "center" });
-                
-                doc.setFont("helvetica", "normal");
-                doc.text("FSSAI no: 21323204000463", 40, finalY + 9, { align: "center" }); 
+                yPos += 1;
+                doc.setLineWidth(0.4);
+                doc.line(leftX, yPos, rightX, yPos); // Solid line before Grand Total
+                yPos += 6;
 
+                // Grand Total
+                doc.setFontSize(14); doc.setFont("helvetica", "bold");
+                doc.text("Grand Total", leftX, yPos);
+                rightText(`₹${finalGrand}`, yPos, 14, 'bold');
+                yPos += 6;
+
+                doc.setFontSize(9); doc.setFont("helvetica", "normal");
+                doc.text("Payment Mode", leftX, yPos);
+                rightText("Cash / UPI", yPos);
+                yPos += 8;
+
+                drawDashedLine(yPos);
+                yPos += 6;
+
+                // --- 8. FOOTER ---
+                centerText("Thank you and Visit again", yPos, 10, 'bold');
+                yPos += 5;
+                centerText('"Please consume the delivered food within 2hrs."', yPos, 7, 'italic');
+                yPos += 4;
+                centerText("No 20-12664", yPos, 7, 'normal');
+
+                // --- 9. OUTPUT ---
                 const pdfBlob = doc.output('blob');
-                const file = new File([pdfBlob], `Bill_Table${currentSettleTable}.pdf`, { type: 'application/pdf' });
+                const file = new File([pdfBlob], `Bill_${d.orderId}.pdf`, { type: 'application/pdf' });
 
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     navigator.share({ 
                         files: [file], 
                         title: 'Bill Receipt', 
-                        text: 'Here is your bill from Cafe Cloud Club.' 
-                    }).catch(err => console.log("Share dismissed"));
-                } 
-                else {
-                    doc.save(`Bill_Table${currentSettleTable}.pdf`);
-                    const choice = confirm("Bill PDF Downloaded!\n\nClick OK to open WhatsApp Web (drag the file to send).\nClick CANCEL to keep file.");
-                    if (choice) {
+                        text: 'Cafe Cloud Club Receipt' 
+                    }).catch(console.log);
+                } else {
+                    doc.save(`Bill_${d.orderId}.pdf`);
+                    if(confirm("Bill PDF Saved! Open WhatsApp to send?")) {
                          let phone = d.phone;
-                         if (phone && phone !== '-' && phone !== '0000000000') {
-                             if (phone.length === 10) phone = "91" + phone;
-                             window.open(`https://web.whatsapp.com/send?phone=${phone}&text=Please+find+attached+your+bill+PDF`, '_blank');
-                         } else {
-                             window.open("https://web.whatsapp.com/", '_blank');
-                         }
+                         if (phone && phone.length === 10) phone = "91" + phone;
+                         window.open(phone ? `https://wa.me/${phone}` : "https://web.whatsapp.com/", '_blank');
                     }
                 }
-            } catch (err) { alert(err.message); }
+
+            } catch (err) { console.error(err); alert("Error generating bill: " + err.message); }
         };
 
         window.settleAndClear = async () => {
