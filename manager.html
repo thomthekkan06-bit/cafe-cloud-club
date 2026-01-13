@@ -1336,28 +1336,64 @@
                 // --- 6. ITEMS ---
                 centerText("Order Details", yPos - 2, 9, 'bold');
                 yPos += 6;
+                
+                // --- NEW COLUMN HEADERS ---
+                doc.setFontSize(8); doc.setFont("helvetica", "bold");
+                doc.text("QTY", leftX, yPos);
+                doc.text("ITEM NAME", leftX + 9, yPos); 
+                doc.text("PRICE", 58, yPos, { align: "right" }); // Align Price near Amount
+                doc.text("AMOUNT", rightX, yPos, { align: "right" });
+                yPos += 4;
+                
+                drawDashedLine(yPos); // Optional Separator
+                yPos += 5;
+
                 d.items.forEach(i => {
                     if(i.deleted) return;
-                    doc.setFont("helvetica", "bold"); doc.setFontSize(10);
-                    const nameLines = doc.splitTextToSize(i.name, 45); 
-                    doc.text(nameLines, leftX, yPos);
-                    rightText(`Rs. ${(i.price * i.qty).toFixed(2)}`, yPos, 10, 'bold');
+
+                    doc.setFont("helvetica", "bold"); doc.setFontSize(9);
+                    
+                    // 1. QTY
+                    doc.text(String(i.qty), leftX, yPos);
+
+                    // 2. ITEM NAME (Text Wrapped)
+                    // Width is approx 40mm (from x=9 to x=50ish)
+                    const nameLines = doc.splitTextToSize(i.name, 35); 
+                    doc.text(nameLines, leftX + 9, yPos);
+
+                    // 3. UNIT PRICE
+                    doc.text(String(i.price), 58, yPos, { align: "right" });
+
+                    // 4. TOTAL AMOUNT
+                    const itemTotal = (i.price * i.qty).toFixed(2);
+                    rightText(itemTotal, yPos, 9, 'bold');
+
+                    // Adjust Y based on name height
                     yPos += (nameLines.length * 4); 
+
+                    // Variants / Packing (Indented)
                     doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(80, 80, 80); 
-                    doc.text(`${i.qty} x ${i.price}`, leftX, yPos);
+                    
                     let details = [];
                     if(i.variant) details.push(i.variant);
+                    
                     let packCost = 10;
                     const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
                     if (i.category === 'ADD-ON') packCost = i.name.startsWith("Hummus") ? 7 : 5;
                     else if (fiveRsCats.includes(i.category)) packCost = 5;
                     if (i.variant && (i.variant.includes("Tossed Rice") || i.variant.includes("Sorted Vegges"))) packCost += 7;
+                    
                     if(packCost > 0) details.push(`+Pack ${packCost}`);
+
                     if(details.length > 0) {
-                        yPos += 3.5; doc.setFont("helvetica", "italic");
-                        doc.text(`(${details.join(', ')})`, leftX + 2, yPos);
+                        const detailLines = doc.splitTextToSize(`(${details.join(', ')})`, 35);
+                        doc.setFont("helvetica", "italic");
+                        doc.text(detailLines, leftX + 9, yPos);
+                        yPos += (detailLines.length * 3.5);
                     }
-                    doc.setTextColor(0, 0, 0); yPos += 6;
+
+                    doc.setTextColor(0, 0, 0); 
+                    yPos += 3; // Spacer
                 });
 
                 drawDashedLine(yPos);
