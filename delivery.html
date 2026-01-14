@@ -75,17 +75,13 @@
             padding: 5px 10px; border-radius: 6px; font-family: 'JetBrains Mono'; font-size: 0.85rem; color: var(--text-muted);
         }
 
-        .tabs { display: grid; grid-template-columns: 1fr 1fr; padding: 0 15px 15px 15px; gap: 10px; }
+        /* MODIFIED: Single Tab Style */
+        .tabs { display: grid; grid-template-columns: 1fr; padding: 0 15px 15px 15px; }
         .tab-btn {
-            background: var(--surface);
-            border: 1px solid var(--border); color: var(--text-muted);
-            padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; text-align: center;
+            background: var(--primary); /* Always active style */
+            border: 1px solid var(--primary); color: white;
+            padding: 10px; border-radius: 8px; font-weight: 700; cursor: default; text-align: center;
             position: relative;
-            transition: all 0.2s;
-        }
-        .tab-btn.active {
-            background: var(--primary);
-            color: white; border-color: var(--primary);
         }
         .tab-count {
             background: var(--danger);
@@ -199,21 +195,16 @@
             <div class="clock-badge" id="clock">00:00</div>
         </div>
         <div class="tabs">
-            <div class="tab-btn active" onclick="switchTab('pickup')" id="tab-pickup">
-                To Pickup <span class="tab-count" id="badge-pickup">0</span>
-            </div>
-            <div class="tab-btn" onclick="switchTab('active')" id="tab-active">
-                En Route <span class="tab-count" id="badge-active">0</span>
+            <div class="tab-btn">
+                Current Deliveries <span class="tab-count" id="badge-total">0</span>
             </div>
         </div>
     </div>
 
-    <div class="orders-wrapper" id="pickup-list"></div>
-    <div class="orders-wrapper hidden" id="active-list"></div>
+    <div class="orders-wrapper" id="orders-list"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        // UPDATED IMPORTS: Added runTransaction
         import { getDatabase, ref, onValue, update, get, set, remove, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
@@ -237,15 +228,6 @@
         let knownOrders = new Set();
         let isFirstLoad = true;
         let isRinging = false;
-
-        // --- UI LOGIC ---
-        window.switchTab = (tab) => {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.orders-wrapper').forEach(d => d.classList.add('hidden'));
-            
-            document.getElementById(`tab-${tab}`).classList.add('active');
-            document.getElementById(`${tab}-list`).classList.remove('hidden');
-        }
 
         window.toggleItems = (id) => {
             const list = document.getElementById(`items-${id}`);
@@ -278,14 +260,11 @@
             onValue(ref(db, 'orders'), (snapshot) => {
                 const data = snapshot.val();
                 
-                const pickupContainer = document.getElementById('pickup-list');
-                const activeContainer = document.getElementById('active-list');
+                // MODIFIED: Target Single Container
+                const listContainer = document.getElementById('orders-list');
+                listContainer.innerHTML = "";
                 
-                pickupContainer.innerHTML = "";
-                activeContainer.innerHTML = "";
-                
-                let countPickup = 0;
-                let countActive = 0;
+                let totalCount = 0;
                 let hasNewOrder = false;
                 const currentIds = new Set();
 
@@ -309,28 +288,22 @@
 
                         // Render Card
                         const cardHtml = createOrderCard(key, order, isPickup);
-                        if(isPickup) {
-                            pickupContainer.innerHTML += cardHtml;
-                            countPickup++;
-                        } else {
-                            activeContainer.innerHTML += cardHtml;
-                            countActive++;
-                        }
+                        listContainer.innerHTML += cardHtml;
+                        totalCount++;
                     });
                 }
 
                 // Empty States
-                if(countPickup === 0) pickupContainer.innerHTML = `<div class="empty-state">No orders waiting for pickup.</div>`;
-                if(countActive === 0) activeContainer.innerHTML = `<div class="empty-state">No active deliveries.</div>`;
+                if(totalCount === 0) listContainer.innerHTML = `<div class="empty-state">No active deliveries.</div>`;
 
-                // Badges
-                const pBadge = document.getElementById('badge-pickup');
-                const aBadge = document.getElementById('badge-active');
-                
-                if(countPickup > 0) { pBadge.innerText = countPickup; pBadge.style.display = 'inline-block'; } 
-                else pBadge.style.display = 'none';
-                if(countActive > 0) { aBadge.innerText = countActive; aBadge.style.display = 'inline-block'; } 
-                else aBadge.style.display = 'none';
+                // Badge
+                const badge = document.getElementById('badge-total');
+                if(totalCount > 0) { 
+                    badge.innerText = totalCount; 
+                    badge.style.display = 'inline-block'; 
+                } else {
+                    badge.style.display = 'none';
+                }
 
                 // Sound Logic
                 if (hasNewOrder) playAlarm();
@@ -339,7 +312,7 @@
             });
         }
 
-        // --- CARD RENDERER (UPDATED MAP LOGIC) ---
+        // --- CARD RENDERER ---
         function createOrderCard(key, order, isPickup) {
             const fins = order.financials || { grandTotal: 0 };
             const delFee = fins.deliveryFee || 0;
@@ -357,7 +330,6 @@
                 displayAddress = parts[0].trim();
                 const linkPart = parts[1].trim();
                 
-                // FIX: Only use valid map links. Ignore the broken "googleusercontent" ones.
                 if(linkPart.startsWith("http") && !linkPart.includes("googleusercontent.com")) {
                     mapLink = linkPart;
                 }
@@ -471,7 +443,6 @@
 
                     // --- LOYALTY CREDIT START ---
                     // Rule: 1 Point per ₹100 of Food/Bev (SubTotal)
-                    // Check if phone exists and has at least 10 digits
                     if(data.customer && data.customer.phone && data.customer.phone.length >= 10) {
                         const subTotal = data.financials ? data.financials.subTotal : 0;
                         const pointsToEarn = Math.floor(subTotal / 100);
