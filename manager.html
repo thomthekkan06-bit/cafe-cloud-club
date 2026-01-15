@@ -1231,13 +1231,36 @@
             document.getElementById('earn-preview').innerText = `+${pointsToEarn} Pts`;
         }
 
-        // --- NEW THERMAL RECEIPT GENERATOR (ROBUST IMAGE LOADING) ---
+        // --- NEW THERMAL RECEIPT GENERATOR (ROBUST IMAGE LOADING & CONSOLIDATION) ---
         window.shareBill = async () => {
             try {
                 // 1. Validation & Data Setup
                 if (!currentSettleTable || !tableData[currentSettleTable]) return alert("Select a table first.");
                 const d = tableData[currentSettleTable];
                 if (!window.jspdf) return alert("PDF Library not loaded.");
+
+                // --- STEP 0: CONSOLIDATE ITEMS ---
+                // We group items by Name + Variant + Price to avoid duplicate lines
+                const consolidatedItems = [];
+                (d.items || []).forEach(item => {
+                    if (item.deleted) return;
+
+                    // Normalize variant (handle null/undefined)
+                    const variantStr = item.variant ? item.variant.trim() : "";
+
+                    const existingItem = consolidatedItems.find(c => 
+                        c.name === item.name && 
+                        c.price === item.price && 
+                        (c.variant ? c.variant.trim() : "") === variantStr
+                    );
+
+                    if (existingItem) {
+                        existingItem.qty += item.qty;
+                    } else {
+                        // Push a shallow copy so we don't mutate the original tableData
+                        consolidatedItems.push({ ...item });
+                    }
+                });
 
                 // --- STEP 1: LOAD LOGO DYNAMICALLY ---
                 let logoBase64 = null;
@@ -1261,11 +1284,8 @@
                 const totalDisc = d.fins.disc + managerDisc;
 
                 // --- DYNAMIC HEIGHT CALCULATION ---
-                // Count valid items (not deleted)
-                const activeItemCount = (d.items || []).filter(i => !i.deleted).length;
-                // Base height (Headers + Footer + Margins) approx 150mm
-                // Add 20mm per item to be safe for wrapping lines
-                let estHeight = 150 + (activeItemCount * 20);
+                // Use consolidatedItems.length instead of raw count
+                let estHeight = 150 + (consolidatedItems.length * 20);
                 // Ensure it doesn't go below the standard 280mm
                 if (estHeight < 280) estHeight = 280;
 
@@ -1339,7 +1359,7 @@
                 drawDashedLine(yPos);
                 yPos += 6;
 
-                // --- 6. ITEMS ---
+                // --- 6. ITEMS (NOW USING CONSOLIDATED LIST) ---
                 centerText("Order Details", yPos - 2, 9, 'bold');
                 yPos += 6;
                 
@@ -1353,8 +1373,9 @@
                 drawDashedLine(yPos); 
                 yPos += 5;
 
-                d.items.forEach(i => {
-                    if(i.deleted) return;
+                // Iterate over CONSOLIDATED items
+                consolidatedItems.forEach(i => {
+                    // No need to check i.deleted here as we filtered them during consolidation
 
                     doc.setFont("helvetica", "bold"); doc.setFontSize(9);
                     
