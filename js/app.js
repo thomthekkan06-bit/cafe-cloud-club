@@ -21,7 +21,6 @@ let couponsData = {};
 const couponsRef = ref(db, 'coupons');
 onValue(couponsRef, (snapshot) => {
     couponsData = snapshot.val() || {};
-    // Removed debug log for production
 });
 
 /* --- MAP & LOCATION LOGIC --- */
@@ -739,25 +738,47 @@ function checkStoreStatus(orderType) {
 
 // --- FIXED FINALIZE ORDER FUNCTION ---
 window.finalizeOrder = function() {
-    // 1. Basic Validation
+    // 1. PREVENT DOUBLE CLICK - DISABLE BUTTON IMMEDIATELY
+    const submitBtn = document.getElementById('final-submit-btn');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Processing...";
+    }
+
+    // 2. Basic Validation
     const type = document.querySelector('input[name="orderType"]:checked').value;
     const status = checkStoreStatus(type);
-    if (!status.isOpen) { alert("Store Closed!\n" + status.msg); return; }
+    
+    // IMPORTANT: If validation fails, we MUST re-enable the button
+    if (!status.isOpen) { 
+        alert("Store Closed!\n" + status.msg); 
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Confirm Order"; }
+        return; 
+    }
 
     const name = document.getElementById('c-name').value.trim();
     let rawPhone = document.getElementById('c-phone').value.trim();
     let phone = rawPhone.replace(/\D/g, ''); 
     if (phone.length > 10 && phone.startsWith('91')) { phone = phone.substring(2);
     }
-    if (phone.length < 10 || phone.length > 12) { alert("Please enter a valid 10-digit mobile number.");
-    return; }
+    if (phone.length < 10 || phone.length > 12) { 
+        alert("Please enter a valid 10-digit mobile number.");
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Confirm Order"; }
+        return; 
+    }
 
     const email = document.getElementById('c-email').value.trim();
     const time = document.getElementById('c-time').value;
     const instruction = document.getElementById('c-instruction').value.trim();
-    if(!name || !time) { alert("Please fill in Name and Preferred Time."); return;
+    if(!name || !time) { 
+        alert("Please fill in Name and Preferred Time."); 
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Confirm Order"; }
+        return;
     }
-    if (!email || !email.includes('@')) { alert("Please enter a valid email!"); return;
+    if (!email || !email.includes('@')) { 
+        alert("Please enter a valid email!"); 
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Confirm Order"; }
+        return;
     }
 
     // --- ADDRESS LOGIC ---
@@ -769,23 +790,35 @@ window.finalizeOrder = function() {
         const landmark = document.getElementById('addr-landmark').value.trim();
         const lat = document.getElementById('geo-lat').value;
         const lng = document.getElementById('geo-lng').value;
-        if (!house) { alert("Please enter House Name/Flat No."); return; }
-        if (!street) { alert("Please select your Main Town.");
-        return; }
+        if (!house) { 
+            alert("Please enter House Name/Flat No."); 
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Confirm Order"; }
+            return; 
+        }
+        if (!street) { 
+            alert("Please select your Main Town.");
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Confirm Order"; }
+            return; 
+        }
         
         if (subStreet && subStreet !== "") {
             street = `${street} (${subStreet})`;
         } else if (subPlaces[street]) {
             alert("Please select the specific area/junction in " + street);
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Confirm Order"; }
             return;
         }
 
-        if (!landmark) { alert("Please enter a nearby Landmark."); return;
+        if (!landmark) { 
+            alert("Please enter a nearby Landmark."); 
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Confirm Order"; }
+            return;
         }
         if (street === "Other") {
             if (instruction.length < 5) {
                 alert("You selected 'Other'. Please type your exact location name in 'Special Instructions'.");
                 document.getElementById('c-instruction').focus();
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Confirm Order"; }
                 return;
             }
         }
@@ -892,6 +925,7 @@ const mapLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
     // --- SECURITY FIX: MINIMUM ORDER CHECK ---
     if (grandTotal < MIN_ORDER_VAL) {
         alert("Wait a minute! Your total (₹" + grandTotal + ") has dropped below the minimum order value of ₹" + MIN_ORDER_VAL + ".\n\nPlease add more items to proceed.");
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Confirm Order"; }
         return; 
     }
 
