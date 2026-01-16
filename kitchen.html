@@ -329,8 +329,9 @@
         const db = getDatabase(app);
 
         // --- FILTER CONFIGURATION ---
-        // EDITED: RESTORED EXCLUSIONS for 'Cloud Botanical Brews' and 'Cafe Botanical Brews'
-        const EXCLUDED_CATEGORIES = ["Desi Delight Bites", "Cloud Botanical Brews", "Cafe Botanical Brews"];
+        // EDITED: REMOVED "Cloud Botanical Brews" so it appears here.
+        // KEPT "Desi Delight Bites" and "Cafe Botanical Brews" so they are HIDDEN (go to T-Shop).
+        const EXCLUDED_CATEGORIES = ["Desi Delight Bites", "Cafe Botanical Brews"];
 
         // --- ROBUST WAKE LOCK (PREVENT SLEEP) ---
         let wakeLock = null;
