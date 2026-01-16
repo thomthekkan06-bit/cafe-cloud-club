@@ -420,7 +420,15 @@
                 return;
             }
 
+            // --- DUPLICATE FILTERING LOGIC ---
+            const seenOrderIds = new Set();
+            // --------------------------------
+
             ordersData.forEach(order => {
+                // SKIP IF DUPLICATE ID
+                if (seenOrderIds.has(order.orderId)) return;
+                seenOrderIds.add(order.orderId);
+
                 const customerName = (order.customer && order.customer.name) ? order.customer.name : "Unknown";
                 const customerPhone = (order.customer && order.customer.phone) ? order.customer.phone : "--";
 
@@ -521,11 +529,8 @@
                 }
 
                 // Type Check
-                // If the order type is in our checked list, keep it.
-                // Note: If order type is something else entirely, it will be hidden unless you add logic.
                 let typeMatch = false;
                 if(o.orderType && checkedTypes.includes(o.orderType)) typeMatch = true;
-                // Fallback: If your old data has different casing, you might need .toLowerCase() comparison
                 
                 return rangeMatch && searchMatch && typeMatch;
             });
@@ -621,9 +626,19 @@
 
         window.exportToCSV = function() {
             if(currentFilteredOrders.length === 0) return alert("No data to export.");
+            
+            // --- DUPLICATE FILTERING FOR CSV ---
+            const seen = new Set();
+            const exportData = currentFilteredOrders.filter(o => {
+                if(seen.has(o.orderId)) return false;
+                seen.add(o.orderId);
+                return true;
+            });
+
             let csvContent = "data:text/csv;charset=utf-8,";
             csvContent += "Date,Time,OrderID,Customer,Phone,Type,Status,KitchenRevenue,DeliveryFee,TotalAmount\n";
-            currentFilteredOrders.forEach(o => {
+            
+            exportData.forEach(o => {
                 const d = new Date(o.completedAt || o.timestamp);
                 const fins = o.financials || {grandTotal:0, deliveryFee:0};
                 const cName = o.customer ? o.customer.name : "Unknown";
@@ -672,7 +687,13 @@
             const tableRows = [];
             let totalRevenue = 0;
 
+            // --- DUPLICATE FILTERING FOR PDF ---
+            const seen = new Set();
+            
             currentFilteredOrders.forEach(o => {
+                if(seen.has(o.orderId)) return;
+                seen.add(o.orderId);
+
                 const d = new Date(o.completedAt || o.timestamp);
                 const fins = o.financials || {grandTotal:0, deliveryFee:0};
                 const cName = o.customer ? o.customer.name : "Unknown";
