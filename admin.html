@@ -196,14 +196,10 @@
         .modal-card { 
             background: var(--surface);
             width: 450px; max-width: 90%; 
-            
-            /* These lines fix the scrolling issue */
-            max-height: 85vh;       /* Limits height */
-            overflow-y: auto;       /* Adds scrollbar if needed */
+            max-height: 85vh;       
+            overflow-y: auto;       
             display: flex;          
             flex-direction: column; 
-            /* -------------------------------- */
-
             border-radius: 16px; border: 1px solid var(--border); padding: 30px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.6);
             animation: slideUp 0.3s ease;
@@ -317,45 +313,6 @@
                     <div id="stock-watch-list" class="alert-grid"></div>
                 </div>
 
-                <div id="section-loyalty" style="display:none; padding-bottom:50px;">
-                    <div style="margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <h2 style="margin:0;">Loyalty Management</h2>
-                            <p style="margin:5px 0 0 0; font-size:0.8rem; color:var(--text-muted);">Manage customer points and balances</p>
-                        </div>
-                        <div style="display:flex; gap:10px;">
-                            <button class="btn-new" onclick="showAddLoyaltyForm()">
-                                <span>+</span> Add Customer
-                            </button>
-                            <button class="btn-new" style="background:var(--warning); color:black;" onclick="syncHistoryPoints()">
-                                🔄 Sync from History
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div style="display:flex; gap:10px; margin-bottom:20px;">
-                        <input type="tel" id="loyalty-search" class="search-input" placeholder="Search Phone Number..." style="flex:1;">
-                        <button onclick="searchLoyalty()" class="btn-new">Search</button>
-                    </div>
-
-                    <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow-x:auto;">
-                        <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
-                            <thead>
-                                <tr style="background:rgba(255,255,255,0.05); color:var(--text-muted); text-align:left;">
-                                    <th style="padding:15px; white-space:nowrap;">Last Purchase</th>
-                                    <th style="padding:15px; white-space:nowrap;">Phone Number</th>
-                                    <th style="padding:15px; white-space:nowrap;">Total Orders</th>
-                                    <th style="padding:15px; white-space:nowrap;">Total Spent</th>
-                                    <th style="padding:15px; white-space:nowrap;">Total Points</th>
-                                    <th style="padding:15px; text-align:right;">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="loyalty-table-body">
-                                </tbody>
-                        </table>
-                    </div>
-                </div>
-
                 <div id="menu-root"></div>
 
             </div>
@@ -447,65 +404,6 @@
         </div>
     </div>
 
-    <div id="loyalty-modal" class="modal-overlay">
-        <div class="modal-card">
-            <h3 class="modal-title">Adjust Points</h3>
-            <input type="hidden" id="edit-loyalty-phone">
-            
-            <div class="form-group">
-                <label class="form-label">Customer Phone</label>
-                <input type="text" id="disp-loyalty-phone" class="form-input" disabled style="opacity:0.6;">
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Total Points</label>
-                <input type="number" id="inp-loyalty-points" class="form-input" step="any">
-            </div>
-
-            <div class="modal-actions">
-                <button onclick="document.getElementById('loyalty-modal').style.display='none'" class="btn-cancel">Cancel</button>
-                <button onclick="saveLoyalty()" class="btn-save">Update Points</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="add-loyalty-modal" class="modal-overlay">
-        <div class="modal-card">
-            <h3 class="modal-title">Add New Customer</h3>
-            <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:20px;">Enter details manually from Loyverse.</p>
-            
-            <div class="form-group">
-                <label class="form-label">Customer Name <span style="color:var(--danger)">*</span></label>
-                <input type="text" id="new-loyalty-name" class="form-input" placeholder="e.g. John Doe">
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Phone Number <span style="color:var(--danger)">*</span></label>
-                <input type="tel" id="new-loyalty-phone" class="form-input" placeholder="e.g. 9876543210">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Email (Optional)</label>
-                <input type="email" id="new-loyalty-email" class="form-input" placeholder="e.g. john@example.com">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Address (Optional)</label>
-                <input type="text" id="new-loyalty-address" class="form-input" placeholder="e.g. Flat 101, Main St">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Current Points</label>
-                <input type="number" id="new-loyalty-points" class="form-input" placeholder="0" step="any">
-            </div>
-
-            <div class="modal-actions">
-                <button onclick="document.getElementById('add-loyalty-modal').style.display='none'" class="btn-cancel">Cancel</button>
-                <button onclick="saveNewLoyaltyCustomer()" class="btn-save">Save Customer</button>
-            </div>
-        </div>
-    </div>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, remove, update, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -551,35 +449,6 @@
             renderMenu(filtered);
         }
 
-        // --- SECTION SWITCHER (NEW) ---
-        window.showSection = (sec) => {
-            const menuRoot = document.getElementById('menu-root');
-            const stockWatch = document.getElementById('stock-watch');
-            const loyaltySec = document.getElementById('section-loyalty');
-            const searchInput = document.getElementById('search-input');
-            
-            // Default hidden
-            menuRoot.style.display = 'none';
-            stockWatch.style.display = 'none';
-            loyaltySec.style.display = 'none';
-            
-            if(sec === 'loyalty') {
-                loyaltySec.style.display = 'block';
-                searchInput.placeholder = "Search (Disabled in Loyalty View)...";
-                searchInput.disabled = true;
-                loadAllLoyalty();
-            } else {
-                // Menu View
-                menuRoot.style.display = 'block';
-                searchInput.placeholder = "Search menu items...";
-                searchInput.disabled = false;
-                
-                // Show stock watch if relevant
-                const outOfStockCount = parseInt(document.getElementById('count-off').innerText) || 0;
-                if(outOfStockCount > 0) stockWatch.style.display = 'block';
-            }
-        }
-
         // --- CORE DATA LOADING ---
         function loadMenu() {
             onValue(ref(db, 'menu'), (snap) => {
@@ -621,8 +490,6 @@
                 navBtn.className = 'nav-item';
                 navBtn.innerHTML = `<span>${cat}</span> <span style="font-size:0.8rem; opacity:0.5;">${grouped[cat].length}</span>`;
                 navBtn.onclick = () => {
-                    // Ensure we are in menu view
-                    showSection('menu');
                     const target = document.getElementById(`cat-${cat}`);
                     if(target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     
@@ -706,29 +573,7 @@
             // Update Stats
             document.getElementById('count-total').innerText = itemsToRender.length;
             document.getElementById('count-off').innerText = outOfStockCount;
-
-            // Only show stock watch if we are NOT in loyalty view
-            // But since this function rebuilds the menu, we assume we want menu view logic
-            const loyaltySec = document.getElementById('section-loyalty');
-            if(loyaltySec.style.display === 'none') {
-                 stockWatch.style.display = outOfStockCount > 0 ? 'block' : 'none';
-            }
-
-            // NEW: Add Loyalty Link to Sidebar (After Categories)
-            const loyaltyBtn = document.createElement('div');
-            loyaltyBtn.className = 'nav-item';
-            loyaltyBtn.style.marginTop = '20px';
-            loyaltyBtn.style.borderTop = '1px solid var(--border)';
-            loyaltyBtn.style.borderRadius = '0';
-            loyaltyBtn.style.paddingTop = '15px';
-            loyaltyBtn.innerHTML = `<span>👑 Loyalty Points</span>`;
-            loyaltyBtn.onclick = () => {
-                document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-                loyaltyBtn.classList.add('active');
-                showSection('loyalty');
-                if(window.innerWidth <= 800) window.toggleSidebar();
-            };
-            navList.appendChild(loyaltyBtn);
+            stockWatch.style.display = outOfStockCount > 0 ? 'block' : 'none';
         }
 
         // --- STOCK LOGIC ---
@@ -865,200 +710,6 @@
         window.deleteItem = () => { 
             if(confirm("Are you sure? This will delete the item permanently.")) {
                 remove(ref(db, 'menu/' + document.getElementById('edit-key').value)).then(hideForm);
-            }
-        }
-
-        // --- NEW LOYALTY FUNCTIONS ---
-        window.loadAllLoyalty = () => {
-            onValue(ref(db, 'loyalty'), (snap) => {
-                renderLoyaltyList(snap.val());
-            }, {onlyOnce: true});
-        }
-
-        window.searchLoyalty = () => {
-            const query = document.getElementById('loyalty-search').value.trim();
-            onValue(ref(db, 'loyalty'), (snap) => {
-                const data = snap.val();
-                if(!query) { renderLoyaltyList(data); return; }
-                
-                const filtered = {};
-                if(data) {
-                    Object.keys(data).forEach(key => {
-                        if(key.includes(query)) filtered[key] = data[key];
-                    });
-                }
-                renderLoyaltyList(filtered);
-            }, {onlyOnce: true});
-        }
-
-        function renderLoyaltyList(data) {
-            const tbody = document.getElementById('loyalty-table-body');
-            tbody.innerHTML = "";
-
-            if(!data || Object.keys(data).length === 0) { 
-                tbody.innerHTML = "<tr><td colspan='6' style='padding:20px; text-align:center; color:#777;'>No records found. Try Syncing History.</td></tr>"; 
-                return; 
-            }
-
-            // Sort by Points (Highest First)
-            const sorted = Object.entries(data).sort((a,b) => b[1].points - a[1].points);
-
-            sorted.forEach(([phone, val]) => {
-                const lastDate = val.lastDate ? new Date(val.lastDate).toLocaleDateString('en-IN') : '-';
-                const count = val.totalOrders || 0;
-                const spent = val.totalSpent || 0;
-                const points = val.points || 0;
-                const displayName = val.name ? `${val.name}<br><span style="font-size:0.75rem; opacity:0.7">${phone}</span>` : phone;
-
-                const row = document.createElement('tr');
-                row.style.borderBottom = "1px solid var(--border)";
-                row.innerHTML = `
-                    <td style="padding:15px; color:var(--text-muted);">${lastDate}</td>
-                    <td style="padding:15px; font-family:'JetBrains Mono';">${displayName}</td>
-                    <td style="padding:15px;">${count}</td>
-                    <td style="padding:15px;">₹${spent.toLocaleString('en-IN')}</td>
-                    <td style="padding:15px; font-weight:bold; color:var(--primary);">${points} Pts</td>
-                    <td style="padding:15px; text-align:right;">
-                        <button class="btn-cat-opt" style="padding:5px 15px;" onclick="editLoyalty('${phone}', ${points})">Adjust</button>
-                        <button class="btn-cat-opt" style="padding:5px 15px; border-color:var(--danger); color:var(--danger); margin-left:5px;" onclick="deleteLoyalty('${phone}')">Delete</button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        window.editLoyalty = (phone, pts) => {
-            document.getElementById('loyalty-modal').style.display = 'flex';
-            document.getElementById('edit-loyalty-phone').value = phone;
-            document.getElementById('disp-loyalty-phone').value = phone;
-            document.getElementById('inp-loyalty-points').value = pts;
-        }
-
-        window.saveLoyalty = () => {
-            const phone = document.getElementById('edit-loyalty-phone').value;
-            const newPts = parseFloat(document.getElementById('inp-loyalty-points').value);
-            
-            if(isNaN(newPts) || !phone) return;
-
-            update(ref(db, `loyalty/${phone}`), { points: newPts }).then(() => {
-                document.getElementById('loyalty-modal').style.display = 'none';
-                searchLoyalty(); 
-            });
-        }
-
-        // --- NEW ADD/DELETE LOYALTY FUNCTIONS ---
-
-        window.showAddLoyaltyForm = () => {
-            document.getElementById('add-loyalty-modal').style.display = 'flex';
-            // Clear form
-            document.getElementById('new-loyalty-name').value = "";
-            document.getElementById('new-loyalty-phone').value = "";
-            document.getElementById('new-loyalty-email').value = "";
-            document.getElementById('new-loyalty-address').value = "";
-            document.getElementById('new-loyalty-points').value = "";
-        }
-
-        window.saveNewLoyaltyCustomer = () => {
-            const name = document.getElementById('new-loyalty-name').value.trim();
-            let phone = document.getElementById('new-loyalty-phone').value.trim();
-            const email = document.getElementById('new-loyalty-email').value.trim();
-            const address = document.getElementById('new-loyalty-address').value.trim();
-            const points = parseFloat(document.getElementById('new-loyalty-points').value) || 0;
-
-            if (!name || !phone) return alert("❌ Customer Name and Phone Number are mandatory!");
-            
-            // Basic phone cleaning (remove spaces/dashes)
-            phone = phone.replace(/\D/g, '');
-            if (phone.length < 10) return alert("❌ Please enter a valid phone number.");
-
-            const customerData = {
-                name: name,
-                phone: phone,
-                email: email,
-                address: address,
-                points: points,
-                totalOrders: 0, // Manual entry default
-                totalSpent: 0,  // Manual entry default
-                lastDate: Date.now() // Record creation time
-            };
-
-            // Save to Firebase (Key is phone number)
-            update(ref(db, `loyalty/${phone}`), customerData).then(() => {
-                document.getElementById('add-loyalty-modal').style.display = 'none';
-                // Reload list to show new entry
-                searchLoyalty(); 
-                alert("✅ Customer Added Successfully!");
-            }).catch(err => {
-                alert("Error saving: " + err.message);
-            });
-        }
-
-        window.deleteLoyalty = (phone) => {
-            if(confirm(`⚠️ DELETE WARNING\n\nAre you sure you want to delete loyalty data for:\n${phone}?\n\nThis action cannot be undone.`)) {
-                remove(ref(db, `loyalty/${phone}`)).then(() => {
-                    searchLoyalty(); // Refresh list
-                });
-            }
-        }
-
-        window.syncHistoryPoints = async () => {
-            if(!confirm("⚠️ START SYNC?\n\nThis will scan ALL past orders to calculate:\n- Total Spend\n- Order Count\n- Last Purchase Date\n- Loyalty Points\n\nProceed?")) return;
-
-            const snap = await get(ref(db, 'history'));
-            const history = snap.val();
-            
-            if(!history) return alert("No history data found.");
-
-            const customerStats = {}; 
-
-            Object.values(history).forEach(order => {
-                // Valid Phone Check
-                if(order.customer && order.customer.phone && order.customer.phone.length >= 10) {
-                    const phone = order.customer.phone;
-                    const sub = order.financials ? (order.financials.subTotal || 0) : 0;
-                    const grand = order.financials ? (order.financials.grandTotal || 0) : 0;
-                    const redeemed = order.financials ? (order.financials.loyaltyRedeemed || 0) : 0;
-                    const date = order.completedAt || order.timestamp;
-
-                    if(!customerStats[phone]) {
-                        customerStats[phone] = { 
-                            points: 0, 
-                            totalOrders: 0, 
-                            totalSpent: 0, 
-                            lastDate: 0 
-                        };
-                    }
-
-                    // 1. Calculate Points (1 pt per ₹100 Subtotal)
-                    const earned = (sub / 100);
-                    
-                    // 2. Accumulate Stats
-                    customerStats[phone].points += (earned - redeemed);
-                    customerStats[phone].totalOrders += 1;
-                    customerStats[phone].totalSpent += grand;
-                    
-                    // 3. Track Last Purchase
-                    if(date > customerStats[phone].lastDate) {
-                        customerStats[phone].lastDate = date;
-                    }
-                }
-            });
-
-            // Prepare Updates
-            let updates = {};
-            let count = 0;
-            Object.entries(customerStats).forEach(([phone, stats]) => {
-                if(stats.points < 0) stats.points = 0; // No negative points
-                updates[`loyalty/${phone}`] = stats;
-                count++;
-            });
-
-            if(count > 0) {
-                await update(ref(db), updates);
-                alert(`✅ Sync Complete!\nUpdated ${count} customer records.`);
-                loadAllLoyalty();
-            } else {
-                alert("No valid customer data found in history.");
             }
         }
     </script>
