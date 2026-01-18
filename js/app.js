@@ -932,36 +932,12 @@ const mapLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
     let finalNote = instruction || "";
     if (activeCoupon && discountVal > 0) finalNote += ` [COUPON: ${activeCoupon} OFF ₹${discountVal}]`;
     if (finalNote === "") finalNote = "-";
-    const kitchenOrderData = {
-        orderId: orderId,
-        orderType: type,
-        timestamp: Date.now(),
-        status: 'pending',
-        customer: {
-            name: name,
-            phone: phone,
-            address: address || "Pickup / Dine-in",
-            email: email
-        },
-        items: richItems, 
-        financials: {
-            subTotal: subTotal,
-            discountVal: discountVal,
-            couponCode: activeCoupon || "NONE",
-            packingTotal: packingTotal,
-            grandTotal: grandTotal
-        },
-        globalNote: finalNote
-    };
-    // --- TRACKING LOGIC ---
-    const newOrderRef = push(ref(db, 'orders'));
-    const trackingKey = newOrderRef.key;
-    localStorage.setItem('ccc_tracking_key', trackingKey);
-    localStorage.setItem('ccc_tracking_id', orderId);
+    
+    /* --- STRIPPED POS LOGIC ---
+       We no longer send 'kitchenOrderData' to Firebase 'orders' node.
+       We only generate the WhatsApp message.
+    */
 
-    set(newOrderRef, kitchenOrderData)
-        .then(() => { console.log("Sent to Kitchen"); })
-        .catch((error) => { console.error("Firebase Error:", error); });
     // --- WHATSAPP MSG GENERATION ---
     let msg = `*New Order @ Café Cloud Club*\n`;
     msg += `*Type:* ${type.toUpperCase()}\n*Time:* ${timeString}\n*Order ID:* ${orderId}\n---------------------------\n`;
@@ -979,7 +955,7 @@ const mapLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
     if (discountVal > 0) msg += `*Coupon (${couponName}): -Rs. ${discountVal}*\n`;
     msg += `Packing: Rs. ${packingTotal}\n*TOTAL: Rs. ${grandTotal}*\n`;
     if(type === 'Delivery') msg += `\n_Delivery fee calculated by Delivery Agent._`;
-    msg += `\n\nTrack Order: https://cafe-cloud-club.vercel.app/track.html`;
+    // msg += `\n\nTrack Order: https://cafe-cloud-club.vercel.app/track.html`; // <-- STRIPPED
 
     const encodedMsg = encodeURIComponent(msg);
     const finalUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
@@ -989,14 +965,15 @@ const mapLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
         localStorage.setItem('ccc_last_order', JSON.stringify(cart));
         lastOrder = cart;
     }
-    // SAVE ORDER ID TO HISTORY LIST
+    
+    // SAVE ORDER ID TO HISTORY LIST (Local Storage Only)
     let pastOrders = JSON.parse(localStorage.getItem('ccc_customer_history')) || [];
     pastOrders.unshift({
         id: orderId,
         date: timeString,
         total: grandTotal,
         items: Object.keys(cart).join(", "),
-        key: trackingKey 
+        // key: trackingKey  <-- STRIPPED
     });
     if(pastOrders.length > 20) pastOrders = pastOrders.slice(0, 20);
     localStorage.setItem('ccc_customer_history', JSON.stringify(pastOrders));
