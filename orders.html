@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Orders | Cloud Club</title>
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0f1115">
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -19,10 +24,35 @@
         }
         body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 20px; }
         
+        /* --- PIN SCREEN STYLES --- */
         #pin-overlay { position: fixed; inset: 0; background: rgba(15,17,21,0.98); z-index: 999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
-        .pin-box { background: var(--surface); padding: 40px; border-radius: 16px; border: 1px solid var(--border); text-align: center; }
-        .pin-input { background: var(--bg); border: 1px solid var(--border); color: white; padding: 10px; font-size: 1.5rem; letter-spacing: 10px; border-radius: 8px; text-align: center; width: 200px; font-family: 'JetBrains Mono'; }
+        .pin-box { background: var(--surface); padding: 30px; border-radius: 20px; border: 1px solid var(--border); text-align: center; width: 320px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
         
+        .pin-display { 
+            display: flex; justify-content: center; gap: 15px; margin: 20px 0 30px 0; 
+        }
+        .pin-dot {
+            width: 15px; height: 15px; border-radius: 50%; background: #333; 
+            border: 2px solid var(--border); transition: all 0.2s;
+        }
+        .pin-dot.active { background: var(--primary); border-color: var(--primary); box-shadow: 0 0 10px var(--primary); }
+        .pin-dot.error { background: var(--danger); border-color: var(--danger); }
+
+        .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .num-btn {
+            background: #252830; color: white; border: 1px solid var(--border);
+            border-radius: 50%; width: 70px; height: 70px; font-size: 1.5rem;
+            font-weight: 600; cursor: pointer; transition: background 0.1s;
+            display: flex; align-items: center; justify-content: center; margin: 0 auto;
+        }
+        .num-btn:active { background: var(--primary); border-color: var(--primary); transform: scale(0.95); }
+        .num-btn.clear { background: transparent; color: var(--danger); border: none; font-size: 1rem; }
+        
+        /* Shake Animation for Wrong PIN */
+        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
+        .shake { animation: shake 0.3s ease-in-out; }
+
+        /* --- DASHBOARD STYLES --- */
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
         .refresh-btn { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
         
@@ -64,10 +94,28 @@
 <body>
 
     <div id="pin-overlay">
-        <div class="pin-box">
+        <div class="pin-box" id="pin-box">
             <h2 style="margin-top:0;">🔒 Staff Access</h2>
-            <input type="password" id="pin" class="pin-input" maxlength="4" placeholder="••••">
-            <button onclick="checkPin()" style="margin-top:20px; width:100%; padding:12px; background:var(--primary); border:none; color:white; border-radius:8px; cursor:pointer;">UNLOCK</button>
+            <div class="pin-display">
+                <div class="pin-dot" id="dot-1"></div>
+                <div class="pin-dot" id="dot-2"></div>
+                <div class="pin-dot" id="dot-3"></div>
+                <div class="pin-dot" id="dot-4"></div>
+            </div>
+            <div class="numpad">
+                <button class="num-btn" onclick="enterDigit(1)">1</button>
+                <button class="num-btn" onclick="enterDigit(2)">2</button>
+                <button class="num-btn" onclick="enterDigit(3)">3</button>
+                <button class="num-btn" onclick="enterDigit(4)">4</button>
+                <button class="num-btn" onclick="enterDigit(5)">5</button>
+                <button class="num-btn" onclick="enterDigit(6)">6</button>
+                <button class="num-btn" onclick="enterDigit(7)">7</button>
+                <button class="num-btn" onclick="enterDigit(8)">8</button>
+                <button class="num-btn" onclick="enterDigit(9)">9</button>
+                <button class="num-btn clear" onclick="clearPin()">CLEAR</button>
+                <button class="num-btn" onclick="enterDigit(0)">0</button>
+                <button class="num-btn clear" onclick="backspace()">⌫</button>
+            </div>
         </div>
     </div>
 
@@ -99,15 +147,63 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- AUTH PIN LOGIC UPDATED TO 2024 ---
-        window.checkPin = function() {
-            if (document.getElementById('pin').value === "2024") { 
-                document.getElementById('pin-overlay').style.display = 'none';
-                document.getElementById('app').style.display = 'block';
-                loadOrders();
-            } else { alert("Wrong PIN"); }
+        // --- NEW PIN LOGIC ---
+        let currentPin = "";
+        const correctPin = "2024";
+
+        window.enterDigit = function(digit) {
+            if (currentPin.length < 4) {
+                currentPin += digit;
+                updateDots();
+                if (currentPin.length === 4) {
+                    setTimeout(checkPin, 100); // Slight delay for visual
+                }
+            }
         }
 
+        window.backspace = function() {
+            currentPin = currentPin.slice(0, -1);
+            updateDots();
+        }
+
+        window.clearPin = function() {
+            currentPin = "";
+            updateDots();
+            // Remove error styles
+            document.querySelectorAll('.pin-dot').forEach(d => d.classList.remove('error'));
+        }
+
+        function updateDots() {
+            for (let i = 1; i <= 4; i++) {
+                const dot = document.getElementById(`dot-${i}`);
+                if (i <= currentPin.length) dot.classList.add('active');
+                else dot.classList.remove('active');
+            }
+        }
+
+        function checkPin() {
+            if (currentPin === correctPin) {
+                // SUCCESS
+                document.getElementById('pin-overlay').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('pin-overlay').style.display = 'none';
+                    document.getElementById('app').style.display = 'block';
+                    loadOrders();
+                }, 300);
+            } else {
+                // FAILURE
+                const box = document.getElementById('pin-box');
+                box.classList.add('shake');
+                document.querySelectorAll('.pin-dot').forEach(d => d.classList.add('error'));
+                
+                setTimeout(() => {
+                    box.classList.remove('shake');
+                    clearPin();
+                }, 500);
+            }
+        }
+
+        // --- ORDERS LOGIC ---
         window.markDeclined = function(firebaseKey) {
             if(confirm("⚠️ DECLINE ORDER?\n\nThis will permanently DELETE the order record.\n\nAre you sure?")) {
                 remove(ref(db, 'orders/' + firebaseKey));
@@ -156,7 +252,6 @@
                         });
                     }
 
-                    // --- DISPLAY OFFER CODE ---
                     let offerRow = "";
                     if (price.coupon && price.coupon !== "NONE") {
                         offerRow = `<div class="fin-row" style="color:var(--primary); font-weight:700;"><span>🎟 Offer Code</span><span>${price.coupon}</span></div>`;
