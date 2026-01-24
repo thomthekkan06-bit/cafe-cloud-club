@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Orders | Cloud Club</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f1115;
+            --surface: #181b21;
+            --border: #2f3542;
+            --primary: #3b82f6;
+            --text: #f3f4f6;
+            --muted: #9ca3af;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 20px; }
+        
+        /* PIN SCREEN */
+        #pin-overlay { position: fixed; inset: 0; background: rgba(15,17,21,0.98); z-index: 999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+        .pin-box { background: var(--surface); padding: 40px; border-radius: 16px; border: 1px solid var(--border); text-align: center; }
+        .pin-input { background: var(--bg); border: 1px solid var(--border); color: white; padding: 10px; font-size: 1.5rem; letter-spacing: 10px; border-radius: 8px; text-align: center; width: 200px; font-family: 'JetBrains Mono'; }
+        
+        /* LAYOUT */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+        .refresh-btn { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        
+        .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
+        
+        .order-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; position: relative; display:flex; flex-direction:column;}
+        .order-header { display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px dashed var(--border); padding-bottom: 10px; }
+        .order-id { font-family: 'JetBrains Mono'; color: var(--primary); font-weight: 800; }
+        .order-time { font-size: 0.85rem; color: var(--muted); }
+        
+        .section-label { font-size: 0.7rem; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; letter-spacing: 1px; }
+        .info-block { margin-bottom: 15px; }
+        .info-text { font-size: 0.95rem; line-height: 1.5; }
+        .geo-link { display: inline-flex; align-items: center; gap: 5px; color: var(--warning); text-decoration: none; font-size: 0.85rem; margin-top: 5px; border: 1px solid var(--warning); padding: 4px 8px; border-radius: 4px; }
+        
+        .items-table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.9rem; }
+        .items-table th { text-align: left; color: var(--muted); font-weight: 400; padding-bottom: 8px; font-size: 0.8rem; }
+        .items-table td { padding: 4px 0; border-bottom: 1px solid #222; }
+        .item-qty { font-family: 'JetBrains Mono'; color: var(--primary); width: 30px; }
+        .item-price { text-align: right; font-family: 'JetBrains Mono'; color: var(--muted); }
+        
+        .financials { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-top: auto; }
+        .fin-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; color: var(--muted); }
+        .fin-total { display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-weight: 800; color: var(--success); font-size: 1.1rem; }
+        
+        .tag { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+        .tag-del { background: rgba(59, 130, 246, 0.2); color: var(--primary); }
+        .tag-pick { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+
+        .btn-clear {
+            width: 100%;
+            margin-top: 15px;
+            background: var(--success);
+            color: white; border: none; padding: 15px;
+            font-weight: 700; border-radius: 8px; cursor: pointer;
+            font-size: 1rem; transition: background 0.2s;
+        }
+        .btn-clear:hover { background: #059669; }
+    </style>
+</head>
+<body>
+
+    <div id="pin-overlay">
+        <div class="pin-box">
+            <h2 style="margin-top:0;">🔒 Staff Access</h2>
+            <input type="password" id="pin" class="pin-input" maxlength="4" placeholder="••••">
+            <button onclick="checkPin()" style="margin-top:20px; width:100%; padding:12px; background:var(--primary); border:none; color:white; border-radius:8px; cursor:pointer;">UNLOCK</button>
+        </div>
+    </div>
+
+    <div id="app" style="display:none;">
+        <div class="header">
+            <div>
+                <h1 style="margin:0;">Order Dashboard</h1>
+                <span style="color:var(--muted); font-size:0.9rem;">Live incoming orders from website</span>
+            </div>
+            <button class="refresh-btn" onclick="location.reload()">Refresh Data</button>
+        </div>
+
+        <div id="orders-container" class="orders-grid">
+            </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
+            authDomain: "cafe-orders-1afa1.firebaseapp.com",
+            databaseURL: "https://cafe-orders-1afa1-default-rtdb.firebaseio.com",
+            projectId: "cafe-orders-1afa1",
+            storageBucket: "cafe-orders-1afa1.firebasestorage.app",
+            messagingSenderId: "274410745480",
+            appId: "1:274410745480:web:9964c3914d512aed8d793d"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // --- AUTH ---
+        window.checkPin = function() {
+            if (btoa(document.getElementById('pin').value) === "MjAyMQ==") { 
+                document.getElementById('pin-overlay').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                loadOrders();
+            } else { alert("Wrong PIN"); }
+        }
+
+        // --- MARK AS COMPLETED LOGIC ---
+        window.markPunched = function(firebaseKey) {
+            if(confirm("Have you punched this order into Loyverse?")) {
+                // This line updates the status to 'Completed', removing it from the view
+                update(ref(db, 'orders/' + firebaseKey), { status: 'Completed' });
+            }
+        }
+
+        function loadOrders() {
+            const container = document.getElementById('orders-container');
+            onValue(ref(db, 'orders'), (snapshot) => {
+                container.innerHTML = "";
+                const data = snapshot.val();
+                if (!data) {
+                    container.innerHTML = "<div style='color:var(--muted)'>No active orders.</div>";
+                    return;
+                }
+
+                // 1. Convert to Array and Preserve the Firebase KEY
+                const orders = Object.entries(data).map(([key, val]) => ({ ...val, key }));
+
+                // 2. Sort by Date (Newest First)
+                orders.sort((a, b) => b.timestamp - a.timestamp);
+
+                let hasOrders = false;
+
+                orders.forEach(order => {
+                    // 3. FILTER: Only show orders that are 'New'
+                    if (order.status === 'Completed') return; 
+
+                    hasOrders = true;
+                    const cust = order.customer || {};
+                    const price = order.pricing || {};
+                    const geoUrl = `https://www.google.com/maps/search/?api=1&query=${cust.geo?.lat},${cust.geo?.lng}`;
+                    
+                    let itemsHtml = "";
+                    if(order.items) {
+                        Object.entries(order.items).forEach(([name, item]) => {
+                            itemsHtml += `
+                                <tr>
+                                    <td class="item-qty">${item.qty}x</td>
+                                    <td>${name}</td>
+                                    <td class="item-price">₹${item.price}</td>
+                                </tr>
+                            `;
+                        });
+                    }
+
+                    const typeTag = order.type === 'Delivery' ? '<span class="tag tag-del">Delivery</span>' : '<span class="tag tag-pick">Pickup</span>';
+                    
+                    const card = document.createElement('div');
+                    card.className = 'order-card';
+                    card.innerHTML = `
+                        <div class="order-header">
+                            <div>
+                                <div class="order-id">#${order.id}</div>
+                                <div class="order-time">${order.date}</div>
+                            </div>
+                            ${typeTag}
+                        </div>
+
+                        <div class="info-block">
+                            <div class="section-label">Customer</div>
+                            <div class="info-text"><strong>${cust.name}</strong></div>
+                            <div class="info-text"><a href="tel:${cust.phone}" style="color:var(--primary);">${cust.phone}</a></div>
+                            <div class="info-text" style="font-size:0.85rem; color:var(--muted);">${cust.email}</div>
+                        </div>
+
+                        <div class="info-block">
+                            <div class="section-label">Location</div>
+                            <div class="info-text">${cust.address || "No address provided"}</div>
+                            ${order.type === 'Delivery' && cust.geo?.lat ? `<a href="${geoUrl}" target="_blank" class="geo-link">📍 View Geo Location</a>` : ''}
+                        </div>
+
+                        <table class="items-table">
+                            <thead><tr><th>Qty</th><th>Item</th><th style="text-align:right">Cost</th></tr></thead>
+                            <tbody>${itemsHtml}</tbody>
+                        </table>
+
+                        <div class="financials">
+                            <div class="fin-row"><span>Sub Total</span><span>₹${price.subTotal}</span></div>
+                            <div class="fin-row"><span>Packing</span><span>₹${price.packing}</span></div>
+                            ${price.discount > 0 ? `<div class="fin-row" style="color:var(--warning)"><span>Discount (${price.coupon})</span><span>-₹${price.discount}</span></div>` : ''}
+                            <div class="fin-total"><span>Grand Total</span><span>₹${price.grandTotal}</span></div>
+                        </div>
+
+                        <button class="btn-clear" onclick="markPunched('${order.key}')">
+                            ✅ Punched in Loyverse
+                        </button>
+                    `;
+                    container.appendChild(card);
+                });
+
+                if(!hasOrders) {
+                    container.innerHTML = "<div style='color:var(--muted)'>No active orders pending.</div>";
+                }
+            });
+        }
+    </script>
+</body>
+</html>
