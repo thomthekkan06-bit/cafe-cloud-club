@@ -933,10 +933,41 @@ const mapLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
     if (activeCoupon && discountVal > 0) finalNote += ` [COUPON: ${activeCoupon} OFF ₹${discountVal}]`;
     if (finalNote === "") finalNote = "-";
     
-    /* --- STRIPPED POS LOGIC ---
-       We no longer send 'kitchenOrderData' to Firebase 'orders' node.
-       We only generate the WhatsApp message.
-    */
+    // --- 1. RESTORED: SAVE TO DATABASE ---
+    const orderData = {
+        id: orderId,
+        date: timeString,
+        timestamp: Date.now(),
+        type: type, // Delivery or Pickup
+        status: 'New',
+        customer: {
+            name: name,
+            phone: phone,
+            email: email,
+            address: address, // Full string address
+            house: document.getElementById('addr-house').value,
+            street: document.getElementById('addr-street').value,
+            landmark: document.getElementById('addr-landmark').value,
+            geo: {
+                lat: document.getElementById('geo-lat').value,
+                lng: document.getElementById('geo-lng').value
+            },
+            instruction: finalNote
+        },
+        items: cart, // Contains price, basePrice, qty, category
+        pricing: {
+            subTotal: subTotal,
+            packing: packingTotal,
+            discount: discountVal,
+            coupon: activeCoupon || "NONE",
+            grandTotal: grandTotal
+        }
+    };
+
+    // Save to Firebase 'orders' node
+    push(ref(db, 'orders'), orderData)
+        .then(() => console.log("Order Saved to DB"))
+        .catch((e) => alert("Error saving order: " + e.message));
 
     // --- WHATSAPP MSG GENERATION ---
     let msg = `*New Order @ Café Cloud Club*\n`;
