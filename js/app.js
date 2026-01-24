@@ -31,15 +31,12 @@ const CAFE_LNG = 76.343779;
 
 // --- SMART MAP INIT (READS SAVED LOCATION) ---
 window.initDeliveryMap = function() {
-    // 1. Get current values (either Default Cafe or Saved User Location)
     let latVal = parseFloat(document.getElementById('geo-lat').value);
     let lngVal = parseFloat(document.getElementById('geo-lng').value);
 
-    // Safety fallback
     if (isNaN(latVal) || latVal === 0) latVal = CAFE_LAT;
     if (isNaN(lngVal) || lngVal === 0) lngVal = CAFE_LNG;
 
-    // 2. If map exists, just move the pin
     if (map !== null) { 
         setTimeout(() => {
             map.invalidateSize();
@@ -50,30 +47,25 @@ window.initDeliveryMap = function() {
         return; 
     }
 
-    // 3. Initialize Map
     map = L.map('delivery-map').setView([latVal, lngVal], 16);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // Create marker at the detected location
     marker = L.marker([latVal, lngVal], {draggable: true}).addTo(map);
 
-    // Save coords on drag
     marker.on('dragend', function(e) {
         const pos = marker.getLatLng();
         document.getElementById('geo-lat').value = pos.lat.toFixed(6);
         document.getElementById('geo-lng').value = pos.lng.toFixed(6);
     });
 
-    // Ensure inputs are populated
     document.getElementById('geo-lat').value = latVal;
     document.getElementById('geo-lng').value = lngVal;
 }
 
 window.locateUser = function() {
     if (!navigator.geolocation) { alert("Geolocation not supported"); return; }
-    
     navigator.geolocation.getCurrentPosition((pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
@@ -107,31 +99,22 @@ window.updateSubLocations = function() {
     const subWrapper = document.getElementById('sub-location-wrapper');
     const subSelect = document.getElementById('addr-sub-street');
     const selectedTown = mainSelect.value;
-
     subSelect.innerHTML = "";
-
     if (subPlaces[selectedTown]) {
         subWrapper.style.display = 'block';
         const defaultOpt = document.createElement('option');
         defaultOpt.text = `Select Area in ${selectedTown}...`;
-        defaultOpt.disabled = true;
-        defaultOpt.selected = true;
+        defaultOpt.disabled = true; defaultOpt.selected = true;
         subSelect.add(defaultOpt);
-
         subPlaces[selectedTown].forEach(place => {
             const opt = document.createElement('option');
-            opt.value = place;
-            opt.text = place;
-            subSelect.add(opt);
+            opt.value = place; opt.text = place; subSelect.add(opt);
         });
-
         const otherOpt = document.createElement('option');
-        otherOpt.value = "Other";
-        otherOpt.text = "Other / Not Listed";
+        otherOpt.value = "Other"; otherOpt.text = "Other / Not Listed";
         subSelect.add(otherOpt);
     } else {
-        subWrapper.style.display = 'none';
-        subSelect.value = "";
+        subWrapper.style.display = 'none'; subSelect.value = "";
     }
 }
 
@@ -163,26 +146,16 @@ document.addEventListener('DOMContentLoaded', () => {
         22: "Late dinner? Steak is the answer.",
         23: "The night is young. The Milkshakes are cold."
     };
-
     const currentHour = new Date().getHours();
     const quoteElement = document.getElementById('dynamic-food-quote');
-    if(quoteElement) {
-        quoteElement.innerText = foodQuotes[currentHour];
-    }
-
+    if(quoteElement) quoteElement.innerText = foodQuotes[currentHour];
     const preloader = document.getElementById('preloader');
-    if (preloader) {
-        preloader.classList.add('preloader-hidden');
-    }
+    if (preloader) preloader.classList.add('preloader-hidden');
 });
 
 /* --- MOUSE TRACKER --- */
-let lastClickX = 0;
-let lastClickY = 0;
-document.addEventListener('click', (e) => {
-    lastClickX = e.clientX;
-    lastClickY = e.clientY;
-});
+let lastClickX = 0; let lastClickY = 0;
+document.addEventListener('click', (e) => { lastClickX = e.clientX; lastClickY = e.clientY; });
 
 /* --- DATA --- */
 const whatsappNumber = "917907660093";
@@ -194,34 +167,22 @@ const rupeeSign = decodeURIComponent('%E2%82%B9');
 /* --- DYNAMIC FIREBASE MENU --- */
 let menuData = [];
 const menuRef = ref(db, 'menu');
-
 onValue(menuRef, (snapshot) => {
     const data = snapshot.val();
     menuData = []; 
-    
     if (data) {
         Object.keys(data).forEach(key => {
             const item = data[key];
             let isAvailable = true;
-
-            // --- FILTER: HIDE DINE-IN EXCLUSIVES FROM ONLINE STORE ---
-            if (item.isDineInOnly === true) {
-                return; // Skips this item so it doesn't show in the online app
-            }
-            // ---------------------------------------------------------
-
+            if (item.isDineInOnly === true) return;
             if (item.stockStatus === 'MANUAL_OFF') isAvailable = false;
             else if (item.stockStatus === 'TEMP_OFF') {
                 if (item.stockReturnTime && Date.now() < item.stockReturnTime) isAvailable = false;
             }
             if (item.inStock === false) isAvailable = false;
-            
             if (isAvailable) menuData.push(item);
         });
-
-        menuData.sort((a, b) => {
-            return a.category.localeCompare(b.category) || a.name.localeCompare(b.name);
-        });
+        menuData.sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
     }
     renderMenu();
 });
@@ -231,10 +192,7 @@ let activeCoupon = null;
 let favorites = JSON.parse(localStorage.getItem('ccc_favorites')) || [];
 let lastOrder = JSON.parse(localStorage.getItem('ccc_last_order')) || null;
 
-function saveCart() {
-    localStorage.setItem('ccc_cart_v1', JSON.stringify(cart));
-}
-
+function saveCart() { localStorage.setItem('ccc_cart_v1', JSON.stringify(cart)); }
 function loadCart() {
     const savedCart = localStorage.getItem('ccc_cart_v1');
     if (savedCart) {
@@ -260,13 +218,11 @@ window.toggleFavorite = function(itemName) {
 
 window.repeatLastOrder = function() {
     if (!lastOrder || Object.keys(lastOrder).length === 0) {
-        alert("No previous order found on this device!");
-        return;
+        alert("No previous order found on this device!"); return;
     }
     if(confirm("Clear current cart and load your last order?")) {
         cart = JSON.parse(JSON.stringify(lastOrder));
-        saveCart();
-        renderCart();
+        saveCart(); renderCart();
         alert("Last order loaded!");
         if(window.innerWidth <= 1000) toggleCartPage();
     }
@@ -294,8 +250,7 @@ let isUnder200 = false;
 window.setCategoryFilter = function(cat, btn) {
     document.querySelectorAll('.filter-item').forEach(b => b.classList.remove('active'));
     if(btn) btn.classList.add('active');
-    currentCategory = cat;
-    renderMenu();
+    currentCategory = cat; renderMenu();
     if(window.innerWidth <= 1000) {
         document.querySelector('.main-content').scrollTop = 0;
         const sidebar = document.querySelector('.left-sidebar');
@@ -303,27 +258,21 @@ window.setCategoryFilter = function(cat, btn) {
     }
 }
 
-window.updateSearch = function() {
-    currentSearch = document.getElementById('search-input').value;
-    renderMenu();
-}
-
+window.updateSearch = function() { currentSearch = document.getElementById('search-input').value; renderMenu(); }
 window.setSort = function(val) { currentSort = val; renderMenu(); }
 window.setType = function(val) { currentType = val; renderMenu(); }
 window.setIngredient = function(val) { currentIngredient = val; renderMenu(); }
 
 window.toggleUnder200 = function(btn) {
     isUnder200 = !isUnder200;
-    if(isUnder200) btn.classList.add('active');
-    else btn.classList.remove('active');
+    if(isUnder200) btn.classList.add('active'); else btn.classList.remove('active');
     renderMenu();
 }
 
 window.copyCode = function(code) {
     const couponInput = document.getElementById('coupon-input');
     const couponBtn = document.getElementById('coupon-apply-btn');
-    couponInput.value = code;
-    couponBtn.disabled = false;
+    couponInput.value = code; couponBtn.disabled = false;
     document.getElementById('offers-view').classList.remove('active');
     document.getElementById('main-dashboard').style.display = 'grid';
     if(window.innerWidth <= 1000) { toggleCartPage(); }
@@ -334,15 +283,11 @@ window.copyCode = function(code) {
 
 window.toggleOffersPage = function() {
     const offersView = document.getElementById('offers-view');
-    
-    // Logic: Toggle the offers view
     if (offersView.classList.contains('active')) {
         offersView.classList.remove('active');
     } else {
         offersView.classList.add('active');
         offersView.scrollTop = 0;
-        
-        // FIX: Close the sidebar if we are on mobile
         if (window.innerWidth <= 1000) {
             const sidebar = document.querySelector('.left-sidebar');
             const overlay = document.querySelector('.sidebar-overlay');
@@ -364,7 +309,6 @@ function renderMenu() {
         if (currentType === 'veg' && item.type !== 'veg') return false;
         if (currentType === 'non-veg' && item.type !== 'non-veg') return false;
         if (isUnder200 && item.price >= 200) return false;
-   
         if (currentIngredient !== 'all') {
             const nameLower = item.name.toLowerCase();
             const ingLower = currentIngredient.toLowerCase();
@@ -386,13 +330,10 @@ function renderMenu() {
         const card = document.createElement('div');
         card.className = `food-card ${item.type}`;
         card.id = `card-${originalIndex}`;
-        
         const isFav = favorites.includes(item.name);
         const favClass = isFav ? 'active' : '';
         const uniqueId = item.name.replace(/[^a-zA-Z0-9]/g, '-');
-        
         const emojiStr = item.type === 'veg' ? vegIcon : nonVegIcon;
-        
         card.innerHTML = `
             <div style="position:relative;"> 
                 <button id="fav-btn-${uniqueId}" class="fav-btn ${favClass}" aria-label="Add ${item.name} to favorites" onclick="event.stopPropagation(); toggleFavorite('${item.name}')">
@@ -403,7 +344,6 @@ function renderMenu() {
                 <div class="food-title"><span class="type-emoji">${emojiStr}</span>${item.name}</div>
                 <div class="food-meta">${item.category}</div>
             </div>
-          
             <div class="price-row">
                 <div class="price">${rupeeSign}${item.price}</div>
                 <button class="add-btn-mini" aria-label="Add ${item.name} to cart" onclick="openOptionModal(${originalIndex})">
@@ -425,24 +365,14 @@ window.openOptionModal = function(index) {
         });
     }
     tempSelectedItemIndex = index;
-
-    // --- NEW LOGIC: READ FROM DB ---
-    // If options exist in Firebase, use them. Otherwise empty array.
     let availableOptions = item.options || [];
-
-    // Special case for simple "ADD-ON" items with no options (Immediate Add)
     if (availableOptions.length === 0 && item.category === "ADD-ON") {
-        addToCart(item.name, item.price, item.price, item.type, item.category);
-        return;
+        addToCart(item.name, item.price, item.price, item.type, item.category); return;
     }
-
-    // Update UI
     document.getElementById('modal-item-title').innerText = item.name;
     document.getElementById('modal-item-base-price').innerText = `Base Price: ${rupeeSign}${item.price}`;
-    
     const container = document.getElementById('modal-options-wrapper');
     container.innerHTML = '';
-
     if (availableOptions.length > 0) {
         availableOptions.forEach((opt) => {
             container.innerHTML += `
@@ -458,15 +388,12 @@ window.openOptionModal = function(index) {
     } else {
         container.innerHTML = `<div style="padding:15px; color:#999; text-align:center; font-size:0.9rem;">No customizations available for this item.</div>`;
     }
-
-    // Add Note Input
     container.innerHTML += `
         <div style="margin-top:15px;">
             <label style="font-size:0.8rem; color:var(--grey-text);">Special Note:</label>
             <input type="text" id="modal-note-input" class="note-input" placeholder="e.g. Spicy, No Mayo">
         </div>
     `;
-
     document.getElementById('customization-modal').style.display = 'flex';
     updateModalTotal();
 }
@@ -516,198 +443,129 @@ function addToCart(name, finalPrice, basePrice, type, category) {
     } else {
         cart[name] = { price: finalPrice, basePrice: basePrice, qty: 1, type: type, category: category };
     }
-    saveCart();
-    renderCart();
+    saveCart(); renderCart();
     const btn = document.querySelector('.mobile-cart-btn');
-    btn.style.transform = "scale(1.2)";
-    setTimeout(() => btn.style.transform = "scale(1)", 200);
-    triggerFlyAnimation(category);
-    checkUpsell(category);
+    btn.style.transform = "scale(1.2)"; setTimeout(() => btn.style.transform = "scale(1)", 200);
+    triggerFlyAnimation(category); checkUpsell(category);
 }
 
 window.updateQty = function(name, change) {
     if (cart[name]) {
         cart[name].qty += change;
         if (cart[name].qty <= 0) delete cart[name];
-        saveCart(); 
-        renderCart();
+        saveCart(); renderCart();
     }
 }
 
-// --- FIXED VALIDATION LOGIC: Allows extra items ---
-// --- PART B: The "Brain" (Finds items for combos) ---
 function findComboItems(cart, rules) {
-    let currentTotal = 0;
-    let satisfiedRules = 0;
-    // Deep copy rules so we can mark them as "satisfied" without breaking the original
+    let currentTotal = 0; let satisfiedRules = 0;
     let pendingRules = JSON.parse(JSON.stringify(rules)); 
-
-    // Helper to check if an item is "used" by a rule
-    // We iterate items in cart
     for (let key in cart) {
         let item = cart[key];
         let itemQtyAvailable = item.qty;
-
-        // Try to match this item against rules
         for (let i = 0; i < pendingRules.length; i++) {
             let rule = pendingRules[i];
             if (rule.satisfied) continue;
             if (itemQtyAvailable <= 0) break;
-
-            // 1. Check Category (Single or List)
             let catMatch = true;
             if (rule.category) catMatch = (item.category === rule.category);
             if (rule.allowedCategories) catMatch = rule.allowedCategories.includes(item.category);
-
-            // 2. Check Name (Contains match, or List of exact matches)
             let nameMatch = true;
             const itemNameLower = key.toLowerCase();
             if (rule.matchName) nameMatch = itemNameLower.includes(rule.matchName.toLowerCase());
             if (rule.matchNames) nameMatch = rule.matchNames.some(n => itemNameLower.includes(n.toLowerCase()));
-
-            // 3. Check Exclusions (e.g., No Vanilla)
             let excludeMatch = false;
             if (rule.excludeName && itemNameLower.includes(rule.excludeName.toLowerCase())) excludeMatch = true;
-
-            // 4. Check Price Floor (e.g. Pasta > 180)
             let priceMatch = true;
             if (rule.minPrice && item.basePrice < rule.minPrice) priceMatch = false;
-
             if (catMatch && nameMatch && !excludeMatch && priceMatch) {
-                // Bingo! This item fits this rule.
                 currentTotal += item.basePrice; 
-                rule.satisfied = true;
-                satisfiedRules++;
-                itemQtyAvailable--; // Use up one quantity of this item
+                rule.satisfied = true; satisfiedRules++; itemQtyAvailable--;
             }
         }
     }
-
-    return { 
-        found: satisfiedRules === pendingRules.length, 
-        currentTotal: currentTotal 
-    };
+    return { found: satisfiedRules === pendingRules.length, currentTotal: currentTotal };
 }
 
-// --- PART C: The Validator (Applies the coupon) ---
 window.applyCoupon = function() {
     const codeInput = document.getElementById('coupon-input');
     const msgBox = document.getElementById('coupon-msg');
     const code = codeInput.value.trim().toUpperCase();
     const todayIndex = new Date().getDay();
-
     const setMsg = (text, type) => { 
-        msgBox.innerText = text; 
-        msgBox.className = `coupon-msg ${type}`;
-        if (type === 'success') renderCart(); 
-        else activeCoupon = null; 
+        msgBox.innerText = text; msgBox.className = `coupon-msg ${type}`;
+        if (type === 'success') renderCart(); else activeCoupon = null; 
     };
-
     const coupon = couponsData[code];
     if (!coupon) { setMsg("Invalid Coupon Code", 'error'); return; }
-
     if (coupon.validDays && !coupon.validDays.includes(todayIndex)) {
         setMsg(`Offer not valid today!`, 'error'); return;
     }
-
     let discount = 0;
-    
-    // --- STRATEGY 1: PERCENTAGE OFF COMBO ---
     if (coupon.type === 'percentage_off') {
         const result = findComboItems(cart, coupon.rules);
-        if (result.found) {
-            discount = Math.round(result.currentTotal * (coupon.value / 100));
-        }
-    } 
-    // --- STRATEGY 2: FIXED PRICE COMBO ---
-    else if (coupon.type === 'combo_fixed_price') {
+        if (result.found) discount = Math.round(result.currentTotal * (coupon.value / 100));
+    } else if (coupon.type === 'combo_fixed_price') {
         const result = findComboItems(cart, coupon.rules);
-        if (result.found) {
-            discount = result.currentTotal - coupon.targetPrice;
-        } else if (coupon.alternative) {
-            // Check alternative (e.g. Beef Burger instead of Chicken)
+        if (result.found) discount = result.currentTotal - coupon.targetPrice;
+        else if (coupon.alternative) {
             const altResult = findComboItems(cart, coupon.alternative.rules);
             if (altResult.found) {
                 if(coupon.alternative.type === 'flat_off') discount = coupon.alternative.value;
                 else discount = altResult.currentTotal - coupon.alternative.targetPrice;
             }
         }
-    }
-    // --- STRATEGY 3: SET ITEM PRICE (Single Items) ---
-    else if (coupon.type === 'set_item_price') {
-        // Try Primary Rule
+    } else if (coupon.type === 'set_item_price') {
         const result = findComboItems(cart, coupon.rules);
-        if (result.found) {
-            discount = result.currentTotal - coupon.value;
-        } else if (coupon.alternative) {
-            // Try Alternative Rule (e.g. Veg Loaded Fries)
+        if (result.found) discount = result.currentTotal - coupon.value;
+        else if (coupon.alternative) {
             const altResult = findComboItems(cart, coupon.alternative.rules);
-            if (altResult.found) {
-                discount = altResult.currentTotal - coupon.alternative.value;
-            }
+            if (altResult.found) discount = altResult.currentTotal - coupon.alternative.value;
         }
     }
-
     if (discount > 0) {
-        activeCoupon = code;
-        setMsg(`${code} Applied! Saved ₹${discount}`, 'success');
+        activeCoupon = code; setMsg(`${code} Applied! Saved ₹${discount}`, 'success');
     } else {
         setMsg("Requirements not met. Check Menu.", 'error');
     }
 }
-window.toggleCartPage = function() { document.getElementById('cart-sidebar').classList.toggle('active');
-}
+window.toggleCartPage = function() { document.getElementById('cart-sidebar').classList.toggle('active'); }
 
-// --- LOAD SAVED DETAILS ---
 function loadUserDetails() {
     const saved = localStorage.getItem('ccc_user_details_v2'); 
     if (!saved) return;
     try {
         const data = JSON.parse(saved);
-        // 1. Fill Text Fields
         if(data.name) document.getElementById('c-name').value = data.name;
         if(data.phone) document.getElementById('c-phone').value = data.phone;
         if(data.email) document.getElementById('c-email').value = data.email;
         if(data.house) document.getElementById('addr-house').value = data.house;
         if(data.landmark) document.getElementById('addr-landmark').value = data.landmark;
-        // 2. Handle the Dropdowns
         if(data.street) {
             const mainSelect = document.getElementById('addr-street');
-            mainSelect.value = data.street;
-            updateSubLocations(); 
+            mainSelect.value = data.street; updateSubLocations(); 
             if(data.subStreet) {
                 const subSelect = document.getElementById('addr-sub-street');
                 if(subSelect) subSelect.value = data.subStreet;
             }
         }
-
-        // 3. Set the Coordinates
         if(data.lat && data.lng) {
             document.getElementById('geo-lat').value = data.lat;
             document.getElementById('geo-lng').value = data.lng;
         }
-    } catch (e) {
-        console.error("Error loading saved details", e);
-    }
+    } catch (e) { console.error("Error loading saved details", e); }
 }
 
-// --- CHECKOUT MODAL ---
 window.openCheckoutModal = function() { 
-    // 1. Load details first
     loadUserDetails();
-    // 2. Show Modal
     document.getElementById('checkout-modal').style.display = 'flex';
     toggleOrderFields();
-
     const checkbox = document.getElementById('tnc-confirm');
     const btn = document.getElementById('final-submit-btn');
     if(checkbox && btn) {
-        checkbox.checked = false;
-        btn.disabled = true;
-        btn.style.opacity = "0.5";
-        btn.style.cursor = "not-allowed";
+        checkbox.checked = false; btn.disabled = true;
+        btn.style.opacity = "0.5"; btn.style.cursor = "not-allowed";
     }
-    // Delay map load slightly so modal is visible first
     setTimeout(initDeliveryMap, 300);
 }
 
@@ -717,10 +575,8 @@ window.toggleOrderFields = function() {
     const type = document.querySelector('input[name="orderType"]:checked').value;
     const addrGroup = document.getElementById('address-group');
     const timeLabel = document.getElementById('time-label');
-    if(type === 'Pickup') { addrGroup.style.display = 'none'; timeLabel.innerText = "Preferred Pickup Time";
-    } 
-    else { addrGroup.style.display = 'block'; timeLabel.innerText = "Preferred Delivery Time";
-    }
+    if(type === 'Pickup') { addrGroup.style.display = 'none'; timeLabel.innerText = "Preferred Pickup Time"; } 
+    else { addrGroup.style.display = 'block'; timeLabel.innerText = "Preferred Delivery Time"; }
 }
 
 function checkStoreStatus(orderType) {
@@ -736,21 +592,13 @@ function checkStoreStatus(orderType) {
     return { isOpen: true };
 }
 
-// --- ROBUST FINALIZE ORDER FUNCTION (ERROR HANDLING ADDED) ---
 window.finalizeOrder = function() {
-    // 1. DISABLE BUTTON & SHOW PROCESSING STATE
     const submitBtn = document.getElementById('final-submit-btn');
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerText = "Processing...";
-    }
-
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.innerText = "Processing..."; }
     try {
-        // --- 1. VALIDATION ---
         const typeInput = document.querySelector('input[name="orderType"]:checked');
         if (!typeInput) throw new Error("Please select Delivery or Pickup.");
         const type = typeInput.value;
-
         const status = checkStoreStatus(type);
         if (!status.isOpen) throw new Error("Store Closed!\n" + status.msg);
 
@@ -758,19 +606,15 @@ window.finalizeOrder = function() {
         let rawPhone = document.getElementById('c-phone').value.trim();
         let phone = rawPhone.replace(/\D/g, ''); 
         if (phone.length > 10 && phone.startsWith('91')) phone = phone.substring(2);
-        
         if (phone.length < 10 || phone.length > 12) throw new Error("Invalid mobile number.");
         if (!name) throw new Error("Name is required.");
         
         const email = document.getElementById('c-email').value.trim();
         if (!email.includes('@')) throw new Error("Invalid email.");
-
         const time = document.getElementById('c-time').value;
         if (!time) throw new Error("Please select a time.");
-
         const instruction = document.getElementById('c-instruction').value.trim();
 
-        // --- 2. ADDRESS LOGIC ---
         let address = "";
         let houseVal = "", streetVal = "", subStreetVal = "", landmarkVal = "";
         let latVal = "0", lngVal = "0";
@@ -782,31 +626,21 @@ window.finalizeOrder = function() {
             landmarkVal = document.getElementById('addr-landmark').value.trim();
             latVal = document.getElementById('geo-lat').value;
             lngVal = document.getElementById('geo-lng').value;
-
             if (!houseVal) throw new Error("House name is required.");
             if (!streetVal) throw new Error("Town is required.");
             if (!landmarkVal) throw new Error("Landmark is required.");
-            
             let finalStreet = streetVal;
             if (subStreetVal) finalStreet += ` (${subStreetVal})`;
-            
-            if (streetVal === "Other" && instruction.length < 5) {
-                throw new Error("Please type your exact location in Instructions.");
-            }
-
-            // --- FIXED MAP LINK ---
+            if (streetVal === "Other" && instruction.length < 5) throw new Error("Please type your exact location in Instructions.");
             const mapLink = `http://googleusercontent.com/maps.google.com/?q=${latVal},${lngVal}`;
             address = `${houseVal}, ${finalStreet}\n(Landmark: ${landmarkVal})\n📍 Pin: ${mapLink}`;
         }
 
-        // --- 3. CALCULATIONS ---
         const orderId = Math.floor(100000 + Math.random() * 900000);
         const timeString = new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
         
-        let subTotal = 0;
-        let packingTotal = 0;
+        let subTotal = 0; let packingTotal = 0;
         const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
-        
         for(let key in cart) {
             let item = cart[key];
             subTotal += (item.price * item.qty);
@@ -834,55 +668,39 @@ window.finalizeOrder = function() {
 
         let grandTotal = (subTotal - discountVal) + packingTotal;
         if (grandTotal < MIN_ORDER_VAL) throw new Error(`Min Order value is ₹${MIN_ORDER_VAL}`);
-
         let finalNote = instruction || "-";
         if (activeCoupon && discountVal > 0) finalNote += ` [COUPON: ${activeCoupon}]`;
 
-        // --- 4. SANITIZE KEYS FOR FIREBASE (NEW FIX) ---
-        // Firebase forbids: . # $ / [ ]
         const sanitizedCart = {};
         for (let key in cart) {
             const item = cart[key];
             const safeKey = key
-                .replace(/\./g, '_')   // dot -> underscore
-                .replace(/#/g, 'No')   // # -> No
-                .replace(/\$/g, '')    // $ -> empty
-                .replace(/\//g, '-')   // / -> hyphen
-                .replace(/\[/g, '(')   // [ -> (
-                .replace(/\]/g, ')');  // ] -> )
-            
+                .replace(/\./g, '_').replace(/#/g, 'No').replace(/\$/g, '')
+                .replace(/\//g, '-').replace(/\[/g, '(').replace(/\]/g, ')');
             sanitizedCart[safeKey] = item;
         }
 
-        // --- 5. SAVE TO DB ---
         const orderData = {
-            id: orderId,
-            date: timeString,
-            timestamp: Date.now(),
-            type: type,
-            status: 'New',
+            id: orderId, date: timeString, timestamp: Date.now(),
+            type: type, status: 'New',
             customer: {
                 name: name, phone: phone, email: email, address: address,
                 house: houseVal, street: streetVal, landmark: landmarkVal,
                 geo: { lat: latVal, lng: lngVal },
-                instruction: finalNote
+                instruction: finalNote,
+                time: time // <--- FIXED: PREFERRED TIME SAVED HERE
             },
-            items: sanitizedCart, // USE SANITIZED CART
-            pricing: { subTotal, packing: packingTotal, discount: discountVal, grandTotal }
+            items: sanitizedCart,
+            pricing: { subTotal, packing: packingTotal, discount: discountVal, coupon: activeCoupon || "NONE", grandTotal }
         };
 
         push(ref(db, 'orders'), orderData)
             .then(() => {
-                // SUCCESS: Redirect
-                cart = {};
-                localStorage.removeItem('ccc_cart_v1');
-                renderCart();
+                cart = {}; localStorage.removeItem('ccc_cart_v1'); renderCart();
                 document.getElementById('main-dashboard').style.display = 'none';
                 document.getElementById('checkout-modal').style.display = 'none';
                 document.getElementById('success-view').style.display = 'flex';
                 document.getElementById('customer-name-display').innerText = name;
-                
-                // WhatsApp Link
                 let msg = `*New Order #${orderId}*\n*Name:* ${name}\n*Total:* ₹${grandTotal}\n`;
                 if(type === 'Delivery') msg += `*Address:* ${address}`;
                 const waLink = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
@@ -890,24 +708,16 @@ window.finalizeOrder = function() {
             })
             .catch((e) => {
                 alert("Database Error: " + e.message);
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerText = "Confirm Order";
-                }
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Confirm Order"; }
             });
-
     } catch (err) {
         alert("⚠️ " + err.message);
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerText = "Confirm Order";
-        }
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Confirm Order"; }
     }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadCart(); 
-    renderMenu();
+    loadCart(); renderMenu();
     const cInput = document.getElementById('coupon-input');
     const cBtn = document.getElementById('coupon-apply-btn');
     if(cInput && cBtn) {
@@ -923,7 +733,6 @@ document.addEventListener('DOMContentLoaded', () => {
         "FRI-YAY FRY-DAY: Veg Loaded Fries ₹119 | Chicken Loaded Fries ₹179. Use Code: FRIFRIES",
         "ROCK N' ROLL SATURDAY: Any Roll (Tandoori, Pesto, Chipotle) for ₹129. Use Code: SATROLL"
     ];
-    // FIX: Duplicate text to prevent blank gap during scrolling
     const tickerElement = document.getElementById('daily-ticker-text');
     if(tickerElement) {
         const text = dailyOfferTexts[dayIndex];
@@ -1019,10 +828,8 @@ window.triggerFlyAnimation = function(category) {
 function renderCart() {
     const list = document.getElementById('cart-items-list');
     list.innerHTML = '';
-    let subTotal = 0;
-    let packingTotal = 0;
-    let totalCount = 0;
-    let hasItems = false;
+    let subTotal = 0; let packingTotal = 0;
+    let totalCount = 0; let hasItems = false;
     const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
 
     for (let key in cart) {
@@ -1032,12 +839,9 @@ function renderCart() {
         subTotal += itemTotal;
         totalCount += item.qty;
         let chargePerItem = 0;
-        if (item.category === 'ADD-ON') { chargePerItem = key.startsWith("Hummus") ? 7 : 5;
-        } 
-        else if (fiveRsCats.includes(item.category)) { chargePerItem = 5;
-        } 
-        else { chargePerItem = 10;
-        }
+        if (item.category === 'ADD-ON') chargePerItem = key.startsWith("Hummus") ? 7 : 5;
+        else if (fiveRsCats.includes(item.category)) chargePerItem = 5;
+        else chargePerItem = 10;
         packingTotal += (chargePerItem * item.qty);
         if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
         list.innerHTML += `
@@ -1046,7 +850,6 @@ function renderCart() {
                     <span class="cart-name">${key}</span>
                     <span class="cart-price">${rupeeSign}${item.price}</span>
                 </div>
-          
                 <div class="qty-wrapper">
                     <button class="qty-btn" onclick="updateQty('${key}', -1)">−</button>
                     <span>${item.qty}</span>
@@ -1058,54 +861,34 @@ function renderCart() {
 
     if(!hasItems) list.innerHTML = `<div style="text-align: center; color: #ccc; margin-top: 50px;">Cart is empty</div>`;
 
-    let discountVal = 0;
-    let discountText = "";
-/* --- NEW DYNAMIC DISCOUNT CALCULATION --- */
+    let discountVal = 0; let discountText = "";
     if (activeCoupon && couponsData[activeCoupon]) {
         const coupon = couponsData[activeCoupon];
         const code = activeCoupon;
-        
-        // Use the same "Brain" as the Apply button
         if (coupon.type === 'percentage_off') {
             const result = findComboItems(cart, coupon.rules);
-            if (result.found) {
-                discountVal = Math.round(result.currentTotal * (coupon.value / 100));
-            }
-        } 
-        else if (coupon.type === 'combo_fixed_price') {
+            if (result.found) discountVal = Math.round(result.currentTotal * (coupon.value / 100));
+        } else if (coupon.type === 'combo_fixed_price') {
             const result = findComboItems(cart, coupon.rules);
-            if (result.found) {
-                discountVal = result.currentTotal - coupon.targetPrice;
-            } else if (coupon.alternative) {
+            if (result.found) discountVal = result.currentTotal - coupon.targetPrice;
+            else if (coupon.alternative) {
                 const altResult = findComboItems(cart, coupon.alternative.rules);
                 if (altResult.found) {
                      if(coupon.alternative.type === 'flat_off') discountVal = coupon.alternative.value;
                      else discountVal = altResult.currentTotal - coupon.alternative.targetPrice;
                 }
             }
-        }
-        else if (coupon.type === 'set_item_price') {
+        } else if (coupon.type === 'set_item_price') {
             const result = findComboItems(cart, coupon.rules);
-            if (result.found) {
-                discountVal = result.currentTotal - coupon.value;
-            } else if (coupon.alternative) {
+            if (result.found) discountVal = result.currentTotal - coupon.value;
+            else if (coupon.alternative) {
                 const altResult = findComboItems(cart, coupon.alternative.rules);
-                if (altResult.found) {
-                    discountVal = altResult.currentTotal - coupon.alternative.value;
-                }
+                if (altResult.found) discountVal = altResult.currentTotal - coupon.alternative.value;
             }
         }
-
-        // Safety check: Discount cannot be negative
         if (discountVal < 0) discountVal = 0;
-        
-        // Set the text
-        if (discountVal > 0) {
-            discountText = `Coupon (${code})`; 
-        } else {
-            // If requirements are no longer met (e.g. user removed an item), remove the coupon
-            activeCoupon = null;
-        }
+        if (discountVal > 0) discountText = `Coupon (${code})`; 
+        else activeCoupon = null;
     }
     const discountRow = document.getElementById('discount-row');
     if (discountVal > 0) {
@@ -1123,21 +906,16 @@ function renderCart() {
     document.getElementById('grand-total').innerText = rupeeSign + grandTotal;
     document.getElementById('mobile-count').innerText = `(${totalCount})`;
     const checkoutBtn = document.getElementById('main-checkout-btn');
-    if(!hasItems) { checkoutBtn.innerText = "Cart Empty"; checkoutBtn.disabled = true;
-    } 
-    else if (grandTotal < MIN_ORDER_VAL) { checkoutBtn.innerText = `Min Order ${rupeeSign}${MIN_ORDER_VAL}`; checkoutBtn.disabled = true;
-    } 
-    else { checkoutBtn.innerText = "Confirm Order"; checkoutBtn.disabled = false;
-    }
+    if(!hasItems) { checkoutBtn.innerText = "Cart Empty"; checkoutBtn.disabled = true; } 
+    else if (grandTotal < MIN_ORDER_VAL) { checkoutBtn.innerText = `Min Order ${rupeeSign}${MIN_ORDER_VAL}`; checkoutBtn.disabled = true; } 
+    else { checkoutBtn.innerText = "Confirm Order"; checkoutBtn.disabled = false; }
 }
 
 window.toggleFinalButton = function() {
     const checkbox = document.getElementById('tnc-confirm');
     const btn = document.getElementById('final-submit-btn');
     if (checkbox && btn) {
-        if (checkbox.checked) { btn.disabled = false;
-        btn.style.opacity = "1"; btn.style.cursor = "pointer"; } 
-        else { btn.disabled = true;
-        btn.style.opacity = "0.5"; btn.style.cursor = "not-allowed"; }
+        if (checkbox.checked) { btn.disabled = false; btn.style.opacity = "1"; btn.style.cursor = "pointer"; } 
+        else { btn.disabled = true; btn.style.opacity = "0.5"; btn.style.cursor = "not-allowed"; }
     }
 }
