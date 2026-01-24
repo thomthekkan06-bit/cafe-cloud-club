@@ -54,15 +54,21 @@
         .tag-del { background: rgba(59, 130, 246, 0.2); color: var(--primary); }
         .tag-pick { background: rgba(16, 185, 129, 0.2); color: var(--success); }
 
-        .btn-clear {
-            width: 100%;
-            margin-top: 15px;
-            background: var(--success);
-            color: white; border: none; padding: 15px;
-            font-weight: 700; border-radius: 8px; cursor: pointer;
-            font-size: 1rem; transition: background 0.2s;
+        .actions-row {
+            display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 15px;
         }
-        .btn-clear:hover { background: #059669; }
+
+        .btn-action {
+            border: none; padding: 15px;
+            font-weight: 700; border-radius: 8px; cursor: pointer;
+            font-size: 0.9rem; transition: background 0.2s; color: white;
+        }
+        .btn-decline { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+        .btn-decline:hover { background: var(--danger); color: white; }
+
+        .btn-punch { background: var(--success); color: white; }
+        .btn-punch:hover { background: #059669; }
+
     </style>
 </head>
 <body>
@@ -90,7 +96,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB9d8Seuez7ihaTSAuPyoCwqjKIR1-VFKg",
@@ -113,12 +119,17 @@
             } else { alert("Wrong PIN"); }
         }
 
-        // --- MARK AS COMPLETED LOGIC ---
-        window.markPunched = function(firebaseKey) {
-            if(confirm("Have you punched this order into Loyverse?")) {
-                // This line updates the status to 'Completed', removing it from the view
-                update(ref(db, 'orders/' + firebaseKey), { status: 'Completed' });
+        // --- ACTION: DECLINE (DELETE PERMANENTLY) ---
+        window.markDeclined = function(firebaseKey) {
+            if(confirm("⚠️ DECLINE ORDER?\n\nThis will permanently DELETE the order record. It will not be saved anywhere.\n\nAre you sure?")) {
+                remove(ref(db, 'orders/' + firebaseKey));
             }
+        }
+
+        // --- ACTION: PUNCHED (HIDE BUT KEEP RECORD) ---
+        window.markPunched = function(firebaseKey) {
+            // This updates status to 'Completed', hiding it from view but keeping it in DB for verification
+            update(ref(db, 'orders/' + firebaseKey), { status: 'Completed' });
         }
 
         function loadOrders() {
@@ -140,7 +151,7 @@
                 let hasOrders = false;
 
                 orders.forEach(order => {
-                    // 3. FILTER: Only show orders that are 'New'
+                    // 3. FILTER: Only show orders that are NOT Completed
                     if (order.status === 'Completed') return; 
 
                     hasOrders = true;
@@ -199,9 +210,14 @@
                             <div class="fin-total"><span>Grand Total</span><span>₹${price.grandTotal}</span></div>
                         </div>
 
-                        <button class="btn-clear" onclick="markPunched('${order.key}')">
-                            ✅ Punched in Loyverse
-                        </button>
+                        <div class="actions-row">
+                            <button class="btn-action btn-decline" onclick="markDeclined('${order.key}')">
+                                ❌ Decline
+                            </button>
+                            <button class="btn-action btn-punch" onclick="markPunched('${order.key}')">
+                                ✅ Punched in Loyverse
+                            </button>
+                        </div>
                     `;
                     container.appendChild(card);
                 });
