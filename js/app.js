@@ -736,292 +736,232 @@ function checkStoreStatus(orderType) {
     return { isOpen: true };
 }
 
-// --- FIXED FINALIZE ORDER FUNCTION ---
+// --- ROBUST FINALIZE ORDER FUNCTION (ERROR HANDLING ADDED) ---
 window.finalizeOrder = function() {
-    // 1. PREVENT DOUBLE CLICK - DISABLE BUTTON IMMEDIATELY
+    // 1. DISABLE BUTTON & SHOW PROCESSING STATE
     const submitBtn = document.getElementById('final-submit-btn');
     if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.innerText = "Processing...";
     }
 
-    // 2. Basic Validation
-    const type = document.querySelector('input[name="orderType"]:checked').value;
-    const status = checkStoreStatus(type);
-    
-    // IMPORTANT: If validation fails, we MUST re-enable the button
-    if (!status.isOpen) { 
-        alert("Store Closed!\n" + status.msg); 
-        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Confirm Order"; }
-        return; 
-    }
-
-    const name = document.getElementById('c-name').value.trim();
-    let rawPhone = document.getElementById('c-phone').value.trim();
-    let phone = rawPhone.replace(/\D/g, ''); 
-    if (phone.length > 10 && phone.startsWith('91')) { phone = phone.substring(2);
-    }
-    if (phone.length < 10 || phone.length > 12) { 
-        alert("Please enter a valid 10-digit mobile number.");
-        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Confirm Order"; }
-        return; 
-    }
-
-    const email = document.getElementById('c-email').value.trim();
-    const time = document.getElementById('c-time').value;
-    const instruction = document.getElementById('c-instruction').value.trim();
-    if(!name || !time) { 
-        alert("Please fill in Name and Preferred Time."); 
-        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Confirm Order"; }
-        return;
-    }
-    if (!email || !email.includes('@')) { 
-        alert("Please enter a valid email!"); 
-        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Confirm Order"; }
-        return;
-    }
-
-    // --- ADDRESS LOGIC ---
-    let address = "";
-    if (type === 'Delivery') {
-        const house = document.getElementById('addr-house').value.trim();
-        let street = document.getElementById('addr-street').value;
-        const subStreet = document.getElementById('addr-sub-street').value;
-        const landmark = document.getElementById('addr-landmark').value.trim();
-        const lat = document.getElementById('geo-lat').value;
-        const lng = document.getElementById('geo-lng').value;
-        if (!house) { 
-            alert("Please enter House Name/Flat No."); 
-            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Confirm Order"; }
-            return; 
-        }
-        if (!street) { 
-            alert("Please select your Main Town.");
-            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Confirm Order"; }
-            return; 
-        }
+    try {
+        // --- VALIDATION START ---
+        const typeInput = document.querySelector('input[name="orderType"]:checked');
+        if (!typeInput) throw new Error("Please select Delivery or Pickup.");
         
-        if (subStreet && subStreet !== "") {
-            street = `${street} (${subStreet})`;
-        } else if (subPlaces[street]) {
-            alert("Please select the specific area/junction in " + street);
-            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Confirm Order"; }
-            return;
+        const type = typeInput.value;
+        const status = checkStoreStatus(type);
+        
+        if (!status.isOpen) { 
+            throw new Error("Store Closed!\n" + status.msg); 
         }
 
-        if (!landmark) { 
-            alert("Please enter a nearby Landmark."); 
-            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Confirm Order"; }
-            return;
+        const name = document.getElementById('c-name').value.trim();
+        let rawPhone = document.getElementById('c-phone').value.trim();
+        let phone = rawPhone.replace(/\D/g, ''); 
+        if (phone.length > 10 && phone.startsWith('91')) { phone = phone.substring(2); }
+        
+        if (phone.length < 10 || phone.length > 12) { 
+            throw new Error("Please enter a valid 10-digit mobile number."); 
         }
-        if (street === "Other") {
-            if (instruction.length < 5) {
-                alert("You selected 'Other'. Please type your exact location name in 'Special Instructions'.");
-                document.getElementById('c-instruction').focus();
-                if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Confirm Order"; }
-                return;
+
+        const email = document.getElementById('c-email').value.trim();
+        const time = document.getElementById('c-time').value;
+        const instruction = document.getElementById('c-instruction').value.trim();
+        
+        if(!name || !time) throw new Error("Please fill in Name and Preferred Time."); 
+        if (!email || !email.includes('@')) throw new Error("Please enter a valid email!"); 
+
+        // --- ADDRESS LOGIC ---
+        let address = "";
+        const houseVal = document.getElementById('addr-house') ? document.getElementById('addr-house').value.trim() : "";
+        const streetVal = document.getElementById('addr-street') ? document.getElementById('addr-street').value : "";
+        const subStreetVal = document.getElementById('addr-sub-street') ? document.getElementById('addr-sub-street').value : "";
+        const landmarkVal = document.getElementById('addr-landmark') ? document.getElementById('addr-landmark').value.trim() : "";
+        const latVal = document.getElementById('geo-lat') ? document.getElementById('geo-lat').value : "0";
+        const lngVal = document.getElementById('geo-lng') ? document.getElementById('geo-lng').value : "0";
+
+        if (type === 'Delivery') {
+            if (!houseVal) throw new Error("Please enter House Name/Flat No."); 
+            if (!streetVal) throw new Error("Please select your Main Town.");
+            
+            let finalStreet = streetVal;
+            if (subStreetVal && subStreetVal !== "") {
+                finalStreet = `${streetVal} (${subStreetVal})`;
+            } else if (subPlaces[streetVal]) {
+                throw new Error("Please select the specific area/junction in " + streetVal);
             }
-        }
-        // Fixed variable interpolation (${lat}) and used a standard Maps URL
-const mapLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-        address = `${house}, ${street}\n(Landmark: ${landmark})\n📍 Pin: ${mapLink}`;
-    }
 
-    // --- SAVE USER DETAILS ---
-    const userDetails = {
-        name: name, phone: rawPhone, email: email,
-        house: document.getElementById('addr-house').value,
-        street: document.getElementById('addr-street').value,
-        subStreet: document.getElementById('addr-sub-street').value,
-        landmark: document.getElementById('addr-landmark').value,
-        lat: document.getElementById('geo-lat').value,
-        lng: document.getElementById('geo-lng').value
-    };
-    localStorage.setItem('ccc_user_details_v2', JSON.stringify(userDetails));
+            if (!landmarkVal) throw new Error("Please enter a nearby Landmark."); 
+            if (streetVal === "Other" && instruction.length < 5) {
+                document.getElementById('c-instruction').focus();
+                throw new Error("You selected 'Other'. Please type your exact location name in 'Special Instructions'.");
+            }
 
-    const orderId = Math.floor(100000 + Math.random() * 900000);
-    const now = new Date();
-    const timeString = now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
-    // --- CALCULATE TOTALS (Base) ---
-    let subTotal = 0;
-    let packingTotal = 0;
-    const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
-    
-    const richItems = [];
-    for(let key in cart) {
-        let item = cart[key];
-        let lineTotal = item.price * item.qty;
-        subTotal += lineTotal;
-        let chargePerItem = 10;
-        if (item.category === 'ADD-ON') chargePerItem = key.startsWith("Hummus") ? 7 : 5;
-        else if (fiveRsCats.includes(item.category)) chargePerItem = 5;
-        packingTotal += (chargePerItem * item.qty);
-        if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
-        // Offer Item flagging
-        let isOfferItem = false;
-        
-        // This is strictly for flagging items as "Offer" in the backend, logic can remain simplistic
-        if (activeCoupon) {
-            if (activeCoupon === 'MONBURGER' && (item.category === 'Bun-Tastic Burgers' || key.includes('Fries'))) isOfferItem = true;
-            else if (activeCoupon === 'TUEPASTA' && item.category === 'Italian Indulgence') isOfferItem = true;
-            else if (activeCoupon === 'WEDSTEAK' && item.category === "Butcher's Best") isOfferItem = true;
-            else if (activeCoupon === 'WEDSHAKE' && item.category === "Whipped Wonders") isOfferItem = true;
-            else if (activeCoupon === 'THUSAND' && (item.category === 'Toasty Treats' || item.category === 'Icy Sips')) isOfferItem = true;
-            else if (activeCoupon === 'FRIFRIES' && key.includes('Fries')) isOfferItem = true;
-            else if (activeCoupon === 'SATROLL' && item.category === 'Freshly Folded') isOfferItem = true;
-            else if (activeCoupon.includes('COMBO') || activeCoupon === 'SUNFEAST' || activeCoupon === 'CLOUD15') isOfferItem = true;
+            // Fixed Map Link Generation
+            const mapLink = `http://googleusercontent.com/maps.google.com/?q=${latVal},${lngVal}`;
+            address = `${houseVal}, ${finalStreet}\n(Landmark: ${landmarkVal})\n📍 Pin: ${mapLink}`;
         }
 
-        richItems.push({
-            name: key, qty: item.qty, category: item.category, price: item.price, type: item.type, isOffer: isOfferItem
-        });
-    }
-    
-    // --- STRICT DISCOUNT CALCULATION (DYNAMIC) ---
-    let discountVal = 0;
-    let couponName = "";
-    
-    if(activeCoupon) { 
-        couponName = activeCoupon;
+        // --- SAVE USER DETAILS (Locally) ---
+        const userDetails = {
+            name: name, phone: rawPhone, email: email,
+            house: houseVal, street: streetVal, subStreet: subStreetVal,
+            landmark: landmarkVal, lat: latVal, lng: lngVal
+        };
+        localStorage.setItem('ccc_user_details_v2', JSON.stringify(userDetails));
+
+        // --- ORDER DATA PREP ---
+        const orderId = Math.floor(100000 + Math.random() * 900000);
+        const now = new Date();
+        const timeString = now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+
+        // --- TOTALS CALCULATION ---
+        let subTotal = 0;
+        let packingTotal = 0;
+        const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
         
-        // Check if we have data for this coupon from Firebase
-        if (couponsData[activeCoupon]) {
+        for(let key in cart) {
+            let item = cart[key];
+            subTotal += (item.price * item.qty);
+            let chargePerItem = 10;
+            if (item.category === 'ADD-ON') chargePerItem = key.startsWith("Hummus") ? 7 : 5;
+            else if (fiveRsCats.includes(item.category)) chargePerItem = 5;
+            packingTotal += (chargePerItem * item.qty);
+            if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
+        }
+
+        // --- COUPON CALCULATION ---
+        let discountVal = 0;
+        let couponName = "";
+        if(activeCoupon && couponsData[activeCoupon]) { 
+            couponName = activeCoupon;
             const coupon = couponsData[activeCoupon];
             
-            // Re-run the validator logic to ensure criteria are still met
             if (coupon.type === 'percentage_off') {
                 const result = findComboItems(cart, coupon.rules);
-                if (result.found) {
-                    discountVal = Math.round(result.currentTotal * (coupon.value / 100));
-                }
-            } 
-            else if (coupon.type === 'combo_fixed_price') {
+                if (result.found) discountVal = Math.round(result.currentTotal * (coupon.value / 100));
+            } else if (coupon.type === 'combo_fixed_price') {
                 const result = findComboItems(cart, coupon.rules);
-                if (result.found) {
-                    discountVal = result.currentTotal - coupon.targetPrice;
-                } else if (coupon.alternative) {
+                if (result.found) discountVal = result.currentTotal - coupon.targetPrice;
+                else if (coupon.alternative) {
                     const altResult = findComboItems(cart, coupon.alternative.rules);
                     if (altResult.found) {
-                        if(coupon.alternative.type === 'flat_off') discountVal = coupon.alternative.value;
-                        else discountVal = altResult.currentTotal - coupon.alternative.targetPrice;
+                        discountVal = (coupon.alternative.type === 'flat_off') ? coupon.alternative.value : (altResult.currentTotal - coupon.alternative.targetPrice);
                     }
                 }
-            }
-            else if (coupon.type === 'set_item_price') {
-                const result = findComboItems(cart, coupon.rules);
-                if (result.found) {
-                    discountVal = result.currentTotal - coupon.value;
-                } else if (coupon.alternative) {
-                    const altResult = findComboItems(cart, coupon.alternative.rules);
-                    if (altResult.found) {
-                        discountVal = altResult.currentTotal - coupon.alternative.value;
-                    }
-                }
+            } else if (coupon.type === 'set_item_price') {
+                 const result = findComboItems(cart, coupon.rules);
+                 if (result.found) discountVal = result.currentTotal - coupon.value;
+                 else if (coupon.alternative) {
+                     const altResult = findComboItems(cart, coupon.alternative.rules);
+                     if (altResult.found) discountVal = altResult.currentTotal - coupon.alternative.value;
+                 }
             }
         }
-    }
 
-    let grandTotal = (subTotal - discountVal) + packingTotal;
-    // --- SECURITY FIX: MINIMUM ORDER CHECK ---
-    if (grandTotal < MIN_ORDER_VAL) {
-        alert("Wait a minute! Your total (₹" + grandTotal + ") has dropped below the minimum order value of ₹" + MIN_ORDER_VAL + ".\n\nPlease add more items to proceed.");
-        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Confirm Order"; }
-        return; 
-    }
+        let grandTotal = (subTotal - discountVal) + packingTotal;
+        if (grandTotal < MIN_ORDER_VAL) {
+            throw new Error("Your total (₹" + grandTotal + ") is below the minimum order value of ₹" + MIN_ORDER_VAL + ".");
+        }
 
-    let finalNote = instruction || "";
-    if (activeCoupon && discountVal > 0) finalNote += ` [COUPON: ${activeCoupon} OFF ₹${discountVal}]`;
-    if (finalNote === "") finalNote = "-";
-    
-    // --- 1. RESTORED: SAVE TO DATABASE ---
-    const orderData = {
-        id: orderId,
-        date: timeString,
-        timestamp: Date.now(),
-        type: type, // Delivery or Pickup
-        status: 'New',
-        customer: {
-            name: name,
-            phone: phone,
-            email: email,
-            address: address, // Full string address
-            house: document.getElementById('addr-house').value,
-            street: document.getElementById('addr-street').value,
-            landmark: document.getElementById('addr-landmark').value,
-            geo: {
-                lat: document.getElementById('geo-lat').value,
-                lng: document.getElementById('geo-lng').value
+        let finalNote = instruction || "";
+        if (activeCoupon && discountVal > 0) finalNote += ` [COUPON: ${activeCoupon} OFF ₹${discountVal}]`;
+        if (finalNote === "") finalNote = "-";
+
+        // --- 1. FIREBASE PUSH (The Data Save) ---
+        const orderData = {
+            id: orderId,
+            date: timeString,
+            timestamp: Date.now(),
+            type: type,
+            status: 'New',
+            customer: {
+                name: name, phone: phone, email: email,
+                address: address, 
+                // Store raw values safely
+                house: houseVal, street: streetVal, landmark: landmarkVal,
+                geo: { lat: latVal, lng: lngVal },
+                instruction: finalNote
             },
-            instruction: finalNote
-        },
-        items: cart, // Contains price, basePrice, qty, category
-        pricing: {
-            subTotal: subTotal,
-            packing: packingTotal,
-            discount: discountVal,
-            coupon: activeCoupon || "NONE",
-            grandTotal: grandTotal
+            items: cart,
+            pricing: {
+                subTotal: subTotal, packing: packingTotal,
+                discount: discountVal, coupon: activeCoupon || "NONE",
+                grandTotal: grandTotal
+            }
+        };
+
+        // Note: Push is async. We don't await it here to keep UI snappy, 
+        // but we catch errors attached to the promise just in case.
+        push(ref(db, 'orders'), orderData)
+            .then(() => console.log("Order Saved"))
+            .catch((e) => console.error("Firebase Save Error (Background):", e));
+
+        // --- 2. WHATSAPP GENERATION ---
+        let msg = `*New Order @ Café Cloud Club*\n`;
+        msg += `*Type:* ${type.toUpperCase()}\n*Time:* ${timeString}\n*Order ID:* ${orderId}\n---------------------------\n`;
+        msg += `*Name:* ${name}\n*Phone:* ${phone}\n*Email:* ${email}\n*Time:* ${time}\n`;
+        if(type === 'Delivery') msg += `*Address:* ${address}\n`;
+        if(finalNote !== "-") msg += `*Note:* ${finalNote}\n`;
+        msg += `---------------------------\n*ITEMS:*\n`;
+        for(let key in cart) {
+            let item = cart[key];
+            let lineTotal = item.price * item.qty;
+            let dietTag = item.type === 'veg' ? '[VEG]' : '[NON-VEG]';
+            msg += `• ${dietTag} ${key} x ${item.qty} = Rs. ${lineTotal}\n`;
         }
-    };
+        msg += `---------------------------\nSub Total: Rs. ${subTotal}\n`;
+        if (discountVal > 0) msg += `*Coupon (${couponName}): -Rs. ${discountVal}*\n`;
+        msg += `Packing: Rs. ${packingTotal}\n*TOTAL: Rs. ${grandTotal}*\n`;
+        if(type === 'Delivery') msg += `\n_Delivery fee calculated by Delivery Agent._`;
+        
+        const encodedMsg = encodeURIComponent(msg);
+        const finalUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
 
-    // Save to Firebase 'orders' node
-    push(ref(db, 'orders'), orderData)
-        .then(() => console.log("Order Saved to DB"))
-        .catch((e) => alert("Error saving order: " + e.message));
+        // --- 3. CLEANUP & UI UPDATE ---
+        if (Object.keys(cart).length > 0) {
+            localStorage.setItem('ccc_last_order', JSON.stringify(cart));
+            lastOrder = cart;
+        }
 
-    // --- WHATSAPP MSG GENERATION ---
-    let msg = `*New Order @ Café Cloud Club*\n`;
-    msg += `*Type:* ${type.toUpperCase()}\n*Time:* ${timeString}\n*Order ID:* ${orderId}\n---------------------------\n`;
-    msg += `*Name:* ${name}\n*Phone:* ${phone}\n*Email:* ${email}\n*Time:* ${time}\n`;
-    if(type === 'Delivery') msg += `*Address:* ${address}\n`;
-    if(finalNote !== "-") msg += `*Note:* ${finalNote}\n`;
-    msg += `---------------------------\n*ITEMS:*\n`;
-    for(let key in cart) {
-        let item = cart[key];
-        let lineTotal = item.price * item.qty;
-        let dietTag = item.type === 'veg' ? '[VEG]' : '[NON-VEG]';
-        msg += `• ${dietTag} ${key} x ${item.qty} = Rs. ${lineTotal}\n`;
+        let pastOrders = JSON.parse(localStorage.getItem('ccc_customer_history')) || [];
+        pastOrders.unshift({
+            id: orderId, date: timeString, total: grandTotal,
+            items: Object.keys(cart).join(", ")
+        });
+        if(pastOrders.length > 20) pastOrders = pastOrders.slice(0, 20);
+        localStorage.setItem('ccc_customer_history', JSON.stringify(pastOrders));
+
+        cart = {};
+        localStorage.removeItem('ccc_cart_v1'); 
+        renderCart();
+
+        document.getElementById('main-dashboard').style.display = 'none';
+        document.getElementById('checkout-modal').style.display = 'none';
+        document.getElementById('success-view').style.display = 'flex';
+
+        if (typeof gtag === 'function') {
+            gtag('event', 'purchase', { transaction_id: orderId, value: grandTotal, currency: "INR" });
+        }
+
+        // Safe DOM updates
+        const nameDisplay = document.getElementById('customer-name-display');
+        if(nameDisplay) nameDisplay.innerText = name;
+        
+        const waBtn = document.getElementById('send-wa-btn');
+        if(waBtn) waBtn.onclick = function() { window.open(finalUrl, '_blank'); };
+
+    } catch (error) {
+        // --- ERROR HANDLER ---
+        alert("⚠️ ORDER FAILED: " + error.message);
+        console.error(error);
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerText = "Confirm Order";
+        }
     }
-    msg += `---------------------------\nSub Total: Rs. ${subTotal}\n`;
-    if (discountVal > 0) msg += `*Coupon (${couponName}): -Rs. ${discountVal}*\n`;
-    msg += `Packing: Rs. ${packingTotal}\n*TOTAL: Rs. ${grandTotal}*\n`;
-    if(type === 'Delivery') msg += `\n_Delivery fee calculated by Delivery Agent._`;
-    // msg += `\n\nTrack Order: https://cafe-cloud-club.vercel.app/track.html`; // <-- STRIPPED
-
-    const encodedMsg = encodeURIComponent(msg);
-    const finalUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
-    
-    // Clear and Redirect
-    if (Object.keys(cart).length > 0) {
-        localStorage.setItem('ccc_last_order', JSON.stringify(cart));
-        lastOrder = cart;
-    }
-    
-    // SAVE ORDER ID TO HISTORY LIST (Local Storage Only)
-    let pastOrders = JSON.parse(localStorage.getItem('ccc_customer_history')) || [];
-    pastOrders.unshift({
-        id: orderId,
-        date: timeString,
-        total: grandTotal,
-        items: Object.keys(cart).join(", "),
-        // key: trackingKey  <-- STRIPPED
-    });
-    if(pastOrders.length > 20) pastOrders = pastOrders.slice(0, 20);
-    localStorage.setItem('ccc_customer_history', JSON.stringify(pastOrders));
-
-    cart = {};
-    localStorage.removeItem('ccc_cart_v1'); 
-    renderCart();
-
-    document.getElementById('main-dashboard').style.display = 'none';
-    document.getElementById('checkout-modal').style.display = 'none';
-    document.getElementById('success-view').style.display = 'flex';
-    if (typeof gtag === 'function') {
-        gtag('event', 'purchase', { transaction_id: orderId, value: grandTotal, currency: "INR" });
-    }
-
-    document.getElementById('customer-name-display').innerText = name;
-    document.getElementById('send-wa-btn').onclick = function() { window.open(finalUrl, '_blank'); };
 }
 
 document.addEventListener('DOMContentLoaded', () => {
