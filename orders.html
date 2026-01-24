@@ -99,8 +99,9 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // --- AUTH PIN LOGIC UPDATED TO 2024 ---
         window.checkPin = function() {
-            if (btoa(document.getElementById('pin').value) === "MjAyMQ==") { 
+            if (document.getElementById('pin').value === "2024") { 
                 document.getElementById('pin-overlay').style.display = 'none';
                 document.getElementById('app').style.display = 'block';
                 loadOrders();
@@ -155,7 +156,7 @@
                         });
                     }
 
-                    // --- NEW: DISPLAY OFFER CODE ---
+                    // --- DISPLAY OFFER CODE ---
                     let offerRow = "";
                     if (price.coupon && price.coupon !== "NONE") {
                         offerRow = `<div class="fin-row" style="color:var(--primary); font-weight:700;"><span>🎟 Offer Code</span><span>${price.coupon}</span></div>`;
