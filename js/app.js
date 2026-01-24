@@ -746,78 +746,63 @@ window.finalizeOrder = function() {
     }
 
     try {
-        // --- VALIDATION START ---
+        // --- 1. VALIDATION ---
         const typeInput = document.querySelector('input[name="orderType"]:checked');
         if (!typeInput) throw new Error("Please select Delivery or Pickup.");
-        
         const type = typeInput.value;
+
         const status = checkStoreStatus(type);
-        
-        if (!status.isOpen) { 
-            throw new Error("Store Closed!\n" + status.msg); 
-        }
+        if (!status.isOpen) throw new Error("Store Closed!\n" + status.msg);
 
         const name = document.getElementById('c-name').value.trim();
         let rawPhone = document.getElementById('c-phone').value.trim();
         let phone = rawPhone.replace(/\D/g, ''); 
-        if (phone.length > 10 && phone.startsWith('91')) { phone = phone.substring(2); }
+        if (phone.length > 10 && phone.startsWith('91')) phone = phone.substring(2);
         
-        if (phone.length < 10 || phone.length > 12) { 
-            throw new Error("Please enter a valid 10-digit mobile number."); 
-        }
-
+        if (phone.length < 10 || phone.length > 12) throw new Error("Invalid mobile number.");
+        if (!name) throw new Error("Name is required.");
+        
         const email = document.getElementById('c-email').value.trim();
-        const time = document.getElementById('c-time').value;
-        const instruction = document.getElementById('c-instruction').value.trim();
-        
-        if(!name || !time) throw new Error("Please fill in Name and Preferred Time."); 
-        if (!email || !email.includes('@')) throw new Error("Please enter a valid email!"); 
+        if (!email.includes('@')) throw new Error("Invalid email.");
 
-        // --- ADDRESS LOGIC ---
+        const time = document.getElementById('c-time').value;
+        if (!time) throw new Error("Please select a time.");
+
+        const instruction = document.getElementById('c-instruction').value.trim();
+
+        // --- 2. ADDRESS LOGIC ---
         let address = "";
-        const houseVal = document.getElementById('addr-house') ? document.getElementById('addr-house').value.trim() : "";
-        const streetVal = document.getElementById('addr-street') ? document.getElementById('addr-street').value : "";
-        const subStreetVal = document.getElementById('addr-sub-street') ? document.getElementById('addr-sub-street').value : "";
-        const landmarkVal = document.getElementById('addr-landmark') ? document.getElementById('addr-landmark').value.trim() : "";
-        const latVal = document.getElementById('geo-lat') ? document.getElementById('geo-lat').value : "0";
-        const lngVal = document.getElementById('geo-lng') ? document.getElementById('geo-lng').value : "0";
+        let houseVal = "", streetVal = "", subStreetVal = "", landmarkVal = "";
+        let latVal = "0", lngVal = "0";
 
         if (type === 'Delivery') {
-            if (!houseVal) throw new Error("Please enter House Name/Flat No."); 
-            if (!streetVal) throw new Error("Please select your Main Town.");
+            houseVal = document.getElementById('addr-house').value.trim();
+            streetVal = document.getElementById('addr-street').value;
+            subStreetVal = document.getElementById('addr-sub-street').value;
+            landmarkVal = document.getElementById('addr-landmark').value.trim();
+            latVal = document.getElementById('geo-lat').value;
+            lngVal = document.getElementById('geo-lng').value;
+
+            if (!houseVal) throw new Error("House name is required.");
+            if (!streetVal) throw new Error("Town is required.");
+            if (!landmarkVal) throw new Error("Landmark is required.");
             
             let finalStreet = streetVal;
-            if (subStreetVal && subStreetVal !== "") {
-                finalStreet = `${streetVal} (${subStreetVal})`;
-            } else if (subPlaces[streetVal]) {
-                throw new Error("Please select the specific area/junction in " + streetVal);
-            }
-
-            if (!landmarkVal) throw new Error("Please enter a nearby Landmark."); 
+            if (subStreetVal) finalStreet += ` (${subStreetVal})`;
+            
             if (streetVal === "Other" && instruction.length < 5) {
-                document.getElementById('c-instruction').focus();
-                throw new Error("You selected 'Other'. Please type your exact location name in 'Special Instructions'.");
+                throw new Error("Please type your exact location in Instructions.");
             }
 
-            // Fixed Map Link Generation
+            // --- FIXED MAP LINK ---
             const mapLink = `http://googleusercontent.com/maps.google.com/?q=${latVal},${lngVal}`;
             address = `${houseVal}, ${finalStreet}\n(Landmark: ${landmarkVal})\n📍 Pin: ${mapLink}`;
         }
 
-        // --- SAVE USER DETAILS (Locally) ---
-        const userDetails = {
-            name: name, phone: rawPhone, email: email,
-            house: houseVal, street: streetVal, subStreet: subStreetVal,
-            landmark: landmarkVal, lat: latVal, lng: lngVal
-        };
-        localStorage.setItem('ccc_user_details_v2', JSON.stringify(userDetails));
-
-        // --- ORDER DATA PREP ---
+        // --- 3. CALCULATIONS ---
         const orderId = Math.floor(100000 + Math.random() * 900000);
-        const now = new Date();
-        const timeString = now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
-
-        // --- TOTALS CALCULATION ---
+        const timeString = new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+        
         let subTotal = 0;
         let packingTotal = 0;
         const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
@@ -825,52 +810,51 @@ window.finalizeOrder = function() {
         for(let key in cart) {
             let item = cart[key];
             subTotal += (item.price * item.qty);
-            let chargePerItem = 10;
-            if (item.category === 'ADD-ON') chargePerItem = key.startsWith("Hummus") ? 7 : 5;
-            else if (fiveRsCats.includes(item.category)) chargePerItem = 5;
-            packingTotal += (chargePerItem * item.qty);
+            let charge = 10;
+            if (item.category === 'ADD-ON') charge = key.startsWith("Hummus") ? 7 : 5;
+            else if (fiveRsCats.includes(item.category)) charge = 5;
+            packingTotal += (charge * item.qty);
             if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
         }
 
-        // --- COUPON CALCULATION ---
         let discountVal = 0;
-        let couponName = "";
-        if(activeCoupon && couponsData[activeCoupon]) { 
-            couponName = activeCoupon;
-            const coupon = couponsData[activeCoupon];
-            
-            if (coupon.type === 'percentage_off') {
+        if (activeCoupon && couponsData[activeCoupon]) {
+             const coupon = couponsData[activeCoupon];
+             if (coupon.type === 'percentage_off') {
                 const result = findComboItems(cart, coupon.rules);
                 if (result.found) discountVal = Math.round(result.currentTotal * (coupon.value / 100));
             } else if (coupon.type === 'combo_fixed_price') {
                 const result = findComboItems(cart, coupon.rules);
                 if (result.found) discountVal = result.currentTotal - coupon.targetPrice;
-                else if (coupon.alternative) {
-                    const altResult = findComboItems(cart, coupon.alternative.rules);
-                    if (altResult.found) {
-                        discountVal = (coupon.alternative.type === 'flat_off') ? coupon.alternative.value : (altResult.currentTotal - coupon.alternative.targetPrice);
-                    }
-                }
             } else if (coupon.type === 'set_item_price') {
                  const result = findComboItems(cart, coupon.rules);
                  if (result.found) discountVal = result.currentTotal - coupon.value;
-                 else if (coupon.alternative) {
-                     const altResult = findComboItems(cart, coupon.alternative.rules);
-                     if (altResult.found) discountVal = altResult.currentTotal - coupon.alternative.value;
-                 }
             }
         }
 
         let grandTotal = (subTotal - discountVal) + packingTotal;
-        if (grandTotal < MIN_ORDER_VAL) {
-            throw new Error("Your total (₹" + grandTotal + ") is below the minimum order value of ₹" + MIN_ORDER_VAL + ".");
+        if (grandTotal < MIN_ORDER_VAL) throw new Error(`Min Order value is ₹${MIN_ORDER_VAL}`);
+
+        let finalNote = instruction || "-";
+        if (activeCoupon && discountVal > 0) finalNote += ` [COUPON: ${activeCoupon}]`;
+
+        // --- 4. SANITIZE KEYS FOR FIREBASE (NEW FIX) ---
+        // Firebase forbids: . # $ / [ ]
+        const sanitizedCart = {};
+        for (let key in cart) {
+            const item = cart[key];
+            const safeKey = key
+                .replace(/\./g, '_')   // dot -> underscore
+                .replace(/#/g, 'No')   // # -> No
+                .replace(/\$/g, '')    // $ -> empty
+                .replace(/\//g, '-')   // / -> hyphen
+                .replace(/\[/g, '(')   // [ -> (
+                .replace(/\]/g, ')');  // ] -> )
+            
+            sanitizedCart[safeKey] = item;
         }
 
-        let finalNote = instruction || "";
-        if (activeCoupon && discountVal > 0) finalNote += ` [COUPON: ${activeCoupon} OFF ₹${discountVal}]`;
-        if (finalNote === "") finalNote = "-";
-
-        // --- 1. FIREBASE PUSH (The Data Save) ---
+        // --- 5. SAVE TO DB ---
         const orderData = {
             id: orderId,
             date: timeString,
@@ -878,85 +862,42 @@ window.finalizeOrder = function() {
             type: type,
             status: 'New',
             customer: {
-                name: name, phone: phone, email: email,
-                address: address, 
-                // Store raw values safely
+                name: name, phone: phone, email: email, address: address,
                 house: houseVal, street: streetVal, landmark: landmarkVal,
                 geo: { lat: latVal, lng: lngVal },
                 instruction: finalNote
             },
-            items: cart,
-            pricing: {
-                subTotal: subTotal, packing: packingTotal,
-                discount: discountVal, coupon: activeCoupon || "NONE",
-                grandTotal: grandTotal
-            }
+            items: sanitizedCart, // USE SANITIZED CART
+            pricing: { subTotal, packing: packingTotal, discount: discountVal, grandTotal }
         };
 
-        // Note: Push is async. We don't await it here to keep UI snappy, 
-        // but we catch errors attached to the promise just in case.
         push(ref(db, 'orders'), orderData)
-            .then(() => console.log("Order Saved"))
-            .catch((e) => console.error("Firebase Save Error (Background):", e));
+            .then(() => {
+                // SUCCESS: Redirect
+                cart = {};
+                localStorage.removeItem('ccc_cart_v1');
+                renderCart();
+                document.getElementById('main-dashboard').style.display = 'none';
+                document.getElementById('checkout-modal').style.display = 'none';
+                document.getElementById('success-view').style.display = 'flex';
+                document.getElementById('customer-name-display').innerText = name;
+                
+                // WhatsApp Link
+                let msg = `*New Order #${orderId}*\n*Name:* ${name}\n*Total:* ₹${grandTotal}\n`;
+                if(type === 'Delivery') msg += `*Address:* ${address}`;
+                const waLink = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
+                document.getElementById('send-wa-btn').onclick = () => window.open(waLink, '_blank');
+            })
+            .catch((e) => {
+                alert("Database Error: " + e.message);
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "Confirm Order";
+                }
+            });
 
-        // --- 2. WHATSAPP GENERATION ---
-        let msg = `*New Order @ Café Cloud Club*\n`;
-        msg += `*Type:* ${type.toUpperCase()}\n*Time:* ${timeString}\n*Order ID:* ${orderId}\n---------------------------\n`;
-        msg += `*Name:* ${name}\n*Phone:* ${phone}\n*Email:* ${email}\n*Time:* ${time}\n`;
-        if(type === 'Delivery') msg += `*Address:* ${address}\n`;
-        if(finalNote !== "-") msg += `*Note:* ${finalNote}\n`;
-        msg += `---------------------------\n*ITEMS:*\n`;
-        for(let key in cart) {
-            let item = cart[key];
-            let lineTotal = item.price * item.qty;
-            let dietTag = item.type === 'veg' ? '[VEG]' : '[NON-VEG]';
-            msg += `• ${dietTag} ${key} x ${item.qty} = Rs. ${lineTotal}\n`;
-        }
-        msg += `---------------------------\nSub Total: Rs. ${subTotal}\n`;
-        if (discountVal > 0) msg += `*Coupon (${couponName}): -Rs. ${discountVal}*\n`;
-        msg += `Packing: Rs. ${packingTotal}\n*TOTAL: Rs. ${grandTotal}*\n`;
-        if(type === 'Delivery') msg += `\n_Delivery fee calculated by Delivery Agent._`;
-        
-        const encodedMsg = encodeURIComponent(msg);
-        const finalUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
-
-        // --- 3. CLEANUP & UI UPDATE ---
-        if (Object.keys(cart).length > 0) {
-            localStorage.setItem('ccc_last_order', JSON.stringify(cart));
-            lastOrder = cart;
-        }
-
-        let pastOrders = JSON.parse(localStorage.getItem('ccc_customer_history')) || [];
-        pastOrders.unshift({
-            id: orderId, date: timeString, total: grandTotal,
-            items: Object.keys(cart).join(", ")
-        });
-        if(pastOrders.length > 20) pastOrders = pastOrders.slice(0, 20);
-        localStorage.setItem('ccc_customer_history', JSON.stringify(pastOrders));
-
-        cart = {};
-        localStorage.removeItem('ccc_cart_v1'); 
-        renderCart();
-
-        document.getElementById('main-dashboard').style.display = 'none';
-        document.getElementById('checkout-modal').style.display = 'none';
-        document.getElementById('success-view').style.display = 'flex';
-
-        if (typeof gtag === 'function') {
-            gtag('event', 'purchase', { transaction_id: orderId, value: grandTotal, currency: "INR" });
-        }
-
-        // Safe DOM updates
-        const nameDisplay = document.getElementById('customer-name-display');
-        if(nameDisplay) nameDisplay.innerText = name;
-        
-        const waBtn = document.getElementById('send-wa-btn');
-        if(waBtn) waBtn.onclick = function() { window.open(finalUrl, '_blank'); };
-
-    } catch (error) {
-        // --- ERROR HANDLER ---
-        alert("⚠️ ORDER FAILED: " + error.message);
-        console.error(error);
+    } catch (err) {
+        alert("⚠️ " + err.message);
         if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.innerText = "Confirm Order";
