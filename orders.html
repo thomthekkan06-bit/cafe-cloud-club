@@ -19,16 +19,14 @@
         }
         body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 20px; }
         
-        /* PIN SCREEN */
         #pin-overlay { position: fixed; inset: 0; background: rgba(15,17,21,0.98); z-index: 999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
         .pin-box { background: var(--surface); padding: 40px; border-radius: 16px; border: 1px solid var(--border); text-align: center; }
         .pin-input { background: var(--bg); border: 1px solid var(--border); color: white; padding: 10px; font-size: 1.5rem; letter-spacing: 10px; border-radius: 8px; text-align: center; width: 200px; font-family: 'JetBrains Mono'; }
         
-        /* LAYOUT */
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
         .refresh-btn { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
         
-        .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
+        .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; }
         
         .order-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; position: relative; display:flex; flex-direction:column;}
         .order-header { display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px dashed var(--border); padding-bottom: 10px; }
@@ -42,9 +40,10 @@
         
         .items-table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.9rem; }
         .items-table th { text-align: left; color: var(--muted); font-weight: 400; padding-bottom: 8px; font-size: 0.8rem; }
-        .items-table td { padding: 4px 0; border-bottom: 1px solid #222; }
-        .item-qty { font-family: 'JetBrains Mono'; color: var(--primary); width: 30px; }
-        .item-price { text-align: right; font-family: 'JetBrains Mono'; color: var(--muted); }
+        .items-table td { padding: 6px 0; border-bottom: 1px solid #222; }
+        .item-qty { font-family: 'JetBrains Mono'; color: var(--primary); width: 40px; }
+        .item-rate { text-align: right; color: var(--muted); width: 70px; }
+        .item-total { text-align: right; font-family: 'JetBrains Mono'; font-weight: bold; width: 80px; }
         
         .financials { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-top: auto; }
         .fin-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; color: var(--muted); }
@@ -54,21 +53,12 @@
         .tag-del { background: rgba(59, 130, 246, 0.2); color: var(--primary); }
         .tag-pick { background: rgba(16, 185, 129, 0.2); color: var(--success); }
 
-        .actions-row {
-            display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 15px;
-        }
-
-        .btn-action {
-            border: none; padding: 15px;
-            font-weight: 700; border-radius: 8px; cursor: pointer;
-            font-size: 0.9rem; transition: background 0.2s; color: white;
-        }
+        .actions-row { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 15px; }
+        .btn-action { border: none; padding: 15px; font-weight: 700; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: background 0.2s; color: white; }
         .btn-decline { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
         .btn-decline:hover { background: var(--danger); color: white; }
-
         .btn-punch { background: var(--success); color: white; }
         .btn-punch:hover { background: #059669; }
-
     </style>
 </head>
 <body>
@@ -90,8 +80,7 @@
             <button class="refresh-btn" onclick="location.reload()">Refresh Data</button>
         </div>
 
-        <div id="orders-container" class="orders-grid">
-            </div>
+        <div id="orders-container" class="orders-grid"></div>
     </div>
 
     <script type="module">
@@ -110,7 +99,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- AUTH ---
         window.checkPin = function() {
             if (btoa(document.getElementById('pin').value) === "MjAyMQ==") { 
                 document.getElementById('pin-overlay').style.display = 'none';
@@ -119,16 +107,13 @@
             } else { alert("Wrong PIN"); }
         }
 
-        // --- ACTION: DECLINE (DELETE PERMANENTLY) ---
         window.markDeclined = function(firebaseKey) {
-            if(confirm("⚠️ DECLINE ORDER?\n\nThis will permanently DELETE the order record. It will not be saved anywhere.\n\nAre you sure?")) {
+            if(confirm("⚠️ DECLINE ORDER?\n\nThis will permanently DELETE the order record.\n\nAre you sure?")) {
                 remove(ref(db, 'orders/' + firebaseKey));
             }
         }
 
-        // --- ACTION: PUNCHED (HIDE BUT KEEP RECORD) ---
         window.markPunched = function(firebaseKey) {
-            // This updates status to 'Completed', hiding it from view but keeping it in DB for verification
             update(ref(db, 'orders/' + firebaseKey), { status: 'Completed' });
         }
 
@@ -142,19 +127,15 @@
                     return;
                 }
 
-                // 1. Convert to Array and Preserve the Firebase KEY
                 const orders = Object.entries(data).map(([key, val]) => ({ ...val, key }));
-
-                // 2. Sort by Date (Newest First)
                 orders.sort((a, b) => b.timestamp - a.timestamp);
 
                 let hasOrders = false;
 
                 orders.forEach(order => {
-                    // 3. FILTER: Only show orders that are NOT Completed
                     if (order.status === 'Completed') return; 
-
                     hasOrders = true;
+                    
                     const cust = order.customer || {};
                     const price = order.pricing || {};
                     const geoUrl = `https://www.google.com/maps/search/?api=1&query=${cust.geo?.lat},${cust.geo?.lng}`;
@@ -162,14 +143,22 @@
                     let itemsHtml = "";
                     if(order.items) {
                         Object.entries(order.items).forEach(([name, item]) => {
+                            const lineTotal = item.price * item.qty;
                             itemsHtml += `
                                 <tr>
                                     <td class="item-qty">${item.qty}x</td>
                                     <td>${name}</td>
-                                    <td class="item-price">₹${item.price}</td>
+                                    <td class="item-rate">₹${item.price}</td>
+                                    <td class="item-total">₹${lineTotal}</td>
                                 </tr>
                             `;
                         });
+                    }
+
+                    // --- NEW: DISPLAY OFFER CODE ---
+                    let offerRow = "";
+                    if (price.coupon && price.coupon !== "NONE") {
+                        offerRow = `<div class="fin-row" style="color:var(--primary); font-weight:700;"><span>🎟 Offer Code</span><span>${price.coupon}</span></div>`;
                     }
 
                     const typeTag = order.type === 'Delivery' ? '<span class="tag tag-del">Delivery</span>' : '<span class="tag tag-pick">Pickup</span>';
@@ -190,6 +179,7 @@
                             <div class="info-text"><strong>${cust.name}</strong></div>
                             <div class="info-text"><a href="tel:${cust.phone}" style="color:var(--primary);">${cust.phone}</a></div>
                             <div class="info-text" style="font-size:0.85rem; color:var(--muted);">${cust.email}</div>
+                            <div class="info-text" style="margin-top:5px; color:#fff;"><strong>🕒 Pref. Time:</strong> ${cust.time || "ASAP"}</div>
                         </div>
 
                         <div class="info-block">
@@ -199,32 +189,27 @@
                         </div>
 
                         <table class="items-table">
-                            <thead><tr><th>Qty</th><th>Item</th><th style="text-align:right">Cost</th></tr></thead>
+                            <thead><tr><th>Qty</th><th>Dish Name</th><th style="text-align:right">Rate</th><th style="text-align:right">Total</th></tr></thead>
                             <tbody>${itemsHtml}</tbody>
                         </table>
 
                         <div class="financials">
                             <div class="fin-row"><span>Sub Total</span><span>₹${price.subTotal}</span></div>
                             <div class="fin-row"><span>Packing</span><span>₹${price.packing}</span></div>
-                            ${price.discount > 0 ? `<div class="fin-row" style="color:var(--warning)"><span>Discount (${price.coupon})</span><span>-₹${price.discount}</span></div>` : ''}
+                            ${price.discount > 0 ? `<div class="fin-row" style="color:var(--warning)"><span>Discount</span><span>-₹${price.discount}</span></div>` : ''}
+                            ${offerRow}
                             <div class="fin-total"><span>Grand Total</span><span>₹${price.grandTotal}</span></div>
                         </div>
 
                         <div class="actions-row">
-                            <button class="btn-action btn-decline" onclick="markDeclined('${order.key}')">
-                                ❌ Decline
-                            </button>
-                            <button class="btn-action btn-punch" onclick="markPunched('${order.key}')">
-                                ✅ Punched in Loyverse
-                            </button>
+                            <button class="btn-action btn-decline" onclick="markDeclined('${order.key}')">❌ Decline</button>
+                            <button class="btn-action btn-punch" onclick="markPunched('${order.key}')">✅ Punched in Loyverse</button>
                         </div>
                     `;
                     container.appendChild(card);
                 });
 
-                if(!hasOrders) {
-                    container.innerHTML = "<div style='color:var(--muted)'>No active orders pending.</div>";
-                }
+                if(!hasOrders) container.innerHTML = "<div style='color:var(--muted)'>No active orders pending.</div>";
             });
         }
     </script>
