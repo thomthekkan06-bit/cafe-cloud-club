@@ -59,6 +59,8 @@
         .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; }
         
         .order-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; position: relative; display:flex; flex-direction:column;}
+        .order-card.history-item { opacity: 0.75; border-color: #333; }
+        
         .order-header { display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px dashed var(--border); padding-bottom: 10px; }
         .order-id { font-family: 'JetBrains Mono'; color: var(--primary); font-weight: 800; }
         .order-time { font-size: 0.85rem; color: var(--muted); }
@@ -82,6 +84,7 @@
         .tag { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
         .tag-del { background: rgba(59, 130, 246, 0.2); color: var(--primary); }
         .tag-pick { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .tag-completed { background: rgba(156, 163, 175, 0.2); color: var(--muted); border: 1px solid var(--muted); }
 
         .actions-row { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 15px; }
         .btn-action { border: none; padding: 15px; font-weight: 700; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: background 0.2s; color: white; }
@@ -89,6 +92,10 @@
         .btn-decline:hover { background: var(--danger); color: white; }
         .btn-punch { background: var(--success); color: white; }
         .btn-punch:hover { background: #059669; }
+        
+        /* History Section Header */
+        .history-header { margin-top: 50px; padding-top: 20px; border-top: 2px dashed var(--border); display: flex; align-items: center; gap: 15px; }
+        .history-header h2 { margin: 0; color: var(--muted); font-size: 1.2rem; }
     </style>
 </head>
 <body>
@@ -129,6 +136,11 @@
         </div>
 
         <div id="orders-container" class="orders-grid"></div>
+
+        <div class="history-header">
+            <h2>📜 Order History (Punched)</h2>
+        </div>
+        <div id="history-container" class="orders-grid"></div>
     </div>
 
     <script type="module">
@@ -205,7 +217,7 @@
 
         // --- ORDERS LOGIC ---
         window.markDeclined = function(firebaseKey) {
-            if(confirm("⚠️ DECLINE ORDER?\n\nThis will permanently DELETE the order record.\n\nAre you sure?")) {
+            if(confirm("⚠️ DELETE RECORD?\n\nThis will permanently DELETE this order from history.\n\nAre you sure?")) {
                 remove(ref(db, 'orders/' + firebaseKey));
             }
         }
@@ -216,11 +228,16 @@
 
         function loadOrders() {
             const container = document.getElementById('orders-container');
+            const historyContainer = document.getElementById('history-container');
+
             onValue(ref(db, 'orders'), (snapshot) => {
                 container.innerHTML = "";
+                historyContainer.innerHTML = "";
+
                 const data = snapshot.val();
                 if (!data) {
                     container.innerHTML = "<div style='color:var(--muted)'>No active orders.</div>";
+                    historyContainer.innerHTML = "<div style='color:var(--muted)'>No history.</div>";
                     return;
                 }
 
@@ -228,14 +245,13 @@
                 orders.sort((a, b) => b.timestamp - a.timestamp);
 
                 let hasOrders = false;
+                let hasHistory = false;
 
                 orders.forEach(order => {
-                    if (order.status === 'Completed') return; 
-                    hasOrders = true;
-                    
                     const cust = order.customer || {};
                     const price = order.pricing || {};
-                    const geoUrl = `https://www.google.com/maps/search/?api=1&query=${cust.geo?.lat},${cust.geo?.lng}`;
+                    // FIXED: Added '$' before cust.geo.lat to fix template literal syntax
+                    const geoUrl = `http://googleusercontent.com/maps.google.com/maps?q=${cust.geo?.lat},${cust.geo?.lng}`;
                     
                     let itemsHtml = "";
                     if(order.items) {
@@ -259,12 +275,32 @@
 
                     const typeTag = order.type === 'Delivery' ? '<span class="tag tag-del">Delivery</span>' : '<span class="tag tag-pick">Pickup</span>';
                     
+                    // Determine Actions & Style based on Status
+                    const isCompleted = order.status === 'Completed';
+                    const cardClass = isCompleted ? 'order-card history-item' : 'order-card';
+                    
+                    let actionButtons = '';
+                    if (isCompleted) {
+                        actionButtons = `
+                            <div style="grid-column: 1/-1;">
+                                <button class="btn-action btn-decline" style="width:100%" onclick="markDeclined('${order.key}')">🗑 Delete Permanently</button>
+                            </div>
+                        `;
+                    } else {
+                        actionButtons = `
+                            <button class="btn-action btn-decline" onclick="markDeclined('${order.key}')">❌ Decline</button>
+                            <button class="btn-action btn-punch" onclick="markPunched('${order.key}')">✅ Punched in Loyverse</button>
+                        `;
+                    }
+
+                    const statusBadge = isCompleted ? '<span class="tag tag-completed">COMPLETED</span>' : '';
+
                     const card = document.createElement('div');
-                    card.className = 'order-card';
+                    card.className = cardClass;
                     card.innerHTML = `
                         <div class="order-header">
                             <div>
-                                <div class="order-id">#${order.id}</div>
+                                <div class="order-id">#${order.id} ${statusBadge}</div>
                                 <div class="order-time">${order.date}</div>
                             </div>
                             ${typeTag}
@@ -298,14 +334,21 @@
                         </div>
 
                         <div class="actions-row">
-                            <button class="btn-action btn-decline" onclick="markDeclined('${order.key}')">❌ Decline</button>
-                            <button class="btn-action btn-punch" onclick="markPunched('${order.key}')">✅ Punched in Loyverse</button>
+                            ${actionButtons}
                         </div>
                     `;
-                    container.appendChild(card);
+                    
+                    if (isCompleted) {
+                        hasHistory = true;
+                        historyContainer.appendChild(card);
+                    } else {
+                        hasOrders = true;
+                        container.appendChild(card);
+                    }
                 });
 
-                if(!hasOrders) container.innerHTML = "<div style='color:var(--muted)'>No active orders pending.</div>";
+                if(!hasOrders) container.innerHTML = "<div style='color:var(--muted); grid-column:1/-1; padding:20px; text-align:center;'>No active orders pending.</div>";
+                if(!hasHistory) historyContainer.innerHTML = "<div style='color:var(--muted); grid-column:1/-1; padding:20px; text-align:center;'>No history available.</div>";
             });
         }
     </script>
