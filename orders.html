@@ -53,10 +53,27 @@
         .shake { animation: shake 0.3s ease-in-out; }
 
         /* --- DASHBOARD STYLES --- */
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
         .refresh-btn { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
         
-        .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; }
+        /* --- TAB NAVIGATION --- */
+        .tab-nav { display: flex; gap: 15px; margin-bottom: 30px; border-bottom: 1px solid var(--border); }
+        .tab-btn {
+            background: transparent; border: none; color: var(--muted); 
+            padding: 15px 20px; font-size: 1rem; font-weight: 600; cursor: pointer;
+            border-bottom: 3px solid transparent; transition: all 0.2s;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .tab-btn:hover { color: var(--text); }
+        .count-badge { background: #333; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; }
+        .tab-btn.active .count-badge { background: var(--primary); color: white; }
+
+        .view-section { display: none; }
+        .view-section.active { display: grid; }
+
+        /* --- ORDERS GRID --- */
+        .orders-grid { grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; }
         
         .order-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; position: relative; display:flex; flex-direction:column;}
         .order-card.history-item { opacity: 0.75; border-color: #333; }
@@ -93,9 +110,6 @@
         .btn-punch { background: var(--success); color: white; }
         .btn-punch:hover { background: #059669; }
         
-        /* History Section Header */
-        .history-header { margin-top: 50px; padding-top: 20px; border-top: 2px dashed var(--border); display: flex; align-items: center; gap: 15px; }
-        .history-header h2 { margin: 0; color: var(--muted); font-size: 1.2rem; }
     </style>
 </head>
 <body>
@@ -135,12 +149,18 @@
             <button class="refresh-btn" onclick="location.reload()">Refresh Data</button>
         </div>
 
-        <div id="orders-container" class="orders-grid"></div>
-
-        <div class="history-header">
-            <h2>📜 Order History (Punched)</h2>
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('live')">
+                🔴 Live Orders <span id="live-count" class="count-badge">0</span>
+            </button>
+            <button class="tab-btn" onclick="switchTab('history')">
+                📜 Order History <span id="history-count" class="count-badge">0</span>
+            </button>
         </div>
-        <div id="history-container" class="orders-grid"></div>
+
+        <div id="orders-container" class="orders-grid view-section active"></div>
+
+        <div id="history-container" class="orders-grid view-section"></div>
     </div>
 
     <script type="module">
@@ -168,7 +188,7 @@
                 currentPin += digit;
                 updateDots();
                 if (currentPin.length === 4) {
-                    setTimeout(checkPin, 100); // Slight delay for visual
+                    setTimeout(checkPin, 100); 
                 }
             }
         }
@@ -181,7 +201,6 @@
         window.clearPin = function() {
             currentPin = "";
             updateDots();
-            // Remove error styles
             document.querySelectorAll('.pin-dot').forEach(d => d.classList.remove('error'));
         }
 
@@ -195,7 +214,6 @@
 
         function checkPin() {
             if (currentPin === correctPin) {
-                // SUCCESS
                 document.getElementById('pin-overlay').style.opacity = '0';
                 setTimeout(() => {
                     document.getElementById('pin-overlay').style.display = 'none';
@@ -203,15 +221,27 @@
                     loadOrders();
                 }, 300);
             } else {
-                // FAILURE
                 const box = document.getElementById('pin-box');
                 box.classList.add('shake');
                 document.querySelectorAll('.pin-dot').forEach(d => d.classList.add('error'));
-                
                 setTimeout(() => {
                     box.classList.remove('shake');
                     clearPin();
                 }, 500);
+            }
+        }
+
+        // --- TAB SWITCH LOGIC ---
+        window.switchTab = function(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            
+            if(tabName === 'live') {
+                document.querySelector('.tab-btn[onclick="switchTab(\'live\')"]').classList.add('active');
+                document.getElementById('orders-container').classList.add('active');
+            } else {
+                document.querySelector('.tab-btn[onclick="switchTab(\'history\')"]').classList.add('active');
+                document.getElementById('history-container').classList.add('active');
             }
         }
 
@@ -229,6 +259,8 @@
         function loadOrders() {
             const container = document.getElementById('orders-container');
             const historyContainer = document.getElementById('history-container');
+            const liveCount = document.getElementById('live-count');
+            const histCount = document.getElementById('history-count');
 
             onValue(ref(db, 'orders'), (snapshot) => {
                 container.innerHTML = "";
@@ -238,19 +270,20 @@
                 if (!data) {
                     container.innerHTML = "<div style='color:var(--muted)'>No active orders.</div>";
                     historyContainer.innerHTML = "<div style='color:var(--muted)'>No history.</div>";
+                    liveCount.innerText = "0";
+                    histCount.innerText = "0";
                     return;
                 }
 
                 const orders = Object.entries(data).map(([key, val]) => ({ ...val, key }));
                 orders.sort((a, b) => b.timestamp - a.timestamp);
 
-                let hasOrders = false;
-                let hasHistory = false;
+                let liveCounter = 0;
+                let histCounter = 0;
 
                 orders.forEach(order => {
                     const cust = order.customer || {};
                     const price = order.pricing || {};
-                    // FIXED: Added '$' before cust.geo.lat to fix template literal syntax
                     const geoUrl = `http://googleusercontent.com/maps.google.com/maps?q=${cust.geo?.lat},${cust.geo?.lng}`;
                     
                     let itemsHtml = "";
@@ -274,8 +307,6 @@
                     }
 
                     const typeTag = order.type === 'Delivery' ? '<span class="tag tag-del">Delivery</span>' : '<span class="tag tag-pick">Pickup</span>';
-                    
-                    // Determine Actions & Style based on Status
                     const isCompleted = order.status === 'Completed';
                     const cardClass = isCompleted ? 'order-card history-item' : 'order-card';
                     
@@ -339,16 +370,19 @@
                     `;
                     
                     if (isCompleted) {
-                        hasHistory = true;
+                        histCounter++;
                         historyContainer.appendChild(card);
                     } else {
-                        hasOrders = true;
+                        liveCounter++;
                         container.appendChild(card);
                     }
                 });
 
-                if(!hasOrders) container.innerHTML = "<div style='color:var(--muted); grid-column:1/-1; padding:20px; text-align:center;'>No active orders pending.</div>";
-                if(!hasHistory) historyContainer.innerHTML = "<div style='color:var(--muted); grid-column:1/-1; padding:20px; text-align:center;'>No history available.</div>";
+                liveCount.innerText = liveCounter;
+                histCount.innerText = histCounter;
+
+                if(liveCounter === 0) container.innerHTML = "<div style='color:var(--muted); grid-column:1/-1; padding:20px; text-align:center;'>No active orders pending.</div>";
+                if(histCounter === 0) historyContainer.innerHTML = "<div style='color:var(--muted); grid-column:1/-1; padding:20px; text-align:center;'>No history available.</div>";
             });
         }
     </script>
