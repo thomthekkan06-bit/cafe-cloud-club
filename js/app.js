@@ -641,14 +641,23 @@ window.finalizeOrder = function() {
         
         let subTotal = 0; let packingTotal = 0;
         const fiveRsCats = ["Bun-Tastic Burgers", "Freshly Folded", "Toasty Treats"];
-        for(let key in cart) {
+        
+        // --- PREPARE ITEM LIST STRING (BEFORE CLEARING CART) ---
+        let itemsListString = "";
+        for (let key in cart) {
             let item = cart[key];
             subTotal += (item.price * item.qty);
+            
+            // Packing Logic
             let charge = 10;
             if (item.category === 'ADD-ON') charge = key.startsWith("Hummus") ? 7 : 5;
             else if (fiveRsCats.includes(item.category)) charge = 5;
             packingTotal += (charge * item.qty);
             if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
+
+            // Item String Logic
+            let tag = item.type === 'veg' ? '[VEG]' : '[NON-VEG]';
+            itemsListString += `• ${tag} ${key} x ${item.qty} = Rs. ${item.price * item.qty}\n`;
         }
 
         let discountVal = 0;
@@ -688,7 +697,7 @@ window.finalizeOrder = function() {
                 house: houseVal, street: streetVal, landmark: landmarkVal,
                 geo: { lat: latVal, lng: lngVal },
                 instruction: finalNote,
-                time: time // <--- FIXED: PREFERRED TIME SAVED HERE
+                time: time 
             },
             items: sanitizedCart,
             pricing: { subTotal, packing: packingTotal, discount: discountVal, coupon: activeCoupon || "NONE", grandTotal }
@@ -701,8 +710,38 @@ window.finalizeOrder = function() {
                 document.getElementById('checkout-modal').style.display = 'none';
                 document.getElementById('success-view').style.display = 'flex';
                 document.getElementById('customer-name-display').innerText = name;
-                let msg = `*New Order #${orderId}*\n*Name:* ${name}\n*Total:* ₹${grandTotal}\n`;
-                if(type === 'Delivery') msg += `*Address:* ${address}`;
+                
+                // --- DETAILED WHATSAPP MESSAGE GENERATION ---
+                let msg = `New Order @ Café Cloud Club\n`;
+                msg += `Type: ${type.toUpperCase()}\n`;
+                msg += `Time: ${timeString}\n`;
+                msg += `Order ID: ${orderId}\n`;
+                msg += `---------------------------\n`;
+                msg += `Name: ${name}\n`;
+                msg += `Phone: ${phone}\n`;
+                msg += `Email: ${email}\n`;
+                msg += `Time: ${time}\n`;
+                
+                if (type === 'Delivery') {
+                    msg += `Address: ${address}\n`;
+                }
+                
+                msg += `---------------------------\n`;
+                msg += `ITEMS:\n${itemsListString}`;
+                msg += `---------------------------\n`;
+                msg += `Sub Total: Rs. ${subTotal}\n`;
+                msg += `Packing: Rs. ${packingTotal}\n`;
+                
+                if (discountVal > 0) {
+                    msg += `Discount: -Rs. ${discountVal}\n`;
+                }
+                
+                msg += `TOTAL: Rs. ${grandTotal}\n\n`;
+                
+                if (type === 'Delivery') {
+                    msg += `Delivery fee calculated by Delivery Agent.`;
+                }
+
                 const waLink = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
                 document.getElementById('send-wa-btn').onclick = () => window.open(waLink, '_blank');
             })
