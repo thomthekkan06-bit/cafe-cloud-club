@@ -632,7 +632,7 @@ window.finalizeOrder = function() {
             let finalStreet = streetVal;
             if (subStreetVal) finalStreet += ` (${subStreetVal})`;
             if (streetVal === "Other" && instruction.length < 5) throw new Error("Please type your exact location in Instructions.");
-            const mapLink = `http://googleusercontent.com/maps.google.com/?q=${latVal},${lngVal}`;
+            const mapLink = `https://maps.google.com/?q=${latVal},${lngVal}`;
             address = `${houseVal}, ${finalStreet}\n(Landmark: ${landmarkVal})\n📍 Pin: ${mapLink}`;
         }
 
