@@ -109,6 +109,18 @@
         .btn-decline:hover { background: var(--danger); color: white; }
         .btn-punch { background: var(--success); color: white; }
         .btn-punch:hover { background: #059669; }
+
+        /* --- ACCORDION STYLES FOR HISTORY --- */
+        .order-details { display: block; } /* Default for live orders */
+        .history-item { cursor: pointer; transition: transform 0.2s, border-color 0.2s; }
+        .history-item:hover { border-color: var(--primary); }
+        .history-item .order-header { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .history-item .order-details { display: none; margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px; }
+        .history-item.expanded .order-details { display: block; }
+        .order-customer-summary { font-weight: 600; font-size: 0.95rem; margin-top: 8px; color: var(--text); }
+        .expand-indicator { display: none; color: var(--muted); font-size: 0.8rem; text-align: center; margin-top: 10px; }
+        .history-item .expand-indicator { display: block; }
+        .history-item.expanded .expand-indicator { display: none; }
         
     </style>
 </head>
@@ -314,7 +326,7 @@
                     if (isCompleted) {
                         actionButtons = `
                             <div style="grid-column: 1/-1;">
-                                <button class="btn-action btn-decline" style="width:100%" onclick="markDeclined('${order.key}')">🗑 Delete Permanently</button>
+                                <button class="btn-action btn-decline" style="width:100%" onclick="event.stopPropagation(); markDeclined('${order.key}')">🗑 Delete Permanently</button>
                             </div>
                         `;
                     } else {
@@ -328,44 +340,58 @@
 
                     const card = document.createElement('div');
                     card.className = cardClass;
+                    
+                    if (isCompleted) {
+                        card.onclick = function() {
+                            document.querySelectorAll('.history-item.expanded').forEach(c => {
+                                if (c !== card) c.classList.remove('expanded');
+                            });
+                            card.classList.toggle('expanded');
+                        };
+                    }
+
                     card.innerHTML = `
                         <div class="order-header">
                             <div>
                                 <div class="order-id">#${order.id} ${statusBadge}</div>
                                 <div class="order-time">${order.date}</div>
+                                <div class="order-customer-summary">👤 ${cust.name || "Unknown"}</div>
                             </div>
-                            ${typeTag}
+                            <div>${typeTag}</div>
                         </div>
 
-                        <div class="info-block">
-                            <div class="section-label">Customer</div>
-                            <div class="info-text"><strong>${cust.name}</strong></div>
-                            <div class="info-text"><a href="tel:${cust.phone}" style="color:var(--primary);">${cust.phone}</a></div>
-                            <div class="info-text" style="font-size:0.85rem; color:var(--muted);">${cust.email}</div>
-                            <div class="info-text" style="margin-top:5px; color:#fff;"><strong>🕒 Pref. Time:</strong> ${cust.time || "ASAP"}</div>
-                        </div>
+                        <div class="expand-indicator">▼ Click to view details</div>
 
-                        <div class="info-block">
-                            <div class="section-label">Location</div>
-                            <div class="info-text">${cust.address || "No address provided"}</div>
-                            ${order.type === 'Delivery' && cust.geo?.lat ? `<a href="${geoUrl}" target="_blank" class="geo-link">📍 View Geo Location</a>` : ''}
-                        </div>
+                        <div class="order-details">
+                            <div class="info-block">
+                                <div class="section-label">Contact & Time</div>
+                                <div class="info-text"><a href="tel:${cust.phone}" style="color:var(--primary);">${cust.phone}</a></div>
+                                <div class="info-text" style="font-size:0.85rem; color:var(--muted);">${cust.email}</div>
+                                <div class="info-text" style="margin-top:5px; color:#fff;"><strong>🕒 Pref. Time:</strong> ${cust.time || "ASAP"}</div>
+                            </div>
 
-                        <table class="items-table">
-                            <thead><tr><th>Qty</th><th>Dish Name</th><th style="text-align:right">Rate</th><th style="text-align:right">Total</th></tr></thead>
-                            <tbody>${itemsHtml}</tbody>
-                        </table>
+                            <div class="info-block">
+                                <div class="section-label">Location</div>
+                                <div class="info-text">${cust.address || "No address provided"}</div>
+                                ${order.type === 'Delivery' && cust.geo?.lat ? `<a href="${geoUrl}" target="_blank" class="geo-link" onclick="event.stopPropagation();">📍 View Geo Location</a>` : ''}
+                            </div>
 
-                        <div class="financials">
-                            <div class="fin-row"><span>Sub Total</span><span>₹${price.subTotal}</span></div>
-                            <div class="fin-row"><span>Packing</span><span>₹${price.packing}</span></div>
-                            ${price.discount > 0 ? `<div class="fin-row" style="color:var(--warning)"><span>Discount</span><span>-₹${price.discount}</span></div>` : ''}
-                            ${offerRow}
-                            <div class="fin-total"><span>Grand Total</span><span>₹${price.grandTotal}</span></div>
-                        </div>
+                            <table class="items-table">
+                                <thead><tr><th>Qty</th><th>Dish Name</th><th style="text-align:right">Rate</th><th style="text-align:right">Total</th></tr></thead>
+                                <tbody>${itemsHtml}</tbody>
+                            </table>
 
-                        <div class="actions-row">
-                            ${actionButtons}
+                            <div class="financials">
+                                <div class="fin-row"><span>Sub Total</span><span>₹${price.subTotal}</span></div>
+                                <div class="fin-row"><span>Packing</span><span>₹${price.packing}</span></div>
+                                ${price.discount > 0 ? `<div class="fin-row" style="color:var(--warning)"><span>Discount</span><span>-₹${price.discount}</span></div>` : ''}
+                                ${offerRow}
+                                <div class="fin-total"><span>Grand Total</span><span>₹${price.grandTotal}</span></div>
+                            </div>
+
+                            <div class="actions-row">
+                                ${actionButtons}
+                            </div>
                         </div>
                     `;
                     
