@@ -487,48 +487,14 @@ function findComboItems(cart, rules) {
     return { found: satisfiedRules === pendingRules.length, currentTotal: currentTotal };
 }
 
+/* --- AMENDED COUPON LOGIC (PAUSED FOR LPG ISSUE) --- */
 window.applyCoupon = function() {
-    const codeInput = document.getElementById('coupon-input');
     const msgBox = document.getElementById('coupon-msg');
-    const code = codeInput.value.trim().toUpperCase();
-    const todayIndex = new Date().getDay();
-    const setMsg = (text, type) => { 
-        msgBox.innerText = text; msgBox.className = `coupon-msg ${type}`;
-        if (type === 'success') renderCart(); else activeCoupon = null; 
-    };
-    const coupon = couponsData[code];
-    if (!coupon) { setMsg("Invalid Coupon Code", 'error'); return; }
-    if (coupon.validDays && !coupon.validDays.includes(todayIndex)) {
-        setMsg(`Offer not valid today!`, 'error'); return;
-    }
-    let discount = 0;
-    if (coupon.type === 'percentage_off') {
-        const result = findComboItems(cart, coupon.rules);
-        if (result.found) discount = Math.round(result.currentTotal * (coupon.value / 100));
-    } else if (coupon.type === 'combo_fixed_price') {
-        const result = findComboItems(cart, coupon.rules);
-        if (result.found) discount = result.currentTotal - coupon.targetPrice;
-        else if (coupon.alternative) {
-            const altResult = findComboItems(cart, coupon.alternative.rules);
-            if (altResult.found) {
-                if(coupon.alternative.type === 'flat_off') discount = coupon.alternative.value;
-                else discount = altResult.currentTotal - coupon.alternative.targetPrice;
-            }
-        }
-    } else if (coupon.type === 'set_item_price') {
-        const result = findComboItems(cart, coupon.rules);
-        if (result.found) discount = result.currentTotal - coupon.value;
-        else if (coupon.alternative) {
-            const altResult = findComboItems(cart, coupon.alternative.rules);
-            if (altResult.found) discount = altResult.currentTotal - coupon.alternative.value;
-        }
-    }
-    if (discount > 0) {
-        activeCoupon = code; setMsg(`${code} Applied! Saved ₹${discount}`, 'success');
-    } else {
-        setMsg("Requirements not met. Check Menu.", 'error');
-    }
+    msgBox.innerText = "Offers are temporarily suspended due to the LPG shortage. We apologize for the inconvenience.";
+    msgBox.className = "coupon-msg error";
+    return; // Kill coupon processing instantly
 }
+
 window.toggleCartPage = function() { document.getElementById('cart-sidebar').classList.toggle('active'); }
 
 function loadUserDetails() {
@@ -762,20 +728,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if(cInput && cBtn) {
         cInput.addEventListener('input', function() { cBtn.disabled = this.value.trim().length === 0; });
     }
-    const dayIndex = new Date().getDay();
-    const dailyOfferTexts = [
-        "SUNDAY SPECIAL: Fam-Jam Feast! 1 Pasta + 1 Slider + 1 Shake = ₹399. Use Code: SUNFEAST",
-        "MEAT-UP MONDAY: Burger + Fries = ₹222. Strictly 1 Beef Burger gets ₹20 OFF. Use Code: MONBURGER",
-        "TWISTED TUESDAY: Any Penne Pasta (Alfredo/Pesto/Arabiata/Cloud) Flat @ ₹179. Veg/Non-Veg. Use Code: TUEPASTA",
-        "WICKED WEDNESDAY: Steak @ ₹300 (Code: WEDSTEAK) OR Premium Shake @ ₹120 (Code: WEDSHAKE)",
-        "THURSDAY CLUB: Any Sandwich + Any Chiller = ₹189. Use Code: THUSAND",
-        "FRI-YAY FRY-DAY: Veg Loaded Fries ₹119 | Chicken Loaded Fries ₹179. Use Code: FRIFRIES",
-        "ROCK N' ROLL SATURDAY: Any Roll (Tandoori, Pesto, Chipotle) for ₹129. Use Code: SATROLL"
-    ];
+    
+    /* --- AMENDED TICKER (PAUSED FOR LPG ISSUE) --- */
     const tickerElement = document.getElementById('daily-ticker-text');
     if(tickerElement) {
-        const text = dailyOfferTexts[dayIndex];
-        tickerElement.innerHTML = `${text}    ✦    ${text}    ✦    ${text}`;
+        const statusText = "OFFERS ARE TEMPORARILY SUSPENDED DUE TO LOCAL SUPPLY ISSUES. THANK YOU FOR YOUR UNDERSTANDING.";
+        tickerElement.innerHTML = `${statusText}    ✦    ${statusText}    ✦    ${statusText}`;
     }
 });
 
@@ -786,35 +744,7 @@ window.returnToMenu = function() {
 
 let currentUpsellItem = null;
 window.checkUpsell = function(category) {
-    const modal = document.getElementById('upsell-modal');
-    const title = modal.querySelector('h3');
-    const desc = modal.querySelector('p');
-    const yesBtn = modal.querySelector('button[onclick="acceptUpsell()"]');
-    
-    if (category === "Bun-Tastic Burgers") {
-        if (Object.keys(cart).some(key => key.includes("French Fries"))) return; 
-        currentUpsellItem = { name: "French Fries - Salted", price: 100, type: "veg", cat: "Nibbles & Bits" };
-        title.innerText = "Make it a Meal? 🍟";
-        desc.innerHTML = `You got the Burger. Don't forget the crunch.<br><strong>Add Salted Fries for just ₹100?</strong>`;
-        yesBtn.innerText = "Yes, Add Fries";
-        modal.style.display = 'flex';
-    }
-    else if (category === "Italian Indulgence") {
-        if (Object.keys(cart).some(key => key.includes("Garlic Bread"))) return;
-        currentUpsellItem = { name: "Garlic Bread (4)", price: 50, type: "veg", cat: "ADD-ON" };
-        title.innerText = "Perfect Pairing 🥖";
-        desc.innerHTML = `Pasta isn't complete without it.<br><strong>Add Garlic Bread (4 pcs) for just ₹50?</strong>`;
-        yesBtn.innerText = "Yes, Add Bread";
-        modal.style.display = 'flex';
-    }
-    else if (category === "Butcher's Best") {
-        if (Object.keys(cart).some(key => key.includes("Mojito"))) return;
-        currentUpsellItem = { name: "Lemon Mojito", price: 125, type: "veg", cat: "Mojito Magic" };
-        title.innerText = "Thirsty? 🍹";
-        desc.innerHTML = `Wash down that Steak with a refreshing hit.<br><strong>Add Lemon Mojito for ₹125?</strong>`;
-        yesBtn.innerText = "Yes, Add Mojito";
-        modal.style.display = 'flex';
-    }
+    return; // Temporarily disable upsell prompts due to LPG shortage
 }
 
 window.closeUpsell = function() { document.getElementById('upsell-modal').style.display = 'none'; currentUpsellItem = null; }
