@@ -332,7 +332,7 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                 <div class="form-group">
                     <label class="form-label">Price (₹)</label>
-                    <input type="number" id="inp-price" class="form-input" placeholder="0">
+                    <input type="number" id="inp-price" class="form-input" placeholder="0.00" step="0.01">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Type</label>
@@ -639,7 +639,7 @@
             
             div.innerHTML = `
                 <input type="text" class="form-input opt-name" placeholder="Option Name" value="${name}" style="flex:2;">
-                <input type="number" class="form-input opt-price" placeholder="Price" value="${price}" style="flex:1;">
+                <input type="number" class="form-input opt-price" placeholder="Price" value="${price}" style="flex:1;" step="0.01">
                 <button onclick="this.parentElement.remove()" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:1.2rem;">&times;</button>
             `;
             container.appendChild(div);
@@ -660,13 +660,13 @@
             const options = [];
             document.querySelectorAll('.opt-row').forEach(row => {
                 const optName = row.querySelector('.opt-name').value.trim();
-                const optPrice = parseInt(row.querySelector('.opt-price').value) || 0;
+                const optPrice = parseFloat(row.querySelector('.opt-price').value) || 0;
                 if(optName) options.push({ name: optName, price: optPrice });
             });
 
             const data = {
                 name: document.getElementById('inp-name').value,
-                price: parseInt(document.getElementById('inp-price').value),
+                price: parseFloat(document.getElementById('inp-price').value),
                 category: document.getElementById('inp-cat').value,
                 type: document.getElementById('inp-type').value,
                 isDineInOnly: document.getElementById('inp-dinein').checked, // NEW FIELD
