@@ -384,6 +384,7 @@
                             <div class="financials">
                                 <div class="fin-row"><span>Sub Total</span><span>₹${price.subTotal}</span></div>
                                 <div class="fin-row"><span>Packing</span><span>₹${price.packing}</span></div>
+                                ${price.cgst !== undefined ? `<div class="fin-row"><span>CGST (2.5%)</span><span>₹${price.cgst}</span></div><div class="fin-row"><span>SGST (2.5%)</span><span>₹${price.sgst}</span></div>` : ''}
                                 ${price.discount > 0 ? `<div class="fin-row" style="color:var(--warning)"><span>Discount</span><span>-₹${price.discount}</span></div>` : ''}
                                 ${offerRow}
                                 <div class="fin-total"><span>Grand Total</span><span>₹${price.grandTotal}</span></div>
