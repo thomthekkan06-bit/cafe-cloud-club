@@ -687,7 +687,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Updated ticker message
     const tickerElement = document.getElementById('daily-ticker-text');
     if(tickerElement) {
-        const msg = "⚠️ IMPORTANT: We have temporarily stopped all offers due to a supply crisis. Prices have been revised. We apologize for the inconvenience.";
+        const msg = "⚠️ IMPORTANT: We have temporarily stopped all offers due to a supply crisis. Prices have been revised. We apologize for the inconvenience. GST Applies on all orders";
         tickerElement.innerHTML = `${msg}    ✦    ${msg}    ✦    ${msg}`;
     }
 });
