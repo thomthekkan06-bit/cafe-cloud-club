@@ -270,15 +270,8 @@ window.toggleUnder200 = function(btn) {
 }
 
 window.copyCode = function(code) {
-    const couponInput = document.getElementById('coupon-input');
-    const couponBtn = document.getElementById('coupon-apply-btn');
-    couponInput.value = code; couponBtn.disabled = false;
-    document.getElementById('offers-view').classList.remove('active');
-    document.getElementById('main-dashboard').style.display = 'grid';
-    if(window.innerWidth <= 1000) { toggleCartPage(); }
-    couponInput.scrollIntoView({behavior: "smooth"});
-    couponInput.style.borderColor = "var(--primary)";
-    setTimeout(() => couponInput.style.borderColor = "#ddd", 500);
+    // Offers are deactivated
+    alert("⚠️ IMPORTANT: We have temporarily stopped all offers due to a supply crisis. Prices have been revised.");
 }
 
 window.toggleOffersPage = function() {
@@ -458,76 +451,12 @@ window.updateQty = function(name, change) {
 }
 
 function findComboItems(cart, rules) {
-    let currentTotal = 0; let satisfiedRules = 0;
-    let pendingRules = JSON.parse(JSON.stringify(rules)); 
-    for (let key in cart) {
-        let item = cart[key];
-        let itemQtyAvailable = item.qty;
-        for (let i = 0; i < pendingRules.length; i++) {
-            let rule = pendingRules[i];
-            if (rule.satisfied) continue;
-            if (itemQtyAvailable <= 0) break;
-            let catMatch = true;
-            if (rule.category) catMatch = (item.category === rule.category);
-            if (rule.allowedCategories) catMatch = rule.allowedCategories.includes(item.category);
-            let nameMatch = true;
-            const itemNameLower = key.toLowerCase();
-            if (rule.matchName) nameMatch = itemNameLower.includes(rule.matchName.toLowerCase());
-            if (rule.matchNames) nameMatch = rule.matchNames.some(n => itemNameLower.includes(n.toLowerCase()));
-            let excludeMatch = false;
-            if (rule.excludeName && itemNameLower.includes(rule.excludeName.toLowerCase())) excludeMatch = true;
-            let priceMatch = true;
-            if (rule.minPrice && item.basePrice < rule.minPrice) priceMatch = false;
-            if (catMatch && nameMatch && !excludeMatch && priceMatch) {
-                currentTotal += item.basePrice; 
-                rule.satisfied = true; satisfiedRules++; itemQtyAvailable--;
-            }
-        }
-    }
-    return { found: satisfiedRules === pendingRules.length, currentTotal: currentTotal };
+    // Returning empty/false to disable coupon logic
+    return { found: false, currentTotal: 0 };
 }
 
 window.applyCoupon = function() {
-    const codeInput = document.getElementById('coupon-input');
-    const msgBox = document.getElementById('coupon-msg');
-    const code = codeInput.value.trim().toUpperCase();
-    const todayIndex = new Date().getDay();
-    const setMsg = (text, type) => { 
-        msgBox.innerText = text; msgBox.className = `coupon-msg ${type}`;
-        if (type === 'success') renderCart(); else activeCoupon = null; 
-    };
-    const coupon = couponsData[code];
-    if (!coupon) { setMsg("Invalid Coupon Code", 'error'); return; }
-    if (coupon.validDays && !coupon.validDays.includes(todayIndex)) {
-        setMsg(`Offer not valid today!`, 'error'); return;
-    }
-    let discount = 0;
-    if (coupon.type === 'percentage_off') {
-        const result = findComboItems(cart, coupon.rules);
-        if (result.found) discount = Math.round(result.currentTotal * (coupon.value / 100));
-    } else if (coupon.type === 'combo_fixed_price') {
-        const result = findComboItems(cart, coupon.rules);
-        if (result.found) discount = result.currentTotal - coupon.targetPrice;
-        else if (coupon.alternative) {
-            const altResult = findComboItems(cart, coupon.alternative.rules);
-            if (altResult.found) {
-                if(coupon.alternative.type === 'flat_off') discount = coupon.alternative.value;
-                else discount = altResult.currentTotal - coupon.alternative.targetPrice;
-            }
-        }
-    } else if (coupon.type === 'set_item_price') {
-        const result = findComboItems(cart, coupon.rules);
-        if (result.found) discount = result.currentTotal - coupon.value;
-        else if (coupon.alternative) {
-            const altResult = findComboItems(cart, coupon.alternative.rules);
-            if (altResult.found) discount = altResult.currentTotal - coupon.alternative.value;
-        }
-    }
-    if (discount > 0) {
-        activeCoupon = code; setMsg(`${code} Applied! Saved ₹${discount}`, 'success');
-    } else {
-        setMsg("Requirements not met. Check Menu.", 'error');
-    }
+    alert("⚠️ IMPORTANT: We have temporarily stopped all offers due to a supply crisis. Prices have been revised.");
 }
 window.toggleCartPage = function() { document.getElementById('cart-sidebar').classList.toggle('active'); }
 
@@ -660,25 +589,9 @@ window.finalizeOrder = function() {
             itemsListString += `• ${tag} ${key} x ${item.qty} = Rs. ${item.price * item.qty}\n`;
         }
 
-        let discountVal = 0;
-        if (activeCoupon && couponsData[activeCoupon]) {
-             const coupon = couponsData[activeCoupon];
-             if (coupon.type === 'percentage_off') {
-                const result = findComboItems(cart, coupon.rules);
-                if (result.found) discountVal = Math.round(result.currentTotal * (coupon.value / 100));
-            } else if (coupon.type === 'combo_fixed_price') {
-                const result = findComboItems(cart, coupon.rules);
-                if (result.found) discountVal = result.currentTotal - coupon.targetPrice;
-            } else if (coupon.type === 'set_item_price') {
-                 const result = findComboItems(cart, coupon.rules);
-                 if (result.found) discountVal = result.currentTotal - coupon.value;
-            }
-        }
-
-        let grandTotal = (subTotal - discountVal) + packingTotal;
+        let grandTotal = subTotal + packingTotal;
         if (grandTotal < MIN_ORDER_VAL) throw new Error(`Min Order value is ₹${MIN_ORDER_VAL}`);
         let finalNote = instruction || "-";
-        if (activeCoupon && discountVal > 0) finalNote += ` [COUPON: ${activeCoupon}]`;
 
         const sanitizedCart = {};
         for (let key in cart) {
@@ -700,7 +613,7 @@ window.finalizeOrder = function() {
                 time: time 
             },
             items: sanitizedCart,
-            pricing: { subTotal, packing: packingTotal, discount: discountVal, coupon: activeCoupon || "NONE", grandTotal }
+            pricing: { subTotal, packing: packingTotal, discount: 0, coupon: "NONE", grandTotal }
         };
 
         push(ref(db, 'orders'), orderData)
@@ -731,11 +644,6 @@ window.finalizeOrder = function() {
                 msg += `---------------------------\n`;
                 msg += `Sub Total: Rs. ${subTotal}\n`;
                 msg += `Packing: Rs. ${packingTotal}\n`;
-                
-                if (discountVal > 0) {
-                    msg += `Discount: -Rs. ${discountVal}\n`;
-                }
-                
                 msg += `TOTAL: Rs. ${grandTotal}\n\n`;
                 
                 if (type === 'Delivery') {
@@ -762,14 +670,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if(cInput && cBtn) {
         cInput.addEventListener('input', function() { cBtn.disabled = this.value.trim().length === 0; });
     }
-    const dayIndex = new Date().getDay();
-    const dailyOfferTexts = [
-        "⚠️ IMPORTANT: We have temporarily stopped all offers due to a supply crisis. Prices have been revised. We apologize for the inconvenience."
-    ];
+    
+    // Updated ticker message
     const tickerElement = document.getElementById('daily-ticker-text');
     if(tickerElement) {
-        const text = dailyOfferTexts[dayIndex];
-        tickerElement.innerHTML = `${text}    ✦    ${text}    ✦    ${text}`;
+        const msg = "⚠️ IMPORTANT: We have temporarily stopped all offers due to a supply crisis. Prices have been revised. We apologize for the inconvenience.";
+        tickerElement.innerHTML = `${msg}    ✦    ${msg}    ✦    ${msg}`;
     }
 });
 
@@ -894,46 +800,11 @@ function renderCart() {
 
     if(!hasItems) list.innerHTML = `<div style="text-align: center; color: #ccc; margin-top: 50px;">Cart is empty</div>`;
 
-    let discountVal = 0; let discountText = "";
-    if (activeCoupon && couponsData[activeCoupon]) {
-        const coupon = couponsData[activeCoupon];
-        const code = activeCoupon;
-        if (coupon.type === 'percentage_off') {
-            const result = findComboItems(cart, coupon.rules);
-            if (result.found) discountVal = Math.round(result.currentTotal * (coupon.value / 100));
-        } else if (coupon.type === 'combo_fixed_price') {
-            const result = findComboItems(cart, coupon.rules);
-            if (result.found) discountVal = result.currentTotal - coupon.targetPrice;
-            else if (coupon.alternative) {
-                const altResult = findComboItems(cart, coupon.alternative.rules);
-                if (altResult.found) {
-                     if(coupon.alternative.type === 'flat_off') discountVal = coupon.alternative.value;
-                     else discountVal = altResult.currentTotal - coupon.alternative.targetPrice;
-                }
-            }
-        } else if (coupon.type === 'set_item_price') {
-            const result = findComboItems(cart, coupon.rules);
-            if (result.found) discountVal = result.currentTotal - coupon.value;
-            else if (coupon.alternative) {
-                const altResult = findComboItems(cart, coupon.alternative.rules);
-                if (altResult.found) discountVal = altResult.currentTotal - coupon.alternative.value;
-            }
-        }
-        if (discountVal < 0) discountVal = 0;
-        if (discountVal > 0) discountText = `Coupon (${code})`; 
-        else activeCoupon = null;
-    }
+    // Coupon row hidden
     const discountRow = document.getElementById('discount-row');
-    if (discountVal > 0) {
-        discountRow.style.display = 'flex';
-        discountRow.querySelector('span:first-child').innerText = discountText;
-        document.getElementById('discount-total').innerText = `- ${rupeeSign}${discountVal}`;
-    } else {
-        discountRow.style.display = 'none';
-        document.getElementById('discount-total').innerText = "0";
-    }
+    discountRow.style.display = 'none';
 
-    let grandTotal = (subTotal - discountVal) + packingTotal;
+    let grandTotal = subTotal + packingTotal;
     document.getElementById('sub-total').innerText = rupeeSign + subTotal;
     document.getElementById('packing-total').innerText = rupeeSign + packingTotal;
     document.getElementById('grand-total').innerText = rupeeSign + grandTotal;
