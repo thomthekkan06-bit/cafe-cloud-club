@@ -589,7 +589,12 @@ window.finalizeOrder = function() {
 
         let cgst = Math.round(subTotal * 0.025);
         let sgst = Math.round(subTotal * 0.025);
-        let grandTotal = subTotal + packingTotal + cgst + sgst;
+        
+        // NEW ROUND OFF LOGIC
+        let rawGrandTotal = subTotal + packingTotal + cgst + sgst;
+        let grandTotal = Math.round(rawGrandTotal);
+        let roundOff = parseFloat((grandTotal - rawGrandTotal).toFixed(2));
+        
         if (grandTotal < MIN_ORDER_VAL) throw new Error(`Min Order value is ₹${MIN_ORDER_VAL}`);
         let finalNote = instruction || "-";
 
@@ -613,7 +618,8 @@ window.finalizeOrder = function() {
                 time: time 
             },
             items: sanitizedCart,
-            pricing: { subTotal, packing: packingTotal, cgst: cgst, sgst: sgst, discount: 0, coupon: "NONE", grandTotal }
+            // Added roundOff to the Firebase payload here
+            pricing: { subTotal, packing: packingTotal, cgst: cgst, sgst: sgst, discount: 0, coupon: "NONE", roundOff: roundOff, grandTotal }
         };
 
         push(ref(db, 'orders'), orderData)
@@ -646,6 +652,11 @@ window.finalizeOrder = function() {
                 msg += `Packing: Rs. ${packingTotal}\n`;
                 msg += `CGST (2.5%): Rs. ${cgst}\n`;
                 msg += `SGST (2.5%): Rs. ${sgst}\n`;
+                
+                // Added Round Off formatting to the WhatsApp message here
+                if (roundOff !== 0) {
+                    msg += `Round Off: Rs. ${roundOff > 0 ? '+' : ''}${roundOff.toFixed(2)}\n`;
+                }
                 msg += `TOTAL: Rs. ${grandTotal}\n\n`;
                 
                 if (type === 'Delivery') {
@@ -808,7 +819,23 @@ function renderCart() {
 
     let cgst = Math.round(subTotal * 0.025);
     let sgst = Math.round(subTotal * 0.025);
-    let grandTotal = subTotal + packingTotal + cgst + sgst;
+    
+    // NEW ROUND OFF LOGIC ADDED HERE
+    let rawGrandTotal = subTotal + packingTotal + cgst + sgst;
+    let grandTotal = Math.round(rawGrandTotal);
+    let roundOff = grandTotal - rawGrandTotal;
+    
+    // Update Round Off UI
+    const roundOffRow = document.getElementById('round-off-row');
+    if (roundOffRow) {
+        if (roundOff !== 0) {
+            roundOffRow.style.display = 'flex';
+            let sign = roundOff > 0 ? '+' : '';
+            document.getElementById('round-off-total').innerText = sign + roundOff.toFixed(2);
+        } else {
+            roundOffRow.style.display = 'none';
+        }
+    }
     
     document.getElementById('sub-total').innerText = rupeeSign + subTotal;
     document.getElementById('packing-total').innerText = rupeeSign + packingTotal;
