@@ -270,7 +270,6 @@ window.toggleUnder200 = function(btn) {
 }
 
 window.copyCode = function(code) {
-    // Offers are deactivated
     alert("⚠️ IMPORTANT: We have temporarily stopped all offers due to a supply crisis. Prices have been revised.");
 }
 
@@ -451,7 +450,6 @@ window.updateQty = function(name, change) {
 }
 
 function findComboItems(cart, rules) {
-    // Returning empty/false to disable coupon logic
     return { found: false, currentTotal: 0 };
 }
 
@@ -589,7 +587,9 @@ window.finalizeOrder = function() {
             itemsListString += `• ${tag} ${key} x ${item.qty} = Rs. ${item.price * item.qty}\n`;
         }
 
-        let grandTotal = subTotal + packingTotal;
+        let cgst = Math.round(subTotal * 0.025);
+        let sgst = Math.round(subTotal * 0.025);
+        let grandTotal = subTotal + packingTotal + cgst + sgst;
         if (grandTotal < MIN_ORDER_VAL) throw new Error(`Min Order value is ₹${MIN_ORDER_VAL}`);
         let finalNote = instruction || "-";
 
@@ -613,7 +613,7 @@ window.finalizeOrder = function() {
                 time: time 
             },
             items: sanitizedCart,
-            pricing: { subTotal, packing: packingTotal, discount: 0, coupon: "NONE", grandTotal }
+            pricing: { subTotal, packing: packingTotal, cgst: cgst, sgst: sgst, discount: 0, coupon: "NONE", grandTotal }
         };
 
         push(ref(db, 'orders'), orderData)
@@ -644,6 +644,8 @@ window.finalizeOrder = function() {
                 msg += `---------------------------\n`;
                 msg += `Sub Total: Rs. ${subTotal}\n`;
                 msg += `Packing: Rs. ${packingTotal}\n`;
+                msg += `CGST (2.5%): Rs. ${cgst}\n`;
+                msg += `SGST (2.5%): Rs. ${sgst}\n`;
                 msg += `TOTAL: Rs. ${grandTotal}\n\n`;
                 
                 if (type === 'Delivery') {
@@ -804,11 +806,17 @@ function renderCart() {
     const discountRow = document.getElementById('discount-row');
     discountRow.style.display = 'none';
 
-    let grandTotal = subTotal + packingTotal;
+    let cgst = Math.round(subTotal * 0.025);
+    let sgst = Math.round(subTotal * 0.025);
+    let grandTotal = subTotal + packingTotal + cgst + sgst;
+    
     document.getElementById('sub-total').innerText = rupeeSign + subTotal;
     document.getElementById('packing-total').innerText = rupeeSign + packingTotal;
+    if(document.getElementById('cgst-total')) document.getElementById('cgst-total').innerText = rupeeSign + cgst;
+    if(document.getElementById('sgst-total')) document.getElementById('sgst-total').innerText = rupeeSign + sgst;
     document.getElementById('grand-total').innerText = rupeeSign + grandTotal;
     document.getElementById('mobile-count').innerText = `(${totalCount})`;
+    
     const checkoutBtn = document.getElementById('main-checkout-btn');
     if(!hasItems) { checkoutBtn.innerText = "Cart Empty"; checkoutBtn.disabled = true; } 
     else if (grandTotal < MIN_ORDER_VAL) { checkoutBtn.innerText = `Min Order ${rupeeSign}${MIN_ORDER_VAL}`; checkoutBtn.disabled = true; } 
