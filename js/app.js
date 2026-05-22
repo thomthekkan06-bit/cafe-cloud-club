@@ -559,7 +559,7 @@ window.finalizeOrder = function() {
             let finalStreet = streetVal;
             if (subStreetVal) finalStreet += ` (${subStreetVal})`;
             if (streetVal === "Other" && instruction.length < 5) throw new Error("Please type your exact location in Instructions.");
-            const mapLink = `https://maps.google.com/?q=${latVal},${lngVal}`;
+            const mapLink = `https://maps.google.com/?q=$${latVal},${lngVal}`;
             address = `${houseVal}, ${finalStreet}\n(Landmark: ${landmarkVal})\n📍 Pin: ${mapLink}`;
         }
 
@@ -595,7 +595,7 @@ window.finalizeOrder = function() {
         let grandTotal = Math.round(rawGrandTotal);
         let roundOff = parseFloat((grandTotal - rawGrandTotal).toFixed(2));
         
-        if (grandTotal < MIN_ORDER_VAL) throw new Error(`Min Order value is ₹${MIN_ORDER_VAL}`);
+        if (subTotal < MIN_ORDER_VAL) throw new Error(`Min Order value is ₹${MIN_ORDER_VAL}`);
         let finalNote = instruction || "-";
 
         const sanitizedCart = {};
@@ -846,7 +846,7 @@ function renderCart() {
     
     const checkoutBtn = document.getElementById('main-checkout-btn');
     if(!hasItems) { checkoutBtn.innerText = "Cart Empty"; checkoutBtn.disabled = true; } 
-    else if (grandTotal < MIN_ORDER_VAL) { checkoutBtn.innerText = `Min Order ${rupeeSign}${MIN_ORDER_VAL}`; checkoutBtn.disabled = true; } 
+    else if (subTotal < MIN_ORDER_VAL) { checkoutBtn.innerText = `Min Order ${rupeeSign}${MIN_ORDER_VAL}`; checkoutBtn.disabled = true; } 
     else { checkoutBtn.innerText = "Confirm Order"; checkoutBtn.disabled = false; }
 }
 
