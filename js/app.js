@@ -576,11 +576,11 @@ window.finalizeOrder = function() {
             subTotal += (item.price * item.qty);
             
             // Packing Logic
-            let charge = 10;
-            if (item.category === 'ADD-ON') charge = key.startsWith("Hummus") ? 7 : 5;
-            else if (fiveRsCats.includes(item.category)) charge = 5;
+            let charge = 11;
+            if (item.category === 'ADD-ON') charge = key.startsWith("Hummus") ? 8 : 6;
+            else if (fiveRsCats.includes(item.category)) charge = 6;
             packingTotal += (charge * item.qty);
-            if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
+            if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Veggies")) packingTotal += (8 * item.qty);
 
             // Item String Logic
             let tag = item.type === 'veg' ? '[VEG]' : '[NON-VEG]';
@@ -791,11 +791,11 @@ function renderCart() {
         subTotal += itemTotal;
         totalCount += item.qty;
         let chargePerItem = 0;
-        if (item.category === 'ADD-ON') chargePerItem = key.startsWith("Hummus") ? 7 : 5;
-        else if (fiveRsCats.includes(item.category)) chargePerItem = 5;
-        else chargePerItem = 10;
+        if (item.category === 'ADD-ON') chargePerItem = key.startsWith("Hummus") ? 8 : 6;
+        else if (fiveRsCats.includes(item.category)) chargePerItem = 6;
+        else chargePerItem = 11;
         packingTotal += (chargePerItem * item.qty);
-        if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Vegges")) packingTotal += (7 * item.qty);
+        if (key.includes("Tossed Rice") || key.includes("Sorted / Boiled Veggies")) packingTotal += (8 * item.qty);
         list.innerHTML += `
             <div class="cart-item">
                 <div class="cart-details">
